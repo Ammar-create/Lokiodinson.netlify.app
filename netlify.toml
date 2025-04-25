@@ -2,4 +2,5 @@
   publish = "."
   command = ""
 
-# Optional: redirects or headers could go here later
+[functions]
+  directory = "" # disables functions
