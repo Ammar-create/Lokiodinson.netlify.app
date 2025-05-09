@@ -3,138 +3,1444 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movies & TV Shows Watchlist</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>Ammar's Watchlist App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .progress-bar {
+            height: 8px;
+            border-radius: 4px;
+            background-color: #e5e7eb;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            background-color: #3b82f6;
+            transition: width 0.3s ease;
+        }
+        
+        .modal {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        
+        .modal-enter {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .modal-exit {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .modal-exit-active {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .category-tab {
+            transition: all 0.2s ease;
+        }
+        
+        .category-tab:hover {
+            transform: translateY(-2px);
+        }
+        
+        .completed-badge {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+    </style>
 </head>
-<body>
-    <div class="app-container">
-        <!-- Fixed Navigation Bar -->
-        <nav class="top-nav">
-            <div class="nav-logo">
-                <img src="images/logo.png" alt="Logo" class="nav-logo-img">
-                <h1>Movies & TV Shows Watchlist</h1>
-            </div>
-            <div class="nav-links">
-                <a href="#watchlist" class="nav-link active">Watchlist</a>
-                <a href="#add-category" class="nav-link">Add Category</a>
-                <a href="#add-entry" class="nav-link">Add Entry</a>
-                <a href="#view-watchlist" class="nav-link">View Watchlist</a>
-            </div>
-            <div class="theme-toggle">
-                <button id="theme-toggle-btn" class="btn-theme"><i class="fas fa-moon"></i> Toggle Theme</button>
-            </div>
-        </nav>
-
-        <main class="main-content">
-            <!-- Hero Section for View Watchlist -->
-            <section id="hero-section" class="hero-section"></section>
-
-            <div id="success-message" class="success-message" style="display: none;"></div>
-
-            <section id="watchlist" class="content-section active">
-                <div class="card">
-                    <h2>Welcome to Your Watchlist</h2>
-                    <p>Use the navigation bar to add categories, entries, or view your watchlist.</p>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="mb-8">
+            <div class="flex justify-between items-center">
+                <h1 class="text-4xl font-bold text-gray-800">
+                    <i class="fas fa-tv mr-2 text-blue-500"></i> Watchlist App
+                </h1>
+                <div class="text-sm text-gray-500">
+                    <span id="lastUpdated"></span>
                 </div>
-            </section>
+            </div>
+            <p class="text-gray-600 mt-2">Track your favorite shows, movies and anime</p>
+        </header>
 
-            <section id="add-category" class="content-section">
-                <div class="card">
-                    <h2>Add a New Category</h2>
-                    <form id="category-form" class="form">
-                        <div class="form-group">
-                            <label for="new-category">Category Name</label>
-                            <input type="text" id="new-category" placeholder="e.g., Sci-Fi Movies" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Add Category</button>
-                    </form>
+        <!-- Hero Section -->
+        <div id="heroSection" class="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl p-6 mb-8 text-white shadow-lg">
+            <div class="flex flex-col md:flex-row items-center">
+                <div class="md:w-2/3 mb-4 md:mb-0">
+                    <h2 class="text-2xl font-bold mb-2">Currently Watching</h2>
+                    <h3 id="heroTitle" class="text-3xl font-bold mb-2">Breaking Bad</h3>
+                    <div class="flex flex-wrap gap-4 mb-4">
+                        <span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm">
+                            <i class="fas fa-tv mr-1"></i> 5 Seasons
+                        </span>
+                        <span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm">
+                            <i class="fas fa-list-ol mr-1"></i> 62 Episodes
+                        </span>
+                        <span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm">
+                            <i class="fas fa-clock mr-1"></i> ~62 hours
+                        </span>
+                    </div>
+                    <p id="heroNotes" class="italic">"Really intense show!"</p>
                 </div>
-            </section>
-
-            <section id="add-entry" class="content-section">
-                <div class="card">
-                    <h2>Add a New Entry</h2>
-                    <form id="watchlist-form" class="form">
-                        <div class="form-group">
-                            <label for="category">Category</label>
-                            <select id="category" required></select>
+                <div class="md:w-1/3 flex justify-center">
+                    <div class="bg-white bg-opacity-20 p-4 rounded-lg">
+                        <div class="text-center mb-2">
+                            <span class="font-bold">Progress</span>
                         </div>
-                        <div class="form-group">
-                            <label for="title">Title</label>
-                            <input type="text" id="title" placeholder="e.g., Breaking Bad" required>
+                        <div class="progress-bar w-full mb-2">
+                            <div id="heroProgress" class="progress-fill" style="width: 30%"></div>
                         </div>
-                        <div class="form-group">
-                            <label for="seasons">Seasons</label>
-                            <input type="text" id="seasons" placeholder="e.g., 5 or - for movies">
+                        <div class="text-center text-sm">
+                            <span id="heroProgressText">Season 2 Episode 5</span>
                         </div>
-                        <div class="form-group">
-                            <label for="episodes">Episodes</label>
-                            <input type="text" id="episodes" placeholder="e.g., 62 or 1 Movie">
-                        </div>
-                        <div class="form-group">
-                            <label for="totalWatchTime">Total Watch Time</label>
-                            <input type="text" id="totalWatchTime" placeholder="e.g., ~62 hours">
-                        </div>
-                        <div class="form-group">
-                            <label for="imdbLink">IMDb Link (Optional)</label>
-                            <input type="url" id="imdbLink" placeholder="e.g., https://www.imdb.com/title/...">
-                        </div>
-                        <div class="form-group">
-                            <label for="notes">Notes (Optional)</label>
-                            <textarea id="notes" placeholder="e.g., Really intense show!"></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Add Entry</button>
-                    </form>
+                    </div>
                 </div>
-            </section>
+            </div>
+        </div>
 
-            <section id="view-watchlist" class="content-section">
-                <div class="category-grid" id="categories-container"></div>
-            </section>
-        </main>
+        <!-- Main Content -->
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Sidebar -->
+            <div class="lg:w-1/4">
+                <div class="bg-white rounded-xl shadow-md p-4 mb-6">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">
+                        <i class="fas fa-folder mr-2 text-blue-500"></i> Categories
+                    </h3>
+                    <div id="categoryTabs" class="space-y-2">
+                        <!-- Categories will be added here by JavaScript -->
+                    </div>
+                    
+                    <div class="mt-6">
+                        <button id="addCategoryBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-plus mr-2"></i> Add Category
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-md p-4">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">
+                        <i class="fas fa-chart-pie mr-2 text-blue-500"></i> Stats
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm font-medium text-gray-700">Total Items</span>
+                                <span id="totalItems" class="text-sm font-medium text-gray-700">0</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div id="totalItemsBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm font-medium text-gray-700">Completed</span>
+                                <span id="completedItems" class="text-sm font-medium text-gray-700">0</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div id="completedItemsBar" class="bg-green-500 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm font-medium text-gray-700">Watch Time</span>
+                                <span id="totalWatchTime" class="text-sm font-medium text-gray-700">0 hours</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div id="watchTimeBar" class="bg-purple-500 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="lg:w-3/4">
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 id="currentCategory" class="text-2xl font-bold text-gray-800">
+                            <i class="fas fa-list mr-2 text-blue-500"></i> Watchlist
+                        </h2>
+                        <button id="addEntryBtn" class="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Add Entry
+                        </button>
+                    </div>
+                    
+                    <div id="watchlistContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Cards will be added here by JavaScript -->
+                    </div>
+                    
+                    <div id="emptyState" class="text-center py-12 hidden">
+                        <i class="fas fa-tv text-5xl text-gray-300 mb-4"></i>
+                        <h3 class="text-xl font-medium text-gray-500">No entries found</h3>
+                        <p class="text-gray-400 mt-2">Add your first entry by clicking the "Add Entry" button</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="mt-12 text-center text-gray-500 text-sm">
+            <p>&copy; <span id="currentYear"></span> Watchlist App by Ammar. All rights reserved.</p>
+        </footer>
     </div>
 
-    <footer class="footer">
-        <p>Last Updated: <span id="last-updated"></span></p>
-    </footer>
-
-    <div id="edit-modal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close">×</span>
-            <h2>Edit Entry</h2>
-            <form id="edit-form" class="form">
-                <input type="hidden" id="edit-category">
-                <input type="hidden" id="edit-index">
-                <div class="form-group">
-                    <label for="edit-title">Title</label>
-                    <input type="text" id="edit-title" required>
+    <!-- Add/Edit Entry Modal -->
+    <div id="entryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md modal">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="modalTitle" class="text-xl font-bold text-gray-800">Add New Entry</h3>
+                    <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                <div class="form-group">
-                    <label for="edit-seasons">Seasons</label>
-                    <input type="text" id="edit-seasons">
-                </div>
-                <div class="form-group">
-                    <label for="edit-episodes">Episodes</label>
-                    <input type="text" id="edit-episodes">
-                </div>
-                <div class="form-group">
-                    <label for="edit-totalWatchTime">Total Watch Time</label>
-                    <input type="text" id="edit-totalWatchTime">
-                </div>
-                <div class="form-group">
-                    <label for="edit-imdbLink">IMDb Link (Optional)</label>
-                    <input type="url" id="edit-imdbLink">
-                </div>
-                <div class="form-group">
-                    <label for="edit-notes">Notes (Optional)</label>
-                    <textarea id="edit-notes"></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary">Save Changes</button>
-            </form>
+                
+                <form id="entryForm" class="space-y-4">
+                    <input type="hidden" id="entryId">
+                    <input type="hidden" id="entryCategory">
+                    
+                    <div>
+                        <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Title*</label>
+                        <input type="text" id="title" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="seasons" class="block text-sm font-medium text-gray-700 mb-1">Seasons</label>
+                            <input type="text" id="seasons" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="5 or - for movies">
+                        </div>
+                        <div>
+                            <label for="episodes" class="block text-sm font-medium text-gray-700 mb-1">Episodes</label>
+                            <input type="text" id="episodes" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="62 or '1 Movie'">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="watchTime" class="block text-sm font-medium text-gray-700 mb-1">Total Watch Time</label>
+                        <input type="text" id="watchTime" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="~62 hours">
+                    </div>
+                    
+                    <div>
+                        <label for="imdbLink" class="block text-sm font-medium text-gray-700 mb-1">IMDb Link</label>
+                        <input type="url" id="imdbLink" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://www.imdb.com/title/tt0903747/">
+                    </div>
+                    
+                    <div>
+                        <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea id="notes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label for="progress" class="block text-sm font-medium text-gray-700 mb-1">Progress</label>
+                        <input type="text" id="progress" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Season 2 Episode 5">
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <input type="checkbox" id="isCompleted" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="isCompleted" class="ml-2 block text-sm text-gray-700">Mark as completed</label>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" id="cancelBtn" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
+                        <button type="submit" id="saveBtn" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Save</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
-    <script src="js/script.js"></script>
-</body>
+    <!-- Add Category Modal -->
+    <div id="categoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md modal">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Add New Category</h3>
+                    <button id="closeCategoryModalBtn" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <form id="categoryForm" class="space-y-4">
+                    <div>
+                        <label for="categoryName" class="block text-sm font-medium text-gray-700 mb-1">Category Name*</label>
+                        <input type="text" id="categoryName" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" id="cancelCategoryBtn" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
+                        <button type="submit" id="saveCategoryBtn" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md modal">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Confirm Deletion</h3>
+                    <button id="closeDeleteModalBtn" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <p id="deleteMessage" class="text-gray-700 mb-6">Are you sure you want to delete this item? This action cannot be undone.</p>
+                
+                <div class="flex justify-end space-x-3">
+                    <button type="button" id="cancelDeleteBtn" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
+                    <button type="button" id="confirmDeleteBtn" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initial data
+        const initialData = {
+            "watchlist": [
+                {
+                    "id": "1",
+                    "title": "Breaking Bad",
+                    "seasons": 5,
+                    "episodes": 62,
+                    "totalWatchTime": "~62 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0903747/",
+                    "notes": "Really intense show!",
+                    "progress": "Season 2 Episode 5",
+                    "isCompleted": false
+                },
+                {
+                    "id": "2",
+                    "title": "Game of Thrones",
+                    "seasons": 8,
+                    "episodes": 73,
+                    "totalWatchTime": "~70 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0944947/",
+                    "notes": "Watch with friends",
+                    "progress": "Season 6 Episode 3",
+                    "isCompleted": false
+                },
+                {
+                    "id": "3",
+                    "title": "One Piece (Ongoing)",
+                    "seasons": "20+",
+                    "episodes": "1000+",
+                    "totalWatchTime": "~500+ hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0388629/",
+                    "notes": "Long but worth it",
+                    "progress": "Episode 987",
+                    "isCompleted": false
+                },
+                {
+                    "id": "4",
+                    "title": "Dark",
+                    "seasons": 3,
+                    "episodes": 26,
+                    "totalWatchTime": "~22 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt5753856/",
+                    "notes": "Mind-bending plot",
+                    "progress": "Season 1 Episode 8",
+                    "isCompleted": false
+                },
+                {
+                    "id": "5",
+                    "title": "Harry Potter Series",
+                    "seasons": "-",
+                    "episodes": "8 movies",
+                    "totalWatchTime": "~20 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0241527/",
+                    "notes": "Family favorite",
+                    "progress": "Movie 5",
+                    "isCompleted": false
+                },
+                {
+                    "id": "6",
+                    "title": "Transformers (Movies)",
+                    "seasons": "-",
+                    "episodes": "7 movies",
+                    "totalWatchTime": "~17 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0418279/",
+                    "notes": "Action-packed",
+                    "progress": "Movie 3",
+                    "isCompleted": false
+                },
+                {
+                    "id": "7",
+                    "title": "Resident Evil (Live-Action)",
+                    "seasons": "-",
+                    "episodes": "7 movies",
+                    "totalWatchTime": "~12 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0120804/",
+                    "notes": "Scary but fun",
+                    "progress": "Movie 6",
+                    "isCompleted": false
+                },
+                {
+                    "id": "8",
+                    "title": "Arrowverse (Live-Action & Animated)",
+                    "seasons": "Multiple",
+                    "episodes": 1006,
+                    "totalWatchTime": "~589 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt2193021/",
+                    "notes": "Huge universe",
+                    "progress": "Arrow Season 4",
+                    "isCompleted": false
+                },
+                {
+                    "id": "9",
+                    "title": "DCAU Watch Order",
+                    "seasons": "Varies",
+                    "episodes": "~500+",
+                    "totalWatchTime": "~100+ hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0105946/",
+                    "notes": "Classic animation",
+                    "progress": "Batman TAS Season 2",
+                    "isCompleted": false
+                },
+                {
+                    "id": "10",
+                    "title": "F.R.I.E.N.D.S",
+                    "seasons": 10,
+                    "episodes": 236,
+                    "totalWatchTime": "~89 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0108778/",
+                    "notes": "Funny show",
+                    "progress": "Season 7 Episode 12",
+                    "isCompleted": false
+                },
+                {
+                    "id": "11",
+                    "title": "Mushoku Tensei (Ongoing)",
+                    "seasons": 4,
+                    "episodes": 48,
+                    "totalWatchTime": "~19 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt13293588/",
+                    "notes": "Great anime",
+                    "progress": "Season 2 Episode 5",
+                    "isCompleted": false
+                }
+            ],
+            "arrowverse": [
+                {
+                    "id": "12",
+                    "title": "Arrow",
+                    "seasons": 8,
+                    "episodes": 170,
+                    "totalWatchTime": "~120 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt2193021/",
+                    "notes": "Started it all",
+                    "progress": "Season 4 Episode 15",
+                    "isCompleted": false
+                },
+                {
+                    "id": "13",
+                    "title": "The Flash",
+                    "seasons": 9,
+                    "episodes": 184,
+                    "totalWatchTime": "~130 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt3107288/",
+                    "notes": "Fast-paced",
+                    "progress": "Season 3 Episode 10",
+                    "isCompleted": false
+                },
+                {
+                    "id": "14",
+                    "title": "Supergirl",
+                    "seasons": 6,
+                    "episodes": 126,
+                    "totalWatchTime": "~90 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt4016454/",
+                    "notes": "Strong lead",
+                    "progress": "Season 2 Episode 5",
+                    "isCompleted": false
+                },
+                {
+                    "id": "15",
+                    "title": "Legends of Tomorrow",
+                    "seasons": 7,
+                    "episodes": 110,
+                    "totalWatchTime": "~80 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt4532368/",
+                    "notes": "Funny team",
+                    "progress": "Season 1 Episode 12",
+                    "isCompleted": false
+                },
+                {
+                    "id": "16",
+                    "title": "Black Lightning",
+                    "seasons": 4,
+                    "episodes": 58,
+                    "totalWatchTime": "~45 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt6045844/",
+                    "notes": "Unique story",
+                    "progress": "Season 2 Episode 3",
+                    "isCompleted": false
+                },
+                {
+                    "id": "17",
+                    "title": "Batwoman",
+                    "seasons": 3,
+                    "episodes": 51,
+                    "totalWatchTime": "~40 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt8712204/",
+                    "notes": "Cool action",
+                    "progress": "Season 1 Episode 5",
+                    "isCompleted": false
+                },
+                {
+                    "id": "18",
+                    "title": "Superman & Lois",
+                    "seasons": 4,
+                    "episodes": "43+",
+                    "totalWatchTime": "~40+ hours",
+                    "imdbLink": "https://www.imdb.com/title/tt11192306/",
+                    "notes": "Family drama",
+                    "progress": "Season 1 Episode 8",
+                    "isCompleted": false
+                },
+                {
+                    "id": "19",
+                    "title": "Vixen (Animated)",
+                    "seasons": 2,
+                    "episodes": "12 (shorts)",
+                    "totalWatchTime": "~2 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt5096864/",
+                    "notes": "Short but good",
+                    "progress": "Season 1 Episode 6",
+                    "isCompleted": true
+                },
+                {
+                    "id": "20",
+                    "title": "Freedom Fighters: The Ray",
+                    "seasons": 2,
+                    "episodes": "12 (shorts)",
+                    "totalWatchTime": "~2 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt7168882/",
+                    "notes": "Animated fun",
+                    "progress": "Season 1 Episode 6",
+                    "isCompleted": true
+                },
+                {
+                    "id": "21",
+                    "title": "Constantine",
+                    "seasons": 1,
+                    "episodes": 13,
+                    "totalWatchTime": "~10 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt3648416/",
+                    "notes": "Dark and gritty",
+                    "progress": "Episode 8",
+                    "isCompleted": false
+                },
+                {
+                    "id": "22",
+                    "title": "Stargirl",
+                    "seasons": 3,
+                    "episodes": 39,
+                    "totalWatchTime": "~30 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt8722888/",
+                    "notes": "Fresh story",
+                    "progress": "Season 1 Episode 10",
+                    "isCompleted": false
+                }
+            ],
+            "DCAU": [
+                {
+                    "id": "23",
+                    "title": "Batman: Mask of the Phantasm",
+                    "seasons": "-",
+                    "episodes": "1 Movie",
+                    "totalWatchTime": "~1.5 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0106364/",
+                    "notes": "Amazing movie",
+                    "progress": "Completed",
+                    "isCompleted": true
+                },
+                {
+                    "id": "24",
+                    "title": "Batman: The Animated Series",
+                    "seasons": 2,
+                    "episodes": 85,
+                    "totalWatchTime": "~35 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0105946/",
+                    "notes": "Classic Batman",
+                    "progress": "Season 1 Episode 20",
+                    "isCompleted": false
+                },
+                {
+                    "id": "25",
+                    "title": "Batman & Mr. Freeze: SubZero",
+                    "seasons": "-",
+                    "episodes": "1 Movie",
+                    "totalWatchTime": "~1.5 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0143127/",
+                    "notes": "Cool story",
+                    "progress": "Completed",
+                    "isCompleted": true
+                },
+                {
+                    "id": "26",
+                    "title": "Superman: The Animated Series",
+                    "seasons": 3,
+                    "episodes": 54,
+                    "totalWatchTime": "~20 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0115378/",
+                    "notes": "Great Superman",
+                    "progress": "Season 2 Episode 15",
+                    "isCompleted": false
+                },
+                {
+                    "id": "27",
+                    "title": "The New Batman Adventures",
+                    "seasons": 1,
+                    "episodes": 24,
+                    "totalWatchTime": "~10 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0118266/",
+                    "notes": "New style",
+                    "progress": "Episode 12",
+                    "isCompleted": false
+                },
+                {
+                    "id": "28",
+                    "title": "Superman: TAS - 'World's Finest'",
+                    "seasons": "-",
+                    "episodes": "3 (Crossover)",
+                    "totalWatchTime": "~1 hour",
+                    "imdbLink": "https://www.imdb.com/title/tt0115378/",
+                    "notes": "Batman crossover",
+                    "progress": "Completed",
+                    "isCompleted": true
+                },
+                {
+                    "id": "29",
+                    "title": "Justice League - 'Secret Origins'",
+                    "seasons": "-",
+                    "episodes": 3,
+                    "totalWatchTime": "~1 hour",
+                    "imdbLink": "https://www.imdb.com/title/tt0275137/",
+                    "notes": "Team begins",
+                    "progress": "Completed",
+                    "isCompleted": true
+                },
+                {
+                    "id": "30",
+                    "title": "Justice League",
+                    "seasons": 2,
+                    "episodes": 52,
+                    "totalWatchTime": "~20 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0275137/",
+                    "notes": "Epic team-up",
+                    "progress": "Season 1 Episode 20",
+                    "isCompleted": false
+                },
+                {
+                    "id": "31",
+                    "title": "Justice League: Starcrossed",
+                    "seasons": "-",
+                    "episodes": 3,
+                    "totalWatchTime": "~1 hour",
+                    "imdbLink": "https://www.imdb.com/title/tt0275137/",
+                    "notes": "Great ending",
+                    "progress": "Completed",
+                    "isCompleted": true
+                },
+                {
+                    "id": "32",
+                    "title": "Justice League Unlimited",
+                    "seasons": 3,
+                    "episodes": 39,
+                    "totalWatchTime": "~15 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0414022/",
+                    "notes": "More heroes",
+                    "progress": "Season 2 Episode 10",
+                    "isCompleted": false
+                },
+                {
+                    "id": "33",
+                    "title": "Batman and Harley Quinn",
+                    "seasons": "-",
+                    "episodes": "1 Movie",
+                    "totalWatchTime": "~1.5 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt6550274/",
+                    "notes": "Funny movie",
+                    "progress": "Completed",
+                    "isCompleted": true
+                },
+                {
+                    "id": "34",
+                    "title": "Justice League vs. The Fatal Five",
+                    "seasons": "-",
+                    "episodes": "1 Movie",
+                    "totalWatchTime": "~1.5 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt8754122/",
+                    "notes": "Action-packed",
+                    "progress": "Completed",
+                    "isCompleted": true
+                },
+                {
+                    "id": "35",
+                    "title": "Batman Beyond",
+                    "seasons": 3,
+                    "episodes": 52,
+                    "totalWatchTime": "~20 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0147746/",
+                    "notes": "Futuristic Batman",
+                    "progress": "Season 1 Episode 15",
+                    "isCompleted": false
+                },
+                {
+                    "id": "36",
+                    "title": "The Zeta Project",
+                    "seasons": 2,
+                    "episodes": 26,
+                    "totalWatchTime": "~10 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0251736/",
+                    "notes": "Spin-off show",
+                    "progress": "Season 1 Episode 10",
+                    "isCompleted": false
+                },
+                {
+                    "id": "37",
+                    "title": "Batman Beyond: Return of the Joker",
+                    "seasons": "-",
+                    "episodes": "1 Movie",
+                    "totalWatchTime": "~1.5 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0233298/",
+                    "notes": "Joker returns",
+                    "progress": "Completed",
+                    "isCompleted": true
+                },
+                {
+                    "id": "38",
+                    "title": "Justice League Unlimited - 'Epilogue'",
+                    "seasons": "-",
+                    "episodes": 1,
+                    "totalWatchTime": "~0.5 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0414022/",
+                    "notes": "Series end",
+                    "progress": "Completed",
+                    "isCompleted": true
+                },
+                {
+                    "id": "39",
+                    "title": "Static Shock",
+                    "seasons": 4,
+                    "episodes": 52,
+                    "totalWatchTime": "~20 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0247723/",
+                    "notes": "Cool hero",
+                    "progress": "Season 2 Episode 15",
+                    "isCompleted": false
+                },
+                {
+                    "id": "40",
+                    "title": "Superman: Brainiac Attacks",
+                    "seasons": "-",
+                    "episodes": "1 Movie",
+                    "totalWatchTime": "~1.5 hours",
+                    "imdbLink": "https://www.imdb.com/title/tt0775361/",
+                    "notes": "Brainiac fight",
+                    "progress": "Completed",
+                    "isCompleted": true
+                }
+            ]
+        };
+
+        // App state
+        let state = {
+            currentCategory: 'watchlist',
+            categories: ['watchlist', 'arrowverse', 'DCAU'],
+            data: {},
+            lastUpdated: new Date().toISOString(),
+            deleteAction: null // { type: 'entry' or 'category', id: string, category: string (for entry) }
+        };
+
+        // DOM elements
+        const elements = {
+            categoryTabs: document.getElementById('categoryTabs'),
+            watchlistContainer: document.getElementById('watchlistContainer'),
+            currentCategory: document.getElementById('currentCategory'),
+            addEntryBtn: document.getElementById('addEntryBtn'),
+            addCategoryBtn: document.getElementById('addCategoryBtn'),
+            emptyState: document.getElementById('emptyState'),
+            heroSection: document.getElementById('heroSection'),
+            heroTitle: document.getElementById('heroTitle'),
+            heroNotes: document.getElementById('heroNotes'),
+            heroProgress: document.getElementById('heroProgress'),
+            heroProgressText: document.getElementById('heroProgressText'),
+            lastUpdated: document.getElementById('lastUpdated'),
+            totalItems: document.getElementById('totalItems'),
+            completedItems: document.getElementById('completedItems'),
+            totalWatchTime: document.getElementById('totalWatchTime'),
+            totalItemsBar: document.getElementById('totalItemsBar'),
+            completedItemsBar: document.getElementById('completedItemsBar'),
+            watchTimeBar: document.getElementById('watchTimeBar'),
+            currentYear: document.getElementById('currentYear'),
+            
+            // Modals
+            entryModal: document.getElementById('entryModal'),
+            categoryModal: document.getElementById('categoryModal'),
+            deleteModal: document.getElementById('deleteModal'),
+            
+            // Entry form
+            modalTitle: document.getElementById('modalTitle'),
+            entryForm: document.getElementById('entryForm'),
+            entryId: document.getElementById('entryId'),
+            entryCategory: document.getElementById('entryCategory'),
+            title: document.getElementById('title'),
+            seasons: document.getElementById('seasons'),
+            episodes: document.getElementById('episodes'),
+            watchTime: document.getElementById('watchTime'),
+            imdbLink: document.getElementById('imdbLink'),
+            notes: document.getElementById('notes'),
+            progress: document.getElementById('progress'),
+            isCompleted: document.getElementById('isCompleted'),
+            closeModalBtn: document.getElementById('closeModalBtn'),
+            cancelBtn: document.getElementById('cancelBtn'),
+            saveBtn: document.getElementById('saveBtn'),
+            
+            // Category form
+            categoryName: document.getElementById('categoryName'),
+            closeCategoryModalBtn: document.getElementById('closeCategoryModalBtn'),
+            cancelCategoryBtn: document.getElementById('cancelCategoryBtn'),
+            saveCategoryBtn: document.getElementById('saveCategoryBtn'),
+            categoryForm: document.getElementById('categoryForm'),
+            
+            // Delete modal
+            deleteMessage: document.getElementById('deleteMessage'),
+            closeDeleteModalBtn: document.getElementById('closeDeleteModalBtn'),
+            cancelDeleteBtn: document.getElementById('cancelDeleteBtn'),
+            confirmDeleteBtn: document.getElementById('confirmDeleteBtn')
+        };
+
+        // Initialize the app
+        function init() {
+            // Set current year in footer
+            elements.currentYear.textContent = new Date().getFullYear();
+            
+            // Load data from localStorage or use initial data
+            const savedData = localStorage.getItem('watchlistAppData');
+            if (savedData) {
+                state.data = JSON.parse(savedData);
+                state.categories = Object.keys(state.data);
+                state.lastUpdated = localStorage.getItem('watchlistAppLastUpdated') || state.lastUpdated;
+            } else {
+                state.data = JSON.parse(JSON.stringify(initialData));
+                saveData();
+            }
+            
+            // Update last updated display
+            updateLastUpdated();
+            
+            // Render UI
+            renderCategoryTabs();
+            renderWatchlist();
+            updateStats();
+            
+            // Set up event listeners
+            setupEventListeners();
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            state.lastUpdated = new Date().toISOString();
+            localStorage.setItem('watchlistAppData', JSON.stringify(state.data));
+            localStorage.setItem('watchlistAppLastUpdated', state.lastUpdated);
+            updateLastUpdated();
+        }
+
+        // Update last updated display
+        function updateLastUpdated() {
+            const date = new Date(state.lastUpdated);
+            elements.lastUpdated.textContent = `Last updated: ${date.toLocaleString()}`;
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Add entry button
+            elements.addEntryBtn.addEventListener('click', () => {
+                showEntryModal('add');
+            });
+            
+            // Add category button
+            elements.addCategoryBtn.addEventListener('click', () => {
+                showCategoryModal();
+            });
+            
+            // Entry form submit
+            elements.entryForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                saveEntry();
+            });
+            
+            // Category form submit
+            elements.categoryForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                saveCategory();
+            });
+            
+            // Modal close buttons
+            elements.closeModalBtn.addEventListener('click', () => {
+                hideEntryModal();
+            });
+            
+            elements.cancelBtn.addEventListener('click', () => {
+                hideEntryModal();
+            });
+            
+            elements.closeCategoryModalBtn.addEventListener('click', () => {
+                hideCategoryModal();
+            });
+            
+            elements.cancelCategoryBtn.addEventListener('click', () => {
+                hideCategoryModal();
+            });
+            
+            elements.closeDeleteModalBtn.addEventListener('click', () => {
+                hideDeleteModal();
+            });
+            
+            elements.cancelDeleteBtn.addEventListener('click', () => {
+                hideDeleteModal();
+            });
+            
+            // Confirm delete
+            elements.confirmDeleteBtn.addEventListener('click', () => {
+                confirmDelete();
+            });
+        }
+
+        // Show entry modal
+        function showEntryModal(action, entry = null, category = null) {
+            if (action === 'add') {
+                elements.modalTitle.textContent = 'Add New Entry';
+                elements.entryId.value = '';
+                elements.entryCategory.value = state.currentCategory;
+                elements.title.value = '';
+                elements.seasons.value = '';
+                elements.episodes.value = '';
+                elements.watchTime.value = '';
+                elements.imdbLink.value = '';
+                elements.notes.value = '';
+                elements.progress.value = '';
+                elements.isCompleted.checked = false;
+            } else if (action === 'edit' && entry) {
+                elements.modalTitle.textContent = 'Edit Entry';
+                elements.entryId.value = entry.id;
+                elements.entryCategory.value = category || state.currentCategory;
+                elements.title.value = entry.title;
+                elements.seasons.value = entry.seasons;
+                elements.episodes.value = entry.episodes;
+                elements.watchTime.value = entry.totalWatchTime;
+                elements.imdbLink.value = entry.imdbLink || '';
+                elements.notes.value = entry.notes || '';
+                elements.progress.value = entry.progress || '';
+                elements.isCompleted.checked = entry.isCompleted || false;
+            }
+            
+            elements.entryModal.classList.remove('hidden');
+        }
+
+        // Hide entry modal
+        function hideEntryModal() {
+            elements.entryModal.classList.add('hidden');
+        }
+
+        // Show category modal
+        function showCategoryModal() {
+            elements.categoryName.value = '';
+            elements.categoryModal.classList.remove('hidden');
+        }
+
+        // Hide category modal
+        function hideCategoryModal() {
+            elements.categoryModal.classList.add('hidden');
+        }
+
+        // Show delete modal
+        function showDeleteModal(type, id, category = null) {
+            state.deleteAction = { type, id, category };
+            
+            if (type === 'entry') {
+                const entry = state.data[category].find(item => item.id === id);
+                elements.deleteMessage.textContent = `Are you sure you want to delete "${entry.title}"? This action cannot be undone.`;
+            } else if (type === 'category') {
+                elements.deleteMessage.textContent = `Are you sure you want to delete the "${id}" category and all its entries? This action cannot be undone.`;
+            }
+            
+            elements.deleteModal.classList.remove('hidden');
+        }
+
+        // Hide delete modal
+        function hideDeleteModal() {
+            state.deleteAction = null;
+            elements.deleteModal.classList.add('hidden');
+        }
+
+        // Confirm delete action
+        function confirmDelete() {
+            if (!state.deleteAction) return;
+            
+            const { type, id, category } = state.deleteAction;
+            
+            if (type === 'entry') {
+                // Delete entry
+                state.data[category] = state.data[category].filter(item => item.id !== id);
+            } else if (type === 'category') {
+                // Delete category
+                state.categories = state.categories.filter(cat => cat !== id);
+                delete state.data[id];
+                
+                // Switch to first available category
+                if (state.currentCategory === id) {
+                    state.currentCategory = state.categories.length > 0 ? state.categories[0] : '';
+                }
+            }
+            
+            saveData();
+            renderCategoryTabs();
+            renderWatchlist();
+            updateStats();
+            hideDeleteModal();
+        }
+
+        // Save entry
+        function saveEntry() {
+            const id = elements.entryId.value;
+            const category = elements.entryCategory.value;
+            const title = elements.title.value.trim();
+            const seasons = elements.seasons.value.trim();
+            const episodes = elements.episodes.value.trim();
+            const totalWatchTime = elements.watchTime.value.trim();
+            const imdbLink = elements.imdbLink.value.trim();
+            const notes = elements.notes.value.trim();
+            const progress = elements.progress.value.trim();
+            const isCompleted = elements.isCompleted.checked;
+            
+            if (!title) {
+                alert('Title is required');
+                return;
+            }
+            
+            const entry = {
+                id: id || Date.now().toString(),
+                title,
+                seasons,
+                episodes,
+                totalWatchTime,
+                imdbLink: imdbLink || undefined,
+                notes: notes || undefined,
+                progress: progress || undefined,
+                isCompleted
+            };
+            
+            if (id) {
+                // Update existing entry
+                const index = state.data[category].findIndex(item => item.id === id);
+                if (index !== -1) {
+                    state.data[category][index] = entry;
+                }
+            } else {
+                // Add new entry
+                if (!state.data[category]) {
+                    state.data[category] = [];
+                }
+                state.data[category].unshift(entry);
+            }
+            
+            saveData();
+            renderCategoryTabs();
+            renderWatchlist();
+            updateStats();
+            
+            // Update hero section if this is the first entry in the current category
+            if (state.data[category].length === 1 && category === state.currentCategory) {
+                updateHeroSection(state.data[category][0]);
+            }
+            
+            hideEntryModal();
+        }
+
+        // Save category
+        function saveCategory() {
+            const name = elements.categoryName.value.trim().toLowerCase();
+            
+            if (!name) {
+                alert('Category name is required');
+                return;
+            }
+            
+            if (state.categories.includes(name)) {
+                alert('Category already exists');
+                return;
+            }
+            
+            // Add new category
+            state.categories.push(name);
+            state.data[name] = [];
+            
+            saveData();
+            renderCategoryTabs();
+            hideCategoryModal();
+        }
+
+        // Render category tabs
+        function renderCategoryTabs() {
+            elements.categoryTabs.innerHTML = '';
+            
+            state.categories.forEach(category => {
+                const isActive = category === state.currentCategory;
+                const itemCount = state.data[category] ? state.data[category].length : 0;
+                
+                const tab = document.createElement('div');
+                tab.className = `category-tab flex items-center justify-between p-3 rounded-lg cursor-pointer ${isActive ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`;
+                tab.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas fa-folder ${isActive ? 'text-blue-500' : 'text-gray-500'} mr-2"></i>
+                        <span class="capitalize">${category}</span>
+                    </div>
+                    <span class="text-xs bg-gray-200 px-2 py-1 rounded-full">${itemCount}</span>
+                `;
+                
+                tab.addEventListener('click', () => {
+                    state.currentCategory = category;
+                    renderCategoryTabs();
+                    renderWatchlist();
+                });
+                
+                // Add context menu for category actions
+                tab.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    showCategoryContextMenu(e, category);
+                });
+                
+                elements.categoryTabs.appendChild(tab);
+            });
+            
+            // Update current category display
+            if (state.currentCategory) {
+                elements.currentCategory.innerHTML = `<i class="fas fa-list mr-2 text-blue-500"></i> ${state.currentCategory.charAt(0).toUpperCase() + state.currentCategory.slice(1)}`;
+            }
+        }
+
+        // Show category context menu
+        function showCategoryContextMenu(e, category) {
+            // Remove any existing context menu
+            const existingMenu = document.getElementById('categoryContextMenu');
+            if (existingMenu) {
+                existingMenu.remove();
+            }
+            
+            // Create menu
+            const menu = document.createElement('div');
+            menu.id = 'categoryContextMenu';
+            menu.className = 'absolute bg-white shadow-lg rounded-md py-1 z-50 w-48';
+            menu.style.top = `${e.clientY}px`;
+            menu.style.left = `${e.clientX}px`;
+            
+            // Add menu items
+            const renameItem = document.createElement('div');
+            renameItem.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center';
+            renameItem.innerHTML = '<i class="fas fa-pen mr-2 text-gray-600"></i> Rename';
+            renameItem.addEventListener('click', () => {
+                renameCategory(category);
+                menu.remove();
+            });
+            menu.appendChild(renameItem);
+            
+            const deleteItem = document.createElement('div');
+            deleteItem.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center text-red-500';
+            deleteItem.innerHTML = '<i class="fas fa-trash mr-2"></i> Delete';
+            deleteItem.addEventListener('click', () => {
+                showDeleteModal('category', category);
+                menu.remove();
+            });
+            menu.appendChild(deleteItem);
+            
+            // Add to document
+            document.body.appendChild(menu);
+            
+            // Close menu when clicking elsewhere
+            const closeMenu = (event) => {
+                if (!menu.contains(event.target)) {
+                    menu.remove();
+                    document.removeEventListener('click', closeMenu);
+                }
+            };
+            
+            document.addEventListener('click', closeMenu);
+        }
+
+        // Rename category
+        function renameCategory(oldName) {
+            const newName = prompt('Enter new category name:', oldName);
+            
+            if (newName && newName.trim() && newName !== oldName) {
+                if (state.categories.includes(newName.toLowerCase())) {
+                    alert('Category already exists');
+                    return;
+                }
+                
+                // Update category name
+                const index = state.categories.indexOf(oldName);
+                if (index !== -1) {
+                    state.categories[index] = newName.toLowerCase();
+                    
+                    // Update data
+                    state.data[newName.toLowerCase()] = state.data[oldName];
+                    delete state.data[oldName];
+                    
+                    // Update current category if needed
+                    if (state.currentCategory === oldName) {
+                        state.currentCategory = newName.toLowerCase();
+                    }
+                    
+                    saveData();
+                    renderCategoryTabs();
+                    renderWatchlist();
+                }
+            }
+        }
+
+        // Render watchlist
+        function renderWatchlist() {
+            elements.watchlistContainer.innerHTML = '';
+            
+            if (!state.currentCategory || !state.data[state.currentCategory] || state.data[state.currentCategory].length === 0) {
+                elements.emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            elements.emptyState.classList.add('hidden');
+            
+            state.data[state.currentCategory].forEach((entry, index) => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-xl shadow-md overflow-hidden card-hover transition-all duration-300 border border-gray-200';
+                
+                // Progress bar calculation (simplified for demo)
+                let progressPercent = 0;
+                if (entry.isCompleted) {
+                    progressPercent = 100;
+                } else if (entry.progress) {
+                    // Simple progress calculation (for demo)
+                    if (entry.episodes.toString().includes('Movie')) {
+                        // For movies
+                        const movieNum = parseInt(entry.progress.match(/\d+/)?.[0]) || 0;
+                        const totalMovies = parseInt(entry.episodes.match(/\d+/)?.[0]) || 1;
+                        progressPercent = Math.min(100, Math.round((movieNum / totalMovies) * 100));
+                    } else if (entry.seasons.toString().includes('+') || entry.episodes.toString().includes('+')) {
+                        // For ongoing series with unknown total
+                        progressPercent = 30; // Arbitrary value for demo
+                    } else {
+                        // For regular series
+                        const epMatch = entry.progress.match(/Season (\d+) Episode (\d+)/i) || 
+                                        entry.progress.match(/Episode (\d+)/i);
+                        
+                        if (epMatch) {
+                            const seasonNum = epMatch[1] ? parseInt(epMatch[1]) : 1;
+                            const epNum = parseInt(epMatch[2] || epMatch[1]);
+                            
+                            // Simplified calculation (doesn't account for varying seasons)
+                            const totalEps = parseInt(entry.episodes) || 1;
+                            const watchedEps = (seasonNum - 1) * (totalEps / (entry.seasons || 1)) + epNum;
+                            progressPercent = Math.min(100, Math.round((watchedEps / totalEps) * 100));
+                        }
+                    }
+                }
+                
+                card.innerHTML = `
+                    <div class="p-5">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-lg font-bold text-gray-800 truncate">${entry.title}</h3>
+                            ${entry.isCompleted ? 
+                                '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full flex items-center completed-badge"><i class="fas fa-check-circle mr-1"></i> Completed</span>' : 
+                                ''}
+                        </div>
+                        
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            ${entry.seasons !== '-' ? 
+                                `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                                    <i class="fas fa-tv mr-1"></i> ${entry.seasons} ${entry.seasons === 1 ? 'Season' : 'Seasons'}
+                                </span>` : ''}
+                            
+                            <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
+                                <i class="fas fa-list-ol mr-1"></i> ${entry.episodes}
+                            </span>
+                            
+                            <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
+                                <i class="fas fa-clock mr-1"></i> ${entry.totalWatchTime}
+                            </span>
+                        </div>
+                        
+                        ${entry.progress ? `
+                            <div class="mb-3">
+                                <div class="text-xs text-gray-500 mb-1">Progress</div>
+                                <div class="progress-bar w-full">
+                                    <div class="progress-fill" style="width: ${progressPercent}%"></div>
+                                </div>
+                                <div class="text-xs text-gray-600 mt-1">${entry.progress}</div>
+                            </div>
+                        ` : ''}
+                        
+                        ${entry.notes ? `<p class="text-sm text-gray-600 italic mb-3">"${entry.notes}"</p>` : ''}
+                        
+                        <div class="flex justify-between items-center pt-2 border-t border-gray-100">
+                            ${entry.imdbLink ? `
+                                <a href="${entry.imdbLink}" target="_blank" class="text-blue-500 hover:text-blue-700 text-sm flex items-center">
+                                    <i class="fas fa-external-link-alt mr-1"></i> IMDb
+                                </a>
+                            ` : '<div></div>'}
+                            
+                            <div class="flex space-x-2">
+                                <button class="edit-btn text-gray-500 hover:text-blue-500" data-id="${entry.id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="delete-btn text-gray-500 hover:text-red-500" data-id="${entry.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                elements.watchlistContainer.appendChild(card);
+                
+                // Update hero section with first entry
+                if (index === 0) {
+                    updateHeroSection(entry);
+                }
+            });
+            
+            // Add event listeners to edit and delete buttons
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.getAttribute('data-id');
+                    const entry = state.data[state.currentCategory].find(item => item.id === id);
+                    if (entry) {
+                        showEntryModal('edit', entry, state.currentCategory);
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.getAttribute('data-id');
+                    showDeleteModal('entry', id, state.currentCategory);
+                });
+            });
+        }
+
+        // Update hero section
+        function updateHeroSection(entry) {
+            if (!entry) return;
+            
+            elements.heroTitle.textContent = entry.title;
+            elements.heroNotes.textContent = entry.notes ? `"${entry.notes}"` : '';
+            
+            // Calculate progress for hero section
+            let progressPercent = 0;
+            let progressText = entry.progress || 'Not started';
+            
+            if (entry.isCompleted) {
+                progressPercent = 100;
+                progressText = 'Completed';
+            } else if (entry.progress) {
+                // Same simplified progress calculation as in renderWatchlist
+                if (entry.episodes.toString().includes('Movie')) {
+                    const movieNum = parseInt(entry.progress.match(/\d+/)?.[0]) || 0;
+                    const totalMovies = parseInt(entry.episodes.match(/\d+/)?.[0]) || 1;
+                    progressPercent = Math.min(100, Math.round((movieNum / totalMovies) * 100));
+                } else if (entry.seasons.toString().includes('+') || entry.episodes.toString().includes('+')) {
+                    progressPercent = 30;
+                } else {
+                    const epMatch = entry.progress.match(/Season (\d+) Episode (\d+)/i) || 
+                                    entry.progress.match(/Episode (\d+)/i);
+                    
+                    if (epMatch) {
+                        const seasonNum = epMatch[1] ? parseInt(epMatch[1]) : 1;
+                        const epNum = parseInt(epMatch[2] || epMatch[1]);
+                        const totalEps = parseInt(entry.episodes) || 1;
+                        const watchedEps = (seasonNum - 1) * (totalEps / (entry.seasons || 1)) + epNum;
+                        progressPercent = Math.min(100, Math.round((watchedEps / totalEps) * 100));
+                    }
+                }
+            }
+            
+            elements.heroProgress.style.width = `${progressPercent}%`;
+            elements.heroProgressText.textContent = progressText;
+            
+            // Show/hide hero section based on whether there's data
+            if (entry.title) {
+                elements.heroSection.classList.remove('hidden');
+            } else {
+                elements.heroSection.classList.add('hidden');
+            }
+        }
+
+        // Update stats
+        function updateStats() {
+            let totalItems = 0;
+            let completedItems = 0;
+            let totalWatchTime = 0;
+            
+            // Calculate totals across all categories
+            state.categories.forEach(category => {
+                if (state.data[category]) {
+                    totalItems += state.data[category].length;
+                    completedItems += state.data[category].filter(item => item.isCompleted).length;
+                    
+                    // Calculate watch time (simplified for demo)
+                    state.data[category].forEach(item => {
+                        const hoursMatch = item.totalWatchTime?.match(/\d+/);
+                        if (hoursMatch) {
+                            totalWatchTime += parseInt(hoursMatch[0]);
+                        }
+                    });
+                }
+            });
+            
+            // Update UI
+            elements.totalItems.textContent = totalItems;
+            elements.completedItems.textContent = completedItems;
+            elements.totalWatchTime.textContent = `${totalWatchTime} hours`;
+            
+            // Update progress bars
+            elements.totalItemsBar.style.width = '100%';
+            elements.completedItemsBar.style.width = `${Math.round((completedItems / Math.max(1, totalItems)) * 100)}%`;
+            
+            // For watch time, we'll use a fixed scale (0-1000 hours) for the demo
+            const watchTimePercent = Math.min(100, Math.round((totalWatchTime / 1000) * 100));
+            elements.watchTimeBar.style.width = `${watchTimePercent}%`;
+        }
+
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
 </html>
