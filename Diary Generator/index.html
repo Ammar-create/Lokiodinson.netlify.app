@@ -1,0 +1,165 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>School Diary Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat&family=Gloria+Hallelujah&family=Shadows+Into+Light&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #fdfbfb, #ebedee);
+      padding: 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    label, select, textarea, input[type="date"] {
+      display: block;
+      margin-top: 10px;
+      width: 100%;
+      font-size: 16px;
+    }
+    textarea {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    .subjects {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .subjects label {
+      padding: 8px 12px;
+      background: #f0f0f0;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+    .subjects input {
+      margin-right: 5px;
+    }
+    .options {
+      margin-top: 15px;
+    }
+    .diary-output {
+      margin-top: 20px;
+      border: 2px dashed #ccc;
+      padding: 30px;
+      width: 766px;
+      height: 896px;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      white-space: pre-wrap;
+    }
+    .btn {
+      margin-top: 10px;
+      padding: 10px 20px;
+      background: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 style="text-align:center; font-family: 'Gloria Hallelujah', cursive;">School Diary Generator</h2><label for="date">Date:</label>
+<input type="date" id="date">
+
+<div class="subjects">
+  <label><input type="checkbox" value="Urdu"> Urdu</label>
+  <label><input type="checkbox" value="English"> English</label>
+  <label><input type="checkbox" value="Math"> Math</label>
+  <label><input type="checkbox" value="Physics"> Physics</label>
+  <label><input type="checkbox" value="Biology"> Biology</label>
+  <label><input type="checkbox" value="Chemistry"> Chemistry</label>
+  <label><input type="checkbox" value="Pak Study"> Pak Study</label>
+</div>
+
+<div id="homeworkFields"></div>
+
+<div class="options">
+  <label for="font">Select Handwriting Font:</label>
+  <select id="font">
+    <option value="Caveat">Caveat</option>
+    <option value="Gloria Hallelujah">Gloria Hallelujah</option>
+    <option value="Shadows Into Light">Shadows Into Light</option>
+  </select>
+
+  <label for="fontsize">Select Font Size:</label>
+  <select id="fontsize">
+    <option value="32">Small</option>
+    <option value="38">Medium</option>
+    <option value="46">Large</option>
+    <option value="52">Extra Large</option>
+  </select>
+
+  <label for="background">Select Notebook Background:</label>
+  <select id="background">
+    <option value="none">Default (No Background)</option>
+    <option value="white.png">White</option>
+    <option value="beige.png">Light Beige</option>
+  </select>
+</div>
+
+<button class="btn" onclick="generateDiary()">Generate Diary</button>
+<button class="btn" onclick="downloadDiary()">Download as PNG</button>
+
+<div id="diary" class="diary-output"></div>
+
+  </div>  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>  <script>
+    const subjectContainer = document.querySelector('.subjects');
+    const homeworkFields = document.getElementById('homeworkFields');
+
+    subjectContainer.addEventListener('change', () => {
+      homeworkFields.innerHTML = '';
+      document.querySelectorAll('.subjects input:checked').forEach(input => {
+        const label = document.createElement('label');
+        label.textContent = `${input.value} Work:`;
+        const textarea = document.createElement('textarea');
+        textarea.id = input.value;
+        textarea.rows = 2;
+        homeworkFields.appendChild(label);
+        homeworkFields.appendChild(textarea);
+      });
+    });
+
+    function generateDiary() {
+      const date = document.getElementById('date').value;
+      const font = document.getElementById('font').value;
+      const background = document.getElementById('background').value;
+      const fontsize = document.getElementById('fontsize').value;
+      const diary = document.getElementById('diary');
+
+      let content = `Date: ${date}\nHome Work\n\n`;
+      document.querySelectorAll('.subjects input:checked').forEach(input => {
+        const value = document.getElementById(input.value).value;
+        content += `${input.value}: ${value}\n`;
+      });
+
+      diary.textContent = content;
+      diary.style.fontFamily = `'${font}', cursive`;
+      diary.style.backgroundImage = background !== 'none' ? `url('${background}')` : 'none';
+      diary.style.fontSize = `${fontsize}px`;
+    }
+
+    function downloadDiary() {
+      html2canvas(document.getElementById("diary")).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'diary.png';
+        link.href = canvas.toDataURL();
+        link.click();
+      });
+    }
+  </script>
+  <p class="footer-text">Made by Ammar with Love ♥️<style>.footer-text{position:bottom:10px;width:100%;text-align:center;font-size:14px;color:#555;font-family:sans-serif;pointer-events:none;background:transparent}</style></p>
+  </body>
+</html>
