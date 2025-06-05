@@ -1,30 +1,102 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Chatbot App</title>
-    <style>
-      body { font-family: sans-serif; padding: 20px; }
-      input, button { padding: 8px; margin: 5px 0; width: 100%; }
-      #response { margin-top: 20px; background: #f0f0f0; padding: 10px; border-radius: 8px; }
-    </style>
-  </head>
-  <body>
-    <h2>Chat with AI 🤖</h2>
-    <input type="text" id="userInput" placeholder="Type your message..." />
-    <button onclick="sendMessage()">Send</button>
-    <div id="response"></div>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Loki Chatbot</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #1e1e2f;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
 
-    <script>
-      async function sendMessage() {
-        const input = document.getElementById("userInput").value;
+    h1 {
+      color: #FFD700;
+    }
+
+    .chat-container {
+      width: 100%;
+      max-width: 500px;
+      background: #2e2e3e;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #FFD700;
+      border: none;
+      color: black;
+      font-weight: bold;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #e0c200;
+    }
+
+    #response {
+      margin-top: 20px;
+      background: #3e3e50;
+      padding: 15px;
+      border-radius: 8px;
+      min-height: 60px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>🤖 Loki Chatbot</h1>
+
+  <div class="chat-container">
+    <input type="text" id="userInput" placeholder="Ask Loki anything..." />
+    <button onclick="sendMessage()">Send</button>
+    <div id="response">Chatbot response will appear here...</div>
+  </div>
+
+  <script>
+    async function sendMessage() {
+      const input = document.getElementById("userInput");
+      const responseBox = document.getElementById("response");
+
+      const userMessage = input.value.trim();
+      if (!userMessage) return;
+
+      responseBox.innerText = "⏳ Thinking...";
+      input.value = "";
+
+      try {
         const res = await fetch("/.netlify/functions/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: input })
+          body: JSON.stringify({ message: userMessage })
         });
+
         const data = await res.json();
-        document.getElementById("response").innerText = "🤖: " + data.reply;
+        responseBox.innerText = `🤖: ${data.reply}`;
+      } catch (err) {
+        responseBox.innerText = "⚠️ Error: Unable to reach chatbot.";
+        console.error(err);
       }
-    </script>
-  </body>
+    }
+  </script>
+</body>
 </html>
