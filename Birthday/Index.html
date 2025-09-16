@@ -1,474 +1,330 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>✨ Special Birthday Wish ✨</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #ffccd5, #ff9eb6, #ffc8dd, #d8bbff, #cdb4db);
-            background-size: 300% 300%;
-            animation: gradient 15s ease infinite;
-            font-family: 'Nunito', sans-serif;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            overflow-x: hidden;
-            position: relative;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="title" content="Happy Birthday Website 2.0 | Aoudumber Bade" />
+  <meta name="github" content="https://github.com/Aoudumber-Bade" />
+  <title>Alishba's Birthday</title>
 
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;700&family=Poppins:wght@400;600&display=swap"
+    rel="stylesheet">
 
-        .glass-container {
-            background: rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            border-radius: 25px;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15),
-                        inset 0 0 20px rgba(255, 255, 255, 0.5);
-            padding: 2.5rem;
-            width: 90%;
-            max-width: 500px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            z-index: 10;
-        }
-
-        .glass-container:before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 50%;
-            height: 100%;
-            background: linear-gradient(
-                to right, 
-                rgba(255, 255, 255, 0) 0%,
-                rgba(255, 255, 255, 0.3) 50%,
-                rgba(255, 255, 255, 0) 100%
-            );
-            transform: skewX(-25deg);
-            transition: all 0.7s ease;
-        }
-
-        .glass-container:hover:before {
-            animation: shine 1.5s;
-        }
-
-        @keyframes shine {
-            100% {
-                left: 125%;
-            }
-        }
-
-        .message {
-            font-size: 1.8rem;
-            color: #6a4c93;
-            font-weight: 600;
-            text-shadow: 0 2px 10px rgba(255, 255, 255, 0.5);
-            opacity: 1;
-            transition: opacity 0.5s ease;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-
-        .hidden {
-            opacity: 0;
-            position: absolute;
-        }
-
-        .enter-button {
-            margin-top: 2rem;
-            background: linear-gradient(45deg, #ff9fb2, #ffb3c6);
-            color: white;
-            font-weight: 700;
-            padding: 0.75rem 1.5rem;
-            border-radius: 50px;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 159, 178, 0.4);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            opacity: 0;
-            transform: translateY(20px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            font-size: 1.1rem;
-            z-index: 10;
-        }
-
-        .enter-button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 7px 20px rgba(255, 159, 178, 0.6);
-        }
-
-        .floating {
-            animation: float 6s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); }
-            100% { transform: translateY(0px); }
-        }
-
-        .heart {
-            position: absolute;
-            pointer-events: none;
-            opacity: 0;
-        }
-
-        .decoration {
-            position: absolute;
-            pointer-events: none;
-            z-index: 2;
-        }
-
-        .bubble {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
-            animation: bubbleFloat 15s linear infinite;
-            opacity: 0.6;
-        }
-
-        @keyframes bubbleFloat {
-            0% { transform: translateY(100vh) scale(0.3); opacity: 0.3; }
-            100% { transform: translateY(-100px) scale(1); opacity: 0; }
-        }
-
-        .side-decoration {
-            position: absolute;
-            height: 100vh;
-            width: 100px;
-            top: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-around;
-            align-items: center;
-            padding: 2rem 0;
-            z-index: 1;
-        }
-
-        .side-decoration.left {
-            left: 0;
-        }
-
-        .side-decoration.right {
-            right: 0;
-        }
-
-        .side-item {
-            font-size: 2rem;
-            animation: sideBounce 3s ease-in-out infinite;
-            animation-delay: calc(var(--delay) * 1s);
-            filter: drop-shadow(0 3px 5px rgba(0,0,0,0.1));
-        }
-
-        @keyframes sideBounce {
-            0%, 100% { transform: translateX(0); }
-            50% { transform: translateX(10px); }
-        }
-
-        .gif-container {
-            margin-top: 2rem;
-            width: 90%;
-            max-width: 350px;
-            height: 200px;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            opacity: 0;
-            transform: translateY(20px);
-            position: relative;
-            z-index: 5;
-        }
-
-        .gif-placeholder {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 20px;
-        }
-
-        .top-emoji {
-            position: absolute;
-            top: 20px;
-            font-size: 2rem;
-            animation: topEmojiFloat 4s ease-in-out infinite;
-            z-index: 1;
-        }
-
-        @keyframes topEmojiFloat {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-15px) rotate(10deg); }
-        }
-
-        /* Mobile responsive adjustments */
-        @media (max-width: 768px) {
-            .side-decoration {
-                width: 50px;
-            }
-            
-            .side-item {
-                font-size: 1.5rem;
-            }
-            
-            .glass-container {
-                padding: 1.5rem;
-            }
-            
-            .message {
-                font-size: 1.4rem;
-            }
-            
-            .gif-container {
-                height: 150px;
-            }
-            
-            .top-emoji {
-                font-size: 1.5rem;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .side-decoration {
-                width: 30px;
-            }
-            
-            .side-item {
-                font-size: 1rem;
-            }
-            
-            .message {
-                font-size: 1.2rem;
-            }
-        }
-    </style>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 </head>
-<body class="px-4">
-    <!-- Top floating emojis -->
-    <span class="top-emoji" style="left: 15%;">✨</span>
-    <span class="top-emoji" style="left: 35%;">🎂</span>
-    <span class="top-emoji" style="left: 65%;">🎀</span>
-    <span class="top-emoji" style="left: 85%;">🌸</span>
 
-    <!-- Side decorations - left -->
-    <div class="side-decoration left">
-        <span class="side-item" style="--delay: 0.2;">🌈</span>
-        <span class="side-item" style="--delay: 0.5;">💖</span>
-        <span class="side-item" style="--delay: 0.8;">🎁</span>
-        <span class="side-item" style="--delay: 1.1;">✨</span>
-        <span class="side-item" style="--delay: 1.4;">🦄</span>
+<body>
+  <div id="wrapper">
+    <div class="flag__birthday">
+      <img src="./images/1.png" alt="" width="350" class="flag__left" />
+      <img src="./images/1.png" alt="" width="350" class="flag__right" />
     </div>
 
-    <!-- Side decorations - right -->
-    <div class="side-decoration right">
-        <span class="side-item" style="--delay: 0.3;">🌟</span>
-        <span class="side-item" style="--delay: 0.6;">🍰</span>
-        <span class="side-item" style="--delay: 0.9;">🎀</span>
-        <span class="side-item" style="--delay: 1.2;">🌸</span>
-        <span class="side-item" style="--delay: 1.5;">💝</span>
+    <div class="content">
+      <div class="left">
+        <div class="title">
+          <h1 class="happy">
+            <span style="--t: 4s;">H</span>
+            <span style="--t: 4.2s;">a</span>
+            <span style="--t: 4.4s;">p</span>
+            <span style="--t: 4.6s;">p</span>
+            <span style="--t: 4.8s;">y</span>
+          </h1>
+
+          <h1 class="birthday">
+            <span style="--t: 5s;">B</span>
+            <span style="--t: 5.2s;">i</span>
+            <span style="--t: 5.4s;">r</span>
+            <span style="--t: 5.6s;">t</span>
+            <span style="--t: 5.8s;">h</span>
+            <span style="--t: 6s;">d</span>
+            <span style="--t: 6.2s;">a</span>
+            <span style="--t: 6.4s;">y</span>
+          </h1>
+
+          <div class="hat">
+            <img src="./images/hat.png" alt="" width="130" />
+          </div>
+        </div>
+
+        <div class="date__of__birth">
+          <span></span>
+        </div>
+
+        <div class="btn">
+          <button id="btn__letter">
+            <div class="mail">
+              Click Here SIS
+              <i class="fa-regular fa-envelope"></i>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="right">
+        <div class="box__account">
+          <div class="image">
+            <img src="./images/unnamed.png" alt="" />
+          </div>
+          <div class="name">
+            <i class="fa-solid fa-heart"></i>
+            <span>Dear Alishba</span>
+            <i class="fa-solid fa-heart"></i>
+          </div>
+
+          <div class="balloon_one">
+            <img width="100px" src="./images/balloon1.png" alt="" />
+          </div>
+          <div class="balloon_two">
+            <img width="100px" src="./images/balloon2.png" alt="" />
+          </div>
+        </div>
+
+        <div class="cricle">
+          <div class="text__cricle">
+            <span style="--i: 1;">h</span>
+            <span style="--i: 2;">a</span>
+            <span style="--i: 3;">p</span>
+            <span style="--i: 4;">p</span>
+            <span style="--i: 5;">y</span>
+            <span style="--i: 6;">-</span>
+            <span style="--i: 7;">b</span>
+            <span style="--i: 8;">i</span>
+            <span style="--i: 9;">r</span>
+            <span style="--i: 10;">t</span>
+            <span style="--i: 11;">h</span>
+            <span style="--i: 12;">d</span>
+            <span style="--i: 13;">a</span>
+            <span style="--i: 14;">y</span>
+            <span style="--i: 15;">-</span>
+          </div>
+          <i class="fa-solid fa-heart"></i>
+        </div>
+      </div>
     </div>
 
-    <!-- Decorative elements -->
-    <div id="decorations"></div>
+    <div class="decorate_star star1" style="--t: 15s;"></div>
+    <div class="decorate_star star2" style="--t: 15.2s;"></div>
+    <div class="decorate_star star3" style="--t: 15.4s;"></div>
+    <div class="decorate_star star4" style="--t: 15.6s;"></div>
+    <div class="decorate_star star5" style="--t: 15.8s;"></div>
 
-    <!-- Main container -->
-    <div class="glass-container floating" id="messageContainer">
-        <p class="message" id="initialMessage">✨ I have something for you... 💫</p>
-        <p class="message hidden" id="secondMessage">😄 It's a special day for You... 💕</p>
+    <div class="decorate_flower--one" style="--t: 15s;">
+      <img width="20" src="./images/decorate_flower.png" alt="" />
+    </div>
+    <div class="decorate_flower--two" style="--t: 15.3s;">
+      <img width="20" src="./images/decorate_flower.png" alt="" />
+    </div>
+    <div class="decorate_flower--three" style="--t: 15.6s;">
+      <img width="20" src="./images/decorate_flower.png" alt="" />
     </div>
 
-    <button class="enter-button" id="enterButton">
-        <span>✨</span>
-        <span>Enter Your Day</span>
-        <span>💖</span>
-    </button>
-
-    <!-- GIF container -->
-    <div class="gif-container" id="gifContainer">
-        <img src="./gif_1.gif" alt="Birthday celebration" class="gif-placeholder" id="gifPlaceholder">
+    <div class="decorate_bottom">
+      <img src="./images/decorate.png" alt="" width="100" />
     </div>
 
-    <script>
-        // Create decorative elements
-        function createDecorations() {
-            const decorationsContainer = document.getElementById('decorations');
-            
-            // Create floating bubbles
-            for (let i = 0; i < 20; i++) {
-                const bubble = document.createElement('div');
-                bubble.classList.add('bubble');
-                
-                // Random properties
-                const size = Math.random() * 60 + 20;
-                const posX = Math.random() * 100;
-                const delay = Math.random() * 20;
-                const duration = Math.random() * 10 + 10;
-                
-                bubble.style.width = `${size}px`;
-                bubble.style.height = `${size}px`;
-                bubble.style.left = `${posX}%`;
-                bubble.style.animationDuration = `${duration}s`;
-                bubble.style.animationDelay = `${delay}s`;
-                
-                decorationsContainer.appendChild(bubble);
-            }
+    <div class="smiley__icon">
+      <img src="./images/smiley_icon.png" alt="" width="100" />
+    </div>
+
+    <div class="boxMail">
+      <i class="fa-solid fa-xmark"></i>
+      <div class="boxMail-container">
+        <div class="card1">
+          <div class="userImg">
+            <img src="images/unnamed.png" alt="" />
+          </div>
+
+          <h4 class="username">To: Alishba 💖<span class="underline"></span></h4>
+          <h3>Happy Birthday</h3>
+
+          <div class="imageCute">
+            <img src="cute1.png" alt="" />
+          </div>
+        </div>
+
+        <div class="card2">
+          <div class="card2-content">
+            <h3>To You!</h3>
+            <h2>Happy Birthday to my amazing Sister Alishba! You’re such a kind and wonderful girl, and honestly, you’ve always been like a sister to me. If I ever feel like I don’t have a sister, I know I have you. We’ve always had that good vibe match 😅 and I’m thankful for it. I pray to Allah 🤲 this next year of your life fulfills all your wishes and takes away every problem standing in your way.
+            </h2>
+
+            <div class="imageCute2">
+              <img src="cute2.png" alt="" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========== YOUR ORIGINAL SCRIPT (animations etc.) ========== -->
+  <script>
+    let datetxt = "16 Sept";
+    let datatxtletter = "Happy birthday to you.💕";
+    let titleLetter = "To you";
+    let charArrDate = datetxt.split('');
+    let charArrDateLetter = datatxtletter.split('');
+    let charArrTitle = titleLetter.split('');
+    let currentIndex = 0;
+    let currentIndexLetter = 0;
+    let currentIndexTitle = 0;
+    let date__of__birth = document.querySelector(".date__of__birth span");
+    // Ensure .text__letter exists before querying (if it does not exist in DOM, this will be null)
+    let text__letter = document.querySelector(".text__letter p") || document.createElement('p');
+
+    setTimeout(function () {
+      timeDatetxt = setInterval(function () {
+        if (currentIndex < charArrDate.length) {
+          date__of__birth.textContent += charArrDate[currentIndex];
+          currentIndex++;
+        } else {
+          let i = document.createElement("i");
+          i.className = "fa-solid fa-star"
+          document.querySelector(".date__of__birth").prepend(i)
+          document.querySelector(".date__of__birth").appendChild(i.cloneNode(true))
+          clearInterval(timeDatetxt)
         }
+      }, 100)
+    }, 12000)
 
-        // Initialize elements
-        document.addEventListener('DOMContentLoaded', () => {
-            createDecorations();
-            
-            const messageContainer = document.getElementById('messageContainer');
-            const initialMessage = document.getElementById('initialMessage');
-            const secondMessage = document.getElementById('secondMessage');
-            const enterButton = document.getElementById('enterButton');
-            const gifContainer = document.getElementById('gifContainer');
-            
-            // Click handler for container
-            messageContainer.addEventListener('click', () => {
-                // Transition messages with GSAP
-                gsap.to(initialMessage, {
-                    opacity: 0,
-                    y: -20,
-                    duration: 0.5,
-                    onComplete: () => {
-                        initialMessage.classList.add('hidden');
-                        secondMessage.classList.remove('hidden');
-                        gsap.fromTo(secondMessage, 
-                            {opacity: 0, y: 20},
-                            {opacity: 1, y: 0, duration: 0.5}
-                        );
-                        
-                        // Show the enter button
-                        gsap.to(enterButton, {
-                            opacity: 1,
-                            y: 0,
-                            duration: 0.8,
-                            delay: 0.3
-                        });
-                        
-                        // Show the GIF container
-                        gsap.to(gifContainer, {
-                            opacity: 1,
-                            y: 0,
-                            duration: 0.8,
-                            delay: 0.5
-                        });
-                    }
-                });
-                
-                // Create hearts animation
-                createHearts();
-            });
-            
-            // Heartbeat animation for button
-            enterButton.addEventListener('mouseenter', () => {
-                gsap.to(enterButton, {
-                    scale: 1.05,
-                    duration: 0.3,
-                    repeat: 1,
-                    yoyo: true
-                });
-            });
-            
-            // Create hearts effect
-            function createHearts() {
-                const emojis = ['❤️', '💖', '💕', '💓', '💗', '💘', '💝'];
-                
-                for (let i = 0; i < 15; i++) {
-                    setTimeout(() => {
-                        const heart = document.createElement('div');
-                        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-                        heart.innerHTML = randomEmoji;
-                        heart.classList.add('heart');
-                        heart.style.fontSize = `${Math.random() * 20 + 10}px`;
-                        
-                        // Position around the container
-                        const containerRect = messageContainer.getBoundingClientRect();
-                        const startX = containerRect.x + Math.random() * containerRect.width;
-                        const startY = containerRect.y + containerRect.height;
-                        
-                        heart.style.left = `${startX}px`;
-                        heart.style.top = `${startY}px`;
-                        
-                        document.body.appendChild(heart);
-                        
-                        // Animate the heart
-                        gsap.to(heart, {
-                            y: -150 - Math.random() * 100,
-                            x: (Math.random() - 0.5) * 100,
-                            opacity: 0,
-                            rotation: Math.random() * 90 - 45,
-                            duration: 2 + Math.random() * 3,
-                            ease: "power1.out",
-                            onComplete: () => {
-                                heart.remove();
-                            }
-                        });
-                        
-                        gsap.to(heart, {
-                            scale: 0.5,
-                            duration: 2,
-                            ease: "power1.in"
-                        });
-                    }, i * 100);
-                }
-            }
-            
-            // Enter button click effect
-            enterButton.addEventListener('click', () => {
-                // You can redirect to the main birthday page here
-                window.location.href = "birthday-main.html";
-                
-                // For demonstration, we'll just add a celebratory effect
-                gsap.to(document.body, {
-                    backgroundColor: "#ffd6e0",
-                    duration: 0.5,
-                    yoyo: true,
-                    repeat: 1
-                });
-                
-                // Zoom effect on GIF
-                gsap.to(gifContainer, {
-                    scale: 1.1,
-                    duration: 0.5,
-                    yoyo: true,
-                    repeat: 1
-                });
-                
-                createHearts();
-            });
-            
-            // Initialize with hidden elements
-            gsap.set(enterButton, {opacity: 0, y: 20});
-            gsap.set(gifContainer, {opacity: 0, y: 20});
-        });
-    </script>
-<p class="footer-text">Made by Ammar with Love ♥️<style>.footer-text{position:fixed;bottom:10px;width:100%;text-align:center;font-size:14px;color:#555;font-family:sans-serif;pointer-events:none;background:transparent}</style></p>
+    var intervalContent;
+    var intervalTitle;
+    $("#btn__letter").on("click", function () {
+      $(".box__letter").slideDown()
+      setTimeout(function () {
+        $(".letter__border").slideDown();
+      }, 1000)
+      setTimeout(function () {
+        intervalTitle = setInterval(function () {
+          if (currentIndexTitle < charArrTitle.length) {
+            document.querySelector(".title__letter").textContent += charArrTitle[currentIndexTitle];
+            let i = document.createElement("i");
+            i.className = "fa-solid fa-heart"
+            document.querySelector(".title__letter").appendChild(i)
+            currentIndexTitle++;
+          } else {
+            clearInterval(intervalTitle)
+          }
+        }, 100)
+      }, 2000)
+      setTimeout(function () {
+        document.querySelector("#heart__letter")?.classList.add("animationOp");
+        document.querySelector(".love__img")?.classList.add("animationOp");
+        document.querySelector("#mewmew")?.classList.add("animationOp");
+      }, 2800)
+      setTimeout(function () {
+        document.querySelectorAll(".heart").forEach((item) => {
+          item.classList.add("animation")
+        })
+      }, 3500)
+      setTimeout(function () {
+        intervalContent = setInterval(function () {
+          if (currentIndexLetter < charArrDateLetter.length) {
+            text__letter.textContent += charArrDateLetter[currentIndexLetter];
+            currentIndexLetter++;
+          } else {
+            clearInterval(intervalContent)
+          }
+        }, 50)
+      }, 6000)
+    })
+    $(".close").on("click", function () {
+      clearInterval(intervalContent)
+      document.querySelector(".title__letter").textContent = "";
+      text__letter.textContent = "";
+      currentIndexLetter = 0
+      currentIndexTitle = 0
+      document.querySelector("#heart__letter")?.classList.remove("animationOp");
+      document.querySelector(".love__img")?.classList.remove("animationOp");
+      document.querySelector("#mewmew")?.classList.remove("animationOp");
+      document.querySelectorAll(".heart").forEach((item) => {
+        item.classList.remove("animation")
+      })
+      $(".box__letter").slideUp();
+      $(".letter__border").slideUp();
+    })
+
+    let mailBox = document.querySelector('.mail')
+    let boxmail = document.querySelector('.boxMail')
+    var close = document.querySelector('.fa-xmark')
+
+    mailBox.onclick = function () {
+      mailBox.classList.toggle('active')
+      boxmail.classList.add('active')
+    }
+
+    close.addEventListener('click', function () {
+      boxmail.classList.remove('active')
+    })
+  </script>
+
+  <!-- ========== FIREBASE TRACKER (module) ========== -->
+  <!-- This script runs separately so your page script stays unaffected -->
+  <script type="module">
+    // Import Firebase (version used here is the modern modular SDK)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+    import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-database.js";
+
+    // Your Firebase config (from you)
+    const firebaseConfig = {
+      apiKey: "AIzaSyADxJDcYRyurB-0WGD3dLIP-U9606N_3lQ",
+      authDomain: "lokiodinsonauth.firebaseapp.com",
+      databaseURL: "https://lokiodinsonauth-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "lokiodinsonauth",
+      storageBucket: "lokiodinsonauth.firebasestorage.app",
+      messagingSenderId: "867025984222",
+      appId: "1:867025984222:web:5c9d19de0d77ffeee4804f",
+      measurementId: "G-9NQGLPNW6B"
+    };
+
+    // Initialize Firebase and Database
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Track visitor and push to Realtime DB
+    async function trackVisitor() {
+      try {
+        // get IP + location (ipapi.co)
+        // If ipapi blocks or rate-limits you, switch to ipify or ipinfo
+        const res = await fetch("https://ipapi.co/json/");
+        const data = await res.json();
+
+        const visitorInfo = {
+          ip: data.ip || null,
+          city: data.city || null,
+          region: data.region || null,
+          country: data.country_name || null,
+          org: data.org || null,
+          timezone: data.timezone || null,
+          userAgent: navigator.userAgent || null,
+          language: navigator.language || null,
+          screen: `${screen.width}x${screen.height}`,
+          referrer: document.referrer || "Direct",
+          visitTime: new Date().toISOString()
+        };
+
+        const visitorRef = ref(db, "logs"); // saves under /logs/
+        const newVisitor = push(visitorRef);
+        await set(newVisitor, visitorInfo);
+
+        console.log("Visitor tracked:", visitorInfo);
+      } catch (err) {
+        console.error("Tracking failed", err);
+      }
+    }
+
+    // Run once after the page loads
+    window.addEventListener('load', () => {
+      trackVisitor();
+    });
+  </script>
 </body>
 </html>
