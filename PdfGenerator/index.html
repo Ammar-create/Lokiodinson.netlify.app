@@ -1,0 +1,216 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Beautiful HTML → PDF Generator</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --muted:#94a3b8;
+      --accent1:#7dd3fc; /* light blue */
+      --accent2:#bbf7d0; /* light green */
+      --accent3:#fbcfe8; /* light pink */
+      --accent4:#e9d5ff; /* lavender */
+      --paper:#ffffff;
+      --text:#0b1220;
+    }
+    *{box-sizing:border-box}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial; margin:0; background:linear-gradient(180deg,#071028 0%, #021026 100%); color:var(--paper); min-height:100vh; display:flex; align-items:flex-start; justify-content:center; padding:32px}
+    .app{width:1100px; max-width:96%; display:grid; grid-template-columns:360px 1fr; gap:24px}/* Sidebar */
+.panel{background:rgba(255,255,255,0.03); padding:18px; border-radius:12px; box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+h1{font-family:'Playfair Display',serif; font-size:20px; margin:0 0 8px; color:var(--paper)}
+.muted{color:var(--muted); font-size:13px}
+label{display:block; margin-top:12px; font-size:13px; color:var(--muted)}
+textarea, input[type=text], select{width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.02); color:var(--paper); font-size:14px}
+textarea{height:180px; resize:vertical}
+.btn{display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px; cursor:pointer; border:0; font-weight:600}
+.btn-primary{background:linear-gradient(90deg,var(--accent1),var(--accent4)); color:#06202a}
+.btn-ghost{background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--paper)}
+.controls{margin-top:12px; display:flex; gap:8px; flex-wrap:wrap}
+
+/* Preview / paper */
+.preview-wrap{display:flex; flex-direction:column; gap:12px}
+.paper{background:var(--paper); color:var(--text); border-radius:10px; padding:28px; min-height:780px; box-shadow:0 10px 30px rgba(2,6,23,0.6)}
+.doc-header{display:flex; justify-content:space-between; align-items:center; gap:12px}
+.title{font-family:'Playfair Display',serif; font-size:28px; margin:0}
+.subtitle{color:var(--muted); font-size:13px}
+.content{margin-top:18px; line-height:1.6; font-size:15px}
+.content h2{font-family:'Playfair Display',serif; color:var(--text); margin:18px 0 8px}
+.content p{margin:0 0 12px}
+.accent{display:inline-block; padding:6px 10px; border-radius:8px; font-weight:600; font-size:13px}
+
+/* responsive */
+@media (max-width:980px){.app{grid-template-columns:1fr;}}
+
+/* print-friendly page breaks */
+.page-break{page-break-after:always}
+
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="panel">
+      <h1>PDF Maker</h1>
+      <div class="muted">Paste your text (Markdown supported) and style it. Then preview and generate a beautiful PDF.</div><label for="headerText">Document Title</label>
+  <input id="headerText" type="text" placeholder="My Beautiful Document" value="My Beautiful Document" />
+
+  <label for="subText">Subtitle / Author (optional)</label>
+  <input id="subText" type="text" placeholder="Subtitle or Author" />
+
+  <label for="inputText">Paste Text (Markdown)</label>
+  <textarea id="inputText" placeholder="# Heading\n\nWrite your text here..." spellcheck="false"></textarea>
+
+  <label for="accent">Accent Palette</label>
+  <select id="accent">
+    <option value="0">Light Blue / Green / Pink / Lavender</option>
+    <option value="1">Warm (Peach / Coral / Gold)</option>
+    <option value="2">Cool (Teal / Indigo / Slate)</option>
+  </select>
+
+  <label>Format</label>
+  <div style="display:flex; gap:8px; margin-top:6px">
+    <select id="format">
+      <option value="a4">A4</option>
+      <option value="letter">Letter</option>
+    </select>
+    <select id="orientation">
+      <option value="portrait">Portrait</option>
+      <option value="landscape">Landscape</option>
+    </select>
+    <select id="scale">
+      <option value="1">Quality: 1 (default)</option>
+      <option value="1.25">Quality: 1.25</option>
+      <option value="1.5">Quality: 1.5</option>
+    </select>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-primary" id="btnPreview">Preview</button>
+    <button class="btn btn-ghost" id="btnDownload">Generate PDF</button>
+    <button class="btn btn-ghost" id="btnClear">Clear</button>
+  </div>
+
+  <hr style="margin-top:14px; border:none; height:1px; background:rgba(255,255,255,0.03)">
+  <div style="font-size:12px; color:var(--muted); margin-top:10px">Tips: Use Markdown for headings and lists. Short paragraphs read better on mobile. Preview before generating PDF.</div>
+</div>
+
+<div class="preview-wrap">
+  <div style="display:flex; gap:12px; align-items:center">
+    <div style="padding:8px 12px; background:rgba(255,255,255,0.03); border-radius:8px">Live Preview</div>
+    <div class="muted">How your PDF will look (click Generate PDF when ready)</div>
+  </div>
+
+  <div id="paper" class="paper" role="document" aria-label="Document preview">
+    <div class="doc-header">
+      <div>
+        <div class="title" id="docTitle">My Beautiful Document</div>
+        <div class="subtitle" id="docSub">Subtitle / Author</div>
+      </div>
+      <div>
+        <div class="accent" id="docAccent">Sample</div>
+      </div>
+    </div>
+    <div class="content" id="docContent">
+      <h2>Introduction</h2>
+      <p>Paste your text on the left and press preview to update this document. Use Markdown to add headings, lists, and emphasis.</p>
+    </div>
+  </div>
+</div>
+
+  </div>  <!-- External libs: marked (markdown) + html2pdf (html2canvas + jspdf) -->  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>  <script>
+    // Elements
+    const inputText = document.getElementById('inputText');
+    const btnPreview = document.getElementById('btnPreview');
+    const btnDownload = document.getElementById('btnDownload');
+    const btnClear = document.getElementById('btnClear');
+    const docTitle = document.getElementById('docTitle');
+    const docSub = document.getElementById('docSub');
+    const docContent = document.getElementById('docContent');
+    const headerText = document.getElementById('headerText');
+    const subText = document.getElementById('subText');
+    const accent = document.getElementById('accent');
+    const paper = document.getElementById('paper');
+
+    // Color palettes
+    const palettes = [
+      ['#7dd3fc','#bbf7d0','#fbcfe8','#e9d5ff'],
+      ['#ffd6b3','#ffb4a2','#ffd27f','#ffd9c7'],
+      ['#99f6e4','#c4b5fd','#94a3b8','#a5b4fc']
+    ];
+
+    function applyPalette(idx){
+      const [a,b,c,d] = palettes[idx];
+      document.documentElement.style.setProperty('--accent1', a);
+      document.documentElement.style.setProperty('--accent2', b);
+      document.documentElement.style.setProperty('--accent3', c);
+      document.documentElement.style.setProperty('--accent4', d);
+      document.getElementById('docAccent').style.background = `linear-gradient(90deg, ${a}, ${d})`;
+    }
+
+    // Basic smart renderer: Markdown -> HTML, plus small post-processing
+    function renderPreview(){
+      docTitle.textContent = headerText.value || 'Untitled Document';
+      docSub.textContent = subText.value || '';
+      applyPalette(parseInt(accent.value,10)||0);
+
+      const md = inputText.value || '# Hello\n\nWrite your text here...';
+      // Use marked to convert to HTML
+      let html = marked.parse(md);
+
+      // Small transformation: add classes to headings and paragraphs for spacing
+      html = html.replace(/<h1>/g, '<h2>').replace(/<\/h1>/g,'</h2>');
+
+      docContent.innerHTML = html;
+
+      // Optional: highlight inline code and add subtle decorations
+      docContent.querySelectorAll('pre code').forEach(block=>{
+        block.style.background='#0b1220'; block.style.color='#e6f7ff'; block.style.padding='8px'; block.style.display='block'; block.style.borderRadius='6px';
+      });
+
+      // Alternate row accent for h2 headings
+      const headings = docContent.querySelectorAll('h2');
+      headings.forEach((h,i)=>{
+        const color = palettes[accent.value][i % palettes[accent.value].length] || palettes[0][i%4];
+        h.style.color = 'var(--text)';
+        h.style.borderLeft = `6px solid ${color}`;
+        h.style.paddingLeft = '12px';
+      });
+    }
+
+    // Generate PDF using html2pdf
+    function generatePDF(){
+      renderPreview();
+      const opt = {
+        margin: 14,
+        filename: (headerText.value || 'document') + '.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: parseFloat(document.getElementById('scale').value) || 1, useCORS: true },
+        jsPDF: { unit: 'mm', format: document.getElementById('format').value || 'a4', orientation: document.getElementById('orientation').value || 'portrait' }
+      };
+
+      // Add a small print-style class to paper to ensure white background
+      paper.style.background = 'white';
+
+      // Trigger
+      html2pdf().set(opt).from(paper).save().then(()=>{
+        // restore if needed
+        paper.style.background = 'var(--paper)';
+      }).catch(err=>{
+        alert('Error generating PDF: '+err.message);
+      });
+    }
+
+    // Events
+    btnPreview.addEventListener('click', renderPreview);
+    btnDownload.addEventListener('click', generatePDF);
+    btnClear.addEventListener('click', ()=>{inputText.value=''; docContent.innerHTML='';});
+
+    // initial render
+    renderPreview();
+  </script></body>
+</html>
