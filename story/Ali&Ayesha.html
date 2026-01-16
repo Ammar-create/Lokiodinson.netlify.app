@@ -5,14 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Boy Who Lived Twice</title>
     
-    <!-- PDF Generation Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
     <style>
         /* --- FONTS --- */
         @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Dancing+Script:wght@600&family=Noto+Nastaliq+Urdu:wght@400&family=Amiri:wght@400&display=swap');
 
-        /* --- SCREEN VARIABLES (Woody Theme) --- */
+        /* --- VARIABLES --- */
         :root {
             --wood-dark: #2e1e19;
             --wood-light: #4a3b32;
@@ -23,7 +20,7 @@
             --btn-hover: #b08d4e;
         }
 
-        /* --- WEB LAYOUT --- */
+        /* --- SCREEN STYLES (The Woody Look) --- */
         body {
             margin: 0;
             padding: 40px 20px;
@@ -36,7 +33,6 @@
             min-height: 100vh;
         }
 
-        /* --- THE BOOK PAGE (Screen Only) --- */
         .book-page {
             background-color: var(--parchment);
             width: 100%;
@@ -58,7 +54,6 @@
             border-left: 1px solid rgba(0,0,0,0.1);
         }
 
-        /* --- TYPOGRAPHY (Screen) --- */
         h1 {
             font-family: 'Cinzel Decorative', serif;
             font-size: 2.5rem;
@@ -88,7 +83,8 @@
             text-align: justify;
         }
 
-        p.start::first-letter {
+        /* Drop cap for screen only */
+        .content p.start::first-letter {
             float: left;
             font-family: 'Cinzel Decorative', serif;
             font-size: 4.2rem;
@@ -149,7 +145,6 @@
             margin-bottom: 40px;
         }
 
-        /* --- ARCHIVE / DOWNLOAD SECTION --- */
         .archive-section {
             background-color: rgba(0,0,0,0.03);
             border: 1px solid var(--gold);
@@ -197,49 +192,78 @@
             box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
         }
 
-        button:hover {
-            background-color: var(--btn-hover);
-            border-color: var(--btn-hover);
+        button:hover { background-color: var(--btn-hover); border-color: var(--btn-hover); }
+
+        /* --- PRINTABLE AREA (Hidden on Screen) --- */
+        #printable-content {
+            display: none;
         }
 
-        /* --- PDF TEMPLATE STYLES (HIDDEN ON SCREEN) --- */
-        #pdf-template {
-            display: none; /* Hidden on website */
-            width: 100%;
-            background: #ffffff;
-            color: #000000;
-            padding: 40px;
+        /* --- PDF / PRINT STYLES --- */
+        /* This runs when you click print/save as PDF */
+        @media print {
+            /* Hide the entire website/woody background */
+            body * {
+                visibility: hidden;
+            }
+            
+            body {
+                background: white !important;
+                margin: 0;
+                padding: 0;
+            }
+
+            /* Show only the printable content */
+            #printable-content, #printable-content * {
+                visibility: visible;
+                display: block;
+            }
+
+            #printable-content {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 40px;
+                background: white;
+                color: black;
+            }
+
+            /* Print Typography */
+            .print-title {
+                font-family: 'Cinzel Decorative', serif;
+                font-size: 24pt;
+                text-align: center;
+                margin-bottom: 30px;
+                text-decoration: underline;
+            }
+
+            .print-body {
+                font-family: 'Crimson Text', serif;
+                font-size: 12pt;
+                line-height: 1.6;
+                text-align: justify;
+            }
+
+            .print-body p {
+                margin-bottom: 15px;
+            }
+
+            /* Language Specific Fonts for PDF */
+            .rtl-text { direction: rtl; }
+            .urdu-font { font-family: 'Noto Nastaliq Urdu', serif; line-height: 2.0; font-size: 14pt; }
+            .arabic-font { font-family: 'Amiri', serif; font-size: 14pt; }
+            
+            .print-footer {
+                text-align: center;
+                margin-top: 50px;
+                font-size: 9pt;
+                color: #555;
+                border-top: 1px solid #ddd;
+                padding-top: 10px;
+            }
         }
 
-        /* Styling specifically for the generated PDF */
-        .pdf-content {
-            font-family: 'Crimson Text', serif;
-            font-size: 14px;
-            line-height: 1.8;
-            text-align: justify;
-        }
-
-        .pdf-title {
-            font-family: 'Cinzel Decorative', serif;
-            font-size: 24px;
-            text-align: center;
-            color: #000;
-            margin-bottom: 30px;
-            text-decoration: underline;
-        }
-
-        /* For Urdu and Arabic in PDF */
-        .rtl-text {
-            direction: rtl;
-            font-family: 'Amiri', serif; /* Better for Arabic */
-        }
-        
-        .rtl-text.urdu {
-            font-family: 'Noto Nastaliq Urdu', serif; /* Better for Urdu */
-            line-height: 2.2; /* Urdu needs more height */
-        }
-
-        /* --- RESPONSIVE --- */
         @media (max-width: 650px) {
             body { padding: 10px; }
             .book-page { padding: 40px 25px; }
@@ -252,6 +276,7 @@
 </head>
 <body>
 
+    <!-- MAIN WEBSITE CONTENT -->
     <article class="book-page">
         <header>
             <h1>The Boy Who Lived Twice <span>A story of silence, magic eyes, and letting go</span></h1>
@@ -300,24 +325,21 @@
                     <option value="ur">Urdu (اردو)</option>
                     <option value="ar">Arabic (العربية)</option>
                 </select>
-                <button id="downloadBtn" onclick="generatePDF()">Download PDF</button>
+                <button onclick="prepareAndPrint()">Download PDF</button>
             </div>
-            <div id="statusMsg" style="font-size:0.8rem; margin-top:10px; color:var(--wood-light);"></div>
         </div>
     </article>
 
-    <!-- HIDDEN CONTAINER FOR PDF GENERATION -->
-    <div id="pdf-template">
-        <div id="pdf-container">
-            <!-- Content will be injected here via JS -->
-        </div>
+    <!-- HIDDEN CONTAINER FOR PRINTING -->
+    <div id="printable-content">
+        <!-- Content injected here via JS -->
     </div>
 
     <script>
-        // Story Data Object
         const storyData = {
             en: {
                 title: "The Boy Who Lived Twice",
+                class: "",
                 content: `Ali was the kind of boy who lived twice. Once in the real world, and once in his head.
 In the real world, he was quiet, respectful, the sort of cousin elders liked because he never talked back. He studied, helped at home, prayed on Fridays, listened more than he spoke. In the village, people nodded when he passed. "Achha larka hai," they said.
 
@@ -361,6 +383,7 @@ Some people are meant to be loved from afar. Some lessons only arrive after a ve
             },
             ur: {
                 title: "وہ لڑکا جو دو زندگیاں جیتا تھا",
+                class: "rtl-text urdu-font",
                 content: `علی ایک ایسا لڑکا تھا جو دو زندگیاں جیتا تھا۔ ایک حقیقی دنیا میں، اور ایک اپنے ذہن میں۔
 
 حقیقی دنیا میں، وہ خاموش اور مودب تھا۔ ایسا کزن جسے بڑے پسند کرتے تھے کیونکہ وہ کبھی آگے سے جواب نہیں دیتا تھا۔ وہ پڑھائی کرتا، گھر کے کاموں میں مدد کرتا، جمعہ کی نماز پڑھتا اور بولنے سے زیادہ سنتا تھا۔ گاؤں میں لوگ اسے دیکھ کر سر ہلاتے اور کہتے، "اچھا لڑکا ہے۔"
@@ -400,6 +423,7 @@ Some people are meant to be loved from afar. Some lessons only arrive after a ve
             },
             ar: {
                 title: "الفتى الذي عاش مرتين",
+                class: "rtl-text arabic-font",
                 content: `كان علي فتى يعيش حياتين. مرة في العالم الحقيقي، ومرة في خياله.
 
 في العالم الحقيقي، كان هادئًا، محترمًا، النوع الذي يحبه كبار السن لأنه لا يجادل أبدًا. كان يدرس، ويساعد في المنزل، ويصلي الجمعة، ويستمع أكثر مما يتكلم. في القرية، كان الناس يحيونه بإيماءة عندما يمر ويقولون: "شاب خلوق".
@@ -442,58 +466,31 @@ Some people are meant to be loved from afar. Some lessons only arrive after a ve
             }
         };
 
-        function generatePDF() {
-            const select = document.getElementById('languageSelect');
-            const lang = select.value;
+        function prepareAndPrint() {
+            const lang = document.getElementById('languageSelect').value;
             const data = storyData[lang];
-            const btn = document.getElementById('downloadBtn');
-            const status = document.getElementById('statusMsg');
+            const container = document.getElementById('printable-content');
 
-            // Feedback to user
-            btn.innerText = "Generating...";
-            status.innerText = "Please wait, scribing your document...";
-
-            // Prepare the PDF container
-            const pdfContainer = document.getElementById('pdf-container');
-            
-            // Format content with line breaks
-            const formattedContent = data.content.split('\n').map(line => {
-                if(line.trim() === '') return '<br>';
+            // Format content lines into paragraphs
+            const paragraphs = data.content.split('\n').map(line => {
+                if(line.trim() === '') return '';
                 return `<p>${line}</p>`;
             }).join('');
 
-            // Apply specific classes for Urdu/Arabic to handle RTL and fonts
-            let cssClass = 'pdf-content';
-            if(lang === 'ur') cssClass += ' rtl-text urdu';
-            if(lang === 'ar') cssClass += ' rtl-text';
-
-            // Inject HTML into the hidden container
-            pdfContainer.innerHTML = `
-                <div class="pdf-title">${data.title}</div>
-                <div class="${cssClass}">
-                    ${formattedContent}
+            // Inject content
+            container.innerHTML = `
+                <div class="print-title">${data.title}</div>
+                <div class="print-body ${data.class}">
+                    ${paragraphs}
                 </div>
-                <div style="text-align: center; margin-top: 50px; color: #888; font-size: 10px;">
-                    ~ The Boy Who Lived Twice ~
+                <div class="print-footer">
+                    Story Archive | The Boy Who Lived Twice
                 </div>
             `;
 
-            // PDF Options
-            const opt = {
-                margin:       1,
-                filename:     `${data.title.replace(/\s+/g, '_')}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2 }, // Higher scale for better quality text
-                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-            };
-
-            // Capture the element and save
-            html2pdf().set(opt).from(pdfContainer).save().then(() => {
-                btn.innerText = "Download PDF";
-                status.innerText = "";
-                // Clear container to save memory
-                setTimeout(() => pdfContainer.innerHTML = '', 1000);
-            });
+            // Trigger browser print dialog
+            // The @media print CSS will ensure only this container is visible and has a white background
+            window.print();
         }
     </script>
 
