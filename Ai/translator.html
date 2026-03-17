@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Document Translator · Pollinations.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --gold: #c9a96e; --gold-dark: #8b6914;
+    --bg: #0d0d0d; --card: #111111; --border: #1f1d18;
+    --text: #e0d6c2; --muted: #5a4d3a; --dim: #2e281e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Crimson Pro', Georgia, serif;
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; padding: 48px 20px;
+  }
+  header { text-align: center; margin-bottom: 36px; animation: fadeUp 0.6s ease both; }
+  .eyebrow { font-size: 10px; letter-spacing: 6px; color: var(--muted); text-transform: uppercase; margin-bottom: 14px; }
+  h1 {
+    font-family: 'Playfair Display', serif; font-weight: 600;
+    font-size: clamp(30px, 5vw, 50px);
+    background: linear-gradient(135deg, #e8d5a3 0%, #c9a96e 50%, #8b6914 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; line-height: 1.2;
+  }
+  .subtitle { font-size: 13px; color: var(--dim); letter-spacing: 2px; margin-top: 10px; text-transform: uppercase; }
+
+  /* API Key bar */
+  .apikey-bar {
+    width: 100%; max-width: 920px;
+    background: #0f0f0f; border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 22px;
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 12px; animation: fadeUp 0.6s 0.05s ease both;
+  }
+  .apikey-bar label { font-size: 10px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; white-space: nowrap; }
+  .apikey-bar input {
+    flex: 1; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 14px; color: var(--text);
+    font-family: 'Crimson Pro', serif; font-size: 13px; outline: none;
+    transition: border-color 0.15s; letter-spacing: 1px;
+  }
+  .apikey-bar input:focus { border-color: #3a3020; }
+  .apikey-bar input::placeholder { color: var(--dim); letter-spacing: 0; }
+  .apikey-hint {
+    font-size: 11px; color: var(--dim); white-space: nowrap;
+  }
+  .apikey-hint a { color: #5a4d3a; text-decoration: underline; }
+  .apikey-hint a:hover { color: var(--gold); }
+
+  .card {
+    width: 100%; max-width: 920px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+    box-shadow: 0 28px 80px rgba(0,0,0,0.65); animation: fadeUp 0.6s 0.1s ease both;
+  }
+  .lang-bar {
+    padding: 20px 26px; border-bottom: 1px solid var(--border);
+    background: #0f0f0f; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  .lang-label { font-size: 10px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; white-space: nowrap; margin-right: 4px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+  .preset-btn {
+    padding: 5px 13px; border-radius: 20px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); font-family: 'Crimson Pro', serif;
+    font-size: 12px; cursor: pointer; letter-spacing: 0.5px; transition: all 0.15s;
+  }
+  .preset-btn:hover { border-color: #3a3020; color: #8a7a5a; }
+  .preset-btn.active { border-color: var(--gold); background: rgba(201,169,110,0.1); color: var(--gold); }
+  .custom-input {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 7px 14px; color: var(--text); font-family: 'Crimson Pro', serif;
+    font-size: 13px; outline: none; width: 175px; transition: border-color 0.15s;
+  }
+  .custom-input:focus { border-color: #3a3020; }
+  .custom-input::placeholder { color: var(--dim); }
+  .panels { display: grid; grid-template-columns: 1fr 1fr; min-height: 320px; }
+  @media (max-width: 620px) {
+    .panels { grid-template-columns: 1fr; }
+    .panel-in { border-right: none !important; border-bottom: 1px solid var(--border); }
+  }
+  .panel-in { border-right: 1px solid var(--border); }
+  .panel-label {
+    padding: 13px 20px 6px; font-size: 10px; letter-spacing: 3px;
+    color: #3a3220; text-transform: uppercase;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .char-count { color: var(--dim); font-size: 11px; }
+  textarea {
+    width: 100%; min-height: 272px; background: transparent; border: none;
+    outline: none; resize: none; padding: 6px 20px 20px;
+    color: #d4c9b5; font-family: 'Crimson Pro', serif; font-size: 15px; line-height: 1.8;
+  }
+  textarea::placeholder { color: var(--dim); font-style: italic; }
+  .output-panel { position: relative; display: flex; flex-direction: column; }
+  .output-text {
+    padding: 6px 20px 20px; font-size: 15px; line-height: 1.8;
+    color: #d4c9b5; white-space: pre-wrap; word-break: break-word;
+    flex: 1; min-height: 272px;
+  }
+  .output-text.placeholder { color: var(--dim); font-style: italic; }
+  .spinner-wrap {
+    display: none; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 272px; gap: 14px;
+  }
+  .spinner {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 2px solid var(--border); border-top-color: var(--gold);
+    animation: spin 0.8s linear infinite;
+  }
+  .spinner-text { color: var(--muted); font-size: 13px; letter-spacing: 1px; }
+  .copy-btn {
+    background: transparent; border: 1px solid var(--border); border-radius: 6px;
+    padding: 3px 10px; color: var(--muted); font-family: 'Crimson Pro', serif;
+    font-size: 11px; cursor: pointer; letter-spacing: 1px; transition: all 0.2s;
+  }
+  .copy-btn:hover, .copy-btn.copied { border-color: var(--gold); background: rgba(201,169,110,0.1); color: var(--gold); }
+  .action-bar {
+    padding: 16px 26px; border-top: 1px solid var(--border);
+    background: #0f0f0f; display: flex; align-items: center; gap: 12px;
+  }
+  .error-msg { color: #c0603a; font-size: 13px; flex: 1; }
+  .spacer { flex: 1; }
+  .translate-btn {
+    background: linear-gradient(135deg, #c9a96e, #8b6914); border: none;
+    border-radius: 10px; padding: 12px 38px; color: #0d0d0d;
+    font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 600;
+    cursor: pointer; letter-spacing: 1px; transition: opacity 0.2s, transform 0.15s;
+    box-shadow: 0 4px 22px rgba(201,169,110,0.2);
+  }
+  .translate-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .translate-btn:active { transform: translateY(0); }
+  .translate-btn:disabled { background: #1a1a1a; color: var(--muted); cursor: not-allowed; box-shadow: none; transform: none; }
+  footer { margin-top: 24px; font-size: 10px; color: var(--dim); letter-spacing: 3px; text-transform: uppercase; animation: fadeUp 0.6s 0.2s ease both; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Powered by Pollinations.ai</div>
+  <h1>Document Translator</h1>
+  <p class="subtitle">Gemini 2.5 Flash-Lite · Instant · Accurate</p>
+</header>
+
+<!-- API Key Row -->
+<div class="apikey-bar">
+  <label for="apiKey">API Key</label>
+  <input type="password" id="apiKey" placeholder="Paste your Pollinations API key here…" autocomplete="off"/>
+  <span class="apikey-hint">Get yours at <a href="https://enter.pollinations.ai" target="_blank">enter.pollinations.ai</a></span>
+</div>
+
+<div class="card">
+  <div class="lang-bar">
+    <span class="lang-label">Translate to:</span>
+    <div class="presets" id="presets"></div>
+    <input class="custom-input" id="customLang" placeholder="Or type any language…" autocomplete="off"/>
+  </div>
+
+  <div class="panels">
+    <div class="panel-in">
+      <div class="panel-label">
+        <span>Original Text</span>
+        <span class="char-count" id="charCount">0 chars</span>
+      </div>
+      <textarea id="inputText" placeholder="Paste your document text here…"></textarea>
+    </div>
+
+    <div class="output-panel">
+      <div class="panel-label">
+        <span>Translation</span>
+        <button class="copy-btn" id="copyBtn" style="display:none" onclick="copyOutput()">Copy</button>
+      </div>
+      <div class="spinner-wrap" id="spinnerWrap">
+        <div class="spinner"></div>
+        <span class="spinner-text">Translating…</span>
+      </div>
+      <div class="output-text placeholder" id="outputText">Your translation will appear here…</div>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <span class="error-msg" id="errorMsg"></span>
+    <span class="spacer"></span>
+    <button class="translate-btn" id="translateBtn" onclick="doTranslate()">Translate →</button>
+  </div>
+</div>
+
+<footer>AI Translation · No data stored · Free to use</footer>
+
+<script>
+  const PRESETS = [
+    "Arabic","French","Spanish","Chinese (Simplified)","Chinese (Traditional)",
+    "German","Japanese","Korean","Portuguese","Russian",
+    "Italian","Turkish","Hindi","Dutch","Polish",
+    "Swedish","Greek","Hebrew","Indonesian","Thai"
+  ];
+
+  let selectedLang = "";
+
+  const presetsEl = document.getElementById("presets");
+  PRESETS.forEach(lang => {
+    const btn = document.createElement("button");
+    btn.className = "preset-btn";
+    btn.textContent = lang;
+    btn.onclick = () => {
+      document.querySelectorAll(".preset-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      selectedLang = lang;
+      document.getElementById("customLang").value = "";
+    };
+    presetsEl.appendChild(btn);
+  });
+
+  document.getElementById("inputText").addEventListener("input", function() {
+    document.getElementById("charCount").textContent = this.value.length.toLocaleString() + " chars";
+  });
+
+  document.getElementById("customLang").addEventListener("input", function() {
+    if (this.value.trim()) {
+      document.querySelectorAll(".preset-btn").forEach(b => b.classList.remove("active"));
+      selectedLang = "";
+    }
+  });
+
+  async function doTranslate() {
+    const input   = document.getElementById("inputText").value.trim();
+    const custom  = document.getElementById("customLang").value.trim();
+    const lang    = custom || selectedLang;
+    const apiKey  = document.getElementById("apiKey").value.trim();
+    const errorEl = document.getElementById("errorMsg");
+    errorEl.textContent = "";
+
+    if (!apiKey) { errorEl.textContent = "⚠ Please enter your Pollinations API key."; return; }
+    if (!input)  { errorEl.textContent = "⚠ Please paste some text to translate."; return; }
+    if (!lang)   { errorEl.textContent = "⚠ Please select or type a target language."; return; }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch("https://gen.pollinations.ai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: "gemini-2.5-flash-lite",
+          messages: [
+            {
+              role: "system",
+              content: `You are a professional document translator. Translate the user's text accurately into ${lang}. Preserve formatting, paragraph structure, and tone. Output ONLY the translated text — no commentary, preamble, or explanation.`
+            },
+            { role: "user", content: input }
+          ]
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData?.error?.message || `API error ${res.status}`);
+      }
+
+      const data = await res.json();
+      const text = data?.choices?.[0]?.message?.content;
+      if (!text) throw new Error("Empty response from API");
+      showOutput(text);
+
+    } catch(e) {
+      console.error(e);
+      errorEl.textContent = "⚠ " + e.message;
+      showOutput(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function setLoading(on) {
+    document.getElementById("translateBtn").disabled = on;
+    document.getElementById("spinnerWrap").style.display = on ? "flex" : "none";
+    document.getElementById("outputText").style.display = on ? "none" : "block";
+  }
+
+  function showOutput(text) {
+    const el = document.getElementById("outputText");
+    const copyBtn = document.getElementById("copyBtn");
+    if (text) {
+      el.textContent = text;
+      el.classList.remove("placeholder");
+      copyBtn.style.display = "inline-block";
+    } else {
+      el.textContent = "Your translation will appear here…";
+      el.classList.add("placeholder");
+      copyBtn.style.display = "none";
+    }
+  }
+
+  function copyOutput() {
+    navigator.clipboard.writeText(document.getElementById("outputText").textContent);
+    const btn = document.getElementById("copyBtn");
+    btn.textContent = "✓ Copied";
+    btn.classList.add("copied");
+    setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 2000);
+  }
+</script>
+</body>
+</html>
