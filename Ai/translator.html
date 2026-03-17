@@ -18,7 +18,7 @@
     min-height: 100vh; display: flex; flex-direction: column;
     align-items: center; padding: 48px 20px;
   }
-  header { text-align: center; margin-bottom: 36px; animation: fadeUp 0.6s ease both; }
+  header { text-align: center; margin-bottom: 44px; animation: fadeUp 0.6s ease both; }
   .eyebrow { font-size: 10px; letter-spacing: 6px; color: var(--muted); text-transform: uppercase; margin-bottom: 14px; }
   h1 {
     font-family: 'Playfair Display', serif; font-weight: 600;
@@ -29,28 +29,31 @@
   }
   .subtitle { font-size: 13px; color: var(--dim); letter-spacing: 2px; margin-top: 10px; text-transform: uppercase; }
 
-  /* API Key bar */
-  .apikey-bar {
+  /* Optional key banner */
+  .key-banner {
     width: 100%; max-width: 920px;
     background: #0f0f0f; border: 1px solid var(--border);
     border-radius: 12px; padding: 14px 22px;
-    display: flex; align-items: center; gap: 12px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
     margin-bottom: 12px; animation: fadeUp 0.6s 0.05s ease both;
   }
-  .apikey-bar label { font-size: 10px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; white-space: nowrap; }
-  .apikey-bar input {
-    flex: 1; background: var(--bg); border: 1px solid var(--border);
+  .key-banner-left { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 200px; }
+  .key-banner-title { font-size: 12px; color: var(--gold); letter-spacing: 1px; }
+  .key-banner-sub { font-size: 11px; color: var(--muted); }
+  .key-input {
+    flex: 1; min-width: 220px; background: var(--bg); border: 1px solid var(--border);
     border-radius: 8px; padding: 8px 14px; color: var(--text);
     font-family: 'Crimson Pro', serif; font-size: 13px; outline: none;
-    transition: border-color 0.15s; letter-spacing: 1px;
+    transition: border-color 0.15s; letter-spacing: 0.5px;
   }
-  .apikey-bar input:focus { border-color: #3a3020; }
-  .apikey-bar input::placeholder { color: var(--dim); letter-spacing: 0; }
-  .apikey-hint {
-    font-size: 11px; color: var(--dim); white-space: nowrap;
+  .key-input:focus { border-color: #3a3020; }
+  .key-input::placeholder { color: var(--dim); letter-spacing: 0; }
+  .key-status {
+    font-size: 11px; white-space: nowrap; padding: 5px 10px;
+    border-radius: 6px; border: 1px solid var(--border);
   }
-  .apikey-hint a { color: #5a4d3a; text-decoration: underline; }
-  .apikey-hint a:hover { color: var(--gold); }
+  .key-status.default { color: var(--muted); border-color: var(--border); }
+  .key-status.custom  { color: #6a9a5a; border-color: #2a3a22; background: rgba(100,160,80,0.07); }
 
   .card {
     width: 100%; max-width: 920px; background: var(--card);
@@ -84,9 +87,8 @@
   }
   .panel-in { border-right: 1px solid var(--border); }
   .panel-label {
-    padding: 13px 20px 6px; font-size: 10px; letter-spacing: 3px;
-    color: #3a3220; text-transform: uppercase;
-    display: flex; justify-content: space-between; align-items: center;
+    padding: 13px 20px 6px; font-size: 10px; letter-spacing: 3px; color: #3a3220;
+    text-transform: uppercase; display: flex; justify-content: space-between; align-items: center;
   }
   .char-count { color: var(--dim); font-size: 11px; }
   textarea {
@@ -97,9 +99,8 @@
   textarea::placeholder { color: var(--dim); font-style: italic; }
   .output-panel { position: relative; display: flex; flex-direction: column; }
   .output-text {
-    padding: 6px 20px 20px; font-size: 15px; line-height: 1.8;
-    color: #d4c9b5; white-space: pre-wrap; word-break: break-word;
-    flex: 1; min-height: 272px;
+    padding: 6px 20px 20px; font-size: 15px; line-height: 1.8; color: #d4c9b5;
+    white-space: pre-wrap; word-break: break-word; flex: 1; min-height: 272px;
   }
   .output-text.placeholder { color: var(--dim); font-style: italic; }
   .spinner-wrap {
@@ -147,18 +148,21 @@
   <p class="subtitle">Gemini 2.5 Flash-Lite · Instant · Accurate</p>
 </header>
 
-<!-- API Key Row -->
-<div class="apikey-bar">
-  <label for="apiKey">API Key</label>
-  <input type="password" id="apiKey" placeholder="Paste your Pollinations API key here…" autocomplete="off"/>
-  <span class="apikey-hint">Get yours at <a href="https://enter.pollinations.ai" target="_blank">enter.pollinations.ai</a></span>
+<!-- Optional key banner -->
+<div class="key-banner">
+  <div class="key-banner-left">
+    <span class="key-banner-title">Better Rate Limits?</span>
+    <span class="key-banner-sub">Enter your own Pollinations publishable key to use your personal quota</span>
+  </div>
+  <input class="key-input" id="customKey" type="text" placeholder="pk_your_publishable_key_here..." autocomplete="off" oninput="onKeyInput()"/>
+  <span class="key-status default" id="keyStatus">Using default key</span>
 </div>
 
 <div class="card">
   <div class="lang-bar">
     <span class="lang-label">Translate to:</span>
     <div class="presets" id="presets"></div>
-    <input class="custom-input" id="customLang" placeholder="Or type any language…" autocomplete="off"/>
+    <input class="custom-input" id="customLang" placeholder="Or type any language..." autocomplete="off"/>
   </div>
 
   <div class="panels">
@@ -167,9 +171,8 @@
         <span>Original Text</span>
         <span class="char-count" id="charCount">0 chars</span>
       </div>
-      <textarea id="inputText" placeholder="Paste your document text here…"></textarea>
+      <textarea id="inputText" placeholder="Paste your document text here..."></textarea>
     </div>
-
     <div class="output-panel">
       <div class="panel-label">
         <span>Translation</span>
@@ -177,22 +180,24 @@
       </div>
       <div class="spinner-wrap" id="spinnerWrap">
         <div class="spinner"></div>
-        <span class="spinner-text">Translating…</span>
+        <span class="spinner-text">Translating...</span>
       </div>
-      <div class="output-text placeholder" id="outputText">Your translation will appear here…</div>
+      <div class="output-text placeholder" id="outputText">Your translation will appear here...</div>
     </div>
   </div>
 
   <div class="action-bar">
     <span class="error-msg" id="errorMsg"></span>
     <span class="spacer"></span>
-    <button class="translate-btn" id="translateBtn" onclick="doTranslate()">Translate →</button>
+    <button class="translate-btn" id="translateBtn" onclick="doTranslate()">Translate</button>
   </div>
 </div>
 
 <footer>AI Translation · No data stored · Free to use</footer>
 
 <script>
+  const DEFAULT_KEY = "pk_LUy70Tu8OwLI1HrU";
+
   const PRESETS = [
     "Arabic","French","Spanish","Chinese (Simplified)","Chinese (Traditional)",
     "German","Japanese","Korean","Portuguese","Russian",
@@ -202,8 +207,8 @@
 
   let selectedLang = "";
 
-  const presetsEl = document.getElementById("presets");
-  PRESETS.forEach(lang => {
+  // Build preset buttons
+  document.getElementById("presets") && PRESETS.forEach(lang => {
     const btn = document.createElement("button");
     btn.className = "preset-btn";
     btn.textContent = lang;
@@ -213,7 +218,7 @@
       selectedLang = lang;
       document.getElementById("customLang").value = "";
     };
-    presetsEl.appendChild(btn);
+    document.getElementById("presets").appendChild(btn);
   });
 
   document.getElementById("inputText").addEventListener("input", function() {
@@ -227,17 +232,32 @@
     }
   });
 
+  function onKeyInput() {
+    const val = document.getElementById("customKey").value.trim();
+    const status = document.getElementById("keyStatus");
+    if (val) {
+      status.textContent = "Using your key";
+      status.className = "key-status custom";
+    } else {
+      status.textContent = "Using default key";
+      status.className = "key-status default";
+    }
+  }
+
+  function getActiveKey() {
+    const custom = document.getElementById("customKey").value.trim();
+    return custom || DEFAULT_KEY;
+  }
+
   async function doTranslate() {
-    const input   = document.getElementById("inputText").value.trim();
-    const custom  = document.getElementById("customLang").value.trim();
-    const lang    = custom || selectedLang;
-    const apiKey  = document.getElementById("apiKey").value.trim();
+    const input  = document.getElementById("inputText").value.trim();
+    const custom = document.getElementById("customLang").value.trim();
+    const lang   = custom || selectedLang;
     const errorEl = document.getElementById("errorMsg");
     errorEl.textContent = "";
 
-    if (!apiKey) { errorEl.textContent = "⚠ Please enter your Pollinations API key."; return; }
-    if (!input)  { errorEl.textContent = "⚠ Please paste some text to translate."; return; }
-    if (!lang)   { errorEl.textContent = "⚠ Please select or type a target language."; return; }
+    if (!input) { errorEl.textContent = "Please paste some text to translate."; return; }
+    if (!lang)  { errorEl.textContent = "Please select or type a target language."; return; }
 
     setLoading(true);
 
@@ -246,7 +266,7 @@
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`
+          "Authorization": "Bearer " + getActiveKey()
         },
         body: JSON.stringify({
           model: "gemini-2.5-flash-lite",
@@ -261,8 +281,9 @@
       });
 
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData?.error?.message || `API error ${res.status}`);
+        let msg = "API error " + res.status;
+        try { const j = await res.json(); msg = j?.error?.message || msg; } catch {}
+        throw new Error(msg);
       }
 
       const data = await res.json();
@@ -272,7 +293,7 @@
 
     } catch(e) {
       console.error(e);
-      errorEl.textContent = "⚠ " + e.message;
+      errorEl.textContent = e.message;
       showOutput(null);
     } finally {
       setLoading(false);
@@ -293,7 +314,7 @@
       el.classList.remove("placeholder");
       copyBtn.style.display = "inline-block";
     } else {
-      el.textContent = "Your translation will appear here…";
+      el.textContent = "Your translation will appear here...";
       el.classList.add("placeholder");
       copyBtn.style.display = "none";
     }
@@ -302,7 +323,7 @@
   function copyOutput() {
     navigator.clipboard.writeText(document.getElementById("outputText").textContent);
     const btn = document.getElementById("copyBtn");
-    btn.textContent = "✓ Copied";
+    btn.textContent = "Copied";
     btn.classList.add("copied");
     setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 2000);
   }
