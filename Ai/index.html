@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Tools · Pollinations.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lora:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet"/>
+<style>
+  /* ============================================================
+     DESIGN TOKENS — edit these to retheme the whole page
+  ============================================================ */
+  :root {
+    --bg:        #0c0c0c;
+    --surface:   #131313;
+    --card:      #181818;
+    --border:    #242424;
+    --border2:   #1a1a1a;
+    --text:      #ede8df;
+    --muted:     #4a4540;
+    --dim:       #232020;
+    --accent:    #f0e040;   /* yellow-gold */
+    --accent-fg: #0c0c0c;
+    --tag-bg:    rgba(240,224,64,0.07);
+    --tag-border:rgba(240,224,64,0.18);
+    --glow:      rgba(240,224,64,0.06);
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-body:    'Lora', Georgia, serif;
+    --font-mono:    'JetBrains Mono', monospace;
+    --radius:    14px;
+    --transition: 0.22s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  /* ============================================================
+     RESET & BASE
+  ============================================================ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-weight: 400;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity: 0.55;
+  }
+
+  /* ============================================================
+     LAYOUT WRAPPER
+  ============================================================ */
+  .page {
+    position: relative; z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 28px 80px;
+  }
+
+  /* ============================================================
+     HEADER
+  ============================================================ */
+  .site-header {
+    padding: 56px 0 48px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+
+  .wordmark {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .wordmark-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--muted);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .wordmark-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 20px; height: 1px;
+    background: var(--muted);
+  }
+
+  .wordmark-title {
+    font-family: var(--font-display);
+    font-size: clamp(52px, 9vw, 96px);
+    line-height: 0.92;
+    letter-spacing: 1px;
+    color: var(--text);
+  }
+
+  .wordmark-title em {
+    color: var(--accent);
+    font-style: normal;
+  }
+
+  .header-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    padding-top: 8px;
+  }
+
+  .powered-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 6px 14px 6px 10px;
+  }
+
+  .powered-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2.2s ease-in-out infinite;
+  }
+
+  .powered-badge span {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .tool-count {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .tool-count strong {
+    color: var(--accent);
+    font-weight: 400;
+  }
+
+  .header-desc {
+    margin-top: 28px;
+    font-size: 16px;
+    color: var(--muted);
+    font-style: italic;
+    line-height: 1.6;
+    max-width: 480px;
+  }
+
+  /* ============================================================
+     CATEGORY FILTER BAR
+  ============================================================ */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 48px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  .filter-btn {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 7px 18px;
+    border-radius: 40px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+
+  .filter-btn:hover {
+    border-color: #333;
+    color: #888;
+  }
+
+  .filter-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-fg);
+  }
+
+  /* ============================================================
+     TOOLS GRID
+     To add a new tool: add one object to the TOOLS array in JS.
+     The grid is fully auto-generated from that array.
+  ============================================================ */
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2px;
+    background: var(--border2);
+    border: 1px solid var(--border2);
+    border-radius: calc(var(--radius) + 2px);
+    overflow: hidden;
+    animation: fadeUp 0.6s 0.15s ease both;
+  }
+
+  /* Tool Card */
+  .tool-card {
+    position: relative;
+    background: var(--card);
+    padding: 32px 28px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    cursor: pointer;
+    transition: background var(--transition);
+    text-decoration: none;
+    color: inherit;
+    overflow: hidden;
+  }
+
+  .tool-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 20%, var(--glow) 0%, transparent 65%);
+    opacity: 0;
+    transition: opacity var(--transition);
+  }
+
+  .tool-card:hover {
+    background: #1e1e1e;
+  }
+
+  .tool-card:hover::before {
+    opacity: 1;
+  }
+
+  /* Card number */
+  .card-number {
+    font-family: var(--font-display);
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--dim);
+    margin-bottom: 20px;
+    transition: color var(--transition);
+  }
+
+  .tool-card:hover .card-number {
+    color: var(--muted);
+  }
+
+  /* Icon */
+  .card-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    margin-bottom: 20px;
+    transition: border-color var(--transition), transform var(--transition);
+    position: relative; z-index: 1;
+  }
+
+  .tool-card:hover .card-icon {
+    border-color: var(--border);
+    transform: translateY(-2px);
+  }
+
+  /* Title */
+  .card-title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    letter-spacing: 0.5px;
+    line-height: 1.05;
+    color: var(--text);
+    margin-bottom: 10px;
+    position: relative; z-index: 1;
+    transition: color var(--transition);
+  }
+
+  .tool-card:hover .card-title {
+    color: #fff;
+  }
+
+  /* Description */
+  .card-desc {
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--muted);
+    margin-bottom: 24px;
+    position: relative; z-index: 1;
+    flex: 1;
+  }
+
+  /* Tags */
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 24px;
+    position: relative; z-index: 1;
+  }
+
+  .tag {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--tag-bg);
+    border: 1px solid var(--tag-border);
+    color: rgba(240,224,64,0.6);
+  }
+
+  /* CTA row */
+  .card-cta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative; z-index: 1;
+  }
+
+  .card-model {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--dim);
+    text-transform: uppercase;
+    transition: color var(--transition);
+  }
+
+  .tool-card:hover .card-model {
+    color: var(--muted);
+  }
+
+  .card-arrow {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted);
+    font-size: 14px;
+    transition: all var(--transition);
+    background: var(--surface);
+  }
+
+  .tool-card:hover .card-arrow {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-fg);
+    transform: translateX(2px);
+  }
+
+  /* Featured card — spans 2 cols when screen allows */
+  .tool-card.featured {
+    grid-column: span 2;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 32px;
+    padding: 36px 36px;
+  }
+
+  @media (max-width: 720px) {
+    .tool-card.featured {
+      grid-column: span 1;
+      flex-direction: column;
+      gap: 0;
+    }
+  }
+
+  .featured-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .featured-right {
+    width: 200px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: space-between;
+    height: 100%;
+  }
+
+  .featured-badge {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: var(--accent);
+    color: var(--accent-fg);
+    font-weight: 400;
+    align-self: flex-start;
+    margin-bottom: 16px;
+  }
+
+  /* ============================================================
+     DIVIDER / SECTION HEADING (optional future use)
+  ============================================================ */
+  .section-rule {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    margin-top: 64px;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  .section-rule span {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .section-rule::before, .section-rule::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* ============================================================
+     POLLINATIONS PROMO BANNER
+  ============================================================ */
+  .promo-banner {
+    margin-top: 64px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: stretch;
+    background: var(--surface);
+    position: relative;
+    animation: fadeUp 0.6s 0.25s ease both;
+  }
+
+  /* Animated gradient line at top */
+  .promo-banner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      var(--accent) 30%,
+      rgba(240,224,64,0.3) 60%,
+      transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 3s linear infinite;
+  }
+
+  @keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .promo-body {
+    padding: 36px 36px 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .promo-kicker {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .promo-kicker::before {
+    content: '';
+    display: inline-block;
+    width: 16px; height: 1px;
+    background: var(--accent);
+    opacity: 0.5;
+  }
+
+  .promo-headline {
+    font-family: var(--font-display);
+    font-size: clamp(26px, 4vw, 40px);
+    line-height: 1.05;
+    letter-spacing: 0.5px;
+    color: var(--text);
+  }
+
+  .promo-headline em {
+    color: var(--accent);
+    font-style: normal;
+  }
+
+  .promo-desc {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 520px;
+  }
+
+  .promo-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .promo-feat {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .promo-feat::before {
+    content: '';
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.7;
+    flex-shrink: 0;
+  }
+
+  .promo-cta-col {
+    padding: 36px 36px 36px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    border-left: 1px solid var(--border);
+    min-width: 200px;
+  }
+
+  .promo-logo-mark {
+    font-family: var(--font-display);
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--dim);
+    text-transform: uppercase;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    user-select: none;
+  }
+
+  .promo-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--accent);
+    color: var(--accent-fg);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 12px 22px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+  }
+
+  .promo-btn:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(240,224,64,0.2);
+  }
+
+  .promo-btn-arrow {
+    font-size: 14px;
+    transition: transform var(--transition);
+  }
+
+  .promo-btn:hover .promo-btn-arrow {
+    transform: translateX(3px);
+  }
+
+  .promo-stat-row {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .promo-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .promo-stat-val {
+    font-family: var(--font-display);
+    font-size: 22px;
+    color: var(--text);
+    letter-spacing: 0.5px;
+  }
+
+  .promo-stat-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  @media (max-width: 680px) {
+    .promo-banner { grid-template-columns: 1fr; }
+    .promo-cta-col {
+      border-left: none;
+      border-top: 1px solid var(--border);
+      flex-direction: row;
+      align-items: center;
+      padding: 24px 28px;
+      min-width: unset;
+    }
+    .promo-logo-mark { display: none; }
+    .promo-body { padding: 28px 28px 0; }
+  }
+
+  /* ============================================================
+     FOOTER
+  ============================================================ */
+  .site-footer {
+    margin-top: 72px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .footer-left {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .footer-right {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+
+  /* ============================================================
+     HIDDEN STATE (for category filter)
+  ============================================================ */
+  .tool-card.hidden {
+    display: none;
+  }
+
+  /* ============================================================
+     ANIMATIONS
+  ============================================================ */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.85); }
+  }
+
+  /* ============================================================
+     RESPONSIVE
+  ============================================================ */
+  @media (max-width: 600px) {
+    .page { padding: 0 16px 60px; }
+    .site-header { padding: 40px 0 36px; margin-bottom: 40px; }
+    .header-meta { align-items: flex-start; }
+    .tools-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- =========================================================
+       HEADER
+  ========================================================= -->
+  <header class="site-header">
+    <div class="header-top">
+      <div class="wordmark">
+        <div class="wordmark-eyebrow">Ammar's Toolbox</div>
+        <h1 class="wordmark-title">AI<br/><em>Tools</em></h1>
+      </div>
+      <div class="header-meta">
+        <div class="powered-badge">
+          <span class="powered-dot"></span>
+          <span>Powered by Pollinations.ai</span>
+        </div>
+        <div class="tool-count" id="toolCount"></div>
+      </div>
+    </div>
+    <p class="header-desc">A growing collection of free AI-powered tools. No sign-up, no limits — just paste and go.</p>
+  </header>
+
+  <!-- =========================================================
+       FILTER BAR
+       Filters are auto-generated from the TOOLS array categories.
+  ========================================================= -->
+  <div class="filter-bar" id="filterBar"></div>
+
+  <!-- =========================================================
+       TOOLS GRID
+       Auto-generated from the TOOLS array below.
+  ========================================================= -->
+  <div class="tools-grid" id="toolsGrid"></div>
+
+  <!-- =========================================================
+       POLLINATIONS PROMO BANNER
+       Edit the text/stats/link below to update the promotion.
+  ========================================================= -->
+  <div class="promo-banner">
+    <div class="promo-body">
+      <div class="promo-kicker">Sponsor &amp; Infrastructure</div>
+      <div class="promo-headline">
+        All tools run on<br/><em>Pollinations.ai</em>
+      </div>
+      <p class="promo-desc">
+        Pollinations is a free, open-source AI platform giving developers access to the world's best generative models — image, text, audio and video — with no sign-up required. Every tool on this page is powered by their API.
+      </p>
+      <div class="promo-features">
+        <span class="promo-feat">Free forever tier</span>
+        <span class="promo-feat">40+ AI models</span>
+        <span class="promo-feat">Image · Text · Audio · Video</span>
+        <span class="promo-feat">No sign-up required</span>
+        <span class="promo-feat">Open source</span>
+      </div>
+      <div class="promo-stat-row" style="margin-top:20px;">
+        <div class="promo-stat">
+          <span class="promo-stat-val">40+</span>
+          <span class="promo-stat-label">AI Models</span>
+        </div>
+        <div class="promo-stat">
+          <span class="promo-stat-val">Free</span>
+          <span class="promo-stat-label">No cost tier</span>
+        </div>
+        <div class="promo-stat">
+          <span class="promo-stat-val">Open</span>
+          <span class="promo-stat-label">Source &amp; API</span>
+        </div>
+      </div>
+    </div>
+    <div class="promo-cta-col">
+      <div class="promo-logo-mark">Pollinations.ai</div>
+      <a class="promo-btn" href="https://pollinations.ai" target="_blank" rel="noopener">
+        Try it free
+        <span class="promo-btn-arrow">&#8594;</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       FOOTER
+  ========================================================= -->
+  <footer class="site-footer">
+    <span class="footer-left">lokiodinson.netlify.app/ai</span>
+    <span class="footer-right">Free · No data stored · Open to all</span>
+  </footer>
+
+</div>
+
+<script>
+/* =============================================================
+   TOOLS DATA
+   ─────────────────────────────────────────────────────────────
+   To add a new tool, just add a new object to this array.
+   Fields:
+     id        — unique string id
+     title     — tool name (displayed large)
+     desc      — one-sentence description
+     icon      — emoji or small SVG string
+     tags      — array of short tag strings
+     model     — AI model used (shown as metadata)
+     url       — link to the tool page
+     category  — used for filter bar ("All" is always added)
+     featured  — optional boolean, makes card span 2 columns
+============================================================= */
+const TOOLS = [
+  {
+    id: "translator",
+    title: "Document Translator",
+    desc: "Paste any text and instantly translate it into 20+ languages. Powered by Gemini 2.5 Flash-Lite for fast, accurate, tone-preserving output.",
+    icon: "🌐",
+    tags: ["Translation", "Text", "Gemini"],
+    model: "Gemini 2.5 Flash-Lite",
+    url: "/ai/translator",
+    category: "Text",
+    featured: true,
+  },
+  {
+    id: "text2audio",
+    title: "Voice Studio",
+    desc: "Convert any text into natural-sounding speech. Choose from 40+ voices across OpenAI and ElevenLabs, then play or download as MP3.",
+    icon: "🎙️",
+    tags: ["TTS", "Audio", "ElevenLabs", "OpenAI"],
+    model: "tts-1 · OpenAI + ElevenLabs",
+    url: "/ai/text2audio",
+    category: "Audio",
+  },
+  {
+    id: "text2image",
+    title: "Image Studio",
+    desc: "Describe an image and generate it with zimage. Use Gemini to enhance your prompt first — cinematic, artistic, photorealistic and more.",
+    icon: "🌄",
+    tags: ["Image Gen", "zimage", "Gemini"],
+    model: "zimage + Gemini 2.5 Flash-Lite",
+    url: "/ai/text2image",
+    category: "Image",
+  },
+  // ── ADD NEW TOOLS BELOW THIS LINE ──────────────────────────
+  // {
+  //   id: "my-new-tool",
+  //   title: "My New Tool",
+  //   desc: "What it does in one sentence.",
+  //   icon: "✨",
+  //   tags: ["Tag1", "Tag2"],
+  //   model: "Model Name",
+  //   url: "/ai/my-new-tool",
+  //   category: "Text",
+  // },
+];
+
+/* =============================================================
+   RENDER ENGINE — no need to edit below unless changing layout
+============================================================= */
+(function() {
+
+  // 1. Update tool count in header
+  document.getElementById("toolCount").innerHTML =
+    `<strong>${TOOLS.length}</strong> tool${TOOLS.length !== 1 ? "s" : ""} available`;
+
+  // 2. Build category list (always starts with "All")
+  const categories = ["All", ...new Set(TOOLS.map(t => t.category))];
+  let activeFilter = "All";
+
+  const filterBar = document.getElementById("filterBar");
+  categories.forEach(cat => {
+    const btn = document.createElement("button");
+    btn.className = "filter-btn" + (cat === "All" ? " active" : "");
+    btn.textContent = cat;
+    btn.setAttribute("data-cat", cat);
+    btn.addEventListener("click", () => {
+      activeFilter = cat;
+      document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      filterCards(cat);
+    });
+    filterBar.appendChild(btn);
+  });
+
+  // 3. Render cards
+  const grid = document.getElementById("toolsGrid");
+
+  TOOLS.forEach((tool, i) => {
+    const a = document.createElement("a");
+    a.href = tool.url;
+    a.className = "tool-card" + (tool.featured ? " featured" : "");
+    a.setAttribute("data-category", tool.category);
+    a.setAttribute("aria-label", tool.title);
+
+    const num = String(i + 1).padStart(2, "0");
+
+    if (tool.featured) {
+      a.innerHTML = `
+        <div class="featured-left">
+          <div class="card-number">${num}</div>
+          <div class="card-icon">${tool.icon}</div>
+          <div class="card-title">${tool.title}</div>
+          <div class="card-desc">${tool.desc}</div>
+          <div class="card-tags">${tool.tags.map(t => `<span class="tag">${t}</span>`).join("")}</div>
+        </div>
+        <div class="featured-right">
+          <span class="featured-badge">Featured</span>
+          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:10px; margin-top:auto;">
+            <div class="card-model">${tool.model}</div>
+            <div class="card-arrow">&#8594;</div>
+          </div>
+        </div>
+      `;
+    } else {
+      a.innerHTML = `
+        <div class="card-number">${num}</div>
+        <div class="card-icon">${tool.icon}</div>
+        <div class="card-title">${tool.title}</div>
+        <div class="card-desc">${tool.desc}</div>
+        <div class="card-tags">${tool.tags.map(t => `<span class="tag">${t}</span>`).join("")}</div>
+        <div class="card-cta">
+          <span class="card-model">${tool.model}</span>
+          <div class="card-arrow">&#8594;</div>
+        </div>
+      `;
+    }
+
+    grid.appendChild(a);
+  });
+
+  // 4. Filter logic
+  function filterCards(cat) {
+    document.querySelectorAll(".tool-card").forEach(card => {
+      if (cat === "All" || card.getAttribute("data-category") === cat) {
+        card.classList.remove("hidden");
+      } else {
+        card.classList.add("hidden");
+      }
+    });
+  }
+
+})();
+</script>
+</body>
+</html>
