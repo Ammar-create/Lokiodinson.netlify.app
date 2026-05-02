@@ -138,7 +138,7 @@ A full-featured media tracker for TV shows and movies. Includes categories for *
 
 ---
 
-### ✍️ Personal — [`/personal`](https://lokiodinson.netlify.app/personal)
+### ✍️ Personal — [`/personal`](https://lokiodinson.netlify.app/personal/story/Ali&ayesha)
 
 Creative literary projects. Currently featuring:
 
