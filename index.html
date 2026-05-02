@@ -1,381 +1,1280 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ammar's Hub</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LokiOdinson | Digital Universe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --deep-space: #0a0a0f;
+      --cosmic-navy: #12121f;
+      --nebula-purple: #2d1b4e;
+      --cyan-glow: #00f0ff;
+      --warm-amber: #ff6b35;
+      --soft-lavender: #b8b8ff;
+      --text-primary: #f0f0f5;
+      --text-secondary: #8a8aa3;
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
-      font-family: 'Inter', sans-serif;
-      background-color: #fafafa;
-      color: #1d1d1f;
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--deep-space);
+      color: var(--text-primary);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* Animated Starfield Background */
+    .starfield {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .star {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: white;
+      border-radius: 50%;
+      animation: twinkle var(--duration) ease-in-out infinite;
+      opacity: var(--opacity);
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: var(--opacity); transform: scale(1); }
+      50% { opacity: 0.2; transform: scale(0.8); }
+    }
+
+    .nebula {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.15;
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .nebula-1 {
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, var(--nebula-purple) 0%, transparent 70%);
+      top: -200px;
+      right: -100px;
+    }
+
+    .nebula-2 {
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, var(--cyan-glow) 0%, transparent 70%);
+      bottom: -150px;
+      left: -100px;
+      animation-delay: -10s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -30px) scale(1.1); }
+      66% { transform: translate(-20px, 20px) scale(0.95); }
+    }
+
+    /* Main Container */
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1400px;
+      margin: 0 auto;
       padding: 2rem;
     }
 
-    h1 {
-      font-size: 3rem;
-      font-weight: 800;
-      margin-bottom: 0.5rem;
+    /* Header */
+    header {
+      text-align: center;
+      padding: 4rem 0 3rem;
+      position: relative;
     }
 
-    .subtitle {
-      font-size: 1.1rem;
-      color: #777;
-      margin-bottom: 2rem;
+    .logo-container {
+      display: inline-flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
     }
 
-    .welcome {
+    .logo-icon {
+      width: 60px;
+      height: 60px;
+      position: relative;
+    }
+
+    .logo-icon svg {
+      width: 100%;
+      height: 100%;
+      animation: pulse-glow 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { filter: drop-shadow(0 0 10px var(--cyan-glow)); }
+      50% { filter: drop-shadow(0 0 25px var(--cyan-glow)); }
+    }
+
+    .brand-name {
+      font-size: clamp(2.5rem, 8vw, 4rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--text-primary) 0%, var(--cyan-glow) 50%, var(--soft-lavender) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .tagline {
+      font-family: 'Crimson Pro', serif;
+      font-size: 1.25rem;
+      font-style: italic;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto;
+      opacity: 0;
+      animation: fade-up 1s ease forwards 0.5s;
+    }
+
+    @keyframes fade-up {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Navigation Orbit */
+    .nav-orbit {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+      margin: 2rem 0 4rem;
+      padding: 1rem;
+    }
+
+    .orbit-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 50px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .orbit-link:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--cyan-glow);
+      color: var(--cyan-glow);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(0, 240, 255, 0.15);
+    }
+
+    .orbit-link svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Section Headers */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 4rem 0 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .section-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+    }
+
+    .section-icon svg {
+      width: 24px;
+      height: 24px;
+      stroke: var(--cyan-glow);
+    }
+
+    .section-title {
       font-size: 1.5rem;
       font-weight: 600;
-      animation: fadeIn 2s forwards;
+      color: var(--text-primary);
+    }
+
+    .section-desc {
+      margin-left: auto;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-style: italic;
+      font-family: 'Crimson Pro', serif;
+    }
+
+    /* Cards Grid */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+      perspective: 1000px;
+    }
+
+    .tool-card {
+      position: relative;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 1.75rem;
+      cursor: pointer;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(10px);
+      transform-style: preserve-3d;
       opacity: 0;
+      animation: card-appear 0.6s ease forwards;
     }
 
-    @keyframes fadeIn { to { opacity: 1; } }
+    .tool-card:nth-child(1) { animation-delay: 0.1s; }
+    .tool-card:nth-child(2) { animation-delay: 0.2s; }
+    .tool-card:nth-child(3) { animation-delay: 0.3s; }
+    .tool-card:nth-child(4) { animation-delay: 0.4s; }
+    .tool-card:nth-child(5) { animation-delay: 0.5s; }
+    .tool-card:nth-child(6) { animation-delay: 0.6s; }
+    .tool-card:nth-child(7) { animation-delay: 0.7s; }
+    .tool-card:nth-child(8) { animation-delay: 0.8s; }
 
-    .login-section {
-      display: flex;
-      justify-content: center;
-      align-items: center;
+    @keyframes card-appear {
+      from {
+        opacity: 0;
+        transform: translateY(30px) rotateX(10deg);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) rotateX(0);
+      }
+    }
+
+    .tool-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
+        rgba(0, 240, 255, 0.06), transparent 40%);
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .tool-card:hover::before {
+      opacity: 1;
+    }
+
+    .tool-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      border-color: rgba(0, 240, 255, 0.3);
+      box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.4),
+        0 0 60px rgba(0, 240, 255, 0.1);
+    }
+
+    .card-glow {
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        var(--cyan-glow) 60deg,
+        transparent 120deg
+      );
+      opacity: 0;
+      animation: rotate 4s linear infinite;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .tool-card:hover .card-glow {
+      opacity: 0.03;
+    }
+
+    @keyframes rotate {
+      to { transform: rotate(360deg); }
+    }
+
+    .card-icon {
+      width: 56px;
+      height: 56px;
+      margin-bottom: 1.25rem;
+      position: relative;
+    }
+
+    .card-icon svg {
       width: 100%;
-      margin-top: 2rem;
+      height: 100%;
+      stroke: var(--cyan-glow);
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
-    .login-card {
-      background: white;
-      padding: 2rem;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-      width: 100%;
-      max-width: 400px;
-      text-align: center;
+    .card-icon.ai-tool svg { stroke: var(--cyan-glow); }
+    .card-icon.anime svg { stroke: var(--warm-amber); }
+    .card-icon.utility svg { stroke: var(--soft-lavender); }
+    .card-icon.personal svg { stroke: #ff85a2; }
+
+    .card-badge {
+      position: absolute;
+      top: 1.25rem;
+      right: 1.25rem;
+      padding: 0.25rem 0.75rem;
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--cyan-glow);
     }
 
-    .login-card h2 {
-      margin-bottom: 1.5rem;
-      font-size: 1.5rem;
+    .card-badge.ai { background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.2); color: var(--cyan-glow); }
+    .card-badge.anime { background: rgba(255, 107, 53, 0.1); border-color: rgba(255, 107, 53, 0.2); color: var(--warm-amber); }
+    .card-badge.utility { background: rgba(184, 184, 255, 0.1); border-color: rgba(184, 184, 255, 0.2); color: var(--soft-lavender); }
+    .card-badge.personal { background: rgba(255, 133, 162, 0.1); border-color: rgba(255, 133, 162, 0.2); color: #ff85a2; }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
     }
 
-    .form-group {
-      margin-bottom: 1rem;
-      text-align: left;
-    }
-
-    .form-group label {
-      display: block;
+    .card-desc {
       font-size: 0.9rem;
-      margin-bottom: 0.3rem;
-      color: #6e6e73;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 1.25rem;
     }
 
-    .form-group input {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #d2d2d7;
-      border-radius: 8px;
-      font-size: 1rem;
-      outline: none;
-    }
-
-    .form-group input:focus {
-      border-color: #0071e3;
-    }
-
-    .btn {
-      width: 100%;
-      padding: 0.75rem;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      cursor: pointer;
-      margin-top: 0.5rem;
-    }
-
-    .btn-primary {
-      background-color: #0071e3;
-      color: white;
-    }
-
-    .btn-primary:hover { background-color: #005bb5; }
-
-    .btn-secondary {
-      background-color: #e5e5ea;
-      color: #1d1d1f;
-    }
-
-    .btn-secondary:hover { background-color: #d1d1d6; }
-
-    .btn-google {
-      background-color: #fff;
-      border: 1px solid #d2d2d7;
+    .card-meta {
       display: flex;
-      justify-content: center;
       align-items: center;
-      gap: 8px;
-    }
-
-    .error-message, .success-message {
-      font-size: 0.9rem;
-      margin-top: 1rem;
-    }
-
-    .error-message { color: #ff3b30; }
-    .success-message { color: #34c759; }
-
-    .main-content {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-      max-width: 500px;
-      margin-top: 2rem;
-    }
-
-    .edit-panel {
-      align-self: flex-end;
-      margin-bottom: 1rem;
-    }
-
-    .edit-panel button {
-      background: #000;
-      color: #fff;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-left: 0.5rem;
-    }
-
-    .buttons-container {
-      display: flex;
-      flex-direction: column;
-      width: 100%;
       gap: 1rem;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
     }
 
-    .hub-btn {
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 12px;
-      padding: 1rem;
+    .card-meta span {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      font-size: 1.1rem;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-      cursor: pointer;
-    }
-
-    .controls {
-      display: none;
       gap: 0.3rem;
     }
 
-    .controls button {
-      font-size: 0.9rem;
-      border: none;
-      background: #eee;
-      border-radius: 6px;
-      padding: 0.3rem 0.5rem;
-      cursor: pointer;
+    .card-arrow {
+      position: absolute;
+      bottom: 1.75rem;
+      right: 1.75rem;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 50%;
+      transition: all 0.3s ease;
     }
 
+    .card-arrow svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--text-secondary);
+      fill: none;
+      stroke-width: 2;
+      transition: all 0.3s ease;
+    }
+
+    .tool-card:hover .card-arrow {
+      background: var(--cyan-glow);
+      border-color: var(--cyan-glow);
+      transform: translateX(5px);
+    }
+
+    .tool-card:hover .card-arrow svg {
+      stroke: var(--deep-space);
+    }
+
+    /* AI Tools Sub-menu */
+    .ai-subtools {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--glass-border);
+    }
+
+    .subtool-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.5rem;
+      background: rgba(0, 240, 255, 0.05);
+      border: 1px solid rgba(0, 240, 255, 0.1);
+      border-radius: 8px;
+      font-size: 0.75rem;
+      color: var(--cyan-glow);
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .subtool-link:hover {
+      background: rgba(0, 240, 255, 0.15);
+      transform: scale(1.05);
+    }
+
+    .subtool-link svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* Featured Section */
+    .featured-section {
+      margin: 4rem 0;
+      padding: 3rem;
+      background: linear-gradient(135deg, rgba(45, 27, 78, 0.3) 0%, rgba(0, 240, 255, 0.05) 100%);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .featured-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--cyan-glow), transparent);
+    }
+
+    .featured-content {
+      display: flex;
+      align-items: center;
+      gap: 3rem;
+      flex-wrap: wrap;
+    }
+
+    .featured-text {
+      flex: 1;
+      min-width: 300px;
+    }
+
+    .featured-text h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--text-primary) 0%, var(--cyan-glow) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .featured-text p {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      margin-bottom: 1.5rem;
+      font-family: 'Crimson Pro', serif;
+    }
+
+    .featured-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 2rem;
+      background: var(--cyan-glow);
+      color: var(--deep-space);
+      font-weight: 600;
+      font-size: 0.95rem;
+      border-radius: 12px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .featured-cta:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(0, 240, 255, 0.3);
+    }
+
+    .featured-visual {
+      flex: 0 0 300px;
+      height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .orbit-demo {
+      width: 200px;
+      height: 200px;
+      position: relative;
+    }
+
+    .orbit-ring {
+      position: absolute;
+      inset: 0;
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 50%;
+      animation: orbit-rotate 10s linear infinite;
+    }
+
+    .orbit-ring:nth-child(2) {
+      inset: 30px;
+      animation-direction: reverse;
+      animation-duration: 15s;
+      border-color: rgba(255, 107, 53, 0.2);
+    }
+
+    .orbit-ring:nth-child(3) {
+      inset: 60px;
+      animation-duration: 20s;
+      border-color: rgba(184, 184, 255, 0.2);
+    }
+
+    .orbit-dot {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: var(--cyan-glow);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--cyan-glow);
+    }
+
+    .orbit-ring:nth-child(1) .orbit-dot { top: -4px; left: 50%; transform: translateX(-50%); }
+    .orbit-ring:nth-child(2) .orbit-dot { 
+      top: -4px; left: 50%; transform: translateX(-50%); 
+      background: var(--warm-amber);
+      box-shadow: 0 0 10px var(--warm-amber);
+    }
+    .orbit-ring:nth-child(3) .orbit-dot { 
+      top: -4px; left: 50%; transform: translateX(-50%); 
+      background: var(--soft-lavender);
+      box-shadow: 0 0 10px var(--soft-lavender);
+    }
+
+    @keyframes orbit-rotate {
+      to { transform: rotate(360deg); }
+    }
+
+    .center-planet {
+      position: absolute;
+      inset: 70px;
+      background: radial-gradient(circle at 30% 30%, rgba(0, 240, 255, 0.3), transparent),
+                  radial-gradient(circle, var(--nebula-purple) 0%, transparent 70%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+    }
+
+    /* Footer */
     footer {
-      margin-top: 3rem;
-      color: #aaa;
+      margin-top: 6rem;
+      padding: 3rem 0;
+      text-align: center;
+      border-top: 1px solid var(--glass-border);
+    }
+
+    .footer-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .footer-logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .footer-tagline {
+      font-family: 'Crimson Pro', serif;
+      font-style: italic;
+      color: var(--text-secondary);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 2rem;
+      margin-top: 1rem;
+    }
+
+    .footer-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
       font-size: 0.9rem;
+      transition: color 0.3s ease;
+    }
+
+    .footer-links a:hover {
+      color: var(--cyan-glow);
+    }
+
+    .copyright {
+      margin-top: 2rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    /* Easter Egg Animation */
+    .konami-effect {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      display: none;
+    }
+
+    .konami-active .konami-effect {
+      display: block;
+      animation: konami-flash 0.5s ease;
+    }
+
+    @keyframes konami-flash {
+      0%, 100% { background: transparent; }
+      50% { background: rgba(0, 240, 255, 0.2); }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+      }
+
+      .nav-orbit {
+        gap: 0.75rem;
+      }
+
+      .orbit-link {
+        padding: 0.6rem 1rem;
+        font-size: 0.8rem;
+      }
+
+      .cards-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .featured-content {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .ai-subtools {
+        grid-template-columns: 1fr;
+      }
+
+      .section-header {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      .section-desc {
+        margin-left: 0;
+        width: 100%;
+      }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--deep-space);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--nebula-purple);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--cyan-glow);
+    }
+
+    /* Selection */
+    ::selection {
+      background: rgba(0, 240, 255, 0.3);
+      color: var(--text-primary);
     }
   </style>
 </head>
 <body>
-  <h1>Ammar's Hub</h1>
-  <div class="subtitle">Your gateway to organized fandom & personal projects</div>
-  <div class="welcome" id="welcome">Welcome to Ammar's Hub</div>
-
-  <section id="login-section" class="login-section">
-    <div class="login-card">
-      <h2>Login to Your App</h2>
-      <form id="login-form">
-        <div class="form-group">
-          <label for="username">Username</label>
-          <input type="text" id="username" required />
-        </div>
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input type="password" id="password" required />
-        </div>
-        <button type="submit" class="btn btn-primary">Login</button>
-        <button type="button" id="signup-btn" class="btn btn-secondary">Sign Up</button>
-        <button type="button" id="google-btn" class="btn btn-google">
-          Continue with Google
-        </button>
-      </form>
-      <p id="login-error" class="error-message" style="display: none;"></p>
-      <p id="success-message" class="success-message" style="display: none;"></p>
-    </div>
-  </section>
-
-  <div class="main-content" id="mainContent">
-    <div class="edit-panel">
-      <button onclick="toggleEdit()">Edit</button>
-      <button onclick="firebase.auth().signOut()">Sign Out</button>
-    </div>
-    <div class="buttons-container" id="hubButtons"></div>
-    <button class="btn btn-secondary" onclick="addButton()">+ Add</button>
+  <!-- Animated Starfield -->
+  <div class="starfield" id="starfield">
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
   </div>
 
-  <footer>&copy; <span id="year"></span> Ammar. All rights reserved.</footer>
+  <!-- Konami Effect Overlay -->
+  <div class="konami-effect"></div>
 
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="logo-container">
+        <div class="logo-icon">
+          <svg viewBox="0 0 60 60" fill="none">
+            <defs>
+              <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#00f0ff"/>
+                <stop offset="100%" style="stop-color:#b8b8ff"/>
+              </linearGradient>
+            </defs>
+            <circle cx="30" cy="30" r="28" stroke="url(#logoGrad)" stroke-width="2" fill="none"/>
+            <path d="M30 10 L30 30 L45 40" stroke="url(#logoGrad)" stroke-width="2" stroke-linecap="round" fill="none"/>
+            <circle cx="30" cy="30" r="4" fill="url(#logoGrad)"/>
+            <circle cx="15" cy="25" r="2" fill="#ff6b35" opacity="0.8">
+              <animate attributeName="opacity" values="0.8;0.3;0.8" dur="2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="45" cy="20" r="1.5" fill="#b8b8ff" opacity="0.6">
+              <animate attributeName="opacity" values="0.6;0.2;0.6" dur="3s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+        </div>
+        <h1 class="brand-name">LokiOdinson</h1>
+      </div>
+      <p class="tagline">A digital universe of AI tools, creative utilities, and adventures</p>
+    </header>
+
+    <!-- Navigation Orbit -->
+    <nav class="nav-orbit">
+      <a href="Profile.html" class="orbit-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        Profile
+      </a>
+      <a href="#ai-tools" class="orbit-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/>
+          <path d="M2 12l10 5 10-5"/>
+        </svg>
+        AI Hub
+      </a>
+      <a href="#creative" class="orbit-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+          <path d="M2 2l7.586 7.586"/>
+          <circle cx="11" cy="11" r="2"/>
+        </svg>
+        Creative
+      </a>
+      <a href="#utilities" class="orbit-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
+        Tools
+      </a>
+      <a href="OnePieceWiki/OnePieceWiki.html" class="orbit-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/>
+          <path d="M2 12l10 5 10-5"/>
+        </svg>
+        One Piece
+      </a>
+    </nav>
+
+    <!-- Featured Section -->
+    <section class="featured-section">
+      <div class="featured-content">
+        <div class="featured-text">
+          <h2>Explore the Universe</h2>
+          <p>Welcome to my digital playground — a collection of AI-powered tools, creative utilities, and passion projects. Everything here is built with a single-file philosophy: fast, self-contained, and instantly accessible.</p>
+          <a href="#ai-tools" class="featured-cta">
+            Start Exploring
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </a>
+        </div>
+        <div class="featured-visual">
+          <div class="orbit-demo">
+            <div class="orbit-ring">
+              <div class="orbit-dot"></div>
+            </div>
+            <div class="orbit-ring">
+              <div class="orbit-dot"></div>
+            </div>
+            <div class="orbit-ring">
+              <div class="orbit-dot"></div>
+            </div>
+            <div class="center-planet">⚡</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI Tools Section -->
+    <div class="section-header" id="ai-tools">
+      <div class="section-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/>
+          <path d="M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <h2 class="section-title">AI Tools Suite</h2>
+      <p class="section-desc">Powered by Pollinations.ai — no signup required</p>
+    </div>
+
+    <div class="cards-grid">
+      <div class="tool-card" onclick="location.href='Ai/index.html'" style="grid-column: span 2;">
+        <div class="card-glow"></div>
+        <span class="card-badge ai">AI Hub</span>
+        <div class="card-icon ai-tool">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v6m0 6v6m4.22-10.22l4.24-4.24M6.34 6.34L2.1 2.1m17.8 17.8l-4.24-4.24M6.34 17.66l-4.24 4.24M23 12h-6m-6 0H1m20.24-4.24l-4.24 4.24M6.34 6.34l-4.24-4.24"/>
+          </svg>
+        </div>
+        <h3 class="card-title">AI Command Center</h3>
+        <p class="card-desc">Your central hub for all AI-powered tools. Generate images, synthesize voice, translate documents — all powered by cutting-edge models with zero barriers to entry.</p>
+        <div class="ai-subtools">
+          <a href="Ai/text2image.html" class="subtool-link" onclick="event.stopPropagation()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <path d="M21 15l-5-5L5 21"/>
+            </svg>
+            Image Studio
+          </a>
+          <a href="Ai/Text2Audio.html" class="subtool-link" onclick="event.stopPropagation()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+            Voice Studio
+          </a>
+          <a href="Ai/translator.html" class="subtool-link" onclick="event.stopPropagation()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 8l6 6M19 8l-6 6M12 2v20"/>
+            </svg>
+            Translator
+          </a>
+        </div>
+        <div class="card-arrow">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="tool-card" onclick="location.href='Chatbot/index.html'">
+        <div class="card-glow"></div>
+        <span class="card-badge ai">AI Chat</span>
+        <div class="card-icon ai-tool">
+          <svg viewBox="0 0 24 24">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <h3 class="card-title">Chatbot Interface</h3>
+        <p class="card-desc">Real-time conversational AI with a clean, responsive interface powered by Netlify serverless functions.</p>
+        <div class="card-meta">
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            </svg>
+            Serverless
+          </span>
+        </div>
+        <div class="card-arrow">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Creative Section -->
+    <div class="section-header" id="creative">
+      <div class="section-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+          <path d="M2 2l7.586 7.586"/>
+          <circle cx="11" cy="11" r="2"/>
+        </svg>
+      </div>
+      <h2 class="section-title">Creative Projects</h2>
+      <p class="section-desc">Where imagination meets code</p>
+    </div>
+
+    <div class="cards-grid">
+      <div class="tool-card" onclick="location.href='OnePieceWiki/OnePieceWiki.html'">
+        <div class="card-glow"></div>
+        <span class="card-badge anime">Anime</span>
+        <div class="card-icon anime">
+          <svg viewBox="0 0 24 24">
+            <path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8Z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </div>
+        <h3 class="card-title">One Piece Wiki</h3>
+        <p class="card-desc">An immersive 3D wiki experience for One Piece fans. Explore devil fruits and character profiles with a stunning Three.js animated universe. "I'm going to be the King of the Pirates!"</p>
+        <div class="card-meta">
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+            Three.js
+          </span>
+          <span>🏴‍☠️ Adventure</span>
+        </div>
+        <div class="card-arrow">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="tool-card" onclick="location.href='Diary Generator/index.html'">
+        <div class="card-glow"></div>
+        <span class="card-badge personal">Personal</span>
+        <div class="card-icon personal">
+          <svg viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+        </div>
+        <h3 class="card-title">Diary Generator</h3>
+        <p class="card-desc">Create beautiful digital school diaries with handwriting fonts, background templates, and per-subject homework tracking. Export as PNG images instantly.</p>
+        <div class="card-meta">
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <path d="M21 15l-5-5L5 21"/>
+            </svg>
+            PNG Export
+          </span>
+        </div>
+        <div class="card-arrow">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="tool-card" onclick="location.href='story/Ali&Ayesha.html'">
+        <div class="card-glow"></div>
+        <span class="card-badge personal">Story</span>
+        <div class="card-icon personal">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+        </div>
+        <h3 class="card-title">Ali & Ayesha</h3>
+        <p class="card-desc">An elegantly styled literary story with support for English, Urdu, and Arabic. Features decorative typography and printable PDF generation.</p>
+        <div class="card-meta">
+          <span>📖 Multilingual</span>
+          <span>✨ Literary</span>
+        </div>
+        <div class="card-arrow">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="tool-card" onclick="location.href='birthday/index.html'">
+        <div class="card-glow"></div>
+        <span class="card-badge personal">Celebration</span>
+        <div class="card-icon personal">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8"/>
+            <path d="M12 6v6l4 2"/>
+          </svg>
+        </div>
+        <h3 class="card-title">Birthday Experience</h3>
+        <p class="card-desc">Interactive birthday celebration page with animations and special effects.</p>
+        <div class="card-meta">
+          <span>🎉 Interactive</span>
+        </div>
+        <div class="card-arrow">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="tool-card" onclick="location.href='Hope/index.html'">
+        <div class="card-glow"></div>
+        <span class="card-badge personal">Inspiration</span>
+        <div class="card-icon personal">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <h3 class="card-title">Hope</h3>
+        <p class="card-desc">An inspiring digital experience exploring themes of hope and positivity.</p>
+        <div class="card-arrow">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="tool-card" onclick="location.href='Forgiveness/index.html'">
+        <div class="card-glow"></div>
+        <span class="card-badge personal">Reflection</span>
+        <div class="card-icon personal">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+        </div>
+        <h3 class="card-title">Forgiveness</h3>
+        <p class="card-desc">A contemplative journey exploring the power and meaning of forgiveness.</p>
+        <div class="card-arrow">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Utilities Section -->
+    <div class="section-header" id="utilities">
+      <div class="section-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
+      </div>
+      <h2 class="section-title">Utilities & Tools</h2>
+      <p class="section-desc">Practical tools for everyday tasks</p>
+    </div>
+
+    <div class="cards-grid">
+      <div class="tool-card" onclick="location.href='Watchlist/index.html'">
+        <div class="card-glow"></div>
+        <span class="card-badge utility">Media</span>
+        <div class="card-icon utility">
+          <svg viewBox="0 0 24 24">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+        </div>
+        <h3 class="card-title">Media Watchlist</h3>
+        <p class="card-desc">Full-featured media tracker for TV shows and movies. Track Arrowverse, DCAU, Marvel, and your personal watchlists with progress stats and completion dashboard.</p>
+        <div class="card-meta">
+          <span>📺 TV & Movies</span>
+          <span>📊 Stats</span>
+        </div>
+        <div class="card-arrow">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="tool-card" onclick="location.href='PdfGenerator/index.html'">
+        <div class="card-glow"></div>
+        <span class="card-badge utility">Converter</span>
+        <div class="card-icon utility">
+          <svg viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <path d="M12 18v-6"/>
+            <path d="M9 15h6"/>
+          </svg>
+        </div>
+        <h3 class="card-title">PDF Generator</h3>
+        <p class="card-desc">Convert HTML and Markdown to beautifully styled PDF documents. Features live preview, custom page sizes (A4/Letter), and quality scaling — all in your browser.</p>
+        <div class="card-meta">
+          <span>📝 Markdown</span>
+          <span>📄 PDF</span>
+        </div>
+        <div class="card-arrow">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="tool-card" onclick="location.href='Main Page.html'">
+        <div class="card-glow"></div>
+        <span class="card-badge utility">Original</span>
+        <div class="card-icon utility">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <h3 class="card-title">Legacy Hub</h3>
+        <p class="card-desc">The original main page — preserved for nostalgia and reference. See how far we've come!</p>
+        <div class="card-arrow">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <div class="footer-content">
+        <div class="footer-logo">LokiOdinson</div>
+        <p class="footer-tagline">"Building the web, one tool at a time"</p>
+        <div class="footer-links">
+          <a href="Profile.html">About</a>
+          <a href="https://github.com/Ammar-create" target="_blank">GitHub</a>
+          <a href="Ai/index.html">AI Tools</a>
+        </div>
+        <p class="copyright">© <span id="year"></span> Ammar. All rights reserved.</p>
+      </div>
+    </footer>
+  </div>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyADxJDcYRyurB-0WGD3dLIP-U9606N_3lQ",
-      authDomain: "lokiodinsonauth.firebaseapp.com",
-      projectId: "lokiodinsonauth",
-      storageBucket: "lokiodinsonauth.appspot.com",
-      messagingSenderId: "867025984222",
-      appId: "1:867025984222:web:5c9d19de0d77ffeee4804f",
-      measurementId: "G-9NQGLPNW6B"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-  </script>
+    // Generate starfield
+    const starfield = document.getElementById('starfield');
+    const starCount = 150;
 
-  <script>
-    const loginSection = document.getElementById('login-section');
-    const mainContent = document.getElementById('mainContent');
-    const loginForm = document.getElementById('login-form');
-    const signupBtn = document.getElementById('signup-btn');
-    const googleBtn = document.getElementById('google-btn');
-    const errorMsg = document.getElementById('login-error');
-    const successMsg = document.getElementById('success-message');
-    const buttons = JSON.parse(localStorage.getItem("buttons") || JSON.stringify([
-      {name: "Watchlist", path: "Watchlist/index.html"},      {name: "Pdf Generator", path: "PdfGenerator/index.html"},
-      {name: "One Piece Wiki", path: "OnePieceWiki/OnePieceWiki.html"},{name: "Diary Generator", path: "Diary Generator/index.html"}
-    ]));
-    let editMode = false;
+    for (let i = 0; i < starCount; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.left = Math.random() * 100 + '%';
+      star.style.top = Math.random() * 100 + '%';
+      star.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
+      star.style.setProperty('--opacity', Math.random() * 0.7 + 0.3);
+      star.style.animationDelay = Math.random() * 5 + 's';
+      starfield.appendChild(star);
+    }
 
-    firebase.auth().onAuthStateChanged(user => {
-      if (user) {
-        loginSection.style.display = 'none';
-        mainContent.style.display = 'flex';
-        renderButtons();
-      } else {
-        loginSection.style.display = 'flex';
-        mainContent.style.display = 'none';
-      }
-    });
-
-    loginForm.addEventListener('submit', e => {
-      e.preventDefault();
-      const usernameInput = document.getElementById("username");
-      const passwordInput = document.getElementById("password");
-      const email = `${usernameInput.value}@myapp.com`;
-      const password = passwordInput.value;
-
-      auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-          successMsg.textContent = "Login successful!";
-          successMsg.style.display = 'block';
-          errorMsg.style.display = 'none';
-        })
-        .catch(() => {
-          errorMsg.textContent = "Invalid username or password.";
-          errorMsg.style.display = 'block';
-          successMsg.style.display = 'none';
-        });
-    });
-
-    signupBtn.addEventListener('click', () => {
-      const usernameInput = document.getElementById("username");
-      const passwordInput = document.getElementById("password");
-      const email = `${usernameInput.value}@myapp.com`;
-      const password = passwordInput.value;
-
-      auth.createUserWithEmailAndPassword(email, password)
-        .then(() => {
-          successMsg.textContent = "Sign-up successful!";
-          successMsg.style.display = 'block';
-          errorMsg.style.display = 'none';
-        })
-        .catch(() => {
-          errorMsg.textContent = "Username already exists.";
-          errorMsg.style.display = 'block';
-          successMsg.style.display = 'none';
-        });
-    });
-
-    googleBtn.addEventListener('click', () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider).catch(error => {
-        errorMsg.textContent = "Google login failed.";
-        errorMsg.style.display = 'block';
+    // Mouse tracking for card glow effect
+    document.querySelectorAll('.tool-card').forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.setProperty('--mouse-x', x + 'px');
+        card.style.setProperty('--mouse-y', y + 'px');
       });
     });
 
-    function renderButtons() {
-      const container = document.getElementById("hubButtons");
-      container.innerHTML = '';
-      buttons.forEach((btn, i) => {
-        const el = document.createElement("div");
-        el.className = "hub-btn";
-        el.onclick = () => { if (!editMode) location.href = btn.path; };
-        const nameSpan = document.createElement("span");
-        nameSpan.textContent = btn.name;
-        el.appendChild(nameSpan);
-        const controls = document.createElement("div");
-        controls.className = "controls";
-        ["↑", "↓", "✏️", "🗑️"].forEach(icon => {
-          const b = document.createElement("button");
-          b.textContent = icon;
-          b.onclick = e => handleButtonControl(i, icon, e);
-          controls.appendChild(b);
-        });
-        if (editMode) controls.style.display = "flex";
-        el.appendChild(controls);
-        container.appendChild(el);
+    // Update year
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Konami code easter egg
+    let konamiCode = [];
+    const konamiSequence = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+
+    document.addEventListener('keydown', (e) => {
+      konamiCode.push(e.key);
+      konamiCode = konamiCode.slice(-10);
+      
+      if (konamiCode.join(',') === konamiSequence.join(',')) {
+        document.body.classList.add('konami-active');
+        setTimeout(() => {
+          document.body.classList.remove('konami-active');
+        }, 1000);
+        
+        // Fun console message
+        console.log('%c🚀 Welcome to the secret console! 🚀', 'color: #00f0ff; font-size: 20px; font-weight: bold;');
+        console.log('%cYou\'ve unlocked the Konami code easter egg!', 'color: #b8b8ff; font-size: 14px;');
+      }
+    });
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
       });
-    }
+    });
 
-    function toggleEdit() {
-      editMode = !editMode;
-      renderButtons();
-    }
-
-    function handleButtonControl(i, action, e) {
-      e.stopPropagation();
-      if (action === "↑" && i > 0) [buttons[i], buttons[i-1]] = [buttons[i-1], buttons[i]];
-      if (action === "↓" && i < buttons.length - 1) [buttons[i], buttons[i+1]] = [buttons[i+1], buttons[i]];
-      if (action === "✏️") {
-        const name = prompt("New name:", buttons[i].name);
-        const path = prompt("New path:", buttons[i].path);
-        if (name && path) buttons[i] = {name, path};
+    // Parallax effect on scroll
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrolled = window.pageYOffset;
+          const parallax = document.querySelector('.nebula-1');
+          const parallax2 = document.querySelector('.nebula-2');
+          parallax.style.transform = `translateY(${scrolled * 0.5}px)`;
+          parallax2.style.transform = `translateY(${scrolled * 0.3}px)`;
+          ticking = false;
+        });
+        ticking = true;
       }
-      if (action === "🗑️") buttons.splice(i, 1);
-      localStorage.setItem("buttons", JSON.stringify(buttons));
-      renderButtons();
-    }
-
-    function addButton() {
-      const name = prompt("Enter button name:");
-      const path = prompt("Enter button path:");
-      if (name && path) {
-        buttons.push({name, path});
-        localStorage.setItem("buttons", JSON.stringify(buttons));
-        renderButtons();
-      }
-    }
-
-    document.getElementById("year").textContent = new Date().getFullYear();
-    setTimeout(() => document.getElementById("welcome").style.opacity = 1, 500);
+    });
   </script>
 </body>
 </html>
