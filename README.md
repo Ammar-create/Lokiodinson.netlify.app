@@ -138,11 +138,11 @@ A full-featured media tracker for TV shows and movies. Includes categories for *
 
 ---
 
-### ✍️ Personal — [`/personal`](https://lokiodinson.netlify.app/personal/story/Ali&ayesha)
+### ✍️ Personal — `/personal`
 
 Creative literary projects. Currently featuring:
 
-- **Ali & Ayesha** — An elegantly styled literary story with support for **English**, **Urdu**, and **Arabic**, with printable PDF generation and decorative typography.
+- [**Ali & Ayesha**](https://lokiodinson.netlify.app/personal/story/Ali&ayesha) — An elegantly styled literary story with support for **English**, **Urdu**, and **Arabic**, with printable PDF generation and decorative typography.
 
 ---
 
