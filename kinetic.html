@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KINETIC — The Animation Laboratory</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=JetBrains+Mono:wght@300;400;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --accent-cyan: #00f5d4;
+            --accent-magenta: #ff006e;
+            --accent-amber: #ff9f1c;
+            --accent-violet: #9d4edd;
+            --text-primary: #fafafa;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+            --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+            --ease-move: cubic-bezier(0.25, 1, 0.5, 1);
+            --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+            --spring-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html { scroll-behavior: smooth; overscroll-behavior: none; }
+        body { font-family: 'Space Grotesk', sans-serif; background: var(--bg-primary); color: var(--text-primary); overflow-x: hidden; cursor: none; min-height: 100vh; }
+
+        .cursor { position: fixed; width: 20px; height: 20px; border: 2px solid var(--accent-cyan); border-radius: 50%; pointer-events: none; z-index: 10000; mix-blend-mode: difference; transition: transform 0.15s var(--ease-enter), width 0.3s, height 0.3s, border-color 0.3s; transform: translate(-50%, -50%); }
+        .cursor.hover { width: 60px; height: 60px; border-color: var(--accent-magenta); background: rgba(255, 0, 110, 0.1); }
+        .cursor.click { transform: translate(-50%, -50%) scale(0.8); }
+        .cursor-trail { position: fixed; width: 8px; height: 8px; background: var(--accent-cyan); border-radius: 50%; pointer-events: none; z-index: 9999; opacity: 0.5; transform: translate(-50%, -50%); transition: opacity 0.3s; }
+        .noise { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9998; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"); }
+
+        nav { position: fixed; top: 0; left: 0; right: 0; padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; z-index: 1000; background: linear-gradient(to bottom, rgba(10,10,15,0.95) 0%, transparent 100%); backdrop-filter: blur(20px); transform: translateY(-100%); animation: navEnter 0.8s var(--ease-enter) 0.5s forwards; }
+        @keyframes navEnter { to { transform: translateY(0); } }
+        .logo { font-family: 'JetBrains Mono', monospace; font-size: 1.2rem; font-weight: 600; letter-spacing: 0.2em; position: relative; overflow: hidden; }
+        .logo::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-magenta)); transform: scaleX(0); transform-origin: right; transition: transform 0.5s var(--ease-enter); }
+        .logo:hover::after { transform: scaleX(1); transform-origin: left; }
+        .nav-links { display: flex; gap: 2rem; list-style: none; }
+        .nav-links a { color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; position: relative; transition: color 0.3s; padding: 0.5rem 0; }
+        .nav-links a::before { content: ''; position: absolute; bottom: 0; left: 50%; width: 0; height: 1px; background: var(--accent-cyan); transition: all 0.4s var(--ease-enter); transform: translateX(-50%); }
+        .nav-links a:hover { color: var(--text-primary); }
+        .nav-links a:hover::before { width: 100%; }
+
+        .hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; overflow: hidden; padding: 2rem; }
+        .hero-bg { position: absolute; inset: 0; z-index: 0; }
+        .hero-bg canvas { width: 100%; height: 100%; }
+        .hero-content { position: relative; z-index: 1; text-align: center; max-width: 900px; }
+        .hero-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; letter-spacing: 0.3em; color: var(--accent-cyan); text-transform: uppercase; margin-bottom: 1.5rem; opacity: 0; transform: translateY(30px); animation: fadeUp 0.8s var(--ease-enter) 0.2s forwards; }
+        .hero-title { font-family: 'Playfair Display', serif; font-size: clamp(3rem, 12vw, 8rem); font-weight: 900; line-height: 1; margin-bottom: 1.5rem; opacity: 0; transform: translateY(50px); animation: fadeUp 1s var(--ease-enter) 0.4s forwards; }
+        .hero-subtitle { font-size: 1.1rem; color: var(--text-secondary); max-width: 500px; margin: 0 auto 3rem; line-height: 1.7; opacity: 0; transform: translateY(30px); animation: fadeUp 0.8s var(--ease-enter) 0.6s forwards; }
+        .hero-cta { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; opacity: 0; transform: translateY(30px); animation: fadeUp 0.8s var(--ease-enter) 0.8s forwards; }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+        .btn-magnetic { position: relative; padding: 1rem 2.5rem; background: transparent; border: 1px solid var(--accent-cyan); color: var(--accent-cyan); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; letter-spacing: 0.15em; text-transform: uppercase; cursor: none; overflow: hidden; transition: all 0.4s var(--ease-enter); border-radius: 100px; }
+        .btn-magnetic::before { content: ''; position: absolute; inset: 0; background: var(--accent-cyan); transform: scaleX(0); transform-origin: right; transition: transform 0.5s var(--ease-enter); z-index: -1; }
+        .btn-magnetic:hover { color: var(--bg-primary); transform: scale(1.05); }
+        .btn-magnetic:hover::before { transform: scaleX(1); transform-origin: left; }
+        .btn-magnetic.primary { background: var(--accent-cyan); color: var(--bg-primary); border: none; }
+        .btn-magnetic.primary::before { background: var(--accent-magenta); }
+        .btn-magnetic.primary:hover { color: var(--text-primary); }
+
+        .scroll-indicator { position: absolute; bottom: 3rem; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 0.5rem; opacity: 0; animation: fadeIn 1s ease 1.5s forwards; }
+        @keyframes fadeIn { to { opacity: 1; } }
+        .scroll-text { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; }
+        .scroll-line { width: 1px; height: 60px; background: linear-gradient(to bottom, var(--accent-cyan), transparent); animation: scrollPulse 2s ease-in-out infinite; }
+        @keyframes scrollPulse { 0%, 100% { transform: scaleY(1); opacity: 1; } 50% { transform: scaleY(0.5); opacity: 0.5; } }
+
+        section { padding: 8rem 2rem; position: relative; }
+        .section-header { text-align: center; margin-bottom: 5rem; }
+        .section-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; letter-spacing: 0.3em; color: var(--accent-magenta); text-transform: uppercase; margin-bottom: 1rem; }
+        .section-title { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 700; }
+
+        .gesture-section { background: var(--bg-secondary); overflow: hidden; }
+        .gesture-container { max-width: 1200px; margin: 0 auto; }
+        .gesture-stage { background: var(--bg-tertiary); border-radius: 24px; height: 400px; position: relative; overflow: hidden; touch-action: none; user-select: none; }
+        .gesture-object { position: absolute; width: 120px; height: 120px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet)); border-radius: 24px; top: 50%; left: 50%; transform: translate(-50%, -50%); cursor: grab; box-shadow: 0 20px 60px rgba(0, 245, 212, 0.3); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--bg-primary); will-change: transform; }
+        .gesture-object:active { cursor: grabbing; }
+        .gesture-object::after { content: 'DRAG ME'; letter-spacing: 0.1em; }
+        .gesture-hint { position: absolute; bottom: 1.5rem; left: 50%; transform: translateX(-50%); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.1em; }
+
+        .physics-section { background: var(--bg-primary); }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; max-width: 1200px; margin: 0 auto; }
+        .physics-card { background: var(--bg-secondary); border-radius: 20px; padding: 2rem; position: relative; overflow: hidden; transform-style: preserve-3d; perspective: 1000px; transition: transform 0.3s var(--ease-enter); border: 1px solid rgba(255,255,255,0.05); }
+        .physics-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,245,212,0.1), transparent 50%); opacity: 0; transition: opacity 0.5s; }
+        .physics-card:hover::before { opacity: 1; }
+        .physics-card:nth-child(2) { transform: translateY(40px); }
+        .physics-card:nth-child(2):hover { transform: translateY(35px) rotateX(5deg) rotateY(-5deg); }
+        .physics-card:nth-child(1):hover, .physics-card:nth-child(3):hover { transform: rotateX(5deg) rotateY(-5deg); }
+        .card-icon { width: 60px; height: 60px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet)); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; font-size: 1.5rem; transition: transform 0.5s var(--spring-bounce); }
+        .physics-card:hover .card-icon { transform: scale(1.1) rotate(10deg); }
+        .card-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.75rem; }
+        .card-desc { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6; }
+
+        .particle-section { background: var(--bg-secondary); min-height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        .particle-button { position: relative; padding: 2rem 4rem; background: linear-gradient(135deg, var(--accent-magenta), var(--accent-amber)); border: none; border-radius: 100px; color: white; font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; cursor: none; overflow: visible; transition: transform 0.3s var(--spring-bounce), box-shadow 0.3s; box-shadow: 0 20px 60px rgba(255, 0, 110, 0.4); }
+        .particle-button:hover { transform: scale(1.05); box-shadow: 0 30px 80px rgba(255, 0, 110, 0.6); }
+        .particle-button:active { transform: scale(0.98); }
+        .particle { position: absolute; pointer-events: none; border-radius: 50%; will-change: transform, opacity; }
+
+        .morph-section { background: var(--bg-primary); }
+        .morph-container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 3rem; }
+        .morph-shape { width: 200px; height: 200px; background: linear-gradient(135deg, var(--accent-violet), var(--accent-cyan)); transition: all 0.8s var(--ease-enter); cursor: none; box-shadow: 0 30px 80px rgba(157, 78, 221, 0.4); }
+        .morph-shape.circle { border-radius: 50%; }
+        .morph-shape.square { border-radius: 20px; }
+        .morph-shape.blob { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; animation: blobMorph 8s ease-in-out infinite; }
+        @keyframes blobMorph { 0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; } 25% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; } 50% { border-radius: 50% 60% 30% 60% / 30% 60% 70% 40%; } 75% { border-radius: 60% 40% 60% 30% / 70% 30% 50% 60%; } }
+        .morph-shape.diamond { border-radius: 20px; transform: rotate(45deg); }
+        .morph-controls { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+        .morph-btn { padding: 0.75rem 1.5rem; background: var(--bg-tertiary); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 100px; cursor: none; transition: all 0.3s var(--ease-enter); }
+        .morph-btn:hover, .morph-btn.active { background: var(--accent-cyan); color: var(--bg-primary); border-color: var(--accent-cyan); }
+
+        .text-section { background: var(--bg-secondary); text-align: center; }
+        .scramble-text { font-family: 'JetBrains Mono', monospace; font-size: clamp(1.2rem, 4vw, 2.5rem); color: var(--text-primary); min-height: 3rem; cursor: none; padding: 2rem; }
+        .scramble-text .char { display: inline-block; transition: all 0.3s; }
+        .scramble-text:hover .char { color: var(--accent-cyan); text-shadow: 0 0 20px var(--accent-cyan); }
+
+        .carousel-section { background: var(--bg-primary); overflow: hidden; }
+        .carousel-container { max-width: 100%; position: relative; }
+        .carousel-track { display: flex; gap: 2rem; padding: 2rem; cursor: grab; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .carousel-track::-webkit-scrollbar { display: none; }
+        .carousel-track:active { cursor: grabbing; }
+        .carousel-item { flex: 0 0 300px; height: 400px; background: var(--bg-secondary); border-radius: 24px; scroll-snap-align: center; position: relative; overflow: hidden; transition: transform 0.5s var(--ease-enter); }
+        .carousel-item:hover { transform: scale(1.05); }
+        .carousel-item::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, var(--bg-primary) 0%, transparent 50%); z-index: 1; }
+        .carousel-visual { position: absolute; inset: 0; background: linear-gradient(135deg, var(--accent-violet), var(--accent-magenta)); }
+        .carousel-content { position: absolute; bottom: 0; left: 0; right: 0; padding: 2rem; z-index: 2; }
+        .carousel-number { font-family: 'JetBrains Mono', monospace; font-size: 3rem; font-weight: 700; color: rgba(255,255,255,0.1); position: absolute; top: 1rem; right: 1.5rem; }
+        .carousel-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .carousel-desc { font-size: 0.85rem; color: var(--text-secondary); }
+
+        .velocity-section { background: var(--bg-secondary); padding: 4rem 2rem; }
+        .velocity-container { max-width: 800px; margin: 0 auto; }
+        .velocity-text { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 6vw, 4rem); font-weight: 700; text-align: center; line-height: 1.3; will-change: transform; }
+        .velocity-text .word { display: inline-block; transition: transform 0.1s linear; }
+
+        footer { background: var(--bg-primary); padding: 4rem 2rem; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); }
+        .footer-text { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.1em; }
+
+        .reveal { opacity: 0; transform: translateY(40px); transition: all 0.8s var(--ease-enter); }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+        .reveal-left { opacity: 0; transform: translateX(-60px); transition: all 0.8s var(--ease-enter); }
+        .reveal-left.active { opacity: 1; transform: translateX(0); }
+        .reveal-scale { opacity: 0; transform: scale(0.9); transition: all 0.8s var(--ease-enter); }
+        .reveal-scale.active { opacity: 1; transform: scale(1); }
+
+        .loader { position: fixed; inset: 0; background: var(--bg-primary); z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s, visibility 0.5s; }
+        .loader.hidden { opacity: 0; visibility: hidden; }
+        .loader-text { font-family: 'JetBrains Mono', monospace; font-size: 1rem; letter-spacing: 0.3em; color: var(--accent-cyan); margin-bottom: 2rem; }
+        .loader-bar { width: 200px; height: 2px; background: var(--bg-tertiary); overflow: hidden; }
+        .loader-progress { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-magenta)); animation: loading 2s ease-in-out infinite; }
+        @keyframes loading { 0% { width: 0%; transform: translateX(-100%); } 50% { width: 100%; transform: translateX(0); } 100% { width: 100%; transform: translateX(100%); } }
+
+        @media (max-width: 768px) {
+            body { cursor: auto; }
+            .cursor, .cursor-trail { display: none; }
+            .btn-magnetic, .particle-button, .morph-btn, .scramble-text { cursor: pointer; }
+            .hero-title { font-size: clamp(2.5rem, 15vw, 4rem); }
+            .nav-links { display: none; }
+            .cards-grid { grid-template-columns: 1fr; }
+            .physics-card:nth-child(2) { transform: none; }
+            section { padding: 5rem 1.5rem; }
+            .gesture-stage { height: 300px; }
+            .gesture-object { width: 80px; height: 80px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loader">
+        <div class="loader-text">INITIALIZING</div>
+        <div class="loader-bar">
+            <div class="loader-progress"></div>
+        </div>
+    </div>
+
+    <div class="cursor"></div>
+    <div class="cursor-trail"></div>
+    <div class="noise"></div>
+
+    <nav>
+        <div class="logo">KINETIC</div>
+        <ul class="nav-links">
+            <li><a href="#gesture">Gesture</a></li>
+            <li><a href="#physics">Physics</a></li>
+            <li><a href="#particles">Particles</a></li>
+            <li><a href="#morph">Morph</a></li>
+        </ul>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-bg">
+            <canvas id="heroCanvas"></canvas>
+        </div>
+        <div class="hero-content">
+            <p class="hero-eyebrow">The Animation Laboratory</p>
+            <h1 class="hero-title">KINETIC</h1>
+            <p class="hero-subtitle">A playground for motion lovers. Touch, drag, scroll, and interact with physics-based animations crafted for the modern web.</p>
+            <div class="hero-cta">
+                <button class="btn-magnetic primary" data-magnetic>Explore</button>
+                <button class="btn-magnetic" data-magnetic>Learn More</button>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <span class="scroll-text">Scroll</span>
+            <div class="scroll-line"></div>
+        </div>
+    </section>
+
+    <section class="gesture-section" id="gesture">
+        <div class="gesture-container">
+            <div class="section-header reveal">
+                <p class="section-eyebrow">01 — Direct Manipulation</p>
+            </div>
+            <div class="gesture-stage" id="gestureStage">
+                <div class="gesture-object" id="gestureObject"></div>
+                <div class="gesture-hint">Touch and drag with physics momentum</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="physics-section" id="physics">
+        <div class="section-header reveal">
+            <p class="section-eyebrow">02 — 3D Spatial</p>
+            <h2 class="section-title">Tilt & Depth</h2>
+        </div>
+        <div class="cards-grid">
+            <div class="physics-card reveal-left" style="transition-delay: 0.1s;">
+                <div class="card-icon">✦</div>
+                <h3 class="card-title">Spring Physics</h3>
+                <p class="card-desc">Natural motion with spring-based easing. Elements bounce and settle with realistic physics simulations.</p>
+            </div>
+            <div class="physics-card reveal-left" style="transition-delay: 0.2s;">
+                <div class="card-icon">◈</div>
+                <h3 class="card-title">3D Perspective</h3>
+                <p class="card-desc">Cards respond to cursor position with 3D tilt transforms, creating depth and spatial awareness.</p>
+            </div>
+            <div class="physics-card reveal-left" style="transition-delay: 0.3s;">
+                <div class="card-icon">◎</div>
+                <h3 class="card-title">Magnetic UI</h3>
+                <p class="card-desc">Buttons that attract and follow your cursor, creating a tactile connection between user and interface.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="particle-section" id="particles">
+        <div class="section-header reveal">
+            <p class="section-eyebrow">03 — Reactive Effects</p>
+            <h2 class="section-title">Touch to Ignite</h2>
+        </div>
+        <button class="particle-button" id="particleBtn">
+            <span>Tap Me</span>
+        </button>
+    </section>
+
+    <section class="morph-section" id="morph">
+        <div class="section-header reveal">
+            <p class="section-eyebrow">04 — Shape Morphing</p>
+            <h2 class="section-title">Transform</h2>
+        </div>
+        <div class="morph-container">
+            <div class="morph-shape circle" id="morphShape"></div>
+            <div class="morph-controls">
+                <button class="morph-btn active" data-shape="circle">Circle</button>
+                <button class="morph-btn" data-shape="square">Square</button>
+                <button class="morph-btn" data-shape="blob">Blob</button>
+                <button class="morph-btn" data-shape="diamond">Diamond</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="text-section">
+        <div class="section-header reveal">
+            <p class="section-eyebrow">05 — Text Effects</p>
+            <h2 class="section-title">Decode Reality</h2>
+        </div>
+        <div class="scramble-text" id="scrambleText" data-value="HOVER TO DECRYPT THIS MESSAGE">
+            HOVER TO DECRYPT THIS MESSAGE
+        </div>
+    </section>
+
+    <section class="velocity-section">
+        <div class="velocity-container">
+            <div class="velocity-text" id="velocityText">
+                <span class="word">Scroll</span>
+                <span class="word">with</span>
+                <span class="word">velocity</span>
+                <span class="word">to</span>
+                <span class="word">see</span>
+                <span class="word">the</span>
+                <span class="word">skew</span>
+                <span class="word">effect</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="carousel-section">
+        <div class="section-header reveal">
+            <p class="section-eyebrow">06 — Gesture Carousel</p>
+            <h2 class="section-title">Swipe & Snap</h2>
+        </div>
+        <div class="carousel-container">
+            <div class="carousel-track" id="carouselTrack">
+                <div class="carousel-item">
+                    <div class="carousel-visual"></div>
+                    <span class="carousel-number">01</span>
+                    <div class="carousel-content">
+                        <h3 class="carousel-title">Spring</h3>
+                        <p class="carousel-desc">Bouncy physics-based motion</p>
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <div class="carousel-visual" style="background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));"></div>
+                    <span class="carousel-number">02</span>
+                    <div class="carousel-content">
+                        <h3 class="carousel-title">Fluid</h3>
+                        <p class="carousel-desc">Smooth continuous flow</p>
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <div class="carousel-visual" style="background: linear-gradient(135deg, var(--accent-amber), var(--accent-magenta));"></div>
+                    <span class="carousel-number">03</span>
+                    <div class="carousel-content">
+                        <h3 class="carousel-title">Burst</h3>
+                        <p class="carousel-desc">Explosive particle effects</p>
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <div class="carousel-visual" style="background: linear-gradient(135deg, var(--accent-violet), var(--accent-cyan));"></div>
+                    <span class="carousel-number">04</span>
+                    <div class="carousel-content">
+                        <h3 class="carousel-title">Morph</h3>
+                        <p class="carousel-desc">Shape transformation</p>
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <div class="carousel-visual" style="background: linear-gradient(135deg, var(--accent-magenta), var(--accent-amber));"></div>
+                    <span class="carousel-number">05</span>
+                    <div class="carousel-content">
+                        <h3 class="carousel-title">Snap</h3>
+                        <p class="carousel-desc">Scroll-snap positioning</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p class="footer-text">KINETIC — Built for animation lovers</p>
+    </footer>
+
+    <script>
+        // Hide loader
+        window.addEventListener('load', () => {
+            setTimeout(() => document.querySelector('.loader').classList.add('hidden'), 800);
+        });
+
+        // Custom Cursor (desktop)
+        const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+        if (!isTouchDevice) {
+            const cursor = document.querySelector('.cursor');
+            const trail = document.querySelector('.cursor-trail');
+            let mouseX = 0, mouseY = 0, cursorX = 0, cursorY = 0, trailX = 0, trailY = 0;
+
+            document.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
+            document.addEventListener('mousedown', () => cursor.classList.add('click'));
+            document.addEventListener('mouseup', () => cursor.classList.remove('click'));
+
+            document.querySelectorAll('a, button, .gesture-object, .morph-shape').forEach(el => {
+                el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+                el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+            });
+
+            function animateCursor() {
+                cursorX += (mouseX - cursorX) * 0.15;
+                cursorY += (mouseY - cursorY) * 0.15;
+                trailX += (mouseX - trailX) * 0.08;
+                trailY += (mouseY - trailY) * 0.08;
+                cursor.style.left = cursorX + 'px';
+                cursor.style.top = cursorY + 'px';
+                trail.style.left = trailX + 'px';
+                trail.style.top = trailY + 'px';
+                requestAnimationFrame(animateCursor);
+            }
+            animateCursor();
+        }
+
+        // Hero Canvas - Network Particles
+        const heroCanvas = document.getElementById('heroCanvas');
+        const heroCtx = heroCanvas.getContext('2d');
+        let heroParticles = [], mousePos = { x: 0, y: 0 };
+
+        function resizeHeroCanvas() {
+            heroCanvas.width = window.innerWidth;
+            heroCanvas.height = window.innerHeight;
+        }
+        resizeHeroCanvas();
+        window.addEventListener('resize', resizeHeroCanvas);
+
+        class HeroParticle {
+            constructor() {
+                this.x = Math.random() * heroCanvas.width;
+                this.y = Math.random() * heroCanvas.height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.radius = Math.random() * 2 + 1;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                const dx = this.x - mousePos.x;
+                const dy = this.y - mousePos.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 150) {
+                    const force = (150 - dist) / 150;
+                    this.vx += (dx / dist) * force * 0.5;
+                    this.vy += (dy / dist) * force * 0.5;
+                }
+                this.vx *= 0.99;
+                this.vy *= 0.99;
+                if (this.x < 0 || this.x > heroCanvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > heroCanvas.height) this.vy *= -1;
+            }
+            draw() {
+                heroCtx.beginPath();
+                heroCtx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                heroCtx.fillStyle = 'rgba(0, 245, 212, 0.5)';
+                heroCtx.fill();
+            }
+        }
+
+        for (let i = 0; i < 80; i++) heroParticles.push(new HeroParticle());
+
+        heroCanvas.addEventListener('mousemove', (e) => { mousePos.x = e.clientX; mousePos.y = e.clientY; });
+        heroCanvas.addEventListener('touchmove', (e) => { mousePos.x = e.touches[0].clientX; mousePos.y = e.touches[0].clientY; });
+
+        function animateHero() {
+            heroCtx.clearRect(0, 0, heroCanvas.width, heroCanvas.height);
+            heroParticles.forEach(p => { p.update(); p.draw(); });
+            heroParticles.forEach((p1, i) => {
+                heroParticles.slice(i + 1).forEach(p2 => {
+                    const dx = p1.x - p2.x, dy = p1.y - p2.y, dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 150) {
+                        heroCtx.beginPath();
+                        heroCtx.moveTo(p1.x, p1.y);
+                        heroCtx.lineTo(p2.x, p2.y);
+                        heroCtx.strokeStyle = `rgba(0, 245, 212, ${0.2 * (1 - dist / 150)})`;
+                        heroCtx.lineWidth = 0.5;
+                        heroCtx.stroke();
+                    }
+                });
+            });
+            requestAnimationFrame(animateHero);
+        }
+        animateHero();
+
+        // Scroll Reveal
+        const revealElements = document.querySelectorAll('.reveal, .reveal-left, .reveal-scale');
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('active'); });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+        revealElements.forEach(el => revealObserver.observe(el));
+
+        // Gesture Stage - Draggable with Physics
+        const gestureStage = document.getElementById('gestureStage');
+        const gestureObject = document.getElementById('gestureObject');
+        let isDragging = false, startX, startY, currentX = 0, currentY = 0, velocityX = 0, velocityY = 0, rafId = null;
+
+        function updateGestureObject() {
+            if (!isDragging) {
+                velocityX *= 0.95;
+                velocityY *= 0.95;
+                currentX += velocityX;
+                currentY += velocityY;
+                const bounds = gestureStage.getBoundingClientRect();
+                const objSize = gestureObject.offsetWidth;
+                const maxX = (bounds.width - objSize) / 2;
+                const maxY = (bounds.height - objSize) / 2;
+                if (currentX < -maxX) { currentX = -maxX; velocityX *= -0.5; }
+                if (currentX > maxX) { currentX = maxX; velocityX *= -0.5; }
+                if (currentY < -maxY) { currentY = -maxY; velocityY *= -0.5; }
+                if (currentY > maxY) { currentY = maxY; velocityY *= -0.5; }
+                if (Math.abs(velocityX) < 0.01 && Math.abs(velocityY) < 0.01) { cancelAnimationFrame(rafId); rafId = null; }
+            }
+            gestureObject.style.transform = `translate(calc(-50% + ${currentX}px), calc(-50% + ${currentY}px))`;
+            if (isDragging || Math.abs(velocityX) > 0.01 || Math.abs(velocityY) > 0.01) rafId = requestAnimationFrame(updateGestureObject);
+        }
+
+        function handleDragStart(e) {
+            isDragging = true;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            startX = clientX - currentX;
+            startY = clientY - currentY;
+            velocityX = 0;
+            velocityY = 0;
+            if (!rafId) updateGestureObject();
+        }
+
+        function handleDragMove(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const newX = clientX - startX;
+            const newY = clientY - startY;
+            velocityX = newX - currentX;
+            velocityY = newY - currentY;
+            currentX = newX;
+            currentY = newY;
+        }
+
+        function handleDragEnd() { isDragging = false; }
+
+        gestureObject.addEventListener('mousedown', handleDragStart);
+        gestureObject.addEventListener('touchstart', handleDragStart, { passive: false });
+        document.addEventListener('mousemove', handleDragMove);
+        document.addEventListener('touchmove', handleDragMove, { passive: false });
+        document.addEventListener('mouseup', handleDragEnd);
+        document.addEventListener('touchend', handleDragEnd);
+
+        // Particle Burst
+        const particleBtn = document.getElementById('particleBtn');
+        const chars = '✦◈◎✷●◉⬟◆◇◊○◐◑◒◓';
+
+        particleBtn.addEventListener('click', (e) => {
+            const rect = particleBtn.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            for (let i = 0; i < 30; i++) createParticle(centerX, centerY);
+            particleBtn.style.transform = 'scale(0.95)';
+            setTimeout(() => particleBtn.style.transform = '', 150);
+        });
+
+        function createParticle(x, y) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = x + 'px';
+            particle.style.top = y + 'px';
+            particle.style.fontSize = Math.random() * 20 + 10 + 'px';
+            particle.innerHTML = chars[Math.floor(Math.random() * chars.length)];
+            particle.style.color = ['#00f5d4', '#ff006e', '#ff9f1c', '#9d4edd'][Math.floor(Math.random() * 4)];
+            document.body.appendChild(particle);
+
+            const angle = Math.random() * Math.PI * 2;
+            const velocity = Math.random() * 150 + 50;
+            const vx = Math.cos(angle) * velocity;
+            const vy = Math.sin(angle) * velocity;
+            let posX = 0, posY = 0, opacity = 1;
+
+            function animateParticle() {
+                posX += vx * 0.02;
+                posY += vy * 0.02 + 2;
+                opacity -= 0.02;
+                particle.style.transform = `translate(${posX}px, ${posY}px) rotate(${posX * 2}deg)`;
+                particle.style.opacity = opacity;
+                if (opacity > 0) requestAnimationFrame(animateParticle);
+                else particle.remove();
+            }
+            requestAnimationFrame(animateParticle);
+        }
+
+        // Morphing Shapes
+        const morphShape = document.getElementById('morphShape');
+        document.querySelectorAll('.morph-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.morph-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                morphShape.className = 'morph-shape ' + btn.dataset.shape;
+            });
+        });
+
+        // Text Scramble
+        class TextScramble {
+            constructor(el) {
+                this.el = el;
+                this.chars = '!<>-_\\/[]{}—=+*^?#________';
+                this.update = this.update.bind(this);
+            }
+            setText(newText) {
+                const oldText = this.el.innerText;
+                const length = Math.max(oldText.length, newText.length);
+                const promise = new Promise((resolve) => this.resolve = resolve);
+                this.queue = [];
+                for (let i = 0; i < length; i++) {
+                    const from = oldText[i] || '';
+                    const to = newText[i] || '';
+                    const start = Math.floor(Math.random() * 40);
+                    const end = start + Math.floor(Math.random() * 40);
+                    this.queue.push({ from, to, start, end });
+                }
+                cancelAnimationFrame(this.frameRequest);
+                this.frame = 0;
+                this.update();
+                return promise;
+            }
+            update() {
+                let output = '';
+                let complete = 0;
+                for (let i = 0, n = this.queue.length; i < n; i++) {
+                    let { from, to, start, end, char } = this.queue[i];
+                    if (this.frame >= end) {
+                        complete++;
+                        output += to;
+                    } else if (this.frame >= start) {
+                        if (!char || Math.random() < 0.28) {
+                            char = this.randomChar();
+                            this.queue[i].char = char;
+                        }
+                        output += `<span class="char">${char}</span>`;
+                    } else {
+                        output += from;
+                    }
+                }
+                this.el.innerHTML = output;
+                if (complete === this.queue.length) this.resolve();
+                else {
+                    this.frameRequest = requestAnimationFrame(this.update);
+                    this.frame++;
+                }
+            }
+            randomChar() { return this.chars[Math.floor(Math.random() * this.chars.length)]; }
+        }
+
+        const scrambleEl = document.getElementById('scrambleText');
+        const fx = new TextScramble(scrambleEl);
+        let counter = 0;
+        const phrases = ['HOVER TO DECRYPT THIS MESSAGE', 'ANIMATION IS COMMUNICATION', 'MOTION CREATES EMOTION', 'EVERY PIXEL HAS A PURPOSE', 'KINETIC ENERGY UNLEASHED'];
+        scrambleEl.addEventListener('mouseenter', () => {
+            counter = (counter + 1) % phrases.length;
+            fx.setText(phrases[counter]);
+        });
+
+        // Velocity Skew on Scroll
+        let lastScrollY = window.scrollY;
+        const words = document.querySelectorAll('.velocity-text .word');
+
+        window.addEventListener('scroll', () => {
+            const scrollVelocity = window.scrollY - lastScrollY;
+            lastScrollY = window.scrollY;
+            const skew = Math.max(-15, Math.min(15, scrollVelocity * 0.5));
+            words.forEach(word => { word.style.transform = `skewY(${skew}deg)`; });
+            clearTimeout(window.scrollTimeout);
+            window.scrollTimeout = setTimeout(() => {
+                words.forEach(word => { word.style.transform = 'skewY(0deg)'; });
+            }, 100);
+        }, { passive: true });
+
+        // 3D Tilt Cards
+        if (!isTouchDevice) {
+            document.querySelectorAll('.physics-card').forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    const rotateX = (y - centerY) / 10;
+                    const rotateY = (centerX - x) / 10;
+                    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                });
+                card.addEventListener('mouseleave', () => { card.style.transform = ''; });
+            });
+        }
+
+        // Magnetic Buttons
+        if (!isTouchDevice) {
+            document.querySelectorAll('[data-magnetic]').forEach(btn => {
+                btn.addEventListener('mousemove', (e) => {
+                    const rect = btn.getBoundingClientRect();
+                    const x = e.clientX - rect.left - rect.width / 2;
+                    const y = e.clientY - rect.top - rect.height / 2;
+                    btn.style.transform = `translate(${x * 0.3}px, ${y * 0.3}px)`;
+                });
+                btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
+            });
+        }
+    </script>
+</body>
+</html>
