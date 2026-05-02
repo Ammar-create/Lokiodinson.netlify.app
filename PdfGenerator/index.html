@@ -1,216 +1,1125 @@
-<!doctype html>
-
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Beautiful HTML → PDF Generator</title>
-  <link rel="preconnect" href="https://fonts.gstatic.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF FORGE — Document Foundry</title>
+  
+  <!-- Typography: Oswald (industrial display), JetBrains Mono (technical), Playfair Display (editorial) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Oswald:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Libraries: Marked for Markdown, html2pdf for PDF generation, QRCode for watermarks -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  
   <style>
-    :root{
-      --bg:#0f1724;
-      --card:#0b1220;
-      --muted:#94a3b8;
-      --accent1:#7dd3fc; /* light blue */
-      --accent2:#bbf7d0; /* light green */
-      --accent3:#fbcfe8; /* light pink */
-      --accent4:#e9d5ff; /* lavender */
-      --paper:#ffffff;
-      --text:#0b1220;
+    /* ═══════════════════════════════════════════════════════════════
+       PDF FORGE — DESIGN TOKENS
+       Industrial Brutalist Aesthetic with Molten Orange Accents
+       ═══════════════════════════════════════════════════════════════ */
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #0f0f0f;
+      --bg-elevated: #141414;
+      --bg-surface: #1a1a1a;
+      --bg-card: #1f1f1f;
+      
+      --accent-primary: #ff4d00;
+      --accent-secondary: #ff6b35;
+      --accent-tertiary: #ffb800;
+      --accent-glow: rgba(255, 77, 0, 0.4);
+      --accent-subtle: rgba(255, 107, 53, 0.15);
+      
+      --text-primary: #f5f5f5;
+      --text-secondary: #a0a0a0;
+      --text-muted: #6b6b6b;
+      --text-ghost: #404040;
+      
+      --success: #00d084;
+      --warning: #ffb800;
+      --error: #ff2d55;
+      
+      --paper: #ffffff;
+      --paper-text: #1a1a1a;
+      --paper-muted: #666666;
+      
+      --font-display: 'Oswald', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-editorial: 'Playfair Display', serif;
+      
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      --space-3xl: 64px;
+      
+      --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+      --ease-move: cubic-bezier(0.25, 1, 0.5, 1);
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --duration-fast: 150ms;
+      --duration-normal: 250ms;
+      --duration-slow: 400ms;
+      --duration-dramatic: 800ms;
+      
+      --border-subtle: 1px solid rgba(255, 255, 255, 0.06);
+      --border-accent: 1px solid var(--accent-primary);
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
     }
-    *{box-sizing:border-box}
-    body{font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial; margin:0; background:linear-gradient(180deg,#071028 0%, #021026 100%); color:var(--paper); min-height:100vh; display:flex; align-items:flex-start; justify-content:center; padding:32px}
-    .app{width:1100px; max-width:96%; display:grid; grid-template-columns:360px 1fr; gap:24px}/* Sidebar */
-.panel{background:rgba(255,255,255,0.03); padding:18px; border-radius:12px; box-shadow:0 6px 18px rgba(2,6,23,0.6)}
-h1{font-family:'Playfair Display',serif; font-size:20px; margin:0 0 8px; color:var(--paper)}
-.muted{color:var(--muted); font-size:13px}
-label{display:block; margin-top:12px; font-size:13px; color:var(--muted)}
-textarea, input[type=text], select{width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.02); color:var(--paper); font-size:14px}
-textarea{height:180px; resize:vertical}
-.btn{display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px; cursor:pointer; border:0; font-weight:600}
-.btn-primary{background:linear-gradient(90deg,var(--accent1),var(--accent4)); color:#06202a}
-.btn-ghost{background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--paper)}
-.controls{margin-top:12px; display:flex; gap:8px; flex-wrap:wrap}
 
-/* Preview / paper */
-.preview-wrap{display:flex; flex-direction:column; gap:12px}
-.paper{background:var(--paper); color:var(--text); border-radius:10px; padding:28px; min-height:780px; box-shadow:0 10px 30px rgba(2,6,23,0.6)}
-.doc-header{display:flex; justify-content:space-between; align-items:center; gap:12px}
-.title{font-family:'Playfair Display',serif; font-size:28px; margin:0}
-.subtitle{color:var(--muted); font-size:13px}
-.content{margin-top:18px; line-height:1.6; font-size:15px}
-.content h2{font-family:'Playfair Display',serif; color:var(--text); margin:18px 0 8px}
-.content p{margin:0 0 12px}
-.accent{display:inline-block; padding:6px 10px; border-radius:8px; font-weight:600; font-size:13px}
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    
+    body {
+      font-family: var(--font-mono);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+    ::-webkit-scrollbar-thumb { background: var(--bg-surface); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
 
-/* responsive */
-@media (max-width:980px){.app{grid-template-columns:1fr;}}
+    /* LAYOUT */
+    .forge-container {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      min-height: 100vh;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+    
+    @media (max-width: 1200px) {
+      .forge-container { grid-template-columns: 1fr; }
+    }
 
-/* print-friendly page breaks */
-.page-break{page-break-after:always}
+    /* SIDEBAR — CONTROL PANEL */
+    .control-panel {
+      background: var(--bg-secondary);
+      border-right: var(--border-subtle);
+      padding: var(--space-xl);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-lg);
+      overflow-y: auto;
+      max-height: 100vh;
+      position: sticky;
+      top: 0;
+    }
+    
+    @media (max-width: 1200px) {
+      .control-panel {
+        position: relative;
+        max-height: none;
+        border-right: none;
+        border-bottom: var(--border-subtle);
+      }
+    }
 
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      padding-bottom: var(--space-lg);
+      border-bottom: var(--border-subtle);
+    }
+    
+    .brand-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--bg-primary);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .brand-icon::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.3) 50%, transparent 60%);
+      animation: shimmer 3s infinite;
+    }
+    
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    
+    .brand-text h1 {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-primary);
+    }
+    
+    .brand-text p {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      font-family: var(--font-display);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: var(--space-md);
+    }
+    
+    .section-header::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: var(--accent-primary);
+      border-radius: 50%;
+    }
+
+    /* FORM ELEMENTS */
+    .input-group { display: flex; flex-direction: column; gap: var(--space-sm); }
+    
+    .input-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    
+    .forge-input, .forge-textarea, .forge-select {
+      background: var(--bg-elevated);
+      border: var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      padding: var(--space-md);
+      transition: all var(--duration-fast) var(--ease-enter);
+      outline: none;
+    }
+    
+    .forge-input:focus, .forge-textarea:focus, .forge-select:focus {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px var(--accent-subtle);
+    }
+    
+    .forge-input::placeholder, .forge-textarea::placeholder { color: var(--text-ghost); }
+    .forge-textarea { min-height: 200px; resize: vertical; line-height: 1.8; }
+
+    /* Drag & Drop */
+    .drop-zone {
+      border: 2px dashed var(--text-ghost);
+      border-radius: var(--radius-lg);
+      padding: var(--space-2xl);
+      text-align: center;
+      transition: all var(--duration-normal) var(--ease-enter);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .drop-zone::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, var(--accent-subtle) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity var(--duration-normal);
+    }
+    
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--accent-primary);
+      background: var(--bg-surface);
+    }
+    
+    .drop-zone.drag-over::before { opacity: 1; }
+    .drop-zone-icon { font-size: 48px; margin-bottom: var(--space-md); opacity: 0.6; }
+    .drop-zone-text { font-size: 13px; color: var(--text-secondary); }
+    .drop-zone-hint { font-size: 11px; color: var(--text-muted); margin-top: var(--space-sm); }
+
+    /* Template Grid */
+    .template-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); }
+    
+    .template-option {
+      position: relative;
+      padding: var(--space-md);
+      background: var(--bg-elevated);
+      border: var(--border-subtle);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-enter);
+      overflow: hidden;
+    }
+    
+    .template-option:hover { border-color: var(--text-muted); transform: translateY(-2px); }
+    .template-option.active { border-color: var(--accent-primary); background: var(--accent-subtle); }
+    .template-option.active::after {
+      content: '✓';
+      position: absolute;
+      top: var(--space-sm);
+      right: var(--space-sm);
+      width: 20px;
+      height: 20px;
+      background: var(--accent-primary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--bg-primary);
+    }
+    
+    .template-name {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .template-desc { font-size: 10px; color: var(--text-muted); margin-top: var(--space-xs); }
+
+    /* BUTTONS */
+    .button-group { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
+    
+    .forge-button {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      padding: var(--space-md) var(--space-lg);
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      overflow: hidden;
+      transition: all var(--duration-fast) var(--ease-spring);
+      will-change: transform;
+    }
+    
+    .forge-button::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity var(--duration-fast);
+    }
+    
+    .forge-button:hover { transform: scale(1.05) translateY(-2px); }
+    .forge-button:active { transform: scale(0.98); }
+    .forge-button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    
+    .forge-button-primary {
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      color: var(--bg-primary);
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+    
+    .forge-button-primary::before {
+      background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.3) 50%, transparent 60%);
+    }
+    
+    .forge-button-primary:hover::before {
+      opacity: 1;
+      animation: buttonShimmer 1s ease-in-out;
+    }
+    
+    @keyframes buttonShimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    
+    .forge-button-secondary {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      border: var(--border-subtle);
+    }
+    
+    .forge-button-secondary:hover { border-color: var(--accent-primary); background: var(--accent-subtle); }
+    
+    .forge-button-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--text-ghost);
+    }
+    
+    .forge-button-ghost:hover { border-color: var(--text-muted); color: var(--text-primary); }
+
+    /* PREVIEW AREA */
+    .preview-area {
+      background: var(--bg-primary);
+      padding: var(--space-3xl);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      perspective: 2000px;
+      overflow-y: auto;
+    }
+    
+    @media (max-width: 1200px) { .preview-area { padding: var(--space-xl); } }
+
+    .preview-toolbar {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-xl);
+      padding: var(--space-md) var(--space-lg);
+      background: var(--bg-elevated);
+      border: var(--border-subtle);
+      border-radius: var(--radius-lg);
+    }
+    
+    .preview-info { display: flex; align-items: center; gap: var(--space-md); }
+    .preview-status { display: flex; align-items: center; gap: var(--space-sm); font-size: 12px; color: var(--text-muted); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 2s infinite; }
+    
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .preview-actions { display: flex; gap: var(--space-sm); }
+
+    /* Document 3D */
+    .document-wrapper {
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform var(--duration-slow) var(--ease-move);
+    }
+    
+    .document-wrapper:hover { transform: rotateX(2deg) rotateY(-2deg) translateZ(20px); }
+    .document-shadow {
+      position: absolute;
+      inset: 20px;
+      background: rgba(0, 0, 0, 0.5);
+      filter: blur(40px);
+      transform: translateZ(-50px);
+      border-radius: var(--radius-lg);
+    }
+
+    /* Paper Document */
+    .paper {
+      position: relative;
+      width: 210mm;
+      min-height: 297mm;
+      max-width: 100%;
+      background: var(--paper);
+      color: var(--paper-text);
+      padding: 25mm;
+      box-shadow: 
+        0 1px 1px rgba(0,0,0,0.15),
+        0 10px 0 -5px #eee,
+        0 10px 1px -4px rgba(0,0,0,0.15),
+        0 20px 0 -10px #eee,
+        0 20px 1px -9px rgba(0,0,0,0.15);
+      border-radius: 2px;
+      overflow: hidden;
+      transition: all var(--duration-slow) var(--ease-move);
+    }
+    
+    @media (max-width: 900px) {
+      .paper {
+        width: 100%;
+        padding: 15mm;
+        transform: scale(0.9);
+        transform-origin: top center;
+      }
+    }
+
+    /* Loading */
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(10, 10, 10, 0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-lg);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--duration-normal);
+      z-index: 100;
+      backdrop-filter: blur(8px);
+    }
+    
+    .loading-overlay.active { opacity: 1; pointer-events: all; }
+    .loading-spinner { width: 60px; height: 60px; border: 3px solid var(--bg-surface); border-top-color: var(--accent-primary); border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-family: var(--font-display); font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary); }
+    .loading-progress { width: 200px; height: 3px; background: var(--bg-surface); border-radius: 2px; overflow: hidden; }
+    .loading-progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent-primary), var(--accent-tertiary)); width: 0%; transition: width 0.3s var(--ease-move); }
+
+    /* Industrial Template */
+    .template-industrial .doc-header { border-bottom: 4px solid var(--accent-primary); padding-bottom: var(--space-lg); margin-bottom: var(--space-xl); }
+    .template-industrial .doc-title { font-family: var(--font-display); font-size: 36px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--paper-text); margin: 0; }
+    .template-industrial .doc-meta { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--paper-muted); margin-top: var(--space-sm); display: flex; gap: var(--space-lg); }
+    .template-industrial .doc-content h1 { font-family: var(--font-display); font-size: 24px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; border-left: 4px solid var(--accent-primary); padding-left: var(--space-md); margin: var(--space-xl) 0 var(--space-md); }
+    .template-industrial .doc-content h2 { font-family: var(--font-display); font-size: 18px; font-weight: 500; text-transform: uppercase; margin: var(--space-lg) 0 var(--space-sm); }
+    .template-industrial .doc-content p { font-family: var(--font-mono); font-size: 14px; line-height: 1.8; margin-bottom: var(--space-md); }
+    .template-industrial .doc-content blockquote { border-left: 3px solid var(--accent-tertiary); padding-left: var(--space-md); margin: var(--space-lg) 0; font-style: italic; color: var(--paper-muted); }
+    .template-industrial .doc-content pre { background: #f5f5f5; padding: var(--space-md); border-radius: var(--radius-sm); overflow-x: auto; font-family: var(--font-mono); font-size: 12px; }
+    .template-industrial .doc-content code { font-family: var(--font-mono); background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+
+    /* Minimal Template */
+    .template-minimal .doc-header { text-align: center; margin-bottom: var(--space-3xl); padding-bottom: var(--space-xl); border-bottom: 1px solid #e0e0e0; }
+    .template-minimal .doc-title { font-family: var(--font-editorial); font-size: 42px; font-weight: 400; color: var(--paper-text); margin: 0; letter-spacing: -0.02em; }
+    .template-minimal .doc-meta { font-family: var(--font-mono); font-size: 12px; color: var(--paper-muted); margin-top: var(--space-md); letter-spacing: 0.05em; }
+    .template-minimal .doc-content h1 { font-family: var(--font-editorial); font-size: 28px; font-weight: 400; margin: var(--space-3xl) 0 var(--space-lg); }
+    .template-minimal .doc-content h2 { font-family: var(--font-editorial); font-size: 22px; font-weight: 400; margin: var(--space-xl) 0 var(--space-md); }
+    .template-minimal .doc-content p { font-family: var(--font-editorial); font-size: 16px; line-height: 1.7; margin-bottom: var(--space-lg); }
+
+    /* Editorial Template */
+    .template-editorial .doc-header { display: grid; grid-template-columns: 1fr auto; gap: var(--space-xl); margin-bottom: var(--space-3xl); padding-bottom: var(--space-xl); border-bottom: 2px solid var(--paper-text); }
+    .template-editorial .doc-title { font-family: var(--font-editorial); font-size: 48px; font-weight: 700; line-height: 1.1; margin: 0; }
+    .template-editorial .doc-meta { text-align: right; font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--paper-muted); }
+    .template-editorial .doc-content h1 { font-family: var(--font-display); font-size: 32px; text-transform: uppercase; letter-spacing: 0.02em; margin: var(--space-2xl) 0 var(--space-lg); }
+    .template-editorial .doc-content h2 { font-family: var(--font-editorial); font-size: 24px; font-weight: 600; font-style: italic; margin: var(--space-xl) 0 var(--space-md); }
+    .template-editorial .doc-content p { font-family: var(--font-editorial); font-size: 17px; line-height: 1.8; text-align: justify; margin-bottom: var(--space-md); }
+
+    /* Artistic Template */
+    .template-artistic .doc-header { position: relative; padding: var(--space-3xl); margin: -25mm -25mm var(--space-2xl); background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; }
+    .template-artistic .doc-title { font-family: var(--font-editorial); font-size: 52px; font-weight: 700; margin: 0; background: linear-gradient(90deg, #fff, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .template-artistic .doc-meta { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; margin-top: var(--space-md); color: rgba(255,255,255,0.7); }
+    .template-artistic .doc-content { padding: 0 var(--space-xl); }
+    .template-artistic .doc-content h1 { font-family: var(--font-display); font-size: 28px; text-transform: uppercase; letter-spacing: 0.1em; color: #1a1a2e; margin: var(--space-2xl) 0 var(--space-lg); position: relative; padding-left: var(--space-lg); }
+    .template-artistic .doc-content h1::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 4px; height: 60%; background: linear-gradient(180deg, #ff4d00, #ffb800); }
+    .template-artistic .doc-content h2 { font-family: var(--font-editorial); font-size: 22px; font-weight: 600; color: #16213e; margin: var(--space-xl) 0 var(--space-md); }
+    .template-artistic .doc-content p { font-family: var(--font-editorial); font-size: 16px; line-height: 1.9; color: #333; margin-bottom: var(--space-md); }
+
+    /* QR Watermark */
+    .doc-watermark { position: absolute; bottom: 15mm; right: 15mm; opacity: 0.6; }
+
+    /* Advanced Controls */
+    .advanced-controls { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-md); }
+    .control-item { display: flex; flex-direction: column; gap: var(--space-xs); }
+    .control-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+    
+    .toggle-switch { position: relative; width: 48px; height: 26px; background: var(--bg-surface); border-radius: 13px; cursor: pointer; transition: background var(--duration-fast); }
+    .toggle-switch.active { background: var(--accent-primary); }
+    .toggle-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: transform var(--duration-fast) var(--ease-spring); }
+    .toggle-switch.active::after { transform: translateX(22px); }
+
+    /* Toast */
+    .toast-container { position: fixed; bottom: var(--space-xl); right: var(--space-xl); z-index: 1000; display: flex; flex-direction: column; gap: var(--space-md); }
+    .toast { background: var(--bg-surface); border: var(--border-subtle); border-left: 3px solid var(--accent-primary); padding: var(--space-md) var(--space-lg); border-radius: var(--radius-md); display: flex; align-items: center; gap: var(--space-md); transform: translateX(120%); opacity: 0; transition: all var(--duration-slow) var(--ease-move); max-width: 400px; }
+    .toast.show { transform: translateX(0); opacity: 1; }
+    .toast-icon { font-size: 20px; }
+    .toast-content { flex: 1; }
+    .toast-title { font-family: var(--font-display); font-size: 14px; font-weight: 500; }
+    .toast-message { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    /* Image Gallery */
+    .image-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-sm); margin-top: var(--space-md); }
+    .gallery-item { position: relative; aspect-ratio: 1; border-radius: var(--radius-sm); overflow: hidden; cursor: pointer; }
+    .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--duration-normal) var(--ease-enter); }
+    .gallery-item:hover img { transform: scale(1.1); }
+    .gallery-item .remove-btn { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; background: var(--error); border: none; border-radius: 50%; color: white; font-size: 12px; cursor: pointer; opacity: 0; transition: opacity var(--duration-fast); }
+    .gallery-item:hover .remove-btn { opacity: 1; }
+
+    /* Utilities */
+    .hidden { display: none !important; }
+    kbd { background: var(--bg-surface); border: var(--border-subtle); border-radius: var(--radius-sm); padding: 2px 6px; font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); }
+    
+    /* Shortcuts */
+    .shortcuts-help { margin-top: auto; padding-top: var(--space-lg); border-top: var(--border-subtle); }
+    .shortcuts-title { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: var(--space-md); }
+    .shortcut-item { display: flex; justify-content: space-between; align-items: center; padding: var(--space-xs) 0; font-size: 12px; }
+    .shortcut-keys { display: flex; gap: var(--space-xs); }
   </style>
 </head>
 <body>
-  <div class="app">
-    <div class="panel">
-      <h1>PDF Maker</h1>
-      <div class="muted">Paste your text (Markdown supported) and style it. Then preview and generate a beautiful PDF.</div><label for="headerText">Document Title</label>
-  <input id="headerText" type="text" placeholder="My Beautiful Document" value="My Beautiful Document" />
-
-  <label for="subText">Subtitle / Author (optional)</label>
-  <input id="subText" type="text" placeholder="Subtitle or Author" />
-
-  <label for="inputText">Paste Text (Markdown)</label>
-  <textarea id="inputText" placeholder="# Heading\n\nWrite your text here..." spellcheck="false"></textarea>
-
-  <label for="accent">Accent Palette</label>
-  <select id="accent">
-    <option value="0">Light Blue / Green / Pink / Lavender</option>
-    <option value="1">Warm (Peach / Coral / Gold)</option>
-    <option value="2">Cool (Teal / Indigo / Slate)</option>
-  </select>
-
-  <label>Format</label>
-  <div style="display:flex; gap:8px; margin-top:6px">
-    <select id="format">
-      <option value="a4">A4</option>
-      <option value="letter">Letter</option>
-    </select>
-    <select id="orientation">
-      <option value="portrait">Portrait</option>
-      <option value="landscape">Landscape</option>
-    </select>
-    <select id="scale">
-      <option value="1">Quality: 1 (default)</option>
-      <option value="1.25">Quality: 1.25</option>
-      <option value="1.5">Quality: 1.5</option>
-    </select>
-  </div>
-
-  <div class="controls">
-    <button class="btn btn-primary" id="btnPreview">Preview</button>
-    <button class="btn btn-ghost" id="btnDownload">Generate PDF</button>
-    <button class="btn btn-ghost" id="btnClear">Clear</button>
-  </div>
-
-  <hr style="margin-top:14px; border:none; height:1px; background:rgba(255,255,255,0.03)">
-  <div style="font-size:12px; color:var(--muted); margin-top:10px">Tips: Use Markdown for headings and lists. Short paragraphs read better on mobile. Preview before generating PDF.</div>
-</div>
-
-<div class="preview-wrap">
-  <div style="display:flex; gap:12px; align-items:center">
-    <div style="padding:8px 12px; background:rgba(255,255,255,0.03); border-radius:8px">Live Preview</div>
-    <div class="muted">How your PDF will look (click Generate PDF when ready)</div>
-  </div>
-
-  <div id="paper" class="paper" role="document" aria-label="Document preview">
-    <div class="doc-header">
-      <div>
-        <div class="title" id="docTitle">My Beautiful Document</div>
-        <div class="subtitle" id="docSub">Subtitle / Author</div>
+  <div class="forge-container">
+    <!-- CONTROL PANEL -->
+    <aside class="control-panel">
+      <div class="brand">
+        <div class="brand-icon">F</div>
+        <div class="brand-text">
+          <h1>PDF Forge</h1>
+          <p>Document Foundry v2.0</p>
+        </div>
       </div>
-      <div>
-        <div class="accent" id="docAccent">Sample</div>
+
+      <div class="input-section">
+        <div class="section-header">Document Identity</div>
+        <div class="input-group">
+          <label class="input-label">Title</label>
+          <input type="text" class="forge-input" id="docTitleInput" placeholder="ENTER DOCUMENT TITLE" value="PROJECT PROPOSAL">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Author / Organization</label>
+          <input type="text" class="forge-input" id="docAuthorInput" placeholder="AUTHOR OR ORGANIZATION">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Date</label>
+          <input type="text" class="forge-input" id="docDateInput" placeholder="AUTO-GENERATED">
+        </div>
       </div>
-    </div>
-    <div class="content" id="docContent">
-      <h2>Introduction</h2>
-      <p>Paste your text on the left and press preview to update this document. Use Markdown to add headings, lists, and emphasis.</p>
-    </div>
+
+      <div class="template-section">
+        <div class="section-header">Select Template</div>
+        <div class="template-grid">
+          <div class="template-option active" data-template="industrial">
+            <div class="template-name">Industrial</div>
+            <div class="template-desc">Bold, technical, raw</div>
+          </div>
+          <div class="template-option" data-template="minimal">
+            <div class="template-name">Minimal</div>
+            <div class="template-desc">Clean, refined, elegant</div>
+          </div>
+          <div class="template-option" data-template="editorial">
+            <div class="template-name">Editorial</div>
+            <div class="template-desc">Magazine-style layout</div>
+          </div>
+          <div class="template-option" data-template="artistic">
+            <div class="template-name">Artistic</div>
+            <div class="template-desc">Creative, expressive</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="content-section">
+        <div class="section-header">Content (Markdown)</div>
+        <textarea class="forge-textarea" id="contentInput" placeholder="# Introduction&#10;&#10;Write your content here using Markdown syntax...&#10;&#10;## Section Heading&#10;&#10;- Bullet points&#10;- Numbered lists&#10;- **Bold** and *italic* text&#10;- [Links](https://example.com)&#10;&#10;> Blockquotes for emphasis&#10;&#10;```code blocks```" spellcheck="false"></textarea>
+      </div>
+
+      <div class="images-section">
+        <div class="section-header">Images</div>
+        <div class="drop-zone" id="dropZone">
+          <div class="drop-zone-icon">📎</div>
+          <div class="drop-zone-text">Drop images here or click to upload</div>
+          <div class="drop-zone-hint">Supports: JPG, PNG, GIF, WebP</div>
+          <input type="file" id="fileInput" multiple accept="image/*" hidden>
+        </div>
+        <div class="image-gallery" id="imageGallery"></div>
+      </div>
+
+      <div class="advanced-section">
+        <div class="section-header">Advanced Options</div>
+        <div class="advanced-controls">
+          <div class="control-item">
+            <label class="control-label">QR Code Watermark</label>
+            <div class="toggle-switch" id="qrToggle"></div>
+          </div>
+          <div class="control-item">
+            <label class="control-label">Page Numbers</label>
+            <div class="toggle-switch active" id="pageNumbersToggle"></div>
+          </div>
+        </div>
+        <div class="input-group" style="margin-top: var(--space-md);">
+          <label class="input-label">Export Quality</label>
+          <select class="forge-select" id="qualitySelect">
+            <option value="draft">Draft — Fast, compressed</option>
+            <option value="standard" selected>Standard — Balanced</option>
+            <option value="print">Print — High resolution</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Page Format</label>
+          <select class="forge-select" id="formatSelect">
+            <option value="a4" selected>A4 (210×297mm)</option>
+            <option value="letter">Letter (8.5×11in)</option>
+            <option value="legal">Legal (8.5×14in)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions-section">
+        <div class="section-header">Actions</div>
+        <div class="button-group">
+          <button class="forge-button forge-button-primary" id="generateBtn">
+            <span>⚡</span>
+            <span>Forge PDF</span>
+          </button>
+          <button class="forge-button forge-button-secondary" id="resetBtn">
+            <span>↺</span>
+            <span>Reset</span>
+          </button>
+        </div>
+        <button class="forge-button forge-button-ghost" id="importBtn" style="width: 100%; margin-top: var(--space-sm);">
+          <span>📁</span>
+          <span>Import from File</span>
+        </button>
+        <input type="file" id="importInput" accept=".txt,.md,.html" hidden>
+      </div>
+
+      <div class="shortcuts-help">
+        <div class="shortcuts-title">Keyboard Shortcuts</div>
+        <div class="shortcut-item">
+          <span>Generate PDF</span>
+          <div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>S</kbd></div>
+        </div>
+        <div class="shortcut-item">
+          <span>Reset All</span>
+          <div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>R</kbd></div>
+        </div>
+        <div class="shortcut-item">
+          <span>Focus Editor</span>
+          <div class="shortcut-keys"><kbd>/</kbd></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- PREVIEW AREA -->
+    <main class="preview-area">
+      <div class="preview-toolbar">
+        <div class="preview-info">
+          <div class="preview-status">
+            <span class="status-dot"></span>
+            <span>Live Preview Active</span>
+          </div>
+        </div>
+        <div class="preview-actions">
+          <button class="forge-button forge-button-secondary" id="zoomOut">−</button>
+          <span style="font-size: 12px; color: var(--text-muted);">100%</span>
+          <button class="forge-button forge-button-secondary" id="zoomIn">+</button>
+        </div>
+      </div>
+
+      <div class="document-wrapper" id="documentWrapper">
+        <div class="document-shadow"></div>
+        <div class="paper template-industrial" id="previewPaper">
+          <div class="doc-header">
+            <h1 class="doc-title" id="previewTitle">PROJECT PROPOSAL</h1>
+            <div class="doc-meta">
+              <span id="previewAuthor"></span>
+              <span id="previewDate"></span>
+            </div>
+          </div>
+          <div class="doc-content" id="previewContent">
+            <h1>Introduction</h1>
+            <p>Your document content will appear here as you type. Use the markdown editor on the left to format your text with headings, lists, and styling.</p>
+            <h2>Getting Started</h2>
+            <p>Select a template above to change the visual style of your document. The Industrial template features bold typography and technical aesthetics.</p>
+            <blockquote>This is a sample blockquote. It will be styled according to your selected template.</blockquote>
+            <h2>Features</h2>
+            <p>PDF Forge supports real-time preview, multiple templates, drag-and-drop image uploads, QR code watermarks, and high-quality PDF generation.</p>
+          </div>
+          <div class="doc-watermark hidden" id="qrWatermark"></div>
+          
+          <div class="loading-overlay" id="loadingOverlay">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Forging your document...</div>
+            <div class="loading-progress">
+              <div class="loading-progress-bar" id="progressBar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
-</div>
 
-  </div>  <!-- External libs: marked (markdown) + html2pdf (html2canvas + jspdf) -->  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>  <script>
-    // Elements
-    const inputText = document.getElementById('inputText');
-    const btnPreview = document.getElementById('btnPreview');
-    const btnDownload = document.getElementById('btnDownload');
-    const btnClear = document.getElementById('btnClear');
-    const docTitle = document.getElementById('docTitle');
-    const docSub = document.getElementById('docSub');
-    const docContent = document.getElementById('docContent');
-    const headerText = document.getElementById('headerText');
-    const subText = document.getElementById('subText');
-    const accent = document.getElementById('accent');
-    const paper = document.getElementById('paper');
+  <div class="toast-container" id="toastContainer"></div>
 
-    // Color palettes
-    const palettes = [
-      ['#7dd3fc','#bbf7d0','#fbcfe8','#e9d5ff'],
-      ['#ffd6b3','#ffb4a2','#ffd27f','#ffd9c7'],
-      ['#99f6e4','#c4b5fd','#94a3b8','#a5b4fc']
-    ];
+  <script>
+    // ═══════════════════════════════════════════════════════════════
+    // PDF FORGE — APPLICATION STATE
+    // ═══════════════════════════════════════════════════════════════
+    const Forge = {
+      state: {
+        template: 'industrial',
+        title: 'PROJECT PROPOSAL',
+        author: '',
+        date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+        content: '',
+        images: [],
+        qrEnabled: false,
+        pageNumbers: true,
+        quality: 'standard',
+        format: 'a4',
+        zoom: 1,
+        isGenerating: false
+      },
+      templates: {
+        industrial: { name: 'Industrial', description: 'Bold, technical, raw' },
+        minimal: { name: 'Minimal', description: 'Clean, refined, elegant' },
+        editorial: { name: 'Editorial', description: 'Magazine-style layout' },
+        artistic: { name: 'Artistic', description: 'Creative, expressive' }
+      }
+    };
 
-    function applyPalette(idx){
-      const [a,b,c,d] = palettes[idx];
-      document.documentElement.style.setProperty('--accent1', a);
-      document.documentElement.style.setProperty('--accent2', b);
-      document.documentElement.style.setProperty('--accent3', c);
-      document.documentElement.style.setProperty('--accent4', d);
-      document.getElementById('docAccent').style.background = `linear-gradient(90deg, ${a}, ${d})`;
+    // ═══════════════════════════════════════════════════════════════
+    // DOM ELEMENTS
+    // ═══════════════════════════════════════════════════════════════
+    const DOM = {
+      titleInput: document.getElementById('docTitleInput'),
+      authorInput: document.getElementById('docAuthorInput'),
+      dateInput: document.getElementById('docDateInput'),
+      contentInput: document.getElementById('contentInput'),
+      templateOptions: document.querySelectorAll('.template-option'),
+      previewPaper: document.getElementById('previewPaper'),
+      previewTitle: document.getElementById('previewTitle'),
+      previewAuthor: document.getElementById('previewAuthor'),
+      previewDate: document.getElementById('previewDate'),
+      previewContent: document.getElementById('previewContent'),
+      qrWatermark: document.getElementById('qrWatermark'),
+      qrToggle: document.getElementById('qrToggle'),
+      pageNumbersToggle: document.getElementById('pageNumbersToggle'),
+      qualitySelect: document.getElementById('qualitySelect'),
+      formatSelect: document.getElementById('formatSelect'),
+      generateBtn: document.getElementById('generateBtn'),
+      resetBtn: document.getElementById('resetBtn'),
+      importBtn: document.getElementById('importBtn'),
+      importInput: document.getElementById('importInput'),
+      dropZone: document.getElementById('dropZone'),
+      fileInput: document.getElementById('fileInput'),
+      imageGallery: document.getElementById('imageGallery'),
+      loadingOverlay: document.getElementById('loadingOverlay'),
+      progressBar: document.getElementById('progressBar'),
+      toastContainer: document.getElementById('toastContainer')
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    // INITIALIZATION
+    // ═══════════════════════════════════════════════════════════════
+    function init() {
+      DOM.dateInput.value = Forge.state.date;
+      const saved = localStorage.getItem('forge-content');
+      if (saved) {
+        DOM.contentInput.value = saved;
+        Forge.state.content = saved;
+      }
+      updatePreview();
+      setupEventListeners();
+      showToast('PDF Forge Ready', 'Start typing to see live preview', '👋');
     }
 
-    // Basic smart renderer: Markdown -> HTML, plus small post-processing
-    function renderPreview(){
-      docTitle.textContent = headerText.value || 'Untitled Document';
-      docSub.textContent = subText.value || '';
-      applyPalette(parseInt(accent.value,10)||0);
+    function setupEventListeners() {
+      // Real-time updates
+      DOM.titleInput.addEventListener('input', (e) => { Forge.state.title = e.target.value; updatePreview(); });
+      DOM.authorInput.addEventListener('input', (e) => { Forge.state.author = e.target.value; updatePreview(); });
+      DOM.dateInput.addEventListener('input', (e) => { Forge.state.date = e.target.value; updatePreview(); });
+      DOM.contentInput.addEventListener('input', (e) => {
+        Forge.state.content = e.target.value;
+        localStorage.setItem('forge-content', e.target.value);
+        updatePreview();
+      });
 
-      const md = inputText.value || '# Hello\n\nWrite your text here...';
-      // Use marked to convert to HTML
+      // Template selection
+      DOM.templateOptions.forEach(option => {
+        option.addEventListener('click', () => switchTemplate(option.dataset.template));
+      });
+
+      // Toggles
+      DOM.qrToggle.addEventListener('click', () => {
+        Forge.state.qrEnabled = !Forge.state.qrEnabled;
+        DOM.qrToggle.classList.toggle('active');
+        updateQRCode();
+      });
+      
+      DOM.pageNumbersToggle.addEventListener('click', () => {
+        Forge.state.pageNumbers = !Forge.state.pageNumbers;
+        DOM.pageNumbersToggle.classList.toggle('active');
+      });
+
+      // Selects
+      DOM.qualitySelect.addEventListener('change', (e) => { Forge.state.quality = e.target.value; });
+      DOM.formatSelect.addEventListener('change', (e) => { Forge.state.format = e.target.value; });
+
+      // Actions
+      DOM.generateBtn.addEventListener('click', generatePDF);
+      DOM.resetBtn.addEventListener('click', resetAll);
+      DOM.importBtn.addEventListener('click', () => DOM.importInput.click());
+      DOM.importInput.addEventListener('change', handleFileImport);
+
+      // Drag & Drop
+      DOM.dropZone.addEventListener('click', () => DOM.fileInput.click());
+      DOM.dropZone.addEventListener('dragover', handleDragOver);
+      DOM.dropZone.addEventListener('dragleave', handleDragLeave);
+      DOM.dropZone.addEventListener('drop', handleDrop);
+      DOM.fileInput.addEventListener('change', handleFileSelect);
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', handleKeyboard);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // PREVIEW FUNCTIONS
+    // ═══════════════════════════════════════════════════════════════
+    function updatePreview() {
+      DOM.previewTitle.textContent = Forge.state.title || 'Untitled Document';
+      DOM.previewAuthor.textContent = Forge.state.author;
+      DOM.previewDate.textContent = Forge.state.date;
+      
+      const markdownContent = Forge.state.content || getDefaultContent();
+      const htmlContent = parseMarkdown(markdownContent);
+      DOM.previewContent.innerHTML = htmlContent;
+      styleCodeBlocks();
+    }
+
+    function getDefaultContent() {
+      return `# Introduction\n\nYour document content will appear here as you type. Use the markdown editor on the left to format your text with headings, lists, and styling.\n\n## Getting Started\n\nSelect a template above to change the visual style of your document. The ${Forge.templates[Forge.state.template].name} template features ${Forge.templates[Forge.state.template].description} aesthetics.\n\n### Features\n\n- **Real-time preview** — see changes instantly\n- **Multiple templates** — choose your style\n- **Image uploads** — drag and drop\n- **QR watermarks** — modern authentication\n- **High-quality export** — print-ready PDFs\n\n> Start typing in the editor to replace this content with your own.`;
+    }
+
+    function parseMarkdown(md) {
+      marked.setOptions({ breaks: true, gfm: true, headerIds: false });
       let html = marked.parse(md);
+      return html;
+    }
 
-      // Small transformation: add classes to headings and paragraphs for spacing
-      html = html.replace(/<h1>/g, '<h2>').replace(/<\/h1>/g,'</h2>');
-
-      docContent.innerHTML = html;
-
-      // Optional: highlight inline code and add subtle decorations
-      docContent.querySelectorAll('pre code').forEach(block=>{
-        block.style.background='#0b1220'; block.style.color='#e6f7ff'; block.style.padding='8px'; block.style.display='block'; block.style.borderRadius='6px';
-      });
-
-      // Alternate row accent for h2 headings
-      const headings = docContent.querySelectorAll('h2');
-      headings.forEach((h,i)=>{
-        const color = palettes[accent.value][i % palettes[accent.value].length] || palettes[0][i%4];
-        h.style.color = 'var(--text)';
-        h.style.borderLeft = `6px solid ${color}`;
-        h.style.paddingLeft = '12px';
+    function styleCodeBlocks() {
+      DOM.previewContent.querySelectorAll('pre code').forEach(block => {
+        block.style.background = '#f5f5f5';
+        block.style.padding = '12px';
+        block.style.display = 'block';
+        block.style.borderRadius = '4px';
+        block.style.fontFamily = 'JetBrains Mono, monospace';
+        block.style.fontSize = '12px';
+        block.style.overflowX = 'auto';
       });
     }
 
-    // Generate PDF using html2pdf
-    function generatePDF(){
-      renderPreview();
+    function switchTemplate(template) {
+      Forge.state.template = template;
+      DOM.templateOptions.forEach(opt => {
+        opt.classList.toggle('active', opt.dataset.template === template);
+      });
+      
+      // Apply template with animation
+      DOM.previewPaper.style.opacity = '0';
+      DOM.previewPaper.style.transform = 'translateY(20px)';
+      
+      setTimeout(() => {
+        DOM.previewPaper.className = 'paper template-' + template;
+        updatePreview();
+        DOM.previewPaper.style.opacity = '1';
+        DOM.previewPaper.style.transform = 'translateY(0)';
+      }, 200);
+    }
+
+    function updateQRCode() {
+      DOM.qrWatermark.classList.toggle('hidden', !Forge.state.qrEnabled);
+      if (Forge.state.qrEnabled) {
+        QRCode.toDataURL(window.location.href, { width: 80, margin: 2 }, (err, url) => {
+          if (!err) {
+            DOM.qrWatermark.innerHTML = `<img src="${url}" alt="QR Code">`;
+          }
+        });
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // PDF GENERATION
+    // ═══════════════════════════════════════════════════════════════
+    async function generatePDF() {
+      if (Forge.state.isGenerating) return;
+      
+      Forge.state.isGenerating = true;
+      DOM.generateBtn.disabled = true;
+      DOM.loadingOverlay.classList.add('active');
+      
+      // Animate progress
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress += 5;
+        DOM.progressBar.style.width = Math.min(progress, 90) + '%';
+        if (progress >= 90) clearInterval(progressInterval);
+      }, 100);
+      
+      const qualityMap = { draft: 1, standard: 2, print: 3 };
+      const formatMap = { a4: 'a4', letter: 'letter', legal: 'legal' };
+      
       const opt = {
-        margin: 14,
-        filename: (headerText.value || 'document') + '.pdf',
+        margin: 0,
+        filename: (Forge.state.title || 'document').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase() + '.pdf',
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: parseFloat(document.getElementById('scale').value) || 1, useCORS: true },
-        jsPDF: { unit: 'mm', format: document.getElementById('format').value || 'a4', orientation: document.getElementById('orientation').value || 'portrait' }
+        html2canvas: { 
+          scale: qualityMap[Forge.state.quality] || 2, 
+          useCORS: true,
+          logging: false
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: formatMap[Forge.state.format] || 'a4', 
+          orientation: 'portrait' 
+        }
       };
-
-      // Add a small print-style class to paper to ensure white background
-      paper.style.background = 'white';
-
-      // Trigger
-      html2pdf().set(opt).from(paper).save().then(()=>{
-        // restore if needed
-        paper.style.background = 'var(--paper)';
-      }).catch(err=>{
-        alert('Error generating PDF: '+err.message);
-      });
+      
+      try {
+        await html2pdf().set(opt).from(DOM.previewPaper).save();
+        
+        clearInterval(progressInterval);
+        DOM.progressBar.style.width = '100%';
+        
+        setTimeout(() => {
+          DOM.loadingOverlay.classList.remove('active');
+          DOM.generateBtn.disabled = false;
+          Forge.state.isGenerating = false;
+          DOM.progressBar.style.width = '0%';
+          
+          showToast('PDF Generated!', `Saved as "${opt.filename}"`, '✅');
+        }, 500);
+      } catch (err) {
+        clearInterval(progressInterval);
+        DOM.loadingOverlay.classList.remove('active');
+        DOM.generateBtn.disabled = false;
+        Forge.state.isGenerating = false;
+        DOM.progressBar.style.width = '0%';
+        
+        showToast('Generation Failed', err.message, '❌');
+      }
     }
 
-    // Events
-    btnPreview.addEventListener('click', renderPreview);
-    btnDownload.addEventListener('click', generatePDF);
-    btnClear.addEventListener('click', ()=>{inputText.value=''; docContent.innerHTML='';});
+    function resetAll() {
+      if (!confirm('Reset all fields? This cannot be undone.')) return;
+      
+      Forge.state.content = '';
+      Forge.state.images = [];
+      Forge.state.title = 'PROJECT PROPOSAL';
+      Forge.state.author = '';
+      
+      DOM.contentInput.value = '';
+      DOM.titleInput.value = 'PROJECT PROPOSAL';
+      DOM.authorInput.value = '';
+      DOM.imageGallery.innerHTML = '';
+      DOM.dateInput.value = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      
+      localStorage.removeItem('forge-content');
+      switchTemplate('industrial');
+      
+      showToast('Reset Complete', 'All fields have been cleared', '🔄');
+    }
 
-    // initial render
-    renderPreview();
-  </script></body>
+    // ═══════════════════════════════════════════════════════════════
+    // FILE HANDLING
+    // ═══════════════════════════════════════════════════════════════
+    function handleFileImport(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = event.target.result;
+        DOM.contentInput.value = content;
+        Forge.state.content = content;
+        localStorage.setItem('forge-content', content);
+        updatePreview();
+        showToast('File Imported', `Loaded "${file.name}"`, '📄');
+      };
+      reader.readAsText(file);
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      DOM.dropZone.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+      e.preventDefault();
+      DOM.dropZone.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      DOM.dropZone.classList.remove('drag-over');
+      const files = e.dataTransfer.files;
+      handleFiles(files);
+    }
+
+    function handleFileSelect(e) {
+      handleFiles(e.target.files);
+    }
+
+    function handleFiles(files) {
+      Array.from(files).forEach(file => {
+        if (!file.type.startsWith('image/')) return;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = document.createElement('div');
+          img.className = 'gallery-item';
+          img.innerHTML = `
+            <img src="${e.target.result}" alt="">
+            <button class="remove-btn" onclick="this.parentElement.remove()">×</button>
+          `;
+          DOM.imageGallery.appendChild(img);
+          Forge.state.images.push(e.target.result);
+        };
+        reader.readAsDataURL(file);
+      });
+      
+      if (files.length > 0) {
+        showToast('Images Added', `${files.length} image(s) ready for PDF`, '🖼️');
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // KEYBOARD SHORTCUTS
+    // ═══════════════════════════════════════════════════════════════
+    function handleKeyboard(e) {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 's') {
+          e.preventDefault();
+          generatePDF();
+        } else if (e.key === 'r') {
+          e.preventDefault();
+          resetAll();
+        }
+      } else if (e.key === '/') {
+        e.preventDefault();
+        DOM.contentInput.focus();
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // TOAST NOTIFICATIONS
+    // ═══════════════════════════════════════════════════════════════
+    function showToast(title, message, icon) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `
+        <span class="toast-icon">${icon}</span>
+        <div class="toast-content">
+          <div class="toast-title">${title}</div>
+          <div class="toast-message">${message}</div>
+        </div>
+      `;
+      
+      DOM.toastContainer.appendChild(toast);
+      
+      requestAnimationFrame(() => {
+        toast.classList.add('show');
+      });
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 400);
+      }, 4000);
+    }
+
+    // Initialize
+    init();
+  </script>
+</body>
 </html>
