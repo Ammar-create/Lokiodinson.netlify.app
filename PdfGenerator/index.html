@@ -5,21 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF FORGE — Document Foundry</title>
   
-  <!-- Typography: Oswald (industrial display), JetBrains Mono (technical), Playfair Display (editorial) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Oswald:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <!-- Libraries: Marked for Markdown, html2pdf for PDF generation, QRCode for watermarks -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   
   <style>
-    /* ═══════════════════════════════════════════════════════════════
-       PDF FORGE — DESIGN TOKENS
-       Industrial Brutalist Aesthetic with Molten Orange Accents
-       ═══════════════════════════════════════════════════════════════ */
     :root {
       --bg-primary: #0a0a0a;
       --bg-secondary: #0f0f0f;
@@ -74,6 +68,24 @@
       --radius-xl: 16px;
     }
 
+    /* Light Theme Variables */
+    [data-theme="light"] {
+      --bg-primary: #f0f0f0;
+      --bg-secondary: #ffffff;
+      --bg-elevated: #f8f8f8;
+      --bg-surface: #f5f5f5;
+      --bg-card: #ffffff;
+      
+      --text-primary: #1a1a1a;
+      --text-secondary: #555555;
+      --text-muted: #888888;
+      --text-ghost: #bbbbbb;
+      
+      --border-subtle: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    
+    [data-theme-switching] * { transition: none !important; }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { font-size: 16px; scroll-behavior: smooth; }
     
@@ -93,7 +105,6 @@
     ::-webkit-scrollbar-thumb { background: var(--bg-surface); border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
 
-    /* LAYOUT */
     .forge-container {
       display: grid;
       grid-template-columns: 380px 1fr;
@@ -106,7 +117,6 @@
       .forge-container { grid-template-columns: 1fr; }
     }
 
-    /* SIDEBAR — CONTROL PANEL */
     .control-panel {
       background: var(--bg-secondary);
       border-right: var(--border-subtle);
@@ -182,6 +192,75 @@
       text-transform: uppercase;
     }
 
+    /* Theme Toggle */
+    .theme-toggle {
+      position: relative;
+      width: 52px;
+      height: 26px;
+      background: var(--bg-elevated);
+      border: var(--border-subtle);
+      border-radius: 13px;
+      cursor: pointer;
+      padding: 0;
+      margin-left: auto;
+      overflow: hidden;
+      transition: all var(--duration-fast) var(--ease-enter);
+    }
+    
+    .theme-toggle:hover {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 2px var(--accent-subtle);
+    }
+    
+    .theme-toggle .theme-icon-sun,
+    .theme-toggle .theme-icon-moon {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 13px;
+      transition: all var(--duration-normal) var(--ease-spring);
+      z-index: 1;
+    }
+    
+    .theme-toggle .theme-icon-sun {
+      left: 5px;
+      opacity: 0;
+      transform: translateY(-50%) scale(0.5) rotate(-90deg);
+    }
+    
+    .theme-toggle .theme-icon-moon {
+      right: 5px;
+      opacity: 1;
+      transform: translateY(-50%) scale(1) rotate(0deg);
+    }
+    
+    .theme-toggle[data-theme="light"] .theme-icon-sun {
+      opacity: 1;
+      transform: translateY(-50%) scale(1) rotate(0deg);
+    }
+    
+    .theme-toggle[data-theme="light"] .theme-icon-moon {
+      opacity: 0;
+      transform: translateY(-50%) scale(0.5) rotate(90deg);
+    }
+    
+    .theme-slider {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 22px;
+      height: 22px;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      border-radius: 50%;
+      transition: transform var(--duration-normal) var(--ease-spring);
+      z-index: 2;
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+    
+    .theme-toggle[data-theme="light"] .theme-slider {
+      transform: translateX(26px);
+    }
+
     .section-header {
       display: flex;
       align-items: center;
@@ -203,7 +282,6 @@
       border-radius: 50%;
     }
 
-    /* FORM ELEMENTS */
     .input-group { display: flex; flex-direction: column; gap: var(--space-sm); }
     
     .input-label {
@@ -234,7 +312,6 @@
     .forge-input::placeholder, .forge-textarea::placeholder { color: var(--text-ghost); }
     .forge-textarea { min-height: 200px; resize: vertical; line-height: 1.8; }
 
-    /* Drag & Drop */
     .drop-zone {
       border: 2px dashed var(--text-ghost);
       border-radius: var(--radius-lg);
@@ -265,7 +342,6 @@
     .drop-zone-text { font-size: 13px; color: var(--text-secondary); }
     .drop-zone-hint { font-size: 11px; color: var(--text-muted); margin-top: var(--space-sm); }
 
-    /* Template Grid */
     .template-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); }
     
     .template-option {
@@ -306,7 +382,6 @@
     }
     .template-desc { font-size: 10px; color: var(--text-muted); margin-top: var(--space-xs); }
 
-    /* BUTTONS */
     .button-group { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
     
     .forge-button {
@@ -329,14 +404,6 @@
       will-change: transform;
     }
     
-    .forge-button::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      transition: opacity var(--duration-fast);
-    }
-    
     .forge-button:hover { transform: scale(1.05) translateY(-2px); }
     .forge-button:active { transform: scale(0.98); }
     .forge-button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
@@ -345,20 +412,6 @@
       background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
       color: var(--bg-primary);
       box-shadow: 0 4px 20px var(--accent-glow);
-    }
-    
-    .forge-button-primary::before {
-      background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.3) 50%, transparent 60%);
-    }
-    
-    .forge-button-primary:hover::before {
-      opacity: 1;
-      animation: buttonShimmer 1s ease-in-out;
-    }
-    
-    @keyframes buttonShimmer {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(100%); }
     }
     
     .forge-button-secondary {
@@ -377,7 +430,6 @@
     
     .forge-button-ghost:hover { border-color: var(--text-muted); color: var(--text-primary); }
 
-    /* PREVIEW AREA */
     .preview-area {
       background: var(--bg-primary);
       padding: var(--space-3xl);
@@ -387,9 +439,14 @@
       justify-content: flex-start;
       perspective: 2000px;
       overflow-y: auto;
+      transition: background var(--duration-slow) var(--ease-move);
     }
     
     @media (max-width: 1200px) { .preview-area { padding: var(--space-xl); } }
+
+    [data-theme="light"] .preview-area {
+      background: linear-gradient(135deg, #e8e8e8 0%, #f5f5f5 100%);
+    }
 
     .preview-toolbar {
       width: 100%;
@@ -402,6 +459,12 @@
       background: var(--bg-elevated);
       border: var(--border-subtle);
       border-radius: var(--radius-lg);
+      transition: all var(--duration-slow) var(--ease-move);
+    }
+    
+    [data-theme="light"] .preview-toolbar {
+      background: rgba(255, 255, 255, 0.9);
+      border-color: rgba(0, 0, 0, 0.08);
     }
     
     .preview-info { display: flex; align-items: center; gap: var(--space-md); }
@@ -411,7 +474,6 @@
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     .preview-actions { display: flex; gap: var(--space-sm); }
 
-    /* Document 3D */
     .document-wrapper {
       position: relative;
       transform-style: preserve-3d;
@@ -428,7 +490,6 @@
       border-radius: var(--radius-lg);
     }
 
-    /* Paper Document */
     .paper {
       position: relative;
       width: 210mm;
@@ -457,7 +518,6 @@
       }
     }
 
-    /* Loading */
     .loading-overlay {
       position: absolute;
       inset: 0;
@@ -469,19 +529,23 @@
       gap: var(--space-lg);
       opacity: 0;
       pointer-events: none;
-      transition: opacity var(--duration-normal);
+      transition: opacity var(--duration-normal), background var(--duration-slow);
       z-index: 100;
       backdrop-filter: blur(8px);
+    }
+    
+    [data-theme="light"] .loading-overlay {
+      background: rgba(245, 245, 245, 0.95);
     }
     
     .loading-overlay.active { opacity: 1; pointer-events: all; }
     .loading-spinner { width: 60px; height: 60px; border: 3px solid var(--bg-surface); border-top-color: var(--accent-primary); border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-text { font-family: var(--font-display); font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary); }
+    .loading-text { font-family: var(--font-display); font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary); transition: color var(--duration-slow); }
+    [data-theme="light"] .loading-text { color: #555; }
     .loading-progress { width: 200px; height: 3px; background: var(--bg-surface); border-radius: 2px; overflow: hidden; }
     .loading-progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent-primary), var(--accent-tertiary)); width: 0%; transition: width 0.3s var(--ease-move); }
 
-    /* Industrial Template */
     .template-industrial .doc-header { border-bottom: 4px solid var(--accent-primary); padding-bottom: var(--space-lg); margin-bottom: var(--space-xl); }
     .template-industrial .doc-title { font-family: var(--font-display); font-size: 36px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--paper-text); margin: 0; }
     .template-industrial .doc-meta { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--paper-muted); margin-top: var(--space-sm); display: flex; gap: var(--space-lg); }
@@ -492,7 +556,6 @@
     .template-industrial .doc-content pre { background: #f5f5f5; padding: var(--space-md); border-radius: var(--radius-sm); overflow-x: auto; font-family: var(--font-mono); font-size: 12px; }
     .template-industrial .doc-content code { font-family: var(--font-mono); background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
 
-    /* Minimal Template */
     .template-minimal .doc-header { text-align: center; margin-bottom: var(--space-3xl); padding-bottom: var(--space-xl); border-bottom: 1px solid #e0e0e0; }
     .template-minimal .doc-title { font-family: var(--font-editorial); font-size: 42px; font-weight: 400; color: var(--paper-text); margin: 0; letter-spacing: -0.02em; }
     .template-minimal .doc-meta { font-family: var(--font-mono); font-size: 12px; color: var(--paper-muted); margin-top: var(--space-md); letter-spacing: 0.05em; }
@@ -500,7 +563,6 @@
     .template-minimal .doc-content h2 { font-family: var(--font-editorial); font-size: 22px; font-weight: 400; margin: var(--space-xl) 0 var(--space-md); }
     .template-minimal .doc-content p { font-family: var(--font-editorial); font-size: 16px; line-height: 1.7; margin-bottom: var(--space-lg); }
 
-    /* Editorial Template */
     .template-editorial .doc-header { display: grid; grid-template-columns: 1fr auto; gap: var(--space-xl); margin-bottom: var(--space-3xl); padding-bottom: var(--space-xl); border-bottom: 2px solid var(--paper-text); }
     .template-editorial .doc-title { font-family: var(--font-editorial); font-size: 48px; font-weight: 700; line-height: 1.1; margin: 0; }
     .template-editorial .doc-meta { text-align: right; font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--paper-muted); }
@@ -508,7 +570,6 @@
     .template-editorial .doc-content h2 { font-family: var(--font-editorial); font-size: 24px; font-weight: 600; font-style: italic; margin: var(--space-xl) 0 var(--space-md); }
     .template-editorial .doc-content p { font-family: var(--font-editorial); font-size: 17px; line-height: 1.8; text-align: justify; margin-bottom: var(--space-md); }
 
-    /* Artistic Template */
     .template-artistic .doc-header { position: relative; padding: var(--space-3xl); margin: -25mm -25mm var(--space-2xl); background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; }
     .template-artistic .doc-title { font-family: var(--font-editorial); font-size: 52px; font-weight: 700; margin: 0; background: linear-gradient(90deg, #fff, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
     .template-artistic .doc-meta { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; margin-top: var(--space-md); color: rgba(255,255,255,0.7); }
@@ -518,10 +579,8 @@
     .template-artistic .doc-content h2 { font-family: var(--font-editorial); font-size: 22px; font-weight: 600; color: #16213e; margin: var(--space-xl) 0 var(--space-md); }
     .template-artistic .doc-content p { font-family: var(--font-editorial); font-size: 16px; line-height: 1.9; color: #333; margin-bottom: var(--space-md); }
 
-    /* QR Watermark */
     .doc-watermark { position: absolute; bottom: 15mm; right: 15mm; opacity: 0.6; }
 
-    /* Advanced Controls */
     .advanced-controls { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-md); }
     .control-item { display: flex; flex-direction: column; gap: var(--space-xs); }
     .control-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
@@ -531,7 +590,6 @@
     .toggle-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: transform var(--duration-fast) var(--ease-spring); }
     .toggle-switch.active::after { transform: translateX(22px); }
 
-    /* Toast */
     .toast-container { position: fixed; bottom: var(--space-xl); right: var(--space-xl); z-index: 1000; display: flex; flex-direction: column; gap: var(--space-md); }
     .toast { background: var(--bg-surface); border: var(--border-subtle); border-left: 3px solid var(--accent-primary); padding: var(--space-md) var(--space-lg); border-radius: var(--radius-md); display: flex; align-items: center; gap: var(--space-md); transform: translateX(120%); opacity: 0; transition: all var(--duration-slow) var(--ease-move); max-width: 400px; }
     .toast.show { transform: translateX(0); opacity: 1; }
@@ -540,7 +598,6 @@
     .toast-title { font-family: var(--font-display); font-size: 14px; font-weight: 500; }
     .toast-message { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
-    /* Image Gallery */
     .image-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-sm); margin-top: var(--space-md); }
     .gallery-item { position: relative; aspect-ratio: 1; border-radius: var(--radius-sm); overflow: hidden; cursor: pointer; }
     .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--duration-normal) var(--ease-enter); }
@@ -548,11 +605,9 @@
     .gallery-item .remove-btn { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; background: var(--error); border: none; border-radius: 50%; color: white; font-size: 12px; cursor: pointer; opacity: 0; transition: opacity var(--duration-fast); }
     .gallery-item:hover .remove-btn { opacity: 1; }
 
-    /* Utilities */
     .hidden { display: none !important; }
     kbd { background: var(--bg-surface); border: var(--border-subtle); border-radius: var(--radius-sm); padding: 2px 6px; font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); }
     
-    /* Shortcuts */
     .shortcuts-help { margin-top: auto; padding-top: var(--space-lg); border-top: var(--border-subtle); }
     .shortcuts-title { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: var(--space-md); }
     .shortcut-item { display: flex; justify-content: space-between; align-items: center; padding: var(--space-xs) 0; font-size: 12px; }
@@ -569,6 +624,11 @@
           <h1>PDF Forge</h1>
           <p>Document Foundry v2.0</p>
         </div>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" data-theme="dark">
+          <span class="theme-icon-sun">☀️</span>
+          <span class="theme-icon-moon">🌙</span>
+          <span class="theme-slider"></span>
+        </button>
       </div>
 
       <div class="input-section">
@@ -743,9 +803,6 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script>
-    // ═══════════════════════════════════════════════════════════════
-    // PDF FORGE — APPLICATION STATE
-    // ═══════════════════════════════════════════════════════════════
     const Forge = {
       state: {
         template: 'industrial',
@@ -769,9 +826,6 @@
       }
     };
 
-    // ═══════════════════════════════════════════════════════════════
-    // DOM ELEMENTS
-    // ═══════════════════════════════════════════════════════════════
     const DOM = {
       titleInput: document.getElementById('docTitleInput'),
       authorInput: document.getElementById('docAuthorInput'),
@@ -797,13 +851,12 @@
       imageGallery: document.getElementById('imageGallery'),
       loadingOverlay: document.getElementById('loadingOverlay'),
       progressBar: document.getElementById('progressBar'),
-      toastContainer: document.getElementById('toastContainer')
+      toastContainer: document.getElementById('toastContainer'),
+      themeToggle: document.getElementById('themeToggle')
     };
 
-    // ═══════════════════════════════════════════════════════════════
-    // INITIALIZATION
-    // ═══════════════════════════════════════════════════════════════
     function init() {
+      initTheme();
       DOM.dateInput.value = Forge.state.date;
       const saved = localStorage.getItem('forge-content');
       if (saved) {
@@ -815,8 +868,33 @@
       showToast('PDF Forge Ready', 'Start typing to see live preview', '👋');
     }
 
+    function initTheme() {
+      const savedTheme = localStorage.getItem('forge-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      DOM.themeToggle.setAttribute('data-theme', savedTheme);
+      
+      DOM.themeToggle.addEventListener('click', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        document.documentElement.setAttribute('data-theme-switching', '');
+        document.documentElement.setAttribute('data-theme', newTheme);
+        DOM.themeToggle.setAttribute('data-theme', newTheme);
+        localStorage.setItem('forge-theme', newTheme);
+        
+        setTimeout(() => {
+          document.documentElement.removeAttribute('data-theme-switching');
+        }, 50);
+        
+        showToast(
+          newTheme === 'light' ? 'Light Mode' : 'Dark Mode',
+          'Theme updated',
+          newTheme === 'light' ? '☀️' : '🌙'
+        );
+      });
+    }
+
     function setupEventListeners() {
-      // Real-time updates
       DOM.titleInput.addEventListener('input', (e) => { Forge.state.title = e.target.value; updatePreview(); });
       DOM.authorInput.addEventListener('input', (e) => { Forge.state.author = e.target.value; updatePreview(); });
       DOM.dateInput.addEventListener('input', (e) => { Forge.state.date = e.target.value; updatePreview(); });
@@ -826,12 +904,10 @@
         updatePreview();
       });
 
-      // Template selection
       DOM.templateOptions.forEach(option => {
         option.addEventListener('click', () => switchTemplate(option.dataset.template));
       });
 
-      // Toggles
       DOM.qrToggle.addEventListener('click', () => {
         Forge.state.qrEnabled = !Forge.state.qrEnabled;
         DOM.qrToggle.classList.toggle('active');
@@ -843,30 +919,23 @@
         DOM.pageNumbersToggle.classList.toggle('active');
       });
 
-      // Selects
       DOM.qualitySelect.addEventListener('change', (e) => { Forge.state.quality = e.target.value; });
       DOM.formatSelect.addEventListener('change', (e) => { Forge.state.format = e.target.value; });
 
-      // Actions
       DOM.generateBtn.addEventListener('click', generatePDF);
       DOM.resetBtn.addEventListener('click', resetAll);
       DOM.importBtn.addEventListener('click', () => DOM.importInput.click());
       DOM.importInput.addEventListener('change', handleFileImport);
 
-      // Drag & Drop
       DOM.dropZone.addEventListener('click', () => DOM.fileInput.click());
       DOM.dropZone.addEventListener('dragover', handleDragOver);
       DOM.dropZone.addEventListener('dragleave', handleDragLeave);
       DOM.dropZone.addEventListener('drop', handleDrop);
       DOM.fileInput.addEventListener('change', handleFileSelect);
 
-      // Keyboard shortcuts
       document.addEventListener('keydown', handleKeyboard);
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // PREVIEW FUNCTIONS
-    // ═══════════════════════════════════════════════════════════════
     function updatePreview() {
       DOM.previewTitle.textContent = Forge.state.title || 'Untitled Document';
       DOM.previewAuthor.textContent = Forge.state.author;
@@ -884,8 +953,7 @@
 
     function parseMarkdown(md) {
       marked.setOptions({ breaks: true, gfm: true, headerIds: false });
-      let html = marked.parse(md);
-      return html;
+      return marked.parse(md);
     }
 
     function styleCodeBlocks() {
@@ -906,7 +974,6 @@
         opt.classList.toggle('active', opt.dataset.template === template);
       });
       
-      // Apply template with animation
       DOM.previewPaper.style.opacity = '0';
       DOM.previewPaper.style.transform = 'translateY(20px)';
       
@@ -929,9 +996,6 @@
       }
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // PDF GENERATION
-    // ═══════════════════════════════════════════════════════════════
     async function generatePDF() {
       if (Forge.state.isGenerating) return;
       
@@ -939,7 +1003,6 @@
       DOM.generateBtn.disabled = true;
       DOM.loadingOverlay.classList.add('active');
       
-      // Animate progress
       let progress = 0;
       const progressInterval = setInterval(() => {
         progress += 5;
@@ -1011,9 +1074,6 @@
       showToast('Reset Complete', 'All fields have been cleared', '🔄');
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // FILE HANDLING
-    // ═══════════════════════════════════════════════════════════════
     function handleFileImport(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -1043,8 +1103,7 @@
     function handleDrop(e) {
       e.preventDefault();
       DOM.dropZone.classList.remove('drag-over');
-      const files = e.dataTransfer.files;
-      handleFiles(files);
+      handleFiles(e.dataTransfer.files);
     }
 
     function handleFileSelect(e) {
@@ -1074,9 +1133,6 @@
       }
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // KEYBOARD SHORTCUTS
-    // ═══════════════════════════════════════════════════════════════
     function handleKeyboard(e) {
       if (e.ctrlKey || e.metaKey) {
         if (e.key === 's') {
@@ -1092,9 +1148,6 @@
       }
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // TOAST NOTIFICATIONS
-    // ═══════════════════════════════════════════════════════════════
     function showToast(title, message, icon) {
       const toast = document.createElement('div');
       toast.className = 'toast';
@@ -1118,7 +1171,6 @@
       }, 4000);
     }
 
-    // Initialize
     init();
   </script>
 </body>
