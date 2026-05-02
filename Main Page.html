@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -119,20 +120,25 @@
 <body>
   <h1>Ammar's Hub</h1>
   <div class="subtitle">Your gateway to organized fandom & personal projects</div>
-  <div class="welcome" id="welcome">Welcome to Ammar'Hub</div>  <div class="login-section" id="loginSection">
+  <div class="welcome" id="welcome">Welcome to Ammar'Hub</div>
+  <div class="login-section" id="loginSection">
     <button class="login-btn" onclick="enterAs('Ammar')">👑 Ammar</button>
     <div id="userList"></div>
     <button class="login-btn" onclick="addUser()">+ Add New User</button>
-  </div>  <div class="main-content" id="mainContent">
+  </div>
+  <div class="main-content" id="mainContent">
     <div class="edit-panel">
       <button onclick="toggleEdit()">Edit</button>
     </div>
     <div class="buttons-container" id="hubButtons"></div>
     <button class="login-btn" onclick="addButton()">+ Add</button>
-  </div>  <footer>&copy; <span id="year"></span> Ammar. All rights reserved.</footer>  <script>
+  </div>
+  <footer>&copy; <span id="year"></span> Ammar. All rights reserved.</footer>
+  <script>
     document.getElementById("year").textContent = new Date().getFullYear();
     const users = JSON.parse(localStorage.getItem("users") || "[]");
     const buttons = JSON.parse(localStorage.getItem("buttons") || JSON.stringify([
+      {name: "PDF Forge 🔥", path: "PdfGenerator/index.html"},
       {name: "Watchlist", path: "Watchlist/index.html"},
       {name: "One Piece Wiki", path: "OnePieceWiki/OnePieceWiki.html"}
     ]));
@@ -246,5 +252,6 @@
     }
 
     renderUsers();
-  </script></body>
+  </script>
+</body>
 </html>
