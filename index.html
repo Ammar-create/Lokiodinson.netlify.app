@@ -363,6 +363,7 @@
     .card-icon.anime svg { stroke: var(--warm-amber); }
     .card-icon.utility svg { stroke: var(--soft-lavender); }
     .card-icon.personal svg { stroke: #ff85a2; }
+    .card-icon.story svg { stroke: #9b59b6; }
 
     .card-badge {
       position: absolute;
@@ -383,6 +384,7 @@
     .card-badge.anime { background: rgba(255, 107, 53, 0.1); border-color: rgba(255, 107, 53, 0.2); color: var(--warm-amber); }
     .card-badge.utility { background: rgba(184, 184, 255, 0.1); border-color: rgba(184, 184, 255, 0.2); color: var(--soft-lavender); }
     .card-badge.personal { background: rgba(255, 133, 162, 0.1); border-color: rgba(255, 133, 162, 0.2); color: #ff85a2; }
+    .card-badge.story { background: rgba(155, 89, 182, 0.1); border-color: rgba(155, 89, 182, 0.2); color: #9b59b6; }
 
     .card-title {
       font-size: 1.25rem;
@@ -824,7 +826,7 @@
         </svg>
         Tools
       </a>
-      <a href="OnePieceWiki/OnePieceWiki.html" class="orbit-link">
+      <a href="OnePieceWiki/index.html" class="orbit-link">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 2L2 7l10 5 10-5-10-5z"/>
           <path d="M2 17l10 5 10-5"/>
@@ -962,7 +964,7 @@
     </div>
 
     <div class="cards-grid">
-      <div class="tool-card" onclick="location.href='OnePieceWiki/OnePieceWiki.html'">
+      <div class="tool-card" onclick="location.href='OnePieceWiki/index.html'">
         <div class="card-glow"></div>
         <span class="card-badge anime">Anime</span>
         <div class="card-icon anime">
@@ -1021,79 +1023,36 @@
           </svg>
         </div>
       </div>
+    </div>
 
+    <!-- Stories Section (NEW) -->
+    <div class="section-header" id="stories">
+      <div class="section-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+      </div>
+      <h2 class="section-title">Stories</h2>
+      <p class="section-desc">Tales crafted with words and imagination</p>
+    </div>
+
+    <div class="cards-grid">
       <div class="tool-card" onclick="location.href='story/Ali&Ayesha.html'">
         <div class="card-glow"></div>
-        <span class="card-badge personal">Story</span>
-        <div class="card-icon personal">
+        <span class="card-badge story">Story</span>
+        <div class="card-icon story">
           <svg viewBox="0 0 24 24">
             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
             <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
           </svg>
         </div>
         <h3 class="card-title">Ali & Ayesha</h3>
-        <p class="card-desc">An elegantly styled literary story with support for English, Urdu, and Arabic. Features decorative typography and printable PDF generation.</p>
+        <p class="card-desc">Our first story — an elegantly styled literary narrative with support for English, Urdu, and Arabic. Features decorative typography and printable PDF generation.</p>
         <div class="card-meta">
           <span>📖 Multilingual</span>
           <span>✨ Literary</span>
         </div>
-        <div class="card-arrow">
-          <svg viewBox="0 0 24 24">
-            <path d="M5 12h14M12 5l7 7-7 7"/>
-          </svg>
-        </div>
-      </div>
-
-      <div class="tool-card" onclick="location.href='birthday/index.html'">
-        <div class="card-glow"></div>
-        <span class="card-badge personal">Celebration</span>
-        <div class="card-icon personal">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8"/>
-            <path d="M12 6v6l4 2"/>
-          </svg>
-        </div>
-        <h3 class="card-title">Birthday Experience</h3>
-        <p class="card-desc">Interactive birthday celebration page with animations and special effects.</p>
-        <div class="card-meta">
-          <span>🎉 Interactive</span>
-        </div>
-        <div class="card-arrow">
-          <svg viewBox="0 0 24 24">
-            <path d="M5 12h14M12 5l7 7-7 7"/>
-          </svg>
-        </div>
-      </div>
-
-      <div class="tool-card" onclick="location.href='Hope/index.html'">
-        <div class="card-glow"></div>
-        <span class="card-badge personal">Inspiration</span>
-        <div class="card-icon personal">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-            <path d="M2 17l10 5 10-5"/>
-            <path d="M2 12l10 5 10-5"/>
-          </svg>
-        </div>
-        <h3 class="card-title">Hope</h3>
-        <p class="card-desc">An inspiring digital experience exploring themes of hope and positivity.</p>
-        <div class="card-arrow">
-          <svg viewBox="0 0 24 24">
-            <path d="M5 12h14M12 5l7 7-7 7"/>
-          </svg>
-        </div>
-      </div>
-
-      <div class="tool-card" onclick="location.href='Forgiveness/index.html'">
-        <div class="card-glow"></div>
-        <span class="card-badge personal">Reflection</span>
-        <div class="card-icon personal">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-          </svg>
-        </div>
-        <h3 class="card-title">Forgiveness</h3>
-        <p class="card-desc">A contemplative journey exploring the power and meaning of forgiveness.</p>
         <div class="card-arrow">
           <svg viewBox="0 0 24 24">
             <path d="M5 12h14M12 5l7 7-7 7"/>
