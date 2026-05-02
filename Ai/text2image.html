@@ -128,7 +128,7 @@
 <header>
   <div class="eyebrow"><span class="pill">zimage</span> Powered by Pollinations.ai</div>
   <h1>AI Image <span>Studio</span></h1>
-  <p class="subtitle">Gemini-enhanced prompts · zimage generation · instant results</p>
+  <p class="subtitle">Mistral-enhanced prompts · zimage generation · instant results</p>
 </header>
 
 <div class="wrap">
@@ -160,8 +160,8 @@
       </div>
 
       <div class="enhanced-box" id="enhancedBox" style="margin-bottom: 16px;">
-        <div class="enhanced-label"><span class="dot-accent"></span> Enhanced Prompt <span style="color:#2a2a2a; font-size:10px; margin-left:auto;">Gemini 2.5 Flash-Lite</span></div>
-        <div class="enhanced-text placeholder-text" id="enhancedDisplay">Click "Enhance Prompt" to let Gemini rewrite your prompt for better results...</div>
+        <div class="enhanced-label"><span class="dot-accent"></span> Enhanced Prompt <span style="color:#2a2a2a; font-size:10px; margin-left:auto;">Mistral Small 3.2</span></div>
+        <div class="enhanced-text placeholder-text" id="enhancedDisplay">Click "Enhance Prompt" to let Mistral rewrite your prompt for better results...</div>
         <textarea class="enhanced-edit" id="enhancedEdit" rows="3"></textarea>
       </div>
     </div>
@@ -315,7 +315,7 @@
           "Authorization": "Bearer " + getActiveKey()
         },
         body: JSON.stringify({
-          model: "gemini-2.5-flash-lite",
+          model: "mistral",
           messages: [
             { role: "system", content: ENHANCE_PROMPTS[enhanceMode] },
             { role: "user", content: raw }
