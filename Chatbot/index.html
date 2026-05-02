@@ -200,32 +200,6 @@
       background: rgba(255, 255, 255, 0.2);
     }
 
-    .model-selector {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .model-selector select {
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(255, 215, 0, 0.3);
-      color: white;
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 0.85rem;
-      cursor: pointer;
-      outline: none;
-    }
-
-    .model-selector select:focus {
-      border-color: #FFD700;
-    }
-
-    .model-selector select option {
-      background: #2d2d44;
-      color: white;
-    }
-
     /* Chat Container */
     .chat-container {
       flex: 1;
@@ -291,7 +265,6 @@
       border-radius: 18px;
       line-height: 1.5;
       word-wrap: break-word;
-      white-space: pre-wrap;
     }
 
     .message.user .bubble {
@@ -406,13 +379,6 @@
       border: 1px solid rgba(255, 71, 87, 0.5);
     }
 
-    .system-message {
-      text-align: center;
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 0.85rem;
-      padding: 10px;
-    }
-
     @media (max-width: 600px) {
       .message {
         max-width: 90%;
@@ -426,7 +392,7 @@
         padding: 25px;
       }
 
-      .api-status span, .model-selector span {
+      .api-status span {
         display: none;
       }
       
@@ -441,10 +407,10 @@
   <div class="setup-overlay" id="setupOverlay">
     <div class="setup-card">
       <h2>🔐 Welcome to Loki Chatbot</h2>
-      <p>Enter your Pollination AI API key for higher rate limits and priority access. No key needed for basic usage!</p>
+      <p>Enter your Pollination AI API key to get started with enhanced rate limits and features.</p>
       
       <div class="info-box">
-        <strong>💡 Need a key?</strong><br>
+        <strong>💡 Don't have a key?</strong><br>
         Get your free API key from 
         <a href="https://pollinations.ai" target="_blank">pollinations.ai</a>
         for higher rate limits and priority access.
@@ -454,7 +420,7 @@
         type="password" 
         class="api-key-input" 
         id="apiKeyInput" 
-        placeholder="Enter your Pollination API key (optional)..."
+        placeholder="Enter your Pollination API key..."
         autocomplete="off"
       />
       
@@ -463,7 +429,7 @@
       </button>
       
       <button class="skip-btn" onclick="skipApiKey()">
-        Continue without key (free tier)
+        Continue without key (limited)
       </button>
     </div>
   </div>
@@ -472,20 +438,11 @@
   <div class="header">
     <h1>🤖 Loki Chatbot</h1>
     <div class="header-right">
-      <div class="model-selector">
-        <span>Model:</span>
-        <select id="modelSelect">
-          <option value="openai">GPT-4o</option>
-          <option value="mistral">Mistral</option>
-          <option value="gemini">Gemini</option>
-          <option value="searchgpt">SearchGPT</option>
-        </select>
-      </div>
       <div class="api-status" id="apiStatus">
         <div class="status-dot no-key" id="statusDot"></div>
-        <span id="statusText">Free Tier</span>
+        <span id="statusText">No API Key</span>
       </div>
-      <button class="settings-btn" onclick="showSettings()" title="Settings">
+      <button class="settings-btn" onclick="showSettings()" title="Change API Key">
         ⚙️
       </button>
     </div>
@@ -494,7 +451,7 @@
   <div class="chat-container" id="chatContainer">
     <div class="welcome-message">
       <h2>👋 Welcome!</h2>
-      <p>I'm Loki, your AI assistant powered by Pollinations AI.<br>Choose a model and ask me anything!</p>
+      <p>I'm Loki, your AI assistant. Ask me anything!</p>
     </div>
   </div>
 
@@ -520,7 +477,6 @@
     // Storage keys
     const STORAGE_KEY = 'loki_chatbot_api_key';
     const HAS_VISITED_KEY = 'loki_chatbot_visited';
-    const MODEL_KEY = 'loki_chatbot_model';
     
     // DOM Elements
     const setupOverlay = document.getElementById('setupOverlay');
@@ -530,28 +486,14 @@
     const sendBtn = document.getElementById('sendBtn');
     const statusDot = document.getElementById('statusDot');
     const statusText = document.getElementById('statusText');
-    const modelSelect = document.getElementById('modelSelect');
 
     // State
     let apiKey = localStorage.getItem(STORAGE_KEY) || '';
-    let conversationHistory = [];
-
-    // Load saved model preference
-    const savedModel = localStorage.getItem(MODEL_KEY);
-    if (savedModel) {
-      modelSelect.value = savedModel;
-    }
-
-    // Save model preference when changed
-    modelSelect.addEventListener('change', () => {
-      localStorage.setItem(MODEL_KEY, modelSelect.value);
-      addSystemMessage(`Switched to ${modelSelect.options[modelSelect.selectedIndex].text} model`);
-    });
 
     // Check if first visit
     function checkFirstVisit() {
-      if (!localStorage.getItem(HAS_VISITED_KEY)) {
-        // First time user
+      if (!apiKey && !localStorage.getItem(HAS_VISITED_KEY)) {
+        // First time user without saved key
         setupOverlay.classList.remove('hidden');
       } else {
         setupOverlay.classList.add('hidden');
@@ -571,7 +513,7 @@
         userInput.focus();
         
         // Show confirmation
-        addSystemMessage('✅ API key saved! You now have higher rate limits.');
+        addMessage("✅ API key saved! You now have enhanced access.", false);
       } else {
         apiKeyInput.style.borderColor = '#ff4757';
         setTimeout(() => {
@@ -586,7 +528,6 @@
       setupOverlay.classList.add('hidden');
       updateApiStatus();
       userInput.focus();
-      addSystemMessage('Running on free tier. Add an API key in settings for higher limits.');
     }
 
     // Show settings (change API key)
@@ -599,20 +540,11 @@
     function updateApiStatus() {
       if (apiKey) {
         statusDot.classList.remove('no-key');
-        statusText.textContent = 'Pro Tier';
+        statusText.textContent = 'API Key Active';
       } else {
         statusDot.classList.add('no-key');
-        statusText.textContent = 'Free Tier';
+        statusText.textContent = 'No API Key';
       }
-    }
-
-    // Add system message
-    function addSystemMessage(text) {
-      const msgDiv = document.createElement('div');
-      msgDiv.className = 'system-message';
-      msgDiv.textContent = text;
-      chatContainer.appendChild(msgDiv);
-      chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
     // Enter key support
@@ -666,10 +598,7 @@
       const message = userInput.value.trim();
       if (!message) return;
 
-      // Add user message to UI and history
       addMessage(message, true);
-      conversationHistory.push({ role: 'user', content: message });
-      
       userInput.value = '';
       userInput.disabled = true;
       sendBtn.disabled = true;
@@ -677,71 +606,34 @@
       const loadingMsg = addMessage('', false, true);
 
       try {
-        const selectedModel = modelSelect.value;
+        const seed = Math.floor(Math.random() * 1000000);
+        let url = `https://text.pollinations.ai/${encodeURIComponent(message)}?seed=${seed}`;
         
-        // Use the OpenAI-compatible POST endpoint for better reliability
-        const url = 'https://text.pollinations.ai/openai';
+        // Add model parameter for better responses
+        url += '&model=mistral';
         
-        // Prepare messages array with system prompt and history
-        const messages = [
-          { 
-            role: 'system', 
-            content: 'You are Loki, a helpful and friendly AI assistant. Be concise but informative in your responses.' 
-          },
-          ...conversationHistory.slice(-10) // Keep last 10 messages for context
-        ];
-
-        const body = {
-          model: selectedModel,
-          messages: messages,
-          temperature: 0.7,
-          max_tokens: 1000
-        };
-
-        // Add seed for variety
-        body.seed = Math.floor(Math.random() * 1000000);
-
-        const headers = {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        };
-
         // Add API key if available
+        const headers = {
+          'Accept': 'text/plain',
+        };
+        
         if (apiKey) {
-          headers['Authorization'] = apiKey; // Pollinations uses simple key, not Bearer format
+          headers['Authorization'] = `Bearer ${apiKey}`;
         }
 
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: headers,
-          body: JSON.stringify(body)
-        });
+        const response = await fetch(url, { headers });
 
         if (!response.ok) {
-          const errorData = await response.text();
-          console.error('API Error:', response.status, errorData);
-          
           if (response.status === 429) {
-            throw new Error('Rate limit exceeded. Please wait a moment or add an API key for higher limits.');
-          } else if (response.status === 404) {
-            throw new Error(`Model "${selectedModel}" not available. Try switching to GPT-4o.`);
+            throw new Error('Rate limit exceeded. Please add an API key for unlimited access.');
           }
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.json();
-        const reply = data.choices?.[0]?.message?.content || "I'm not sure how to respond to that.";
-        
-        // Add assistant response to history
-        conversationHistory.push({ role: 'assistant', content: reply });
-        
-        // Trim history to prevent it from growing too large
-        if (conversationHistory.length > 20) {
-          conversationHistory = conversationHistory.slice(-20);
-        }
+        const reply = await response.text();
         
         loadingMsg.remove();
-        addMessage(reply, false);
+        addMessage(reply || "I'm not sure how to respond to that. Try asking something else!", false);
         
       } catch (error) {
         console.error('Error:', error);
