@@ -4,3 +4,29 @@
 
 [functions]
   directory = "" # disables functions
+
+# Handle trailing slashes properly
+[[redirects]]
+  from = "/Chatbot"
+  to = "/Chatbot/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/chatbot"
+  to = "/Chatbot/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/chatbot/*"
+  to = "/Chatbot/:splat"
+  status = 301
+  force = true
+
+# SPA fallback for any other routes (optional but recommended)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  conditions = {Role = ["admin"]}
