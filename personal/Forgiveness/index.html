@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A Question for Rida...</title>
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+  <!-- CSS styles moved inside the <style> tag -->
+  <style>
+    /* --- Start of Combined CSS --- */
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #ffd6e0, #e0f7fa);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh; /* Use min-height for flexibility */
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+      overflow: hidden; /* Hide overflow to prevent scrollbars from animations */
+      position: relative; /* Needed for positioning hearts */
+    }
+
+    #quiz-box {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+      padding: 40px 30px;
+      max-width: 420px;
+      width: 100%;
+      animation: pop 0.6s ease;
+      z-index: 10; /* Keep quiz box above hearts */
+      position: relative; /* Ensure it's above absolutely positioned elements */
+      /* Added for smooth question transition */
+      transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+    }
+
+    /* State for fading out question */
+    .question-changing {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+
+    @keyframes pop {
+      0% { transform: scale(0.9); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    h2 {
+      font-family: 'Pacifico', cursive;
+      font-size: 28px;
+      color: #ff6b81;
+      margin-bottom: 20px;
+      min-height: 60px; /* Prevent layout shift */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    button {
+      margin: 10px;
+      padding: 14px 28px;
+      font-size: 16px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.2s ease, background-color 0.2s ease;
+      will-change: transform; /* Optimize animation */
+    }
+
+    button:hover {
+      transform: scale(1.05);
+    }
+
+    /* Button click feedback */
+    button:active {
+      transform: scale(0.97);
+      opacity: 0.9;
+    }
+
+    .yes-btn { background: #ff6b81; color: white; }
+    .yes-btn:hover { background: #ff4757; transform: scale(1.1); } /* Make Yes more inviting */
+
+    .no-btn { background: #74b9ff; color: white; }
+    .no-btn:hover {
+      background: #54a0ff;
+      /* Subtle move effect */
+      transform: translate(5px, 2px) scale(1.05);
+    }
+
+    #result-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #6c5ce7;
+      color: white;
+      padding: 12px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      border: none;
+      font-weight: bold;
+      z-index: 20; /* Keep result button above hearts */
+    }
+    #result-btn:hover { background: #5847d1; }
+
+
+    .emoji {
+      font-size: 30px; /* Slightly bigger emoji */
+      display: block;
+      margin-top: 15px;
+      margin-bottom: 25px; /* More space before buttons */
+      min-height: 35px; /* Prevent layout shift */
+    }
+
+    footer {
+      position: fixed;
+      bottom: 10px;
+      font-size: 14px;
+      color: #555;
+      z-index: 10; /* Keep footer above hearts */
+    }
+
+    /* --- Floating Hearts Animation --- */
+    #hearts-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 1; /* Behind quiz box but above background */
+      pointer-events: none; /* Allow clicks to go through */
+    }
+
+    .heart {
+      position: absolute;
+      bottom: -50px; /* Start below screen */
+      font-size: 20px;
+      color: rgba(255, 107, 129, 0.6); /* Semi-transparent pink */
+      animation: floatUp 10s infinite linear;
+      user-select: none; /* Prevent text selection */
+    }
+
+    /* Add variety */
+    .heart:nth-child(1) { left: 10%; animation-duration: 12s; animation-delay: 0s; font-size: 18px; }
+    .heart:nth-child(2) { left: 30%; animation-duration: 8s;  animation-delay: 1s; font-size: 22px; }
+    .heart:nth-child(3) { left: 50%; animation-duration: 15s; animation-delay: 0.5s; font-size: 16px; }
+    .heart:nth-child(4) { left: 70%; animation-duration: 9s;  animation-delay: 2s; font-size: 24px; }
+    .heart:nth-child(5) { left: 90%; animation-duration: 11s; animation-delay: 1.5s; font-size: 19px; }
+    .heart:nth-child(6) { left: 20%; animation-duration: 13s; animation-delay: 3s; font-size: 21px; }
+    .heart:nth-child(7) { left: 80%; animation-duration: 10s; animation-delay: 2.5s; font-size: 17px; }
+
+
+    @keyframes floatUp {
+      0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0.6;
+      }
+      100% {
+        transform: translateY(-110vh) rotate(720deg); /* Move up past the screen height */
+        opacity: 0;
+      }
+    }
+    /* --- End of Combined CSS --- */
+  </style>
+
+  <!-- Firebase Scripts (Keep these as they are) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+  <!-- Container for floating hearts -->
+  <div id="hearts-container">
+    <div class="heart">❤️</div>
+    <div class="heart">💖</div>
+    <div class="heart">💕</div>
+    <div class="heart">💗</div>
+    <div class="heart">💓</div>
+    <div class="heart">💝</div>
+    <div class="heart">💞</div>
+  </div>
+
+  <!-- !! SECURITY WARNING !! Consider removing this button for Rida's version -->
+  <button id="result-btn">Result</button>
+
+  <div id="quiz-box">
+    <h2 id="question">Loading...</h2>
+    <div class="emoji" id="emoji">...</div>
+    <button class="yes-btn" onclick="selectAnswer('Yes')">Yes</button>
+    <button class="no-btn" onclick="selectAnswer('No')">No</button>
+  </div>
+
+  <footer>
+    © <span id="year"></span> Ammar. All rights reserved.
+  </footer>
+
+  <script>
+    // Firebase Config (Ensure this is correct)
+    // !! SECURITY RISK: These keys are visible in the browser !!
+    const firebaseConfig = {
+      apiKey: "AIzaSyADxJDcYRyurB-0WGD3dLIP-U9606N_3lQ", // Replace with YOUR key if different
+      authDomain: "lokiodinsonauth.firebaseapp.com",
+      databaseURL: "https://lokiodinsonauth-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "lokiodinsonauth",
+      storageBucket: "lokiodinsonauth.appspot.com",
+      messagingSenderId: "867025984222",
+      appId: "1:867025984222:web:5c9d19de0d77ffeee4804f",
+      measurementId: "G-9NQGLPNW6B"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const questions = [
+      "Hoping things are okay between us?",
+      "Can I text you like usual?",
+      "Do you think I'm a good friend?",
+      "Do you think I can be a friend with whom you can share secrets?",
+      "Could we maybe make *new* happy memories?",
+      "Wanna try hitting restart on this freindship? ✨"
+    ];
+
+    const emojis = [
+      '🥺', '💬', '🫂', '🤔', '😊', '💖'
+    ];
+
+    let current = 0;
+    // const responses = []; // No longer strictly needed locally if always sending to Firebase
+
+    // Get DOM elements once
+    const quizBox = document.getElementById('quiz-box');
+    const questionEl = document.getElementById('question');
+    const emojiEl = document.getElementById('emoji');
+    const yesBtn = document.querySelector('.yes-btn');
+    const noBtn = document.querySelector('.no-btn');
+
+    // Function to display the current question
+    function showQuestion() {
+      quizBox.classList.remove('question-changing'); // Fade in
+
+      if (current < questions.length) {
+        // Personal intro question
+        if (current === 0) {
+          questionEl.innerHTML = `Hey Rida, ${questions[current]}`; // Use innerHTML if question has tags
+        } else {
+          // Use innerHTML to render sparkle emoji correctly if needed, or stick to innerText
+          questionEl.innerHTML = questions[current];
+        }
+        emojiEl.innerText = emojis[current];
+        yesBtn.style.display = 'inline-block';
+        noBtn.style.display = 'inline-block';
+      } else {
+        // Final message
+        questionEl.innerText = "Aww, Thank You Rida for your time ♥️";
+        emojiEl.innerHTML = " Muaaah ❤️"; // Use innerHTML for emoji rendering consistency
+        yesBtn.style.display = 'none';
+        noBtn.style.display = 'none';
+      }
+    }
+
+    // Function to handle answer selection
+    function selectAnswer(ans) {
+      if (current < questions.length) {
+        quizBox.classList.add('question-changing'); // Fade out
+
+        const responseData = {
+          question: questions[current],
+          answer: ans,
+          timestamp: firebase.database.ServerValue.TIMESTAMP // Use server time
+        };
+
+        // Using push() generates a unique ID under 'responses/rida'
+        db.ref('responses/rida').push(responseData)
+          .then(() => {
+            console.log("Response saved successfully!");
+          })
+          .catch((error) => {
+            console.error("Error saving response: ", error);
+            // Consider showing an error message to the user
+            // alert("Sorry, there was an error saving your answer. Please try again.");
+            // Re-enable buttons or handle error state appropriately
+          });
+
+        current++;
+
+        // Wait for fade out animation (0.5s) before showing next question
+        setTimeout(showQuestion, 500);
+      }
+    }
+
+    // --- Event Listener for the Result Button (Keep or Remove based on security choice) ---
+    document.getElementById('result-btn').addEventListener('click', () => {
+      // !! SECURITY WARNING: This reads potentially *all* data under responses/rida !!
+      // Ensure your Firebase Rules restrict this if needed.
+      db.ref('responses/rida').once('value').then(snapshot => {
+        const allResponses = snapshot.val();
+        let output = 'Rida\\'s Sweet Answers:\\n====================\\n';
+        if (allResponses) {
+          for (let key in allResponses) {
+            const response = allResponses[key];
+            // Format timestamp nicely
+            const date = response.timestamp ? new Date(response.timestamp).toLocaleString() : 'N/A';
+            // Sanitize question/answer slightly if needed for alert box, though less critical here
+            output += `\\nQ: ${response.question}\\nA: ${response.answer}\\n(Time: ${date})\\n---\\n`;
+          }
+        } else {
+          output += "\\nNo responses recorded yet.";
+        }
+        alert(output);
+      }).catch(error => {
+          console.error("Error fetching results: ", error);
+          alert("Could not fetch results. Check console or Firebase rules.");
+      });
+    });
+
+    // Set current year in footer
+    document.getElementById("year").innerText = new Date().getFullYear();
+
+    // Initial call to display the first question
+    showQuestion();
+
+  </script>
+</body>
+</html>
