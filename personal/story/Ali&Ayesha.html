@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Boy Who Lived Twice</title>
+    
+    <style>
+        /* --- FONTS --- */
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Dancing+Script:wght@600&family=Noto+Nastaliq+Urdu:wght@400&family=Amiri:wght@400&display=swap');
+
+        /* --- VARIABLES --- */
+        :root {
+            --wood-dark: #2e1e19;
+            --wood-light: #4a3b32;
+            --parchment: #fcf5e5;
+            --ink: #2b2b2b;
+            --gold: #c5a059;
+            --faded-red: #8a3324;
+            --btn-hover: #b08d4e;
+        }
+
+        /* --- SCREEN STYLES (The Woody Look) --- */
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            background-color: var(--wood-dark);
+            background-image: repeating-linear-gradient(45deg, var(--wood-dark) 0px, var(--wood-dark) 10px, var(--wood-light) 10px, var(--wood-light) 12px);
+            font-family: 'Crimson Text', serif;
+            color: var(--ink);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .book-page {
+            background-color: var(--parchment);
+            width: 100%;
+            max-width: 720px;
+            padding: 70px 90px;
+            box-sizing: border-box;
+            position: relative;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3), 0 15px 35px rgba(0,0,0,0.6), inset 0 0 80px rgba(160, 130, 80, 0.15);
+        }
+
+        .book-page::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            border-right: 1px solid rgba(0,0,0,0.1);
+            border-left: 1px solid rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 2.5rem;
+            text-align: center;
+            margin-top: 0;
+            color: #1a1a1a;
+            border-bottom: 2px solid var(--gold);
+            padding-bottom: 15px;
+            line-height: 1.2;
+        }
+
+        h1 span {
+            display: block;
+            font-size: 1rem;
+            font-family: 'Crimson Text', serif;
+            font-style: italic;
+            color: #666;
+            margin-top: 10px;
+            text-transform: none;
+            letter-spacing: 1px;
+        }
+
+        p {
+            font-size: 1.25rem;
+            line-height: 1.7;
+            margin-bottom: 22px;
+            text-align: justify;
+        }
+
+        /* Drop cap for screen only */
+        .content p.start::first-letter {
+            float: left;
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 4.2rem;
+            line-height: 0.85;
+            padding-right: 10px;
+            color: var(--wood-light);
+        }
+
+        .foreign-phrase { font-style: italic; color: var(--faded-red); }
+
+        .handwritten-note {
+            font-family: 'Dancing Script', cursive;
+            font-size: 1.6rem;
+            text-align: center;
+            color: #555;
+            margin: 30px 40px;
+            padding: 10px;
+            border-top: 1px dashed #ccc;
+            border-bottom: 1px dashed #ccc;
+            line-height: 1.4;
+        }
+
+        .text-msg-container {
+            display: flex;
+            justify-content: center;
+            margin: 25px 0;
+        }
+
+        .text-msg {
+            background-color: #e5e5ea;
+            color: black;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-family: sans-serif;
+            font-size: 1rem;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        
+        .text-msg::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: -8px;
+            width: 15px;
+            height: 15px;
+            background-color: #e5e5ea;
+            border-bottom-left-radius: 15px;
+            z-index: 0;
+        }
+
+        .divider {
+            text-align: center;
+            color: var(--gold);
+            font-size: 1.5rem;
+            margin-top: 40px;
+            opacity: 0.8;
+            margin-bottom: 40px;
+        }
+
+        .archive-section {
+            background-color: rgba(0,0,0,0.03);
+            border: 1px solid var(--gold);
+            padding: 20px;
+            text-align: center;
+            margin-top: 30px;
+            border-radius: 4px;
+        }
+
+        .archive-label {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: var(--wood-light);
+            display: block;
+        }
+
+        .download-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        select {
+            padding: 8px 15px;
+            font-family: 'Crimson Text', serif;
+            font-size: 1.1rem;
+            background: transparent;
+            border: 2px solid var(--wood-light);
+            color: var(--wood-dark);
+            cursor: pointer;
+            outline: none;
+        }
+
+        button {
+            padding: 8px 25px;
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 1rem;
+            background-color: var(--wood-light);
+            color: #fff;
+            border: 2px solid var(--wood-light);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+        }
+
+        button:hover { background-color: var(--btn-hover); border-color: var(--btn-hover); }
+
+        /* --- PRINTABLE AREA (Hidden on Screen) --- */
+        #printable-content {
+            display: none;
+        }
+
+        /* --- PDF / PRINT STYLES --- */
+        /* This runs when you click print/save as PDF */
+        @media print {
+            /* Hide the entire website/woody background */
+            body * {
+                visibility: hidden;
+            }
+            
+            body {
+                background: white !important;
+                margin: 0;
+                padding: 0;
+            }
+
+            /* Show only the printable content */
+            #printable-content, #printable-content * {
+                visibility: visible;
+                display: block;
+            }
+
+            #printable-content {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 40px;
+                background: white;
+                color: black;
+            }
+
+            /* Print Typography */
+            .print-title {
+                font-family: 'Cinzel Decorative', serif;
+                font-size: 24pt;
+                text-align: center;
+                margin-bottom: 30px;
+                text-decoration: underline;
+            }
+
+            .print-body {
+                font-family: 'Crimson Text', serif;
+                font-size: 12pt;
+                line-height: 1.6;
+                text-align: justify;
+            }
+
+            .print-body p {
+                margin-bottom: 15px;
+            }
+
+            /* Language Specific Fonts for PDF */
+            .rtl-text { direction: rtl; }
+            .urdu-font { font-family: 'Noto Nastaliq Urdu', serif; line-height: 2.0; font-size: 14pt; }
+            .arabic-font { font-family: 'Amiri', serif; font-size: 14pt; }
+            
+            .print-footer {
+                text-align: center;
+                margin-top: 50px;
+                font-size: 9pt;
+                color: #555;
+                border-top: 1px solid #ddd;
+                padding-top: 10px;
+            }
+        }
+
+        @media (max-width: 650px) {
+            body { padding: 10px; }
+            .book-page { padding: 40px 25px; }
+            h1 { font-size: 1.8rem; }
+            p { font-size: 1.1rem; text-align: left; }
+            .handwritten-note { margin: 20px 0; font-size: 1.4rem; }
+            .download-controls { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- MAIN WEBSITE CONTENT -->
+    <article class="book-page">
+        <header>
+            <h1>The Boy Who Lived Twice <span>A story of silence, magic eyes, and letting go</span></h1>
+        </header>
+
+        <section class="content">
+            <p class="start">Ali was the kind of boy who lived twice. Once in the real world, and once in his head.</p>
+            <p>In the real world, he was quiet, respectful, the sort of cousin elders liked because he never talked back. He studied, helped at home, prayed on Fridays, listened more than he spoke. In the village, people nodded when he passed. <span class="foreign-phrase">"Achha larka hai,"</span> they said.</p>
+            <p>In his head, though, Ali lived entire lifetimes. That world had music playing in the background. Lana Del Rey on some nights, Michael Jackson on others. Scenes repeated themselves there, polished and perfected. Conversations went the right way. Smiles lingered longer. Outcomes bent in his favor. Ali told himself this was a gift. He could predict things. Feel them before they happened.</p>
+            <p>At the center of both worlds stood Ayesha. Ayesha was his cousin. Not too close, not too distant. Close enough for family gatherings, far enough for hope to sneak in. She lived almost a hundred kilometers away, far enough that longing had room to grow. She was calm, guarded, practical. When she spoke, she spoke lightly, like someone who did not want to leave footprints.</p>
+            <p>Ali could spend hours imagining her lips; the way they curved when she smiled, the way they moved when she spoke softly, as if every word carried a secret meant only for him.</p>
+            <p>He imagined running his fingers through her hair, though he knew he never would, memorizing the way it fell across her shoulders like a quiet secret. Her hands were among the most beautiful creations of God, and Ali's longing to touch them burned so fiercely he would have given anything just for a single touch of her fingers.</p>
+            <p>Years ago, when Ali was younger and dumber, he sent her a message in Arabic. "I love you." He thought it was poetic. Grown up. Brave. Ayesha was shocked. A little angry. The silence that followed taught him his first lesson, though he did not fully understand it then.</p>
+            <p>Time passed. Ali grew. Or at least, he thought he did. He watched her life from a distance. Occasional chats. Long gaps. One time she blocked him. Six months of silence. He told himself stories about courage and fear, about how girls sometimes block the men they secretly like. The stories made the waiting easier. They also made the attachment stronger.</p>
+            <p>Ali was a big fan of Harry Potter movies, but the eyes of Ayesha had more magic than all seven movies combined.</p>
+            <p>He was so fond of her eyes that he wished, if not Ayesha, then a daughter with her eyes. Someone to call his own, someone to protect. Because he couldn't have her, he tried to have her through someone else.</p>
+            <div class="handwritten-note">
+                I'll look for her in every lifetime.<br>
+                I know you'll never be mine, but still I close my eyes and imagine how beautiful it would be if we were together.
+            </div>
+            <p>He had fallen in love with those eyes so completely that all others had become invisible. Nothing else mattered. Not friends. Not sights. Not life.</p>
+            <p>One night, years later, Ali sat in the village listening to Ayesha's sister and her husband tell their love story. They laughed about how she had not liked him at first. How time changed things. How persistence, done "the right way," won in the end.</p>
+            <p>Something clicked in Ali's chest. "Why not me?" he thought.</p>
+            <p>That night, he sent a simple message.</p>
+            <div class="text-msg-container">
+                <div class="text-msg">Hey, how've you been?</div>
+            </div>
+            <p>Minutes passed. Then an hour. Then two.</p>
+            <p>Ali watched the clock the way people watch heart monitors. 21:10. 22:00. 23:27. After midnight. Nothing.</p>
+            <p>His head filled the silence for her. He imagined replies. Rejections. Confessions. He imagined proposing properly. He imagined going to parents. He imagined sacrificing ego, pride, everything. He told himself love meant endurance. He told himself stopping would kill him.</p>
+            <p>But there was another truth Ali could not escape. Ayesha had never chosen him. Not once in two years had she texted first. Not once had she crossed the distance he kept running across alone. When asked directly, she had said, "I'll do whatever my father decides." Not yes. Not no. A deflection wrapped in tradition.</p>
+            <p>Ali lay awake that night, realizing something painful.</p>
+            <p>Love is not proven by how much you are willing to suffer. Love is proven by whether the other person steps toward you.</p>
+            <p>By morning, Ali understood the real test was not whether Ayesha would say yes. The test was whether he would respect a no. Whether he would stop if stopping was required. Whether he would choose dignity over obsession. Whether he would let a story end instead of forcing it into tragedy.</p>
+            <p>Some people are meant to be loved from afar. Some lessons only arrive after a very long night. And some eyes, no matter how magical, are never yours to keep.</p>
+        </section>
+
+        <div class="divider">~ ❦ ~</div>
+
+        <!-- DOWNLOAD SECTION -->
+        <div class="archive-section">
+            <span class="archive-label">Keep this Tale in your Archive</span>
+            <div class="download-controls">
+                <select id="languageSelect">
+                    <option value="en">English (Original)</option>
+                    <option value="ur">Urdu (اردو)</option>
+                    <option value="ar">Arabic (العربية)</option>
+                </select>
+                <button onclick="prepareAndPrint()">Download PDF</button>
+            </div>
+        </div>
+    </article>
+
+    <!-- HIDDEN CONTAINER FOR PRINTING -->
+    <div id="printable-content">
+        <!-- Content injected here via JS -->
+    </div>
+
+    <script>
+        const storyData = {
+            en: {
+                title: "The Boy Who Lived Twice",
+                class: "",
+                content: `Ali was the kind of boy who lived twice. Once in the real world, and once in his head.
+In the real world, he was quiet, respectful, the sort of cousin elders liked because he never talked back. He studied, helped at home, prayed on Fridays, listened more than he spoke. In the village, people nodded when he passed. "Achha larka hai," they said.
+
+In his head, though, Ali lived entire lifetimes. That world had music playing in the background. Lana Del Rey on some nights, Michael Jackson on others. Scenes repeated themselves there, polished and perfected. Conversations went the right way. Smiles lingered longer. Outcomes bent in his favor. Ali told himself this was a gift. He could predict things. Feel them before they happened.
+
+At the center of both worlds stood Ayesha. Ayesha was his cousin. Not too close, not too distant. Close enough for family gatherings, far enough for hope to sneak in. She lived almost a hundred kilometers away, far enough that longing had room to grow. She was calm, guarded, practical. When she spoke, she spoke lightly, like someone who did not want to leave footprints.
+
+Ali could spend hours imagining her lips the way they curved when she smiled, the way they moved when she spoke softly, as if every word carried a secret meant only for him.
+He imagined running his fingers through her hair, though he knew he never would, memorizing the way it fell across her shoulders like a quiet secret.
+Her hands were among the most beautiful creations of God and Ali's longing to touch them burned so fiercely he would have given anything just for a single touch of her fingers.
+
+Years ago, when Ali was younger and dumber, he sent her a message in Arabic. "I love you." He thought it was poetic. Grown up. Brave. Ayesha was shocked. A little angry. The silence that followed taught him his first lesson, though he did not fully understand it then.
+
+Time passed. Ali grew. Or at least, he thought he did. He watched her life from a distance. Occasional chats. Long gaps. One time she blocked him. Six months of silence. He told himself stories about courage and fear, about how girls sometimes block the men they secretly like. The stories made the waiting easier. They also made the attachment stronger.
+
+Ali was a big fan of Harry Potter movies, but the eyes of Ayesha had more magic than all seven movies combined.
+He was so fond of her eyes that he wished, if not Ayesha, then a daughter with her eyes. Someone to call his own, someone to protect. Because he couldn't have her, he tried to have her through someone else.
+
+"I'll look for her in every lifetime. I know you'll never be mine, but still I close my eyes and imagine how beautiful it would be if we were together."
+
+He had fallen in love with those eyes so completely that all others had become invisible. Nothing else mattered. Not friends. Not sights. Not life.
+
+One night, years later, Ali sat in the village listening to Ayesha's sister and her husband tell their love story. They laughed about how she had not liked him at first. How time changed things. How persistence, done "the right way," won in the end.
+
+Something clicked in Ali's chest. "Why not me?" he thought.
+That night, he sent a simple message. "Hey, how've you been?"
+
+Minutes passed. Then an hour. Then two.
+Ali watched the clock the way people watch heart monitors. 21:10. 22:00. 23:27. After midnight. Nothing.
+
+His head filled the silence for her. He imagined replies. Rejections. Confessions. He imagined proposing properly. He imagined going to parents. He imagined sacrificing ego, pride, everything. He told himself love meant endurance. He told himself stopping would kill him.
+
+But there was another truth Ali could not escape. Ayesha had never chosen him. Not once in two years had she texted first. Not once had she crossed the distance he kept running across alone. When asked directly, she had said, "I'll do whatever my father decides." Not yes. Not no. A deflection wrapped in tradition.
+
+Ali lay awake that night, realizing something painful.
+Love is not proven by how much you are willing to suffer. Love is proven by whether the other person steps toward you.
+
+By morning, Ali understood the real test was not whether Ayesha would say yes. The test was whether he would respect a no. Whether he would stop if stopping was required. Whether he would choose dignity over obsession. Whether he would let a story end instead of forcing it into tragedy.
+
+Some people are meant to be loved from afar. Some lessons only arrive after a very long night. And some eyes, no matter how magical, are never yours to keep.`
+            },
+            ur: {
+                title: "وہ لڑکا جو دو زندگیاں جیتا تھا",
+                class: "rtl-text urdu-font",
+                content: `علی ایک ایسا لڑکا تھا جو دو زندگیاں جیتا تھا۔ ایک حقیقی دنیا میں، اور ایک اپنے ذہن میں۔
+
+حقیقی دنیا میں، وہ خاموش اور مودب تھا۔ ایسا کزن جسے بڑے پسند کرتے تھے کیونکہ وہ کبھی آگے سے جواب نہیں دیتا تھا۔ وہ پڑھائی کرتا، گھر کے کاموں میں مدد کرتا، جمعہ کی نماز پڑھتا اور بولنے سے زیادہ سنتا تھا۔ گاؤں میں لوگ اسے دیکھ کر سر ہلاتے اور کہتے، "اچھا لڑکا ہے۔"
+
+لیکن اپنے ذہن میں، علی پوری زندگیاں جی لیتا تھا۔ اس دنیا میں پس منظر میں موسیقی بجتی رہتی۔ کبھی لانا ڈیل رے، تو کبھی مائیکل جیکسن۔ وہاں مناظر خود کو دہراتے، نکھرتے اور مکمل ہو جاتے۔ گفتگو ہمیشہ صحیح سمت میں جاتی۔ مسکراہٹیں طویل ہوتیں۔ نتائج ہمیشہ اس کے حق میں نکلتے۔ علی خود سے کہتا کہ یہ ایک تحفہ ہے۔ وہ چیزوں کی پیشین گوئی کر سکتا ہے۔ ہونے سے پہلے محسوس کر سکتا ہے۔
+
+ان دونوں دنیاؤں کے مرکز میں عائشہ کھڑی تھی۔ عائشہ اس کی کزن تھی۔ نہ بہت قریب، نہ بہت دور۔ اتنی قریب کہ خاندانی محفلوں میں مل سکے، لیکن اتنی دور کہ امید کو چپکے سے داخل ہونے کی جگہ مل جائے۔ وہ تقریباً سو کلومیٹر دور رہتی تھی، اتنی دور کہ تڑپ کو بڑھنے کا موقع ملے۔ وہ پرسکون، محتاط اور عملی تھی۔ جب وہ بات کرتی، تو بہت ہلکے انداز میں، جیسے کوئی اپنے پیچھے قدموں کے نشان نہ چھوڑنا چاہتا ہو۔
+
+علی گھنٹوں اس کے ہونٹوں کا تصور کرتا، کہ وہ کیسے مڑتے جب وہ مسکراتی، کیسے حرکت کرتے جب وہ نرمی سے بولتی، جیسے ہر لفظ میں کوئی ایسا راز ہو جو صرف اس کے لیے ہو۔ وہ اس کے بالوں میں انگلیاں پھیرنے کا تصور کرتا، حالانکہ وہ جانتا تھا کہ وہ کبھی ایسا نہیں کر پائے گا۔ اس کے ہاتھ خدا کی خوبصورت ترین تخلیقات میں سے تھے اور علی کی انہیں چھونے کی خواہش اتنی شدید تھی کہ وہ صرف ایک لمس کے لیے کچھ بھی قربان کر سکتا تھا۔
+
+سالوں پہلے، جب علی چھوٹا اور نادان تھا، اس نے اسے عربی میں ایک پیغام بھیجا۔ "میں تم سے محبت کرتا ہوں۔" اسے لگا یہ شاعرانہ ہے۔ بڑا ہونے کی نشانی ہے۔ بہادری ہے۔ عائشہ حیران رہ گئی۔ تھوڑی ناراض بھی ہوئی۔ اس کے بعد جو خاموشی چھائی، اس نے اسے پہلا سبق سکھایا، حالانکہ تب وہ اسے پوری طرح سمجھ نہیں پایا تھا۔
+
+وقت گزرتا گیا۔ علی بڑا ہو گیا۔ یا کم از کم اسے ایسا لگا۔ وہ دور سے اس کی زندگی دیکھتا رہا۔ کبھی کبھار کی چیٹنگ۔ لمبے وقفے۔ ایک بار اس نے اسے بلاک کر دیا۔ چھ ماہ کی خاموشی۔ اس نے خود کو ہمت اور ڈر کی کہانیاں سنائیں، کہ کیسے لڑکیاں کبھی کبھی ان لڑکوں کو بلاک کر دیتی ہیں جنہیں وہ چھپ کر پسند کرتی ہیں۔ ان کہانیوں نے انتظار کو آسان بنا دیا، لیکن لگااؤ کو اور مضبوط کر دیا۔
+
+علی ہیری پوٹر فلموں کا بہت بڑا مداح تھا، لیکن عائشہ کی آنکھوں میں ساتوں فلموں سے زیادہ جادو تھا۔ اسے اس کی آنکھوں سے اتنا پیار تھا کہ اس نے خواہش کی کہ اگر عائشہ نہیں، تو ایسی بیٹی ہو جس کی آنکھیں اس جیسی ہوں۔ کوئی اپنا، جس کی وہ حفاظت کر سکے۔
+
+"میں اسے ہر زندگی میں تلاش کروں گا۔ میں جانتا ہوں تم کبھی میری نہیں ہو گی، لیکن پھر بھی میں آنکھیں بند کر کے تصور کرتا ہوں کہ اگر ہم ساتھ ہوتے تو کتنا خوبصورت ہوتا۔"
+
+ایک رات، سالوں بعد، علی گاؤں میں بیٹھا عائشہ کی بہن اور اس کے شوہر کی محبت کی کہانی سن رہا تھا۔ وہ ہنس رہے تھے کہ کیسے عائشہ نے اسے پہلے پسند نہیں کیا تھا۔ کیسے وقت نے چیزیں بدل دیں۔ کیسے "صحیح طریقے" سے کی گئی کوشش آخر کار جیت گئی۔
+
+علی کے سینے میں کچھ ہلچل ہوئی۔ "میں کیوں نہیں؟" اس نے سوچا۔
+اس رات، اس نے ایک سادہ سا پیغام بھیجا۔ "ہیلو، کیسی ہو؟"
+
+منٹ گزر گئے۔ پھر ایک گھنٹہ۔ پھر دو۔
+علی گھڑی کو ایسے دیکھ رہا تھا جیسے لوگ دل کی دھڑکن ماپنے والی مشین کو دیکھتے ہیں۔ 21:10۔ 22:00۔ 23:27۔ آدھی رات کے بعد۔ کچھ نہیں۔
+
+اس کے ذہن نے اس کے لیے خاموشی کو بھر دیا۔ اس نے جوابات کا تصور کیا۔ انکار کا۔ اقرار کا۔ اس نے صحیح طریقے سے رشتہ بھیجنے کا سوچا۔ والدین کے پاس جانے کا سوچا۔ انا، فخر، سب کچھ قربان کرنے کا سوچا۔ اس نے خود کو بتایا کہ محبت کا مطلب برداشت ہے۔ اس نے سوچا کہ رک جانا اسے مار ڈالے گا۔
+
+لیکن ایک اور سچائی تھی جس سے علی نہیں بھاگ سکتا تھا۔ عائشہ نے اسے کبھی نہیں چنا تھا۔ دو سالوں میں ایک بار بھی اس نے پہلے میسج نہیں کیا۔ ایک بار بھی اس نے وہ فاصلہ طے نہیں کیا جسے علی اکیلا عبور کرتا رہا تھا۔ جب براہ راست پوچھا گیا تو اس نے کہا تھا، "میں وہی کروں گی جو میرے والد فیصلہ کریں گے۔" نہ ہاں۔ نہ نہ۔ روایت میں لپٹا ہوا ایک ٹال مٹول۔
+
+علی اس رات جاگتا رہا، ایک تکلیف دہ حقیقت کو سمجھتے ہوئے۔
+محبت اس بات سے ثابت نہیں ہوتی کہ آپ کتنا دکھ سہنے کو تیار ہیں۔ محبت اس بات سے ثابت ہوتی ہے کہ دوسرا شخص آپ کی طرف قدم بڑھاتا ہے یا نہیں۔
+
+صبح تک، علی سمجھ گیا کہ اصل امتحان یہ نہیں تھا کہ عائشہ ہاں کہے گی یا نہیں۔ امتحان یہ تھا کہ کیا وہ 'نہ' کا احترام کرے گا۔ کیا وہ رک جائے گا اگر رکنا ضروری ہوا۔ کیا وہ جنون پر وقار کو ترجیح دے گا۔ کیا وہ ایک کہانی کو المیہ بنانے کے بجائے اسے ختم ہونے دے گا۔
+
+کچھ لوگوں سے محبت صرف دور سے ہی کی جا سکتی ہے۔ کچھ سبق بہت لمبی رات کے بعد ہی ملتے ہیں۔ اور کچھ آنکھیں، چاہے کتنی ہی جادوئی کیوں نہ ہوں، کبھی آپ کی نہیں ہو سکتیں۔`
+            },
+            ar: {
+                title: "الفتى الذي عاش مرتين",
+                class: "rtl-text arabic-font",
+                content: `كان علي فتى يعيش حياتين. مرة في العالم الحقيقي، ومرة في خياله.
+
+في العالم الحقيقي، كان هادئًا، محترمًا، النوع الذي يحبه كبار السن لأنه لا يجادل أبدًا. كان يدرس، ويساعد في المنزل، ويصلي الجمعة، ويستمع أكثر مما يتكلم. في القرية، كان الناس يحيونه بإيماءة عندما يمر ويقولون: "شاب خلوق".
+
+لكن في رأسه، عاش علي حيوات كاملة. كان ذلك العالم يعزف موسيقى في الخلفية. لانا ديل ري في بعض الليالي، ومايكل جاكسون في ليالٍ أخرى. المشاهد تتكرر هناك، مصقولة ومثالية. المحادثات تسير في الطريق الصحيح. الابتسامات تدوم لفترة أطول. النتائج تميل لصالحه. أخبر علي نفسه أن هذه هبة. يمكنه التنبؤ بالأشياء، والشعور بها قبل حدوثها.
+
+في وسط العالمين وقفت عائشة. كانت عائشة ابنة عمه. ليست قريبة جدًا، وليست بعيدة جدًا. قريبة بما يكفي للتجمعات العائلية، وبعيدة بما يكفي ليتسلل الأمل. كانت تعيش على بعد مائة كيلومتر تقريبًا، مسافة كافية لينمو الشوق. كانت هادئة، وحذرة، وعملية. عندما تتحدث، كانت تتحدث بخفة، وكأنها شخص لا يريد أن يترك آثار أقدام.
+
+كان علي يلاحظ كل شيء عنها. الطريقة التي ترد بها في وقت متأخر من الليل. الطريقة التي لا تراسل فيها أولاً أبدًا. الطريقة التي ردت بها ذات مرة بـ "حسنًا، بالتأكيد يا أخي" وكسرت شيئًا بداخله دون أن تدري.
+
+منذ سنوات، عندما كان علي أصغر سنًا وأكثر حماقة، أرسل لها رسالة باللغة العربية: "أحبك". اعتقد أنها كانت شاعرية. شجاعة. صُدمت عائشة. وغضبت قليلاً. الصمت الذي تلا ذلك علمه درسه الأول، رغم أنه لم يفهمه تمامًا حينها.
+
+مر الوقت. كبر علي. أو على الأقل، اعتقد أنه فعل. راقب حياتها من مسافة بعيدة. محادثات عَرَضية. فجوات طويلة. في إحدى المرات حظرته. ستة أشهر من الصمت. روى لنفسه قصصًا عن الشجاعة والخوف، وعن كيف أن الفتيات يحظرن أحيانًا الرجال الذين يعجبن بهم سرًا. جعلت القصص الانتظار أسهل، لكنها جعلت التعلق أقوى.
+
+كان علي من أشد المعجبين بأفلام هاري بوتر، لكن عيون عائشة كان فيها سحر أكثر من الأفلام السبعة مجتمعة.
+كان مغرمًا جدًا بعينيها لدرجة أنه تمنى، إن لم تكن عائشة، فابنة تملك عينيها. شخص يناديه، شخص يحميه. لأنه لم يستطع الحصول عليها، حاول الحصول عليها من خلال شخص آخر.
+
+"سأبحث عنها في كل حياة. أعلم أنك لن تكوني لي أبدًا، لكنني ما زلت أغمض عيني وأتخيل كم سيكون جميلًا لو كنا معًا."
+
+لقد وقع في حب تلك العيون تمامًا لدرجة أن كل العيون الأخرى أصبحت غير مرئية. لا شيء آخر يهم. لا أصدقاء. لا مناظر. لا حياة.
+
+في ليلة من الليالي، بعد سنوات، جلس علي في القرية يستمع إلى أخت عائشة وزوجها وهما يرويان قصة حبهما. ضحكوا كيف أنها لم تعجبه في البداية. كيف غير الوقت الأشياء. كيف أن الإصرار، الذي تم "بالطريقة الصحيحة"، فاز في النهاية.
+
+نقرت فكرة في صدر علي. "لماذا لا أكون أنا؟" فكر.
+في تلك الليلة، أرسل رسالة بسيطة. "مرحبًا، كيف حالك؟"
+
+مرت دقائق. ثم ساعة. ثم ساعتان.
+راقب علي الساعة كما يراقب الناس أجهزة مراقبة القلب. 21:10. 22:00. 23:27. بعد منتصف الليل. لا شيء.
+
+ملأ رأسه الصمت نيابة عنها. تخيل الردود. الرفض. الاعترافات. تخيل أن يتقدم لها بشكل صحيح. تخيل التضحية بالأنا، والكبرياء، وكل شيء. أخبر نفسه أن الحب يعني التحمل. أخبر نفسه أن التوقف سيقتله.
+
+لكن كانت هناك حقيقة أخرى لم يستطع علي الهروب منها. عائشة لم تختره أبدًا. لم تراسله أولاً ولو لمرة واحدة في عامين. لم تعبر المسافة التي ظل يركض عبرها وحيدًا ولو لمرة واحدة. عندما سُئلت بشكل مباشر، قالت: "سأفعل ما يقرره أبي". لا نعم. ولا لا. تهرب مغلف بالتقاليد.
+
+استلقى علي مستيقظًا في تلك الليلة، مدركًا شيئًا مؤلمًا.
+الحب لا يثبت بمدى استعدادك للمعاناة. الحب يثبت بما إذا كان الشخص الآخر يخطو نحوك.
+
+بحلول الصباح، فهم علي أن الاختبار الحقيقي لم يكن ما إذا كانت عائشة ستقول نعم. كان الاختبار ما إذا كان سيحترم الرفض. ما إذا كان سيتوقف إذا طُلب منه التوقف. ما إذا كان سيختار الكرامة على الهوس. ما إذا كان سيسمح لقصة أن تنتهي بدلاً من إجبارها على التحول إلى مأساة.
+
+بعض الناس مقدر لهم أن يُحبوا من بعيد. وبعض الدروس لا تصل إلا بعد ليلة طويلة جدًا. وبعض العيون، مهما كانت ساحرة، ليست ملكك لتحتفظ بها.`
+            }
+        };
+
+        function prepareAndPrint() {
+            const lang = document.getElementById('languageSelect').value;
+            const data = storyData[lang];
+            const container = document.getElementById('printable-content');
+
+            // Format content lines into paragraphs
+            const paragraphs = data.content.split('\n').map(line => {
+                if(line.trim() === '') return '';
+                return `<p>${line}</p>`;
+            }).join('');
+
+            // Inject content
+            container.innerHTML = `
+                <div class="print-title">${data.title}</div>
+                <div class="print-body ${data.class}">
+                    ${paragraphs}
+                </div>
+                <div class="print-footer">
+                    Story Archive | The Boy Who Lived Twice
+                </div>
+            `;
+
+            // Trigger browser print dialog
+            // The @media print CSS will ensure only this container is visible and has a white background
+            window.print();
+        }
+    </script>
+
+</body>
+</html>
