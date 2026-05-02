@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MOTION LAB — Interactive Animation Playground</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --void: #050508;
+            --ink: #0a0a0f;
+            --charcoal: #13131a;
+            --steel: #1f1f2e;
+            --fog: #8b8b9e;
+            --ghost: #c4c4d4;
+            --nova: #ffffff;
+            --neon-cyan: #00f5d4;
+            --neon-magenta: #ff006e;
+            --neon-gold: #ffbe0b;
+            --neon-violet: #8338ec;
+            --neon-lime: #38b000;
+            --enter: cubic-bezier(0.22, 1, 0.36, 1);
+            --move: cubic-bezier(0.25, 1, 0.5, 1);
+            --bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Space Mono', monospace;
+            background: var(--void);
+            color: var(--ghost);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Scroll Progress */
+        .scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta), var(--neon-gold));
+            z-index: 10000;
+            transform-origin: left;
+            transform: scaleX(0);
+            will-change: transform;
+        }
+
+        /* Navigation */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: linear-gradient(to bottom, var(--void), transparent);
+            transform: translateY(-100%);
+            animation: slideDown 0.8s var(--enter) forwards;
+            animation-delay: 0.5s;
+        }
+
+        @keyframes slideDown {
+            to { transform: translateY(0); }
+        }
+
+        .logo {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            font-size: 24px;
+            color: var(--nova);
+        }
+
+        .logo span {
+            display: inline-block;
+            animation: glitch 3s infinite;
+        }
+
+        .logo span:nth-child(2) { animation-delay: 0.1s; }
+        .logo span:nth-child(3) { animation-delay: 0.2s; }
+        .logo span:nth-child(4) { animation-delay: 0.3s; }
+
+        @keyframes glitch {
+            0%, 90%, 100% { transform: translate(0); }
+            92% { transform: translate(-2px, 2px); }
+            94% { transform: translate(2px, -2px); }
+            96% { transform: translate(-2px, -2px); }
+            98% { transform: translate(2px, 2px); }
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--ghost);
+            text-decoration: none;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            padding: 10px 0;
+            transition: color 0.3s var(--enter);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--neon-cyan);
+            transition: width 0.4s var(--enter);
+        }
+
+        .nav-links a:hover {
+            color: var(--nova);
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            padding: 40px 20px;
+        }
+
+        .hero-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            max-width: 900px;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border: 1px solid var(--steel);
+            border-radius: 100px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--fog);
+            margin-bottom: 40px;
+            transform: scale(0);
+            animation: popIn 0.6s var(--bounce) forwards;
+            animation-delay: 0.8s;
+        }
+
+        @keyframes popIn {
+            to { transform: scale(1); }
+        }
+
+        .hero-title {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(40px, 12vw, 120px);
+            font-weight: 800;
+            line-height: 0.9;
+            color: var(--nova);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .hero-title .word {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(100%) rotateX(-90deg);
+            animation: wordReveal 1s var(--enter) forwards;
+            transform-origin: bottom;
+        }
+
+        .hero-title .word:nth-child(1) { animation-delay: 1s; }
+        .hero-title .word:nth-child(2) { animation-delay: 1.15s; }
+        .hero-title .word:nth-child(3) { animation-delay: 1.3s; }
+
+        @keyframes wordReveal {
+            to {
+                opacity: 1;
+                transform: translateY(0) rotateX(0);
+            }
+        }
+
+        .hero-subtitle {
+            font-size: 14px;
+            line-height: 1.8;
+            color: var(--fog);
+            max-width: 500px;
+            margin: 0 auto 50px;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeUp 0.8s var(--enter) forwards;
+            animation-delay: 1.6s;
+        }
+
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            opacity: 0;
+            animation: fadeUp 0.8s var(--enter) forwards;
+            animation-delay: 1.9s;
+        }
+
+        .btn {
+            position: relative;
+            padding: 16px 40px;
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border: none;
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.4s var(--enter);
+            will-change: transform;
+        }
+
+        .btn-primary {
+            background: var(--neon-cyan);
+            color: var(--void);
+            font-weight: 700;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0, 245, 212, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--ghost);
+            border: 1px solid var(--steel);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--neon-magenta);
+            color: var(--neon-magenta);
+            transform: translateY(-2px);
+        }
+
+        .btn-ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            pointer-events: none;
+        }
+
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            animation: fadeUp 0.8s var(--enter) forwards;
+            animation-delay: 2.2s;
+        }
+
+        .scroll-text {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--fog);
+        }
+
+        .scroll-line {
+            width: 1px;
+            height: 60px;
+            background: linear-gradient(to bottom, var(--neon-cyan), transparent);
+            animation: scrollPulse 2s infinite;
+        }
+
+        @keyframes scrollPulse {
+            0%, 100% { transform: scaleY(1); opacity: 1; }
+            50% { transform: scaleY(0.5); opacity: 0.5; }
+        }
+
+        /* Section Styles */
+        .section {
+            padding: 120px 20px;
+            position: relative;
+        }
+
+        .section-header {
+            max-width: 1200px;
+            margin: 0 auto 80px;
+        }
+
+        .section-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: var(--neon-cyan);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .section-label::before {
+            content: '';
+            width: 30px;
+            height: 1px;
+            background: var(--neon-cyan);
+        }
+
+        .section-title {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(32px, 6vw, 64px);
+            font-weight: 700;
+            color: var(--nova);
+            line-height: 1.1;
+        }
+
+        /* Spring Cards */
+        .spring-section {
+            background: var(--ink);
+        }
+
+        .spring-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            padding: 0 20px;
+        }
+
+        .spring-card {
+            background: var(--charcoal);
+            border: 1px solid var(--steel);
+            border-radius: 20px;
+            padding: 40px 30px;
+            position: relative;
+            overflow: hidden;
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            will-change: transform;
+        }
+
+        .spring-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.6s var(--enter);
+        }
+
+        .spring-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .spring-card:hover {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 20px 60px rgba(0, 245, 212, 0.1);
+        }
+
+        .spring-card.dragging {
+            cursor: grabbing;
+            z-index: 100;
+        }
+
+        .spring-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--steel);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 25px;
+            transition: transform 0.4s var(--bounce);
+        }
+
+        .spring-card:hover .spring-icon {
+            transform: scale(1.1) rotate(-5deg);
+        }
+
+        .spring-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--nova);
+            margin-bottom: 12px;
+        }
+
+        .spring-desc {
+            font-size: 13px;
+            color: var(--fog);
+            line-height: 1.6;
+        }
+
+        .spring-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 6px 12px;
+            background: var(--steel);
+            border-radius: 100px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--neon-cyan);
+        }
+
+        /* Swipe Deck */
+        .gesture-section {
+            background: linear-gradient(180deg, var(--ink), var(--void));
+        }
+
+        .swipe-deck {
+            position: relative;
+            height: 500px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        .swipe-card {
+            position: absolute;
+            width: 300px;
+            height: 420px;
+            background: var(--charcoal);
+            border: 2px solid var(--steel);
+            border-radius: 24px;
+            overflow: hidden;
+            cursor: grab;
+            touch-action: none;
+            will-change: transform;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .swipe-card.dragging {
+            cursor: grabbing;
+        }
+
+        .swipe-card-image {
+            width: 100%;
+            height: 60%;
+            background: linear-gradient(135deg, var(--steel), var(--charcoal));
+            position: relative;
+            overflow: hidden;
+        }
+
+        .swipe-card-content {
+            padding: 25px;
+        }
+
+        .swipe-card-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--nova);
+            margin-bottom: 10px;
+        }
+
+        .swipe-card-desc {
+            font-size: 12px;
+            color: var(--fog);
+            line-height: 1.5;
+        }
+
+        .swipe-indicator {
+            position: absolute;
+            top: 30px;
+            padding: 10px 20px;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s var(--bounce);
+        }
+
+        .swipe-indicator.like {
+            right: 30px;
+            border: 3px solid var(--neon-lime);
+            color: var(--neon-lime);
+            transform: rotate(15deg);
+        }
+
+        .swipe-indicator.nope {
+            left: 30px;
+            border: 3px solid var(--neon-magenta);
+            color: var(--neon-magenta);
+            transform: rotate(-15deg);
+        }
+
+        .swipe-indicator.visible {
+            opacity: 1;
+            transform: scale(1) rotate(var(--rotation, 0deg));
+        }
+
+        .gesture-hint {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 12px;
+            color: var(--fog);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Morph Section */
+        .morph-section {
+            background: var(--charcoal);
+        }
+
+        .morph-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .morph-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .morph-display {
+            position: relative;
+            height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .morph-shape {
+            width: 250px;
+            height: 250px;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-violet));
+            transition: all 0.8s var(--enter);
+            will-change: clip-path, transform;
+            cursor: pointer;
+            box-shadow: 0 30px 60px rgba(0, 245, 212, 0.2);
+        }
+
+        .morph-shape.circle {
+            border-radius: 50%;
+        }
+
+        .morph-shape.square {
+            border-radius: 20px;
+        }
+
+        .morph-shape.triangle {
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            border-radius: 0;
+        }
+
+        .morph-shape.blob {
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            animation: blobMorph 4s ease-in-out infinite;
+        }
+
+        @keyframes blobMorph {
+            0%, 100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+            25% { border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%; }
+            50% { border-radius: 50% 50% 30% 70% / 50% 70% 30% 50%; }
+            75% { border-radius: 30% 70% 70% 30% / 70% 50% 50% 30%; }
+        }
+
+        .morph-shape:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .morph-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .morph-btn {
+            padding: 20px 30px;
+            background: var(--steel);
+            border: 1px solid var(--fog);
+            border-radius: 12px;
+            color: var(--ghost);
+            font-family: 'Space Mono', monospace;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.4s var(--enter);
+            text-align: left;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .morph-btn:hover, .morph-btn.active {
+            background: var(--neon-cyan);
+            border-color: var(--neon-cyan);
+            color: var(--void);
+            transform: translateX(10px);
+        }
+
+        /* Toggle Section */
+        .toggle-section {
+            background: var(--ink);
+            padding: 100px 20px;
+        }
+
+        .toggle-grid {
+            max-width: 900px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+        }
+
+        .toggle-item {
+            background: var(--charcoal);
+            border: 1px solid var(--steel);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .toggle-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--fog);
+            margin-bottom: 20px;
+        }
+
+        .elastic-toggle {
+            width: 80px;
+            height: 40px;
+            background: var(--steel);
+            border-radius: 100px;
+            position: relative;
+            cursor: pointer;
+            margin: 0 auto;
+            transition: background 0.4s var(--enter);
+        }
+
+        .elastic-toggle.active {
+            background: var(--neon-cyan);
+        }
+
+        .elastic-toggle-knob {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 32px;
+            height: 32px;
+            background: var(--nova);
+            border-radius: 50%;
+            transition: transform 0.5s var(--bounce);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .elastic-toggle.active .elastic-toggle-knob {
+            transform: translateX(40px);
+        }
+
+        .anim-checkbox {
+            width: 50px;
+            height: 50px;
+            border: 2px solid var(--steel);
+            border-radius: 12px;
+            margin: 0 auto;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.4s var(--enter);
+        }
+
+        .anim-checkbox:hover {
+            border-color: var(--neon-cyan);
+        }
+
+        .anim-checkbox.checked {
+            background: var(--neon-cyan);
+            border-color: var(--neon-cyan);
+            animation: checkPop 0.4s var(--bounce);
+        }
+
+        @keyframes checkPop {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+
+        .anim-checkbox::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 12px;
+            height: 20px;
+            border: solid var(--void);
+            border-width: 0 3px 3px 0;
+            transform: translate(-50%, -60%) rotate(45deg) scale(0);
+            transition: transform 0.3s var(--bounce);
+        }
+
+        .anim-checkbox.checked::after {
+            transform: translate(-50%, -60%) rotate(45deg) scale(1);
+        }
+
+        .pulse-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--neon-magenta), var(--neon-violet));
+            border: none;
+            cursor: pointer;
+            margin: 0 auto;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: transform 0.3s var(--enter);
+        }
+
+        .pulse-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .pulse-btn::before,
+        .pulse-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid var(--neon-magenta);
+            transform: translate(-50%, -50%);
+            animation: pulseRing 2s infinite;
+        }
+
+        .pulse-btn::after {
+            animation-delay: 1s;
+        }
+
+        @keyframes pulseRing {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+        }
+
+        /* Scramble Section */
+        .scramble-section {
+            background: linear-gradient(135deg, var(--ink), var(--charcoal));
+            text-align: center;
+            padding: 150px 20px;
+        }
+
+        .scramble-text {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(24px, 5vw, 48px);
+            font-weight: 600;
+            color: var(--nova);
+            margin-bottom: 40px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .scramble-text:hover {
+            color: var(--neon-cyan);
+        }
+
+        .scramble-hint {
+            font-size: 12px;
+            color: var(--fog);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--void);
+            padding: 80px 20px 40px;
+            border-top: 1px solid var(--steel);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 60px;
+        }
+
+        @media (max-width: 768px) {
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+        }
+
+        .footer-brand {
+            font-family: 'Syne', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--nova);
+            margin-bottom: 20px;
+        }
+
+        .footer-desc {
+            font-size: 13px;
+            color: var(--fog);
+            line-height: 1.8;
+        }
+
+        .footer-links h4 {
+            font-family: 'Syne', sans-serif;
+            font-size: 14px;
+            color: var(--nova);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .footer-links ul {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 12px;
+        }
+
+        .footer-links a {
+            color: var(--fog);
+            text-decoration: none;
+            font-size: 13px;
+            transition: color 0.3s;
+            display: inline-block;
+            position: relative;
+        }
+
+        .footer-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--neon-cyan);
+            transition: width 0.3s var(--enter);
+        }
+
+        .footer-links a:hover {
+            color: var(--neon-cyan);
+        }
+
+        .footer-links a:hover::after {
+            width: 100%;
+        }
+
+        .footer-bottom {
+            max-width: 1200px;
+            margin: 60px auto 0;
+            padding-top: 40px;
+            border-top: 1px solid var(--steel);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--fog);
+        }
+
+        @media (max-width: 768px) {
+            .footer-bottom {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+        }
+
+        /* FAB */
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-violet));
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--void);
+            box-shadow: 0 10px 40px rgba(0, 245, 212, 0.4);
+            z-index: 1000;
+            transition: transform 0.4s var(--bounce), box-shadow 0.3s;
+            will-change: transform;
+        }
+
+        .fab:hover {
+            transform: scale(1.15) rotate(90deg);
+            box-shadow: 0 15px 60px rgba(0, 245, 212, 0.6);
+        }
+
+        /* Reveal Animation */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.8s var(--enter);
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Loader */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--void);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            transition: opacity 0.6s, visibility 0.6s;
+        }
+
+        .loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loader-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid var(--steel);
+            border-top-color: var(--neon-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="loader" id="loader"><div class="loader-spinner"></div></div>
+    <div class="scroll-progress" id="scrollProgress"></div>
+
+    <nav class="nav">
+        <div class="logo"><span>M</span><span>O</span><span>T</span><span>N</span></div>
+        <ul class="nav-links">
+            <li><a href="#spring">Physics</a></li>
+            <li><a href="#gestures">Gestures</a></li>
+            <li><a href="#morph">Morph</a></li>
+            <li><a href="#interactions">Micro</a></li>
+        </ul>
+    </nav>
+
+    <section class="hero">
+        <canvas class="hero-canvas" id="heroCanvas"></canvas>
+        <div class="hero-content">
+            <div class="hero-badge">Interactive Animation Lab</div>
+            <h1 class="hero-title">
+                <span class="word">MOTION</span>
+                <span class="word">IS</span>
+                <span class="word">LIFE</span>
+            </h1>
+            <p class="hero-subtitle">A playground for animation enthusiasts. Touch, drag, swipe, and interact with meticulously crafted motion experiences.</p>
+            <div class="hero-cta">
+                <button class="btn btn-primary" id="exploreBtn">Explore</button>
+                <button class="btn btn-secondary" id="learnBtn">Learn</button>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <span class="scroll-text">Scroll</span>
+            <div class="scroll-line"></div>
+        </div>
+    </section>
+
+    <section class="section spring-section" id="spring">
+        <div class="section-header reveal">
+            <div class="section-label">01 — Physics</div>
+            <h2 class="section-title">Spring Cards</h2>
+        </div>
+        <div class="spring-container">
+            <div class="spring-card" data-spring>
+                <span class="spring-badge">Drag</span>
+                <div class="spring-icon">🎯</div>
+                <h3 class="spring-title">Spring Physics</h3>
+                <p class="spring-desc">Drag and release to feel realistic spring dynamics with velocity-based momentum.</p>
+            </div>
+            <div class="spring-card" data-spring>
+                <span class="spring-badge">Touch</span>
+                <div class="spring-icon">⚡</div>
+                <h3 class="spring-title">Elastic Snap</h3>
+                <p class="spring-desc">Touch and drag anywhere. Release to see elastic snapping with configurable stiffness.</p>
+            </div>
+            <div class="spring-card" data-spring>
+                <span class="spring-badge">Flick</span>
+                <div class="spring-icon">🌊</div>
+                <h3 class="spring-title">Momentum</h3>
+                <p class="spring-desc">Flick with velocity and watch momentum carry before spring physics bring it home.</p>
+            </div>
+            <div class="spring-card" data-spring>
+                <span class="spring-badge">Hold</span>
+                <div class="spring-icon">🎲</div>
+                <h3 class="spring-title">Interactive</h3>
+                <p class="spring-desc">Hold and feel the card follow your finger with multi-touch support.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section gesture-section" id="gestures">
+        <div class="section-header reveal">
+            <div class="section-label">02 — Gestures</div>
+            <h2 class="section-title">Swipe Deck</h2>
+        </div>
+        <div class="swipe-deck" id="swipeDeck">
+            <div class="swipe-card" data-swipe style="z-index: 3;">
+                <div class="swipe-card-image"></div>
+                <div class="swipe-card-content">
+                    <h3 class="swipe-card-title">Velocity Tracking</h3>
+                    <p class="swipe-card-desc">Cards track drag velocity and calculate trajectories with physics.</p>
+                </div>
+                <div class="swipe-indicator like">LIKE</div>
+                <div class="swipe-indicator nope">NOPE</div>
+            </div>
+            <div class="swipe-card" data-swipe style="z-index: 2; transform: scale(0.95) translateY(20px);">
+                <div class="swipe-card-image" style="background: linear-gradient(135deg, #ff006e, #8338ec);"></div>
+                <div class="swipe-card-content">
+                    <h3 class="swipe-card-title">Rotation Follow</h3>
+                    <p class="swipe-card-desc">Cards rotate based on horizontal position for that satisfying feel.</p>
+                </div>
+                <div class="swipe-indicator like">LIKE</div>
+                <div class="swipe-indicator nope">NOPE</div>
+            </div>
+            <div class="swipe-card" data-swipe style="z-index: 1; transform: scale(0.9) translateY(40px);">
+                <div class="swipe-card-image" style="background: linear-gradient(135deg, #00f5d4, #38b000);"></div>
+                <div class="swipe-card-content">
+                    <h3 class="swipe-card-title">Exit Animation</h3>
+                    <p class="swipe-card-desc">Cards fly off with velocity-matched speed, then reorganize.</p>
+                </div>
+                <div class="swipe-indicator like">LIKE</div>
+                <div class="swipe-indicator nope">NOPE</div>
+            </div>
+        </div>
+        <p class="gesture-hint">← Swipe left or right →</p>
+    </section>
+
+    <section class="section morph-section" id="morph">
+        <div class="section-header reveal">
+            <div class="section-label">03 — Transform</div>
+            <h2 class="section-title">Morphing Shapes</h2>
+        </div>
+        <div class="morph-grid">
+            <div class="morph-display">
+                <div class="morph-shape circle" id="morphShape"></div>
+            </div>
+            <div class="morph-controls">
+                <button class="morph-btn active" data-shape="circle">Circle <span>→</span></button>
+                <button class="morph-btn" data-shape="square">Square <span>→</span></button>
+                <button class="morph-btn" data-shape="triangle">Triangle <span>→</span></button>
+                <button class="morph-btn" data-shape="blob">Organic Blob <span>→</span></button>
+            </div>
+        </div>
+    </section>
+
+    <section class="section toggle-section" id="interactions">
+        <div class="section-header reveal">
+            <div class="section-label">04 — Details</div>
+            <h2 class="section-title">Micro-interactions</h2>
+        </div>
+        <div class="toggle-grid">
+            <div class="toggle-item reveal">
+                <div class="toggle-label">Elastic Toggle</div>
+                <div class="elastic-toggle" id="elasticToggle"><div class="elastic-toggle-knob"></div></div>
+            </div>
+            <div class="toggle-item reveal">
+                <div class="toggle-label">Animated Checkbox</div>
+                <div class="anim-checkbox" id="animCheckbox"></div>
+            </div>
+            <div class="toggle-item reveal">
+                <div class="toggle-label">Pulse Effect</div>
+                <button class="pulse-btn" id="pulseBtn">💓</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="section scramble-section" id="scramble">
+        <div class="reveal">
+            <h2 class="scramble-text" id="scrambleText">Hover to decode this message</h2>
+            <p class="scramble-hint">Hover over the text</p>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div>
+                <div class="footer-brand">MOTN LAB</div>
+                <p class="footer-desc">A living laboratory exploring web animation boundaries. Built with passion for motion design.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Experiments</h4>
+                <ul>
+                    <li><a href="#spring">Spring Physics</a></li>
+                    <li><a href="#gestures">Gesture Lab</a></li>
+                    <li><a href="#morph">Shape Morphing</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="#">Documentation</a></li>
+                    <li><a href="#">GitHub</a></li>
+                    <li><a href="#">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 MOTN Lab</span>
+            <span>Crafted with 💜 and keyframes</span>
+        </div>
+    </footer>
+
+    <button class="fab" id="fab">↑</button>
+
+    <script>
+        // Hide loader
+        window.addEventListener('load', () => setTimeout(() => document.getElementById('loader').classList.add('hidden'), 500));
+
+        // Scroll Progress
+        const scrollProgress = document.getElementById('scrollProgress');
+        window.addEventListener('scroll', () => {
+            const scrolled = window.scrollY;
+            const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+            scrollProgress.style.transform = `scaleX(${scrolled / maxScroll})`;
+        }, { passive: true });
+
+        // Canvas Particles
+        const heroCanvas = document.getElementById('heroCanvas');
+        const ctx = heroCanvas.getContext('2d');
+        let particles = [];
+        let mouseX = 0, mouseY = 0;
+
+        function resizeCanvas() {
+            heroCanvas.width = window.innerWidth;
+            heroCanvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        class Particle {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = Math.random() * heroCanvas.width;
+                this.y = Math.random() * heroCanvas.height;
+                this.size = Math.random() * 3 + 1;
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.speedY = (Math.random() - 0.5) * 0.5;
+                this.opacity = Math.random() * 0.5 + 0.1;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                const dx = mouseX - this.x;
+                const dy = mouseY - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 100) {
+                    this.x -= dx * 0.02;
+                    this.y -= dy * 0.02;
+                }
+                if (this.x < 0 || this.x > heroCanvas.width || this.y < 0 || this.y > heroCanvas.height) this.reset();
+            }
+            draw() {
+                ctx.fillStyle = `rgba(0, 245, 212, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 80; i++) particles.push(new Particle());
+
+        document.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, heroCanvas.width, heroCanvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            particles.forEach((p1, i) => {
+                particles.slice(i + 1).forEach(p2 => {
+                    const dx = p1.x - p2.x;
+                    const dy = p1.y - p2.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 100) {
+                        ctx.strokeStyle = `rgba(0, 245, 212, ${0.1 * (1 - dist / 100)})`;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                    }
+                });
+            });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        // Spring Physics Cards
+        class SpringCard {
+            constructor(element) {
+                this.element = element;
+                this.x = 0;
+                this.y = 0;
+                this.vx = 0;
+                this.vy = 0;
+                this.isDragging = false;
+                this.startX = 0;
+                this.startY = 0;
+                this.stiffness = 0.08;
+                this.damping = 0.85;
+                this.setupEvents();
+            }
+            setupEvents() {
+                this.element.addEventListener('mousedown', this.startDrag.bind(this));
+                this.element.addEventListener('touchstart', this.startDrag.bind(this), { passive: false });
+                document.addEventListener('mousemove', this.drag.bind(this));
+                document.addEventListener('touchmove', this.drag.bind(this), { passive: false });
+                document.addEventListener('mouseup', this.endDrag.bind(this));
+                document.addEventListener('touchend', this.endDrag.bind(this));
+            }
+            startDrag(e) {
+                e.preventDefault();
+                this.isDragging = true;
+                this.element.classList.add('dragging');
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                this.startX = clientX - this.x;
+                this.startY = clientY - this.y;
+            }
+            drag(e) {
+                if (!this.isDragging) return;
+                e.preventDefault();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                this.x = clientX - this.startX;
+                this.y = clientY - this.startY;
+                this.updatePosition();
+            }
+            endDrag() {
+                if (!this.isDragging) return;
+                this.isDragging = false;
+                this.element.classList.remove('dragging');
+                this.springBack();
+            }
+            springBack() {
+                const animate = () => {
+                    if (this.isDragging) return;
+                    const forceX = -this.x * this.stiffness;
+                    const forceY = -this.y * this.stiffness;
+                    this.vx += forceX;
+                    this.vy += forceY;
+                    this.vx *= this.damping;
+                    this.vy *= this.damping;
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.updatePosition();
+                    if (Math.abs(this.x) > 0.1 || Math.abs(this.y) > 0.1 || Math.abs(this.vx) > 0.1 || Math.abs(this.vy) > 0.1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        this.x = 0; this.y = 0; this.vx = 0; this.vy = 0;
+                        this.updatePosition();
+                    }
+                };
+                animate();
+            }
+            updatePosition() {
+                this.element.style.transform = `translate(${this.x}px, ${this.y}px)`;
+            }
+        }
+
+        document.querySelectorAll('[data-spring]').forEach(card => new SpringCard(card));
+
+        // Swipe Cards
+        class SwipeCard {
+            constructor(element, index, total) {
+                this.element = element;
+                this.index = index;
+                this.total = total;
+                this.x = 0;
+                this.y = 0;
+                this.isDragging = false;
+                this.startX = 0;
+                this.threshold = 100;
+                this.likeIndicator = element.querySelector('.like');
+                this.nopeIndicator = element.querySelector('.nope');
+                this.setupEvents();
+            }
+            setupEvents() {
+                this.element.addEventListener('mousedown', this.startDrag.bind(this));
+                this.element.addEventListener('touchstart', this.startDrag.bind(this), { passive: false });
+                document.addEventListener('mousemove', this.drag.bind(this));
+                document.addEventListener('touchmove', this.drag.bind(this), { passive: false });
+                document.addEventListener('mouseup', this.endDrag.bind(this));
+                document.addEventListener('touchend', this.endDrag.bind(this));
+            }
+            startDrag(e) {
+                if (this.index !== this.total - 1) return;
+                e.preventDefault();
+                this.isDragging = true;
+                this.element.classList.add('dragging');
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                this.startX = clientX - this.x;
+            }
+            drag(e) {
+                if (!this.isDragging) return;
+                e.preventDefault();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                this.x = clientX - this.startX;
+                const rotation = this.x * 0.05;
+                this.element.style.transform = `translateX(${this.x}px) rotate(${rotation}deg)`;
+                if (this.x > 50) {
+                    this.likeIndicator.style.opacity = Math.min(this.x / 100, 1);
+                    this.likeIndicator.style.transform = `scale(${Math.min(this.x / 50, 1)}) rotate(15deg)`;
+                } else if (this.x < -50) {
+                    this.nopeIndicator.style.opacity = Math.min(Math.abs(this.x) / 100, 1);
+                    this.nopeIndicator.style.transform = `scale(${Math.min(Math.abs(this.x) / 50, 1)}) rotate(-15deg)`;
+                } else {
+                    this.likeIndicator.style.opacity = 0;
+                    this.nopeIndicator.style.opacity = 0;
+                }
+            }
+            endDrag() {
+                if (!this.isDragging) return;
+                this.isDragging = false;
+                this.element.classList.remove('dragging');
+                if (Math.abs(this.x) > this.threshold) {
+                    this.exit();
+                } else {
+                    this.snapBack();
+                }
+            }
+            snapBack() {
+                this.element.style.transition = 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                this.element.style.transform = 'translateX(0) rotate(0deg)';
+                this.likeIndicator.style.opacity = 0;
+                this.nopeIndicator.style.opacity = 0;
+                setTimeout(() => this.element.style.transition = '', 500);
+            }
+            exit() {
+                const direction = this.x > 0 ? 1 : -1;
+                this.element.style.transition = 'transform 0.3s ease-out';
+                this.element.style.transform = `translateX(${direction * 500}px) rotate(${direction * 30}deg)`;
+                this.likeIndicator.style.opacity = 0;
+                this.nopeIndicator.style.opacity = 0;
+                setTimeout(() => {
+                    this.element.style.display = 'none';
+                    this.updateStack();
+                }, 300);
+            }
+            updateStack() {
+                const cards = document.querySelectorAll('[data-swipe]');
+                cards.forEach((card, i) => {
+                    if (card.style.display !== 'none') {
+                        const offset = cards.length - i - 2;
+                        card.style.zIndex = cards.length - i;
+                        card.style.transform = `scale(${1 - offset * 0.05}) translateY(${offset * 20}px)`;
+                    }
+                });
+            }
+        }
+
+        const swipeCards = document.querySelectorAll('[data-swipe]');
+        swipeCards.forEach((card, i) => new SwipeCard(card, i, swipeCards.length));
+
+        // Morph Shape
+        const morphShape = document.getElementById('morphShape');
+        document.querySelectorAll('.morph-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.morph-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const shape = btn.dataset.shape;
+                morphShape.className = `morph-shape ${shape}`;
+            });
+        });
+        morphShape.addEventListener('click', () => {
+            const shapes = ['circle', 'square', 'triangle', 'blob'];
+            const current = morphShape.classList[1];
+            const next = shapes[(shapes.indexOf(current) + 1) % shapes.length];
+            document.querySelectorAll('.morph-btn').forEach(b => b.classList.toggle('active', b.dataset.shape === next));
+            morphShape.className = `morph-shape ${next}`;
+        });
+
+        // Toggles
+        document.getElementById('elasticToggle').addEventListener('click', function() {
+            this.classList.toggle('active');
+        });
+        document.getElementById('animCheckbox').addEventListener('click', function() {
+            this.classList.toggle('checked');
+        });
+
+        // Text Scramble
+        const scrambleText = document.getElementById('scrambleText');
+        const originalText = 'Hover to decode this message';
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%';
+        let scrambleInterval;
+        scrambleText.addEventListener('mouseenter', () => {
+            let iteration = 0;
+            clearInterval(scrambleInterval);
+            scrambleInterval = setInterval(() => {
+                scrambleText.textContent = originalText.split('').map((char, i) => {
+                    if (i < iteration) return originalText[i];
+                    return chars[Math.floor(Math.random() * chars.length)];
+                }).join('');
+                if (iteration >= originalText.length) clearInterval(scrambleInterval);
+                iteration += 1/3;
+            }, 30);
+        });
+
+        // Button Ripple
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                const ripple = document.createElement('span');
+                ripple.className = 'btn-ripple';
+                const rect = this.getBoundingClientRect();
+                ripple.style.left = `${e.clientX - rect.left}px`;
+                ripple.style.top = `${e.clientY - rect.top}px`;
+                this.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+
+        // FAB
+        document.getElementById('fab').addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // Scroll Reveal
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // Pulse Button Effect
+        const pulseBtn = document.getElementById('pulseBtn');
+        pulseBtn.addEventListener('click', () => {
+            pulseBtn.style.animation = 'none';
+            pulseBtn.offsetHeight;
+            pulseBtn.style.animation = '';
+        });
+    </script>
+</body>
+</html>
