@@ -1,134 +1,452 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Libertas 🕊️ - Personal Bio</title>
-  <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700&family=Orbitron:wght@500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
   <style>
+    /* ===== DESIGN TOKENS ===== */
     :root {
-      --primary: #8338ec;
-      --secondary: #3a0ca3;
-      --accent: #ff006e;
-      --bg: #0b0b1f;
-      --card-bg: #1c1c3c;
-      --text: #f1f1f1;
-    }* {
-  box-sizing: border-box;
-}
+      --primary: #7c5cbf;
+      --primary-glow: rgba(124, 92, 191, 0.35);
+      --accent: #e8456b;
+      --accent-glow: rgba(232, 69, 107, 0.25);
+      --bg-deep: #08081a;
+      --bg-mid: #0e0e26;
+      --card-bg: rgba(22, 22, 52, 0.65);
+      --card-border: rgba(124, 92, 191, 0.18);
+      --text: #f0eff4;
+      --text-muted: #9896b0;
+      --text-dim: #6b6980;
+      --section-bg: rgba(30, 30, 64, 0.45);
+      --section-border: rgba(124, 92, 191, 0.25);
+      --quote-bg: rgba(35, 25, 60, 0.5);
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --font-heading: 'Orbitron', sans-serif;
+      --font-body: 'Titillium Web', sans-serif;
+    }
 
-body {
-  margin: 0;
-  font-family: 'Titillium Web', sans-serif;
-  background-color: var(--bg);
-  color: var(--text);
-  padding: 16px;
-}
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-.container {
-  max-width: 960px;
-  margin: auto;
-  background-color: var(--card-bg);
-  border-radius: 20px;
-  padding: 32px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-  transition: all 0.3s ease;
-}
+    html {
+      scroll-behavior: smooth;
+    }
 
-h1 {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 36px;
-  color: var(--accent);
-  margin-bottom: 8px;
-  text-shadow: 0 0 8px var(--primary);
-}
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-deep);
+      color: var(--text);
+      min-height: 100dvh;
+      padding: clamp(16px, 4vw, 40px);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      position: relative;
+      overflow-x: hidden;
+    }
 
-h2 {
-  color: var(--primary);
-  margin-top: 32px;
-  font-size: 24px;
-  border-left: 4px solid var(--accent);
-  padding-left: 12px;
-}
+    /* ===== AMBIENT BACKGROUND ===== */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(124, 92, 191, 0.1) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 90%, rgba(232, 69, 107, 0.07) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
 
-p, li {
-  font-size: 16px;
-  line-height: 1.7;
-  color: #e0e0e0;
-}
+    /* Grain texture overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-size: 128px 128px;
+      pointer-events: none;
+      z-index: 0;
+    }
 
-.section {
-  margin-bottom: 24px;
-  padding: 16px;
-  background-color: #2a2a50;
-  border-radius: 12px;
-  border-left: 5px solid var(--primary);
-}
+    /* ===== MAIN CONTAINER (GLASSMORPHISM) ===== */
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 860px;
+      width: 100%;
+      margin: 0 auto;
+      background: var(--card-bg);
+      backdrop-filter: blur(24px) saturate(1.3);
+      -webkit-backdrop-filter: blur(24px) saturate(1.3);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: clamp(28px, 5vw, 52px);
+      box-shadow:
+        0 2px 0 0 rgba(255, 255, 255, 0.03) inset,
+        0 32px 80px -16px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+      animation: containerReveal 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
 
-blockquote {
-  font-style: italic;
-  color: #c0c0ff;
-  border-left: 4px solid var(--accent);
-  padding-left: 16px;
-  margin: 16px 0;
-}
+    @keyframes containerReveal {
+      from {
+        opacity: 0;
+        transform: translateY(28px) scale(0.985);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
 
-ul {
-  padding-left: 20px;
-}
+    /* ===== HEADER ===== */
+    h1 {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: clamp(1.8rem, 5vw, 2.6rem);
+      letter-spacing: 0.06em;
+      line-height: 1.1;
+      margin-bottom: 6px;
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+      position: relative;
+      animation: headingReveal 0.7s 0.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
 
-@media (max-width: 600px) {
-  .container {
-    padding: 20px;
-    border-radius: 16px;
-  }
-  h1 {
-    font-size: 28px;
-  }
-  h2 {
-    font-size: 20px;
-  }
-  p, li {
-    font-size: 15px;
-  }
-}
+    /* Underline glow accent beneath heading */
+    h1::after {
+      content: '';
+      display: block;
+      width: 64px;
+      height: 3px;
+      margin-top: 10px;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--primary));
+      opacity: 0.7;
+      animation: lineExpand 0.6s 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
 
+    @keyframes headingReveal {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+        letter-spacing: 0.15em;
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+        letter-spacing: 0.06em;
+      }
+    }
+
+    @keyframes lineExpand {
+      from {
+        width: 0;
+        opacity: 0;
+      }
+      to {
+        width: 64px;
+        opacity: 0.7;
+      }
+    }
+
+    /* ===== SECTION HEADINGS ===== */
+    h2 {
+      font-family: var(--font-heading);
+      font-weight: 500;
+      font-size: clamp(1.05rem, 2.8vw, 1.35rem);
+      color: var(--primary);
+      margin-bottom: 14px;
+      letter-spacing: 0.04em;
+      line-height: 1.3;
+      border-left: none;
+      padding-left: 0;
+      position: relative;
+      padding-bottom: 8px;
+    }
+
+    h2::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 40px;
+      height: 2px;
+      border-radius: 1px;
+      background: var(--section-border);
+      transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .section:hover h2::after {
+      width: 72px;
+    }
+
+    /* ===== BODY TEXT ===== */
+    p, li {
+      font-size: clamp(0.92rem, 1.8vw, 1.02rem);
+      line-height: 1.75;
+      color: #d8d6e4;
+      max-width: 65ch;
+    }
+
+    /* ===== LIST ===== */
+    ul {
+      padding-left: 20px;
+      list-style: none;
+    }
+
+    li {
+      position: relative;
+      padding-left: 6px;
+      margin-bottom: 10px;
+      transition: color 0.25s ease;
+    }
+
+    li::marker {
+      color: var(--primary);
+      font-size: 0.8em;
+    }
+
+    li:hover {
+      color: var(--text);
+    }
+
+    /* ===== BLOCKQUOTE ===== */
+    blockquote {
+      font-style: italic;
+      font-size: clamp(1rem, 2vw, 1.1rem);
+      line-height: 1.7;
+      color: #b8b5d0;
+      border-left: 3px solid var(--primary);
+      padding: 14px 18px;
+      margin: 16px 0 10px;
+      background: var(--quote-bg);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    blockquote::before {
+      content: '"';
+      position: absolute;
+      top: -6px;
+      left: 10px;
+      font-size: 3.5rem;
+      font-family: Georgia, serif;
+      color: var(--primary);
+      opacity: 0.15;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    /* ===== SECTION CARDS ===== */
+    .section {
+      margin-bottom: 20px;
+      padding: clamp(18px, 3vw, 26px);
+      background: var(--section-bg);
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(124, 92, 191, 0.08);
+      border-left: 3px solid var(--section-border);
+      position: relative;
+      overflow: hidden;
+      transition:
+        transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 0.35s ease,
+        box-shadow 0.35s ease;
+      /* Staggered fade-in */
+      animation: sectionReveal 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .section:nth-child(1) { animation-delay: 0.2s; }
+    .section:nth-child(2) { animation-delay: 0.35s; }
+    .section:nth-child(3) { animation-delay: 0.5s; }
+    .section:nth-child(4) { animation-delay: 0.65s; }
+
+    @keyframes sectionReveal {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Subtle inner highlight on hover */
+    .section::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        ellipse 120% 100% at 0% 0%,
+        rgba(124, 92, 191, 0.06) 0%,
+        transparent 70%
+      );
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      pointer-events: none;
+    }
+
+    .section:hover {
+      transform: translateY(-3px);
+      border-color: rgba(124, 92, 191, 0.2);
+      box-shadow:
+        0 8px 32px -8px rgba(0, 0, 0, 0.3),
+        0 0 0 1px rgba(124, 92, 191, 0.08);
+    }
+
+    .section:hover::before {
+      opacity: 1;
+    }
+
+    /* ===== LOCATION & METADATA PILL ===== */
+    .section p strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .section:first-child p {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    /* ===== QUOTE ATTRIBUTION ===== */
+    blockquote p:last-child,
+    blockquote br + * {
+      text-align: right;
+      font-style: normal;
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 600px) {
+      body {
+        padding: 12px;
+        align-items: flex-start;
+      }
+
+      .container {
+        padding: 22px;
+        border-radius: var(--radius-md);
+      }
+
+      h1 {
+        font-size: 1.65rem;
+      }
+
+      h2 {
+        font-size: 1.05rem;
+      }
+
+      .section {
+        padding: 16px;
+        border-radius: 12px;
+      }
+
+      blockquote {
+        padding: 12px 14px;
+      }
+
+      ul {
+        padding-left: 16px;
+      }
+    }
+
+    @media (min-width: 601px) and (max-width: 900px) {
+      .container {
+        padding: 36px;
+      }
+    }
+
+    /* ===== FOCUS & ACCESSIBILITY ===== */
+    *:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+
+    .skip-link {
+      position: absolute;
+      top: -100px;
+      left: 16px;
+      background: var(--primary);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      z-index: 100;
+      font-weight: 600;
+      transition: top 0.2s ease;
+    }
+
+    .skip-link:focus {
+      top: 16px;
+    }
+
+    /* ===== REDUCED MOTION ===== */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
+  <a href="#main-content" class="skip-link">Skip to content</a>
+  <div class="container" id="main-content">
     <h1>Libertas 🕊️</h1>
     <div class="section">
       <p><strong>📍 Location:</strong> Panwan, Pakistan</p>
       <p><strong>🌐 Languages:</strong> English, Urdu</p>
-      <p><strong>🧠 Personality:</strong> Extrovert • Talkative (working on it 😅) • Overthinker • High & Dark Humor</p>
+      <p><strong>🧠 Personality:</strong> Extrovert · Talkative (working on it 😅) · Overthinker · High & Dark Humor</p>
       <p><strong>🎓 Current Grade:</strong> 10th</p>
-    </div><div class="section">
-  <h2>🎯 Big Dreams. Bold Heart.</h2>
-  <p>“I am not afraid to die. I’m afraid of not living fulfilling my purpose.”</p>
-  <p><strong>Goal:</strong> Become the one at the top, but always beneath God.</p>
-  <p><strong>Purpose:</strong> Use the power given by Allah to do good for society and ultimately be martyred in that path.</p>
-  <p><strong>Dream:</strong> To travel the world and sail across the seven seas.</p>
-</div>
+    </div>
 
-<div class="section">
-  <h2>🧠 Interests & Identity</h2>
-  <ul>
-    <li><strong>🎧 Music:</strong> Eminem, Ed Sheeran, Shubh, 2Pac, Sidhu Moose Wala</li>
-    <li><strong>📺 Shows/Anime:</strong> One Piece, Dark, Money Heist</li>
-    <li><strong>💭 Relatable Characters:</strong> Luffy (Big Dreamer), Berlin (Mindset), Batman (Duality)</li>
-    <li><strong>⚙️ Skills:</strong> Tech wizardry, Social engineering, Cricket & sports IQ</li>
-    <li><strong>🌍 Curious About:</strong> Geopolitics, History, Real stories that shaped the world</li>
-  </ul>
-</div>
+    <div class="section">
+      <h2>🎯 Big Dreams. Bold Heart.</h2>
+      <p>"I am not afraid to die. I'm afraid of not living fulfilling my purpose."</p>
+      <p><strong>Goal:</strong> Become the one at the top, but always beneath God.</p>
+      <p><strong>Purpose:</strong> Use the power given by Allah to do good for society and ultimately be martyred in that path.</p>
+      <p><strong>Dream:</strong> To travel the world and sail across the seven seas.</p>
+    </div>
 
-<div class="section">
-  <h2>✍️ Quote I Live By</h2>
-  <blockquote>
-    "There is only one way to live a life, and that's without regrets."<br>
-— Portgas D. Ace
-  </blockquote>
-</div>
+    <div class="section">
+      <h2>🧠 Interests & Identity</h2>
+      <ul>
+        <li><strong>🎧 Music:</strong> Eminem, Ed Sheeran, Shubh, 2Pac, Sidhu Moose Wala</li>
+        <li><strong>📺 Shows/Anime:</strong> One Piece, Dark, Money Heist</li>
+        <li><strong>💭 Relatable Characters:</strong> Luffy (Big Dreamer), Berlin (Mindset), Batman (Duality)</li>
+        <li><strong>⚙️ Skills:</strong> Tech wizardry, Social engineering, Cricket & sports IQ</li>
+        <li><strong>🌍 Curious About:</strong> Geopolitics, History, Real stories that shaped the world</li>
+      </ul>
+    </div>
 
+    <div class="section">
+      <h2>✍️ Quote I Live By</h2>
+      <blockquote>
+        "There is only one way to live a life, and that's without regrets."<br>
+        — Portgas D. Ace
+      </blockquote>
+    </div>
   </div>
 </body>
 </html>
