@@ -125,7 +125,6 @@
       animation: headingReveal 0.7s 0.15s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
-    /* Underline glow accent beneath heading */
     h1::after {
       content: '';
       display: block;
@@ -265,7 +264,6 @@
         transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
         border-color 0.35s ease,
         box-shadow 0.35s ease;
-      /* Staggered fade-in */
       animation: sectionReveal 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
@@ -285,7 +283,6 @@
       }
     }
 
-    /* Subtle inner highlight on hover */
     .section::before {
       content: '';
       position: absolute;
@@ -312,17 +309,66 @@
       opacity: 1;
     }
 
-    /* ===== LOCATION & METADATA PILL ===== */
-    .section p strong {
-      color: var(--text);
-      font-weight: 600;
+    /* ===== COLLAPSIBLE ARTISTS ===== */
+    .collapsible-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      padding: 12px 16px;
+      background: rgba(124, 92, 191, 0.08);
+      border-radius: var(--radius-sm);
+      margin-bottom: 12px;
+      transition: background 0.3s ease;
+      user-select: none;
     }
 
-    .section:first-child p {
-      display: flex;
-      align-items: baseline;
-      gap: 4px;
-      flex-wrap: wrap;
+    .collapsible-header:hover {
+      background: rgba(124, 92, 191, 0.15);
+    }
+
+    .collapsible-header h3 {
+      font-family: var(--font-heading);
+      font-weight: 500;
+      font-size: clamp(0.95rem, 2vw, 1.1rem);
+      color: var(--primary);
+      margin: 0;
+      letter-spacing: 0.03em;
+    }
+
+    .collapsible-icon {
+      font-size: 1.2rem;
+      transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+      color: var(--text-muted);
+    }
+
+    .collapsible-header.active .collapsible-icon {
+      transform: rotate(180deg);
+    }
+
+    .collapsible-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+      opacity: 0;
+    }
+
+    .collapsible-content.open {
+      max-height: 500px;
+      opacity: 1;
+    }
+
+    .collapsible-content ul {
+      padding: 8px 0 0 20px;
+    }
+
+    .collapsible-content li {
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(124, 92, 191, 0.06);
+    }
+
+    .collapsible-content li:last-child {
+      border-bottom: none;
     }
 
     /* ===== QUOTE ATTRIBUTION ===== */
@@ -414,11 +460,12 @@
   <a href="#main-content" class="skip-link">Skip to content</a>
   <div class="container" id="main-content">
     <h1>Libertas 🕊️</h1>
+    
     <div class="section">
-      <p><strong>📍 Location:</strong> Panwan, Pakistan</p>
+      <p><strong>📍 Location:</strong> Shahkot, Pakistan</p>
       <p><strong>🌐 Languages:</strong> English, Urdu</p>
-      <p><strong>🧠 Personality:</strong> Extrovert · Talkative (working on it 😅) · Overthinker · High & Dark Humor</p>
-      <p><strong>🎓 Current Grade:</strong> 10th</p>
+      <p><strong>🧠 Personality:</strong> Extrovert · Talkative · Overthinker · High & Dark Humor</p>
+      <p><strong>🎓 Education:</strong> Pre‑engineering</p>
     </div>
 
     <div class="section">
@@ -431,22 +478,63 @@
 
     <div class="section">
       <h2>🧠 Interests & Identity</h2>
-      <ul>
-        <li><strong>🎧 Music:</strong> Eminem, Ed Sheeran, Shubh, 2Pac, Sidhu Moose Wala</li>
-        <li><strong>📺 Shows/Anime:</strong> One Piece, Dark, Money Heist</li>
+      
+      <!-- Collapsible Artists Section -->
+      <div class="collapsible-header" onclick="toggleArtists(this)">
+        <h3>🎧 Favorite Artists</h3>
+        <span class="collapsible-icon">▼</span>
+      </div>
+      <div class="collapsible-content" id="artistsList">
+        <ul>
+          <li>Eminem</li>
+          <li>Ed Sheeran</li>
+          <li>Shubh</li>
+          <li>2Pac</li>
+          <li>Sidhu Moose Wala</li>
+          <li>Dua Lipa</li>
+          <li>Lana Del Rey</li>
+        </ul>
+      </div>
+
+      <ul style="margin-top: 16px;">
+        <li><strong>📺 Cinema:</strong> One Piece, Dark, The Dreamers</li>
         <li><strong>💭 Relatable Characters:</strong> Luffy (Big Dreamer), Berlin (Mindset), Batman (Duality)</li>
-        <li><strong>⚙️ Skills:</strong> Tech wizardry, Social engineering, Cricket & sports IQ</li>
+        <li><strong>⚙️ Skills:</strong> Tech wizardry, Social engineering, OSINT</li>
         <li><strong>🌍 Curious About:</strong> Geopolitics, History, Real stories that shaped the world</li>
       </ul>
     </div>
 
     <div class="section">
-      <h2>✍️ Quote I Live By</h2>
+      <h2>✍️ Quotes I Live By</h2>
+      <blockquote>
+        "Blood makes you related, but loyalty makes your family."
+      </blockquote>
       <blockquote>
         "There is only one way to live a life, and that's without regrets."<br>
         — Portgas D. Ace
       </blockquote>
     </div>
   </div>
+
+  <script>
+    function toggleArtists(header) {
+      const content = header.nextElementSibling;
+      const isOpen = content.classList.contains('open');
+      
+      // Close all other collapsibles (if any future ones are added)
+      document.querySelectorAll('.collapsible-content').forEach(el => {
+        el.classList.remove('open');
+      });
+      document.querySelectorAll('.collapsible-header').forEach(el => {
+        el.classList.remove('active');
+      });
+      
+      // Toggle current
+      if (!isOpen) {
+        content.classList.add('open');
+        header.classList.add('active');
+      }
+    }
+  </script>
 </body>
 </html>
