@@ -1085,263 +1085,206 @@
   </div>
 
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-  <script>
-    // ============================================
-    // INITIALIZE PARTICLES
-    // ============================================
-    function initParticles() {
-      const container = document.getElementById('particles');
-      const particleCount = 25;
-      
-      for (let i = 0; i < particleCount; i++) {
-        const particle = document.createElement('div');
-        const types = ['dust', 'dust', 'ink-drop', 'sparkle'];
-        const type = types[Math.floor(Math.random() * types.length)];
-        
-        particle.className = `particle ${type}`;
-        particle.style.left = Math.random() * 100 + '%';
-        particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
-        particle.style.animationDelay = Math.random() * 10 + 's';
-        
-        container.appendChild(particle);
-      }
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+  // Fallback CDN
+  if (typeof html2canvas === 'undefined') {
+    document.write('<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"><\/script>');
+  }
+</script>
+<script>
+  let html2canvasReady = false;
+  function ensureHtml2Canvas() {
+    return new Promise((resolve, reject) => {
+      if (typeof html2canvas !== 'undefined') { html2canvasReady = true; resolve(); return; }
+      let attempts = 0;
+      const interval = setInterval(() => {
+        attempts++;
+        if (typeof html2canvas !== 'undefined') { clearInterval(interval); html2canvasReady = true; resolve(); }
+        else if (attempts > 50) { clearInterval(interval); reject(new Error('html2canvas failed to load')); }
+      }, 100);
+    });
+  }
+
+  function initParticles() {
+    const container = document.getElementById('particles');
+    for (let i = 0; i < 25; i++) {
+      const particle = document.createElement('div');
+      const types = ['dust','dust','ink-drop','sparkle'];
+      const type = types[Math.floor(Math.random() * types.length)];
+      particle.className = 'particle ' + type;
+      particle.style.left = Math.random() * 100 + '%';
+      particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+      particle.style.animationDelay = Math.random() * 10 + 's';
+      container.appendChild(particle);
     }
+  }
 
-    // ============================================
-    // SET TODAY'S DATE
-    // ============================================
-    document.getElementById('date').valueAsDate = new Date();
+  document.getElementById('date').valueAsDate = new Date();
 
-    // ============================================
-    // SUBJECT CARD INTERACTIONS
-    // ============================================
-    const subjectCards = document.querySelectorAll('.subject-card');
-    const homeworkFields = document.getElementById('homeworkFields');
+  const subjectCards = document.querySelectorAll('.subject-card');
+  const homeworkFields = document.getElementById('homeworkFields');
 
-    subjectCards.forEach(card => {
-      card.addEventListener('click', () => {
-        const checkbox = card.querySelector('.subject-checkbox');
-        checkbox.checked = !checkbox.checked;
-        card.classList.toggle('selected', checkbox.checked);
-        updateHomeworkFields();
-      });
+  subjectCards.forEach(card => {
+    card.addEventListener('click', () => {
+      const checkbox = card.querySelector('.subject-checkbox');
+      checkbox.checked = !checkbox.checked;
+      card.classList.toggle('selected', checkbox.checked);
+      updateHomeworkFields();
+    });
+  });
+
+  function updateHomeworkFields() {
+    const checked = document.querySelectorAll('.subject-checkbox:checked');
+    const currentFields = new Set(Array.from(checked).map(cb => cb.value));
+    document.querySelectorAll('.homework-field').forEach(field => {
+      if (!currentFields.has(field.dataset.subject)) {
+        field.style.animation = 'slide-up 0.3s ease reverse forwards';
+        setTimeout(() => field.remove(), 300);
+      }
+    });
+    checked.forEach(cb => {
+      if (!document.querySelector('.homework-field[data-subject="' + cb.value + '"]')) {
+        const div = document.createElement('div');
+        div.className = 'homework-field';
+        div.dataset.subject = cb.value;
+        div.innerHTML = '<label>' + cb.value + ' — Tasks & Notes:</label><textarea id="hw-' + cb.value.replace(/\s+/g,'') + '" placeholder="Record your ' + cb.value + ' assignments, lessons, and discoveries here..."></textarea>';
+        homeworkFields.appendChild(div);
+      }
+    });
+  }
+
+  async function generateDiary() {
+    const date = document.getElementById('date').value;
+    const font = document.getElementById('font').value;
+    const background = document.getElementById('background').value;
+    const fontSize = document.getElementById('fontsize').value;
+    const placeholder = document.getElementById('placeholder');
+    const diaryOutput = document.getElementById('diaryOutput');
+    const savePhotoBtn = document.getElementById('savePhotoBtn');
+    const generateBtn = document.getElementById('generateBtn');
+
+    const checkedSubjects = document.querySelectorAll('.subject-checkbox:checked');
+    if (checkedSubjects.length === 0) { alert('Please select at least one subject to record in your diary.'); return; }
+
+    generateBtn.classList.add('generating');
+    generateBtn.querySelector('.btn-text').innerHTML = '<svg class="quill-anim" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg> The quill writes...';
+
+    placeholder.style.display = 'none';
+    diaryOutput.style.display = 'block';
+    savePhotoBtn.classList.remove('visible');
+
+    const dateObj = new Date(date);
+    const formattedDate = dateObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+    let content = '<div class="diary-date diary-line" style="animation-delay: 0.1s">' + formattedDate + '</div>';
+    content += '<div class="diary-title diary-line" style="animation-delay: 0.2s">Home Work</div>';
+
+    let delay = 0.3;
+    checkedSubjects.forEach(cb => {
+      const subject = cb.value;
+      const textarea = document.getElementById('hw-' + subject.replace(/\s+/g, ''));
+      const work = textarea ? textarea.value : '';
+      if (work.trim()) {
+        content += '<div class="diary-subject diary-line" style="animation-delay: ' + delay + 's">' + subject + ':</div>';
+        delay += 0.1;
+        const lines = work.split('\n').filter(l => l.trim());
+        lines.forEach((line, i) => {
+          content += '<div class="diary-line" style="animation-delay: ' + (delay + i * 0.05) + 's">' + line + '</div>';
+        });
+        delay += lines.length * 0.05 + 0.15;
+      }
     });
 
-    function updateHomeworkFields() {
-      const checked = document.querySelectorAll('.subject-checkbox:checked');
-      const currentFields = new Set(Array.from(checked).map(cb => cb.value));
-      
-      // Remove unchecked
-      document.querySelectorAll('.homework-field').forEach(field => {
-        const subject = field.dataset.subject;
-        if (!currentFields.has(subject)) {
-          field.style.animation = 'slide-up 0.3s ease reverse forwards';
-          setTimeout(() => field.remove(), 300);
-        }
-      });
-      
-      // Add new checked
-      checked.forEach((checkbox, index) => {
-        const subject = checkbox.value;
-        if (!document.querySelector(`.homework-field[data-subject="${subject}"]`)) {
-          createHomeworkField(subject, index);
-        }
-      });
-    }
+    diaryOutput.innerHTML = content;
+    diaryOutput.style.fontFamily = "'" + font + "', cursive";
+    diaryOutput.style.fontSize = fontSize + 'px';
+    diaryOutput.classList.add('writing');
 
-    function createHomeworkField(subject, index) {
-      const div = document.createElement('div');
-      div.className = 'homework-field';
-      div.dataset.subject = subject;
-      div.innerHTML = `
-        <label>${subject} — Tasks & Notes:</label>
-        <textarea id="hw-${subject.replace(/\s+/g, '')}" 
-                  placeholder="Record your ${subject} assignments, lessons, and discoveries here..."></textarea>
-      `;
-      homeworkFields.appendChild(div);
-    }
+    const backgrounds = {
+      none: 'none',
+      white: 'linear-gradient(to bottom, #ffffff, #fafafa)',
+      beige: 'linear-gradient(135deg, #f5e6d3 0%, #e8d4bc 100%)',
+      lined: 'repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(139,69,19,0.15) 31px, rgba(139,69,19,0.15) 32px), linear-gradient(to bottom, #fffef8, #f5f0e6)',
+      grid: 'linear-gradient(0deg, rgba(139,69,19,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(139,69,19,0.1) 1px, transparent 1px), linear-gradient(to bottom, #fffef8, #f5f0e6)',
+      old: 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'100\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.8\' numOctaves=\'4\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'0.08\'/%3E%3C/svg%3E"), linear-gradient(135deg, #e8d4bc 0%, #d4c4a8 100%)'
+    };
+    diaryOutput.style.background = backgrounds[background] || backgrounds.none;
+    if (background === 'grid') diaryOutput.style.backgroundSize = '32px 32px, 32px 32px, 100% 100%';
+    else if (background === 'lined') diaryOutput.style.backgroundSize = '100% 32px, 100% 100%';
 
-    // ============================================
-    // DIARY GENERATION WITH ANIMATIONS
-    // ============================================
-    async function generateDiary() {
-      const date = document.getElementById('date').value;
-      const font = document.getElementById('font').value;
-      const background = document.getElementById('background').value;
-      const fontSize = document.getElementById('fontsize').value;
-      const previewPage = document.getElementById('previewPage');
-      const placeholder = document.getElementById('placeholder');
-      const diaryOutput = document.getElementById('diaryOutput');
-      const downloadBtn = document.getElementById('downloadBtn');
-      const generateBtn = document.getElementById('generateBtn');
+    await new Promise(r => setTimeout(r, 800));
+    generateBtn.classList.remove('generating');
+    generateBtn.querySelector('.btn-text').innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg> Weave the Diary Entry';
 
-      // Check if any subjects selected
-      const checkedSubjects = document.querySelectorAll('.subject-checkbox:checked');
-      if (checkedSubjects.length === 0) {
-        alert('Please select at least one subject to record in your diary.');
-        return;
-      }
+    await new Promise(r => setTimeout(r, 1000));
+    savePhotoBtn.classList.add('visible');
+  }
 
-      // Show loading
-      generateBtn.classList.add('generating');
-      generateBtn.querySelector('.btn-text').innerHTML = `
-        <svg class="quill-anim" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 19l7-7 3 3-7 7-3-3z"/>
-          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
-        </svg>
-        The quill writes...
-      `;
+  async function saveDiaryAsPhoto() {
+    const savePhotoBtn = document.getElementById('savePhotoBtn');
+    const diaryOutput = document.getElementById('diaryOutput');
+    const dateInput = document.getElementById('date').value;
+    const dateStr = dateInput || new Date().toISOString().split('T')[0];
 
-      // Simulate page flip
-      previewPage.classList.add('page-flip');
-      
-      await new Promise(r => setTimeout(r, 400));
+    try { await ensureHtml2Canvas(); }
+    catch (err) { alert('Could not load the image capture library. Please check your internet connection and try again.'); return; }
 
-      // Hide placeholder, show output
-      placeholder.style.display = 'none';
-      diaryOutput.style.display = 'block';
-      downloadBtn.style.display = 'none';
-      downloadBtn.classList.remove('visible');
+    savePhotoBtn.classList.add('saving');
+    savePhotoBtn.innerHTML = '<svg class="camera-icon quill-anim" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Capturing...';
+    await new Promise(r => setTimeout(r, 300));
 
-      // Build content with animation classes
-      const dateObj = new Date(date);
-      const formattedDate = dateObj.toLocaleDateString('en-US', { 
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
-      });
+    try {
+      const cloneContainer = document.createElement('div');
+      cloneContainer.style.cssText = 'position:absolute;left:-9999px;top:0;width:' + diaryOutput.offsetWidth + 'px;padding:30px;background:' + (diaryOutput.style.background || '#f5e6d3') + ';font-family:' + diaryOutput.style.fontFamily + ';font-size:' + diaryOutput.style.fontSize + ';color:#2c1810;line-height:1.8;white-space:pre-wrap;word-wrap:break-word;';
+      cloneContainer.innerHTML = diaryOutput.innerHTML;
+      cloneContainer.querySelectorAll('.diary-line').forEach(el => { el.style.opacity = '1'; el.style.animation = 'none'; el.style.transform = 'none'; el.style.filter = 'none'; });
+      document.body.appendChild(cloneContainer);
 
-      let content = `<div class="diary-date diary-line" style="animation-delay: 0.1s">${formattedDate}</div>`;
-      content += `<div class="diary-title diary-line" style="animation-delay: 0.2s">Home Work</div>`;
-      
-      let delay = 0.3;
-      checkedSubjects.forEach((checkbox, index) => {
-        const subject = checkbox.value;
-        const textarea = document.getElementById(`hw-${subject.replace(/\s+/g, '')}`);
-        const work = textarea ? textarea.value : '';
-        
-        if (work.trim()) {
-          content += `<div class="diary-subject diary-line" style="animation-delay: ${delay}s">${subject}:</div>`;
-          delay += 0.1;
-          
-          // Split work into lines for staggered animation
-          const lines = work.split('\n').filter(l => l.trim());
-          lines.forEach((line, i) => {
-            content += `<div class="diary-line" style="animation-delay: ${delay + (i * 0.05)}s">${line}</div>`;
-          });
-          delay += (lines.length * 0.05) + 0.15;
-        }
-      });
+      const canvas = await html2canvas(cloneContainer, { backgroundColor: null, scale: 3, logging: false, useCORS: true, allowTaint: true });
+      document.body.removeChild(cloneContainer);
 
-      // Apply content and styles
-      diaryOutput.innerHTML = content;
-      diaryOutput.style.fontFamily = `'${font}', cursive`;
-      diaryOutput.style.fontSize = fontSize + 'px';
-      diaryOutput.classList.add('writing');
-
-      // Apply background
-      applyBackground(diaryOutput, background);
-
-      await new Promise(r => setTimeout(r, 800));
-      previewPage.classList.remove('page-flip');
-      generateBtn.classList.remove('generating');
-      generateBtn.querySelector('.btn-text').innerHTML = `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 19l7-7 3 3-7 7-3-3z"/>
-          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
-          <path d="M2 2l7.586 7.586"/>
-          <circle cx="11" cy="11" r="2"/>
-        </svg>
-        Weave the Diary Entry
-      `;
-
-      // Show download button with delay
-      await new Promise(r => setTimeout(r, 1000));
-      downloadBtn.classList.add('visible');
-    }
-
-    function applyBackground(element, type) {
-      const backgrounds = {
-        none: 'none',
-        white: 'linear-gradient(to bottom, #ffffff, #fafafa)',
-        beige: 'linear-gradient(135deg, #f5e6d3 0%, #e8d4bc 100%)',
-        lined: 'repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(139, 69, 19, 0.15) 31px, rgba(139, 69, 19, 0.15) 32px), linear-gradient(to bottom, #fffef8, #f5f0e6)',
-        grid: 'linear-gradient(0deg, rgba(139, 69, 19, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(139, 69, 19, 0.1) 1px, transparent 1px), linear-gradient(to bottom, #fffef8, #f5f0e6)',
-        old: 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'100\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.8\' numOctaves=\'4\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'0.08\'/%3E%3C/svg%3E"), linear-gradient(135deg, #e8d4bc 0%, #d4c4a8 100%)'
-      };
-      
-      element.style.background = backgrounds[type] || backgrounds.none;
-      if (type === 'lined' || type === 'grid') {
-        element.style.backgroundSize = type === 'grid' ? '32px 32px, 32px 32px, 100% 100%' : '100% 32px, 100% 100%';
-      }
-    }
-
-    // ============================================
-    // DOWNLOAD DIARY
-    // ============================================
-    async function downloadDiary() {
-      const downloadBtn = document.getElementById('downloadBtn');
-      const diaryOutput = document.getElementById('diaryOutput');
-      
-      // Add stamp animation
-      downloadBtn.style.transform = 'scale(0.9)';
-      await new Promise(r => setTimeout(r, 100));
-      downloadBtn.style.transform = 'scale(1)';
-
-      // Create canvas with higher quality
-      const canvas = await html2canvas(diaryOutput, {
-        backgroundColor: null,
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        allowTaint: true
-      });
-
-      // Add decorative border to canvas
+      const padding = 60;
       const borderedCanvas = document.createElement('canvas');
-      borderedCanvas.width = canvas.width + 80;
-      borderedCanvas.height = canvas.height + 80;
+      borderedCanvas.width = canvas.width + padding * 2;
+      borderedCanvas.height = canvas.height + padding * 2;
       const ctx = borderedCanvas.getContext('2d');
-      
-      // Fill parchment background
       ctx.fillStyle = '#f5e6d3';
       ctx.fillRect(0, 0, borderedCanvas.width, borderedCanvas.height);
-      
-      // Add aged edges effect
-      const gradient = ctx.createRadialGradient(
-        borderedCanvas.width/2, borderedCanvas.height/2, 0,
-        borderedCanvas.width/2, borderedCanvas.height/2, borderedCanvas.width/2
-      );
+      const gradient = ctx.createRadialGradient(borderedCanvas.width/2, borderedCanvas.height/2, 0, borderedCanvas.width/2, borderedCanvas.height/2, borderedCanvas.width/1.5);
       gradient.addColorStop(0, 'transparent');
-      gradient.addColorStop(0.7, 'transparent');
-      gradient.addColorStop(1, 'rgba(139, 69, 19, 0.1)');
+      gradient.addColorStop(0.6, 'transparent');
+      gradient.addColorStop(1, 'rgba(139,69,19,0.08)');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, borderedCanvas.width, borderedCanvas.height);
-      
-      // Draw the diary
-      ctx.drawImage(canvas, 40, 40);
-      
-      // Add decorative corner
-      ctx.strokeStyle = 'rgba(139, 69, 19, 0.3)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(20, 60);
-      ctx.lineTo(20, 20);
-      ctx.lineTo(60, 20);
-      ctx.stroke();
+      ctx.drawImage(canvas, padding, padding);
 
-      // Download
+      ctx.strokeStyle = 'rgba(139,69,19,0.25)';
+      ctx.lineWidth = 2;
+      const m = 25;
+      ctx.beginPath(); ctx.moveTo(m,50); ctx.lineTo(m,m); ctx.lineTo(50,m); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(borderedCanvas.width-50,m); ctx.lineTo(borderedCanvas.width-m,m); ctx.lineTo(borderedCanvas.width-m,50); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(m,borderedCanvas.height-50); ctx.lineTo(m,borderedCanvas.height-m); ctx.lineTo(50,borderedCanvas.height-m); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(borderedCanvas.width-50,borderedCanvas.height-m); ctx.lineTo(borderedCanvas.width-m,borderedCanvas.height-m); ctx.lineTo(borderedCanvas.width-m,borderedCanvas.height-50); ctx.stroke();
+
       const link = document.createElement('a');
-      const date = new Date().toISOString().split('T')[0];
-      link.download = `diary-entry-${date}.png`;
+      link.download = 'diary-' + dateStr + '.png';
       link.href = borderedCanvas.toDataURL('image/png');
       link.click();
-    }
 
-    // ============================================
-    // INITIALIZE
-    // ============================================
-    document.addEventListener('DOMContentLoaded', () => {
-      initParticles();
-    });
-  </script>
+      savePhotoBtn.classList.remove('saving');
+      savePhotoBtn.innerHTML = '<svg class="camera-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Save as Photo 📸';
+      savePhotoBtn.style.transform = 'scale(1.08)';
+      setTimeout(() => { savePhotoBtn.style.transform = ''; }, 200);
+    } catch (err) {
+      console.error('Failed to save photo:', err);
+      alert('Oops! Something went wrong while saving the photo. Please try again.');
+      savePhotoBtn.classList.remove('saving');
+      savePhotoBtn.innerHTML = '<svg class="camera-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Save as Photo 📸';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => { initParticles(); });
+</script>
 </body>
 </html>
