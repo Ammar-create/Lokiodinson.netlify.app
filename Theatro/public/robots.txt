@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Disallow indexing of API calls
+Disallow: /api/
+
+# Sitemap (when available)
+# Sitemap: https://theatro.example.com/sitemap.xml
