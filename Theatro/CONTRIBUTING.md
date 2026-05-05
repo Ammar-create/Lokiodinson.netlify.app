@@ -1,85 +1,82 @@
 # Contributing to Theatro
 
-Thanks for your interest in Theatro! This document explains how to contribute effectively.
+Thank you for your interest in contributing to Theatro! This document provides guidelines and instructions for contributing.
 
----
+## 🎯 Development Philosophy
 
-## 🧭 Before You Start
+Theatro is designed to be:
+- **Client-only forever** — No backend code, ever
+- **Zero external dependencies** for core functionality
+- **Privacy-first** — User data stays in their browser
+- **Accessible** — Full feature parity across desktop and mobile
 
-Read these first:
-- [`README.md`](./README.md) — project overview
-- [`docs/BLUEPRINT.md`](./docs/BLUEPRINT.md) — full design
-- [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — layer rules
+## 🚀 Getting Started
 
----
+1. Fork the repository
+2. Clone your fork
+3. Install dependencies: `npm install`
+4. Start dev server: `npm run dev`
 
-## 🛡️ Hard Rules (Non-Negotiable)
+## 📋 Code Standards
 
-These are architectural commitments. PRs that violate them will be rejected.
+### JavaScript
+- ES2020+ features
+- Vanilla JS (no frameworks)
+- Functional patterns preferred
+- JSDoc comments for all public APIs
 
-1. **No backend code.** Theatro is frontend-only.
-2. **No raster images** shipped in the repo. All icons must be inline SVG.
-3. **No native browser dropdowns, popups, or alerts.** Use custom overlays.
-4. **No direct provider calls from UI.** UI → Service → Provider.
-5. **No DOM access in services.** Services are pure logic.
-6. **Storage only through `storageAdapter`.** Never call IndexedDB directly.
-7. **Cross-module communication via Event Bus.** No tight coupling.
+### CSS
+- CSS custom properties for theming
+- Mobile-first responsive design
+- No external CSS frameworks
 
----
+### Architecture Rules
+1. UI never calls Providers directly — always through Services
+2. Services never touch the DOM — pure logic
+3. Controllers never know which Provider runs them
+4. Storage always behind adapter
+5. Cross-module communication via Event Bus
 
-## 🔧 Dev Setup
+## 📝 Commit Messages
 
-```bash
-git clone https://github.com/Ammar-create/Lokiodinson.netlify.app.git
-cd Lokiodinson.netlify.app/Theatro
-npm install
-npm run dev
-```
+Follow conventional commits:
+- `feat:` New feature
+- `fix:` Bug fix
+- `docs:` Documentation changes
+- `style:` Code style changes (formatting, etc)
+- `refactor:` Code refactoring
+- `test:` Adding or updating tests
+- `chore:` Build process or auxiliary tool changes
 
----
+## 🧪 Testing
 
-## 🌿 Branch & PR Flow
+- Manual testing required for UI changes
+- Test IndexedDB operations in private browsing mode
+- Verify mobile responsiveness
+- Test with both light and dark themes
 
-1. Fork / branch from `main`
-2. Use a descriptive branch name: `feat/relationship-matrix`, `fix/scrollLock`, `docs/api-providers`
-3. Keep commits small and focused
-4. Reference an issue in your PR description if applicable
-5. Fill out the PR template fully
+## 📱 Mobile Considerations
 
----
+Every feature must work on mobile:
+- Touch-friendly targets (min 44px)
+- Side panel swipe gestures
+- Responsive layouts
+- Virtual keyboard handling
 
-## 🎨 Style
+## 🎨 UI Guidelines
 
-- **Vanilla JS** (ES2022+ modules)
-- 2-space indent
-- Prefer named exports
-- File header comment explaining the module's role
-- No `console.log` in committed code — use `utils/logger.js`
-- Run `npm run lint` (when configured) before pushing
+- Dark mode first, light mode available
+- Color-coded characters throughout
+- No native browser dropdowns or alerts
+- All icons are inline SVG
+- Streaming typewriter effect for AI messages
 
----
+## 🔒 Security
 
-## 🐛 Reporting Bugs
+- Never commit API keys
+- All provider keys stored in IndexedDB only
+- No server-side code that could expose keys
 
-Use the bug report issue template. Include:
-- Browser + version
-- Reproduction steps
-- Expected vs actual behavior
-- Screenshots / console errors if applicable
+## ❓ Questions?
 
----
-
-## ✨ Suggesting Features
-
-Use the feature request template. Explain:
-- The problem it solves
-- How it fits Theatro's three core principles
-- Whether it can be implemented client-side only
-
----
-
-## ❓ Questions
-
-Open an issue using the question template — or just ask in discussions.
-
-Welcome to the stage. 🎭
+Open an issue with the `question` label or reach out to maintainers.
