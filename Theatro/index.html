@@ -4,18 +4,50 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0b0b10" />
-  <title>Theatro — A Multi-LLM Roleplay Universe</title>
   <meta name="description" content="A living narrative engine where AI characters remember, feel, and evolve." />
-  <link rel="stylesheet" href="src/styles/main.css" />
+  
+  <title>Theatro — A Multi-LLM Roleplay Universe</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  
+  <!-- Manifest -->
+  <link rel="manifest" href="/manifest.json" />
+  
+  <!-- Preconnect to API endpoints -->
+  <link rel="preconnect" href="https://text.pollinations.ai" />
+  <link rel="preconnect" href="https://image.pollinations.ai" />
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="/src/styles/main.css" />
 </head>
 <body>
   <div id="app" data-theme="dark">
-    <div class="boot-screen">
-      <div class="boot-logo">🎭</div>
+    <!-- Boot screen shown while app initializes -->
+    <div class="boot-screen" id="boot-screen">
+      <div class="boot-logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" width="64" height="64">
+          <defs>
+            <linearGradient id="bootGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#8b5cf6" />
+              <stop offset="100%" stop-color="#ec4899" />
+            </linearGradient>
+          </defs>
+          <path d="M24 4L4 14v20l20 10 20-10V14L24 4z" fill="none" stroke="url(#bootGradient)" stroke-width="2"/>
+          <path d="M24 4v40M4 14l20 10 20-10" stroke="url(#bootGradient)" stroke-width="1.5" opacity="0.6"/>
+          <circle cx="24" cy="24" r="6" fill="url(#bootGradient)" opacity="0.3"/>
+          <path d="M18 34l6-4 6 4" stroke="url(#bootGradient)" stroke-width="1.5" fill="none"/>
+        </svg>
+      </div>
       <div class="boot-title">Theatro</div>
       <div class="boot-sub">Loading the stage...</div>
+      <div class="boot-progress">
+        <div class="boot-progress-bar" id="boot-progress"></div>
+      </div>
     </div>
   </div>
-  <script type="module" src="src/main.js"></script>
+  
+  <!-- Main application script -->
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>
