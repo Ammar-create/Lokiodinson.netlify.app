@@ -13,9 +13,29 @@ const MODELS=[
   {id:'kimi',name:'Kimi',provider:'pollinations',desc:'Moonshot with reasoning and agentic capabilities'},
   {id:'grok',name:'Grok',provider:'pollinations',desc:'xAI multimodal — fast, non-reasoning'},
   {id:'deepseek',name:'DeepSeek',provider:'pollinations',desc:'Fast reasoning and coding specialist'},
-  // Aqua models — user-supplied keys, IDs depend on Aqua API
-  {id:'grok-aqua',name:'Grok (Aqua)',provider:'aqua',desc:'Requires Aqua API key — premium Grok access'},
-  {id:'custom-aqua',name:'Custom Aqua Model',provider:'aqua',desc:'Any model available via Aqua API'},
+  // Aqua models — prefixed with 'aqua:' for routing; real IDs sent to Aqua API
+  {id:'aqua:grok',name:'Grok',provider:'aqua',desc:'xAI Grok via Aqua'},
+  {id:'aqua:mistral',name:'Mistral',provider:'aqua',desc:'Mistral AI via Aqua'},
+  {id:'aqua:qwen',name:'Qwen',provider:'aqua',desc:'Alibaba Qwen via Aqua'},
+  {id:'aqua:deepseek-v3',name:'DeepSeek V3',provider:'aqua',desc:'DeepSeek V3 via Aqua'},
+  {id:'aqua:gpt-5',name:'GPT-5',provider:'aqua',desc:'OpenAI GPT-5 via Aqua'},
+  {id:'aqua:gemini-3',name:'Gemini 3',provider:'aqua',desc:'Google Gemini 3 via Aqua'},
+  {id:'aqua:gpt-oss',name:'GPT-OSS',provider:'aqua',desc:'Open-source GPT variant'},
+  {id:'aqua:minimax',name:'MiniMax',provider:'aqua',desc:'MiniMax model via Aqua'},
+  {id:'aqua:llama-4',name:'Llama 4',provider:'aqua',desc:'Meta Llama 4 via Aqua'},
+  {id:'aqua:kimi-k2',name:'Kimi K2',provider:'aqua',desc:'Moonshot Kimi K2 via Aqua'},
+  {id:'aqua:step-3.5',name:'Step 3.5',provider:'aqua',desc:'StepFun model via Aqua'},
+  {id:'aqua:glm-5',name:'GLM-5',provider:'aqua',desc:'Zhipu GLM-5 via Aqua'},
+  {id:'aqua:nemotron',name:'Nemotron',provider:'aqua',desc:'NVIDIA Nemotron via Aqua'},
+  {id:'aqua:deepseek-v3.2',name:'DeepSeek V3.2',provider:'aqua',desc:'DeepSeek V3.2 via Aqua'},
+  {id:'aqua:haiku-4.5',name:'Haiku 4.5',provider:'aqua',premium:true,desc:'Anthropic Haiku 4.5 — fast + cheap'},
+  {id:'aqua:sonnet-4.5',name:'Sonnet 4.5',provider:'aqua',premium:true,desc:'Anthropic Sonnet 4.5 — balanced'},
+  {id:'aqua:gpt-5.1',name:'GPT-5.1',provider:'aqua',premium:true,desc:'OpenAI GPT-5.1 — advanced'},
+  {id:'aqua:gemini-2.5-pro',name:'Gemini 2.5 Pro',provider:'aqua',premium:true,desc:'Google Gemini 2.5 Pro'},
+  {id:'aqua:opus-4.5',name:'Opus 4.5',provider:'aqua',premium:true,desc:'Anthropic Opus 4.5 — top tier'},
+  {id:'aqua:gpt-5.4',name:'GPT-5.4',provider:'aqua',premium:true,desc:'OpenAI GPT-5.4 — latest'},
+  {id:'aqua:deepseek-v4',name:'DeepSeek V4',provider:'aqua',premium:true,desc:'DeepSeek V4 — advanced reasoning'},
+  {id:'aqua:custom',name:'Custom Aqua Model',provider:'aqua',desc:'Type any model ID — requires manual entry'},
 ];
 // BUG 7: Updated VOICES with all openai-audio supported voices (13 total)
 const VOICES=[
