@@ -83,9 +83,10 @@ const API={
       try{reader.releaseLock();}catch{}
     }
   },
+  // BUG 2: Fixed image endpoint — gen.pollinations.ai/image instead of image.pollinations.ai/prompt
   imageUrl(prompt,opts={}){
     const model=opts.model||ST.settings.imgModel||'zimage';
-    return`https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=${model}&width=${opts.w||512}&height=${opts.h||512}&nologo=true`;
+    return`https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?model=${model}&width=${opts.w||512}&height=${opts.h||512}&nologo=true`;
   },
   // BUG 6: Verified Pollinations TTS endpoint.
   // POST https://gen.pollinations.ai/v1/audio/speech — confirmed in Pollinations API docs.
