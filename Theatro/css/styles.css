@@ -25,6 +25,17 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 .screen{display:none;flex:1;overflow:hidden;min-height:0}
 .screen.active{display:flex;flex-direction:column}
 
+/* ONBOARDING BANNER #16 */
+.onboard-banner{background:linear-gradient(135deg,rgba(201,168,76,.15),rgba(201,168,76,.04));border-bottom:1px solid var(--gdim);padding:0;flex-shrink:0;animation:bIn .3s var(--ease)}
+@keyframes bIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.ob-inner{display:flex;align-items:center;gap:10px;padding:10px 16px;max-width:800px;margin:0 auto}
+.ob-ico{font-size:20px;flex-shrink:0}
+.ob-text{flex:1;font-size:12px;color:var(--tdim);line-height:1.4}
+.ob-text strong{color:var(--gold)}
+.ob-action{flex-shrink:0}
+.ob-x{background:none;border:none;color:var(--tmut);cursor:pointer;font-size:16px;line-height:1;padding:2px 6px;flex-shrink:0;transition:color var(--t)}
+.ob-x:hover{color:var(--tdim)}
+
 /* HEADER */
 .hdr{height:var(--hdr);background:rgba(15,15,26,.95);border-bottom:1px solid var(--border);
   display:flex;align-items:center;padding:0 16px;gap:12px;backdrop-filter:blur(8px);position:relative;z-index:100}
@@ -187,6 +198,7 @@ input::placeholder,textarea::placeholder{color:var(--tmut)}
 /* SIDE PANEL */
 .spanel{width:var(--pw);background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:width var(--t) var(--ease);overflow:hidden;position:relative}
 .spanel.collapsed{width:0;border-left:none}
+/* FIX #5: Panel toggle — stays visible on desktop, moves to chat header on mobile */
 .ptoggle{position:absolute;left:-28px;top:10px;background:var(--surface);border:1px solid var(--border);border-right:none;border-radius:6px 0 0 6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--tdim);z-index:10;transition:color var(--t) var(--ease)}
 .ptoggle:hover{color:var(--text)}
 .ptabs{display:flex;border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0}
@@ -270,10 +282,16 @@ input::placeholder,textarea::placeholder{color:var(--tmut)}
 .hidden{display:none!important}
 hr{border:none;border-top:1px solid var(--border)}
 
+/* FIX #5: Mobile — panel toggle moves inside chat header (never off-screen) */
 @media(max-width:700px){
   :root{--pw:100vw}
   .spanel{position:fixed;right:0;top:var(--hdr);height:calc(100vh - var(--hdr));z-index:500}
+  /* Mobile panel toggle: reposition to be inside the spanel, flipping direction */
+  .ptoggle{left:auto;right:0;top:10px;border:1px solid var(--border);border-right:1px solid var(--border);border-left:none;border-radius:6px 0 0 6px}
+  .spanel.collapsed .ptoggle{right:-28px}
   .two-col{grid-template-columns:1fr}
   .sett-nav{width:44px}.sett-ni span:last-child{display:none}
   .cards{grid-template-columns:1fr}
+  .ob-inner{flex-wrap:wrap;gap:8px}
+  .ob-text{flex:0 0 100%}
 }
