@@ -36,8 +36,8 @@ Object.assign(Scr,{
           <textarea id="chat-ta" placeholder='Write as ${esc(userChar?.name||"your character") }... (*action* and "dialogue")' rows="1"
             oninput="Scr.taResize(this)" onkeydown="Scr.taKey(event)"></textarea>
           <div class="input-btns">
-            <!-- BUG 24: Whisper (private message) button -->
-            <button class="ibtn" title="Whisper (Private Message)" onclick="Scr.openWhisperPicker()">🔒</button>
+            <!-- BUG 24+4: Whisper (private message) button — added id="whisper-btn" -->
+            <button class="ibtn" id="whisper-btn" title="Whisper (Private Message)" onclick="Scr.openWhisperPicker()">🔒</button>
             <button class="ibtn" id="improve-btn" title="Auto-Improve" onclick="Scr.improve()">${I('improve',15)}</button>
             <button class="ibtn" id="mic-btn" title="Voice input (Whisper)" onclick="Chat.toggleSTT()">${I('mic',15)}</button>
             <button class="ibtn on" title="Send (Enter)" onclick="Scr.sendMsg()" style="color:var(--gold);border-color:var(--gdim)">${I('send',15)}</button>
@@ -135,8 +135,8 @@ Object.assign(Scr,{
       chars.map(c=>`<div class="mopt ${c.id===ST.chat.activeCharId?'sel':''}" onclick="Scr.selectChar('${c.id}')">
         <div style="display:flex;align-items:center;gap:8px">${Chat.avHtml(c,22)}<span style="color:${esc(c.color)};font-weight:600">${esc(c.name)}</span>${c.isUser?'<span class="pill g" style="font-size:10px">You</span>':''}</div>
         ${c.id===ST.chat.activeCharId?'<span style="color:var(--gold)">✓</span>':''}
-      </div>`).join('')
-    }</div>`});
+      </div>`).join('')}
+    </div>`});
   },
   selectChar(cid){
     ST.chat.activeCharId=cid;Modal.close();Scr.updateCPill();
