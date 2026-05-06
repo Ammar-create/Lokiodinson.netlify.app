@@ -14,6 +14,8 @@ const MODELS=[
   {id:'grok-4.1-thinking',name:'Grok 4.1 Thinking',provider:'aqua',desc:'Best for controllers — Aqua key required'},
   {id:'grok-4.2',name:'Grok 4.2',provider:'aqua',desc:'Premium reasoning — Aqua key required'},
 ];
+// BUG 15: Track original hardcoded count so fetchProviderModels can trim back before re-merging
+const MODELS_ORIGINAL_COUNT = MODELS.length;
 const VOICES=[
   {id:'alloy',name:'Alloy',desc:'Neutral, balanced'},
   {id:'echo',name:'Echo',desc:'Deep male'},
@@ -70,5 +72,8 @@ const ST={
     sttRecording:false,
     // #11 & #12: DM layout + private conversations (whisper)
     whisper:false,whisperWith:[],
+    // BUG 3/16: Transient whisper target — applies to the NEXT message only.
+    // Intentionally NOT persisted to IndexedDB. Resets on scenario switch (Chat.init).
+    whisperTarget:null,
   }
 };
