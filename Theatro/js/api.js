@@ -5,12 +5,13 @@ const API={
     const s=ST.settings;
     const m=MODELS.find(x=>x.id===model);
     if(m?.provider==='aqua'&&s.aquaKey)
-      return{url:'https://api.aqua-ai.com/v1/chat/completions',headers:{'Content-Type':'application/json','Authorization':`Bearer ${s.aquaKey}`}};
+      return{url:'https://api.aquadevs.com/v1/chat/completions',headers:{'Content-Type':'application/json','Authorization':`Bearer ${s.aquaKey}`}};
     if(s.customUrl&&s.customKey)
       return{url:s.customUrl,headers:{'Content-Type':'application/json','Authorization':`Bearer ${s.customKey}`}};
-    const url=s.pollinationsKey?'https://gen.pollinations.ai/v1/chat/completions':'https://text.pollinations.ai/openai';
+    // Use single base URL for Pollinations with publishable key
+    const url='https://gen.pollinations.ai/v1/chat/completions';
     const h={'Content-Type':'application/json'};
-    if(s.pollinationsKey)h['Authorization']=`Bearer ${s.pollinationsKey}`;
+    h['Authorization']=`Bearer pk_LUy70Tu8OwLI1HrU`; // Publishable API key
     return{url,headers:h};
   },
   async chat(msgs,model,opts={}){
