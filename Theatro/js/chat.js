@@ -33,7 +33,7 @@ const Chat={
       autoChatRunning:false,autoChatStop:false,msgSinceCtrl:0,
       panelOpen:window.innerWidth>900,panelTab:'directive',
       directive:{next:'',details:''},debugLog:[],
-      sending:false,sttRecording:false,
+      sending:false,controllerRunning:false,sttRecording:false,
     };
     Router.go('chat');
   },
@@ -58,8 +58,8 @@ const Chat={
           await Ctrl.addMemory(other.id,ST.chat.scenId,`${char.name} said: "${content.trim().slice(0,100)}"`,'witnessed');
         }
       }
-      const isUserChar=char.isUser||ST.chat.scenario?.settings?.aiKnowsUser!==false;
-      if(isUserChar)await Chat.doResponses(charId);
+      // FIX #1: Always trigger AI responses — aiKnowsUser only affects system prompt, not whether AI responds
+      await Chat.doResponses(charId);
     }finally{ST.chat.sending=false;}
   },
 
@@ -105,10 +105,18 @@ const Chat={
       const freq=ST.chat.scenario?.settings?.controllerFreq||ST.settings.ctrlFreq||10;
       if(ST.chat.msgSinceCtrl>=freq){
         ST.chat.msgSinceCtrl=0;
-        setTimeout(async()=>{
-          await Ctrl.runMain(ST.chat.scenario,ST.chat.characters,ST.chat.messages,ST.chat.rels);
-          await DB.put('relationships',{scenarioId:ST.chat.scenId,matrix:ST.chat.rels});
-        },500);
+        // FIX #2: Use controllerRunning flag to prevent concurrent controller + auto-chat
+        if(!ST.chat.controllerRunning){
+          ST.chat.controllerRunning=true;
+          try{
+            await Ctrl.runMain(ST.chat.scenario,ST.chat.characters,ST.chat.messages,ST.chat.rels);
+            await DB.put('relationships',{scenarioId:ST.chat.scenId,matrix:ST.chat.rels});
+          }catch(err){
+            Ctrl.dlog(`Controller run failed: ${err.message}`,'err');
+          }finally{
+            ST.chat.controllerRunning=false;
+          }
+        }
       }
       if(ST.chat.scenario?.settings?.autoImage){
         try{
@@ -116,6 +124,9 @@ const Chat={
           const imgUrl=API.imageUrl(imgPrompt);
           const mb=el.querySelector('.msg-body');
           if(mb){const img=document.createElement('img');img.className='msg-img';img.src=imgUrl;img.loading='lazy';mb.appendChild(img);}
+          // FIX #4: Persist imageUrl to IndexedDB
+          msg.imageUrl=imgUrl;
+          await DB.put('messages',msg);
         }catch{}
       }
       Ctrl.dlog(`${char.name} responded`,'dok');
@@ -213,8 +224,8 @@ const Chat={
     const chars=ST.chat.characters.filter(c=>!c.isUser);
     while(!ST.chat.autoChatStop){
       if(!chars.length)break;
-      // Race condition check
-      if(ST.chat.sending){await sleep(500);continue;}
+      // FIX #2: Race condition check — also check controllerRunning
+      if(ST.chat.sending||ST.chat.controllerRunning){await sleep(500);continue;}
       const last=ST.chat.messages[ST.chat.messages.length-1];
       const li=last?chars.findIndex(c=>c.id===last.charId):-1;
       const next=chars[(li+1)%chars.length];
@@ -230,14 +241,19 @@ const Chat={
     const btn=$('#auto-btn');if(btn){btn.classList.remove('on');btn.innerHTML=`${I('play',13)} Auto`;}
     Toast.i('Auto-chat paused');
   },
+  // FIX #13: Revoke object URL after download to prevent memory leak
   async saveJSON(){
     const name=await Modal.prompt('Save name:',{title:'Save Chat Session',placeholder:`${ST.chat.scenario?.name||'session'} - ${new Date().toLocaleDateString()}`,ok:'Save'});
     if(!name)return;
-    const data={_theatro:true,version:1,name,savedAt:Date.now(),scenario:ST.chat.scenario,characters:ST.chat.characters,messages:ST.chat.messages,rels:ST.chat.rels};
-    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+    const data={_theatro:true,version:1,name,savedAt:Date.now(),scenario:ST.chat.scenario,characters:ST.chat.characters,messages:ST.chat.messages,rels:ST.chat.rels,charMems:ST.chat.charMems};
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;
     a.download=`${name.replace(/[^a-z0-9]/gi,'_')}.json`;a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
     Toast.s('Chat saved');
   },
+  // FIX #3: Restore full context (scenario, characters, memories) when loading JSON
   async loadJSON(){
     const inp=document.createElement('input');inp.type='file';inp.accept='.json';
     inp.onchange=async e=>{
@@ -245,10 +261,22 @@ const Chat={
       try{
         const data=JSON.parse(await f.text());
         if(!data._theatro){Toast.e('Not a Theatro file');return;}
-        ST.chat.messages=data.messages||[];ST.chat.rels=data.rels||{};
-        const log=$('#chat-log');if(log){log.innerHTML='';
-          for(const m of ST.chat.messages){const ch=ST.chat.characters.find(c=>c.id===m.charId);if(ch)Chat.renderMsg(m,ch,true);}
+        // Restore full context if present in the JSON
+        if(data.scenario)ST.chat.scenario=data.scenario;
+        if(data.characters&&data.characters.length)ST.chat.characters=data.characters;
+        if(data.charMems)ST.chat.charMems=data.charMems;
+        ST.chat.messages=data.messages||[];
+        ST.chat.rels=data.rels||{};
+        // Re-render the chat screen with restored context
+        const log=$('#chat-log');
+        if(log){log.innerHTML='';
+          for(const m of ST.chat.messages){
+            const ch=ST.chat.characters.find(c=>c.id===m.charId);
+            if(ch)Chat.renderMsg(m,ch,true);
+          }
         }
+        Chat.renderRels();
+        Chat.renderCast();
         Toast.s(`Loaded: "${data.name}"`);
       }catch{Toast.e('Load failed');}
     };
@@ -276,7 +304,7 @@ const Chat={
         if(micBtn){micBtn.disabled=true;micBtn.innerHTML=`<div class="spinner" style="width:14px;height:14px"></div>`;}
         try{
           Toast.i('Transcribing...');
-          const text=await API.transcribe(blob,ST.settings.sttModel||'whisper-large-v3');
+          const text=await API.transcribe(blob);
           const ta=$('#chat-ta');
           if(ta&&text){
             ta.value=(ta.value?ta.value+' ':'')+text;
@@ -335,7 +363,10 @@ const CA={
         img.onclick=()=>Modal.open({title:'Image',wide:true,content:`<img src="${esc(url)}" style="width:100%;border-radius:8px">`});
         mb.appendChild(img);
       }
-      msg.imageUrl=url;Toast.s('Image generated');
+      // FIX #4: Persist imageUrl to IndexedDB
+      msg.imageUrl=url;
+      await DB.put('messages',msg);
+      Toast.s('Image generated');
     }catch(err){Toast.e('Image failed: '+err.message);}
   },
   async voice(msgId){
@@ -346,7 +377,7 @@ const CA={
     try{
       const text=msg.content.replace(/\*[^*]+\*/g,'').replace(/"/g,'').trim();
       const voice=char.voice||ST.settings.defVoice||'nova';
-      const audioUrl=await API.tts(text,voice,ST.settings.ttsModel||'tts-1');
+      const audioUrl=await API.tts(text,voice);
       const mb=$(`#msg-${msgId} .msg-body`);
       if(mb){
         mb.querySelector('audio')?.remove();
@@ -366,6 +397,7 @@ const CA={
     $(`#msg-${msgId}`)?.remove();
     await Chat.genResponse(char);
   },
+  // FIX #10: Branch now copies memories and relationships
   async branch(msgId){
     const idx=ST.chat.messages.findIndex(m=>m.id===msgId);if(idx<0)return;
     const ok=await Modal.confirm('Create a branch from this message point?',{ok:'Branch Here'});if(!ok)return;
@@ -375,7 +407,25 @@ const CA={
     const bname=`${base}-${bc+2}`;
     const bs={...ST.chat.scenario,id:uid(),name:bname,parentId:ST.chat.scenId,messageIds:[],summary:'',createdAt:Date.now(),updatedAt:Date.now()};
     await DB.put('scenarios',bs);
-    for(const m of ST.chat.messages.slice(0,idx+1)){await DB.put('messages',{...m,id:uid(),scenarioId:bs.id});}
+    // Copy messages up to branch point
+    for(const m of ST.chat.messages.slice(0,idx+1)){
+      const newMsg={...m,id:uid(),scenarioId:bs.id};
+      await DB.put('messages',newMsg);
+    }
+    // FIX #10: Copy relationship matrix
+    if(ST.chat.rels&&Object.keys(ST.chat.rels).length){
+      await DB.put('relationships',{scenarioId:bs.id,matrix:{...ST.chat.rels}});
+    }
+    // FIX #10: Copy character memories
+    for(const char of ST.chat.characters){
+      const memKey=`${char.id}_${ST.chat.scenId}`;
+      const mems=ST.chat.charMems?.[memKey];
+      if(mems&&mems.length){
+        const newMemKey=`${char.id}_${bs.id}`;
+        const copiedMems=mems.map(m=>({...m,id:uid(),scenId:bs.id}));
+        await DB.put('memories',{id:newMemKey,charId:char.id,scenId:bs.id,events:copiedMems});
+      }
+    }
     Toast.s(`Branch "${bname}" created`);
     const go=await Modal.confirm(`Branch "${bname}" created. Open it?`,{ok:'Open Branch'});
     if(go)await Chat.init(bs.id);
