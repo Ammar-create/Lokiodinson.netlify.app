@@ -6,6 +6,18 @@ const Chat={
   _sttChunks:[],
   _sttStream:null,
 
+  // #12: Filter messages visible to a character (respects private conversations)
+  filterVisible(messages,charId){
+    return messages.filter(m=>{
+      if(m.isPrivate){
+        if(m.privateWith&&m.privateWith.length)
+          return m.charId===charId||m.privateWith.includes(charId);
+        return m.charId===charId;
+      }
+      return true;
+    });
+  },
+
   async init(scenId){
     const scenario=await DB.get('scenarios',scenId);
     if(!scenario){Toast.e('Scenario not found');return;}
@@ -34,11 +46,12 @@ const Chat={
       panelOpen:window.innerWidth>900,panelTab:'directive',
       directive:{next:'',details:''},debugLog:[],
       sending:false,controllerRunning:false,sttRecording:false,
+      whisper:false,whisperWith:[],
     };
     Router.go('chat');
   },
 
-  async send(content,charId){
+  async send(content,charId,isPrivate=false,privateWith=[]){
     if(!content.trim())return;
     // Race condition guard
     if(ST.chat.sending){Toast.w('Please wait — still processing...');return;}
@@ -46,16 +59,20 @@ const Chat={
     try{
       const char=ST.chat.characters.find(c=>c.id===charId);if(!char)return;
       const msg={id:uid(),scenarioId:ST.chat.scenId,charId,content:content.trim(),timestamp:Date.now(),isUser:!!char.isUser};
+      // #12: Track private conversation metadata
+      if(isPrivate){msg.isPrivate=true;msg.privateWith=privateWith;}
       ST.chat.messages.push(msg);
       await DB.put('messages',msg);
       Chat.renderMsg(msg,char,true);
       Chat.scrollEnd();
       // Track user's own message in their memory
       await Ctrl.addMemory(char.id,ST.chat.scenId,`I said: "${content.trim().slice(0,150)}"`,'witnessed');
-      // Other characters witness this message
+      // Other characters witness this message (only if they can see it)
       for(const other of ST.chat.characters){
-        if(other.id!==char.id){
-          await Ctrl.addMemory(other.id,ST.chat.scenId,`${char.name} said: "${content.trim().slice(0,100)}"`,'witnessed');
+        if(other.id!==charId){
+          if(!isPrivate||privateWith.includes(other.id)){
+            await Ctrl.addMemory(other.id,ST.chat.scenId,`${char.name} said: "${content.trim().slice(0,100)}"`,'witnessed');
+          }
         }
       }
       // FIX #1: Always trigger AI responses — aiKnowsUser only affects system prompt, not whether AI responds
@@ -68,18 +85,21 @@ const Chat={
     for(const c of responders){
       if(ST.chat.autoChatStop)break;
       if(ST.chat.sending&&!ST.chat.autoChatRunning)break;
-      await Chat.genResponse(c);
+      // #12: Each character only sees messages they're allowed to see
+      const visible=Chat.filterVisible(ST.chat.messages,c.id);
+      await Chat.genResponse(c,visible);
       if(ST.chat.autoChatStop)break;
     }
   },
 
-  async genResponse(char){
+  async genResponse(char,visibleMessages){
     if(!char)return;
     const tid=`th-${char.id}-${Date.now()}`;
     Chat.addThinking(tid,char);Chat.scrollEnd();
     try{
-      const sys=Ctrl.buildSysPrompt(char,ST.chat.scenario,ST.chat.messages,ST.chat.rels);
-      const hist=Ctrl.buildConvo(char,ST.chat.messages,ST.chat.characters);
+      const msgs=visibleMessages||Chat.filterVisible(ST.chat.messages,char.id);
+      const sys=Ctrl.buildSysPrompt(char,ST.chat.scenario,msgs,ST.chat.rels);
+      const hist=Ctrl.buildConvo(char,msgs,ST.chat.characters);
       const model=char.modelId||ST.settings.charModel||'llama-scout';
       Ctrl.dlog(`Generating for ${char.name} (${model})...`,'dinfo');
       let full='';
@@ -95,10 +115,12 @@ const Chat={
       await DB.put('messages',msg);
       // Track this character's memory of what they said
       await Ctrl.addMemory(char.id,ST.chat.scenId,`I said: "${full.slice(0,150)}"`,'witnessed');
-      // Track other characters witnessing this message
+      // Track other characters witnessing this message (only those who can see it)
       for(const other of ST.chat.characters){
         if(other.id!==char.id){
-          await Ctrl.addMemory(other.id,ST.chat.scenId,`${char.name} said: "${full.slice(0,100)}"`,'witnessed');
+          if(!msg.isPrivate||!msg.privateWith||msg.privateWith.includes(other.id)){
+            await Ctrl.addMemory(other.id,ST.chat.scenId,`${char.name} said: "${full.slice(0,100)}"`,'witnessed');
+          }
         }
       }
       ST.chat.msgSinceCtrl++;
@@ -170,8 +192,12 @@ const Chat={
   renderMsg(msg,char,withActions=false){
     const log=$('#chat-log');if(!log)return;
     const el=document.createElement('div');
-    el.className=`msg${char.isUser?' usr':''}`;el.id=`msg-${msg.id}`;
-    el.innerHTML=`<div class="msg-hdr">${Chat.avHtml(char,26)}<span class="msg-name" style="color:${esc(char.color)}">${esc(char.name)}</span><span class="msg-time">${fmtT(msg.timestamp)}</span></div>
+    let cls=`msg${char.isUser?' usr':''}`;
+    // #12: Visual indicator for private messages
+    if(msg.isPrivate)cls+=' private';
+    el.className=cls;el.id=`msg-${msg.id}`;
+    const privateTag=msg.isPrivate?'<span class="priv-tag">🔒 whisper</span>':'';
+    el.innerHTML=`<div class="msg-hdr">${Chat.avHtml(char,26)}<span class="msg-name" style="color:${esc(char.color)}">${esc(char.name)}</span>${privateTag}<span class="msg-time">${fmtT(msg.timestamp)}</span></div>
     <div class="msg-body" style="--mc:${esc(char.color)}">${parseRP(msg.content,char.color)}${msg.imageUrl?`<img class="msg-img" src="${esc(msg.imageUrl)}" loading="lazy">`:''}</div>`;
     if(withActions){
       const ar=document.createElement('div');ar.className='msg-ar';
@@ -229,7 +255,9 @@ const Chat={
       const last=ST.chat.messages[ST.chat.messages.length-1];
       const li=last?chars.findIndex(c=>c.id===last.charId):-1;
       const next=chars[(li+1)%chars.length];
-      await Chat.genResponse(next);
+      // #12: Each character sees only their visible messages
+      const visible=Chat.filterVisible(ST.chat.messages,next.id);
+      await Chat.genResponse(next,visible);
       if(ST.chat.autoChatStop)break;
       await sleep(1200);
     }
@@ -395,7 +423,9 @@ const CA={
     const ok=await Modal.confirm('Regenerate this message? Current version will be lost.',{ok:'Regenerate'});if(!ok)return;
     ST.chat.messages.splice(idx,1);await DB.del('messages',msgId);
     $(`#msg-${msgId}`)?.remove();
-    await Chat.genResponse(char);
+    // #12: Regen with filtered visible messages
+    const visible=Chat.filterVisible(ST.chat.messages,char.id);
+    await Chat.genResponse(char,visible);
   },
   // FIX #10: Branch now copies memories and relationships
   async branch(msgId){
