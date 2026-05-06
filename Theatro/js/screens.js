@@ -1,6 +1,10 @@
 'use strict';
 // ===== SCREENS =====
 const Scr={
+  // FIX #8: Settings auto-save debounce
+  _settSaveTimer:null,
+  _settDirty:false,
+
   async render(screen){
     if(screen==='dashboard')await Scr.dashboard();
     else if(screen==='char-create')await Scr.charCreate();
@@ -190,11 +194,21 @@ const Scr={
     ST.editScenId=id;ST.scenForm={name:s.name||'',lore:s.lore||'',characterIds:[...(s.characterIds||[])],settings:{...s.settings},openingMessage:s.openingMessage||''};
     Router.go('scenario-create');
   },
+  // FIX #11: Scenario deletion now cleans up messages, memories, relationships
   async delScen(id){
     const ok=await Modal.confirm('Delete scenario? All messages will be lost.',{ok:'Delete',danger:true});if(!ok)return;
     await DB.del('scenarios',id);
+    // Delete all messages for this scenario
     const msgs=await DB.getByIndex('messages','scenarioId',id);
     for(const m of msgs)await DB.del('messages',m.id);
+    // Delete relationship matrix
+    await DB.del('relationships',id);
+    // Delete per-character memories for this scenario
+    const chars=await DB.getAll('characters');
+    for(const c of chars){
+      const memKey=`${c.id}_${id}`;
+      await DB.del('memories',memKey);
+    }
     Toast.s('Scenario deleted');Scr.dashboard();
   },
   async scenCreate(){
@@ -219,7 +233,7 @@ const Scr={
         <textarea id="sf-open" rows="2" placeholder="Scene-setting narration to start with..." oninput="ST.scenForm.openingMessage=this.value">${esc(f.openingMessage||'')}</textarea>
       </div>
       <div class="field">
-        <label class="lbl">Cast <span>*</span></label>
+        <label class="lbl">Cast <span>*</span> <span style="font-weight:400;color:var(--tdim)">(max 11)</span></label>
         ${!allChars.length?`<div style="background:var(--surface);border:1px dashed var(--border);border-radius:var(--r);padding:16px;text-align:center;color:var(--tmut);font-size:12px">No characters yet. <button class="btn bp bsm" onclick="Scr.newChar()">Create One</button></div>`:`
         <div class="char-sel-grid">${allChars.map(c=>`
           <div class="cs-item ${f.characterIds.includes(c.id)?'sel':''}" style="--cc:${c.color}" onclick="Scr.toggleChar('${c.id}')">
@@ -246,9 +260,15 @@ const Scr={
       </div>
     </div>`;
   },
+  // FIX #7: 11 character max validation
   toggleChar(cid){
     const f=ST.scenForm;const idx=f.characterIds.indexOf(cid);
-    if(idx===-1)f.characterIds.push(cid);else f.characterIds.splice(idx,1);
+    if(idx===-1){
+      if(f.characterIds.length>=11){Toast.w('Maximum 11 characters per scenario');return;}
+      f.characterIds.push(cid);
+    }else{
+      f.characterIds.splice(idx,1);
+    }
     $$('.cs-item').forEach(el=>{
       const m=el.getAttribute('onclick')?.match(/'([^']+)'/);
       if(m){const sel=f.characterIds.includes(m[1]);el.classList.toggle('sel',sel);const chk=el.querySelector('.chk');if(chk)chk.textContent=sel?'✓':'○';}
@@ -402,13 +422,26 @@ const Scr={
     const btn=$('#improve-btn');if(btn){btn.disabled=true;btn.innerHTML=`<div class="spinner" style="width:14px;height:14px"></div>`;}
     try{
       const text=await Ctrl.autoImprove(char,ST.chat.scenario,ST.chat.messages);
-      const ta=$('#chat-ta');if(ta){ta.value=text;Scr.taResize(ta);ta.focus();}
+      // FIX #12 (controllers.js): autoImprove now streams directly — text may already be in textarea
+      if(text){
+        const ta=$('#chat-ta');if(ta&&!ta.value){ta.value=text;Scr.taResize(ta);ta.focus();}
+      }
       Toast.i('Suggestion ready — edit then send');
     }catch(err){Toast.e('Auto-improve failed: '+err.message);}
     finally{const b=$('#improve-btn');if(b){b.disabled=false;b.innerHTML=I('improve',15);}}
   },
 
   // --- SETTINGS ---
+  // FIX #8: Mark settings dirty + start debounce auto-save
+  markSettingsDirty(){
+    Scr._settDirty=true;
+    if(Scr._settSaveTimer)clearTimeout(Scr._settSaveTimer);
+    Scr._settSaveTimer=setTimeout(async()=>{
+      if(!Scr._settDirty)return;
+      await DB.setSetting('app_settings',ST.settings);
+      Scr._settDirty=false;
+    },1500);
+  },
   async settings(){
     const el=$('#screen-settings');if(!el)return;
     const s=ST.settings;const tab=ST.settTab||'providers';
@@ -422,17 +455,17 @@ const Scr={
         <div class="sett-grp">
           <div class="sett-gt">Pollinations (Default)</div>
           <p style="font-size:12px;color:var(--tdim)">Works out-of-the-box. Add your publishable key (pk_...) for authenticated endpoints and higher limits.</p>
-          <div class="field"><label class="lbl">Pollinations Key</label><input type="text" id="s-pk" value="${esc(s.pollinationsKey)}" placeholder="pk_..." oninput="ST.settings.pollinationsKey=this.value"></div>
+          <div class="field"><label class="lbl">Pollinations Key</label><input type="text" id="s-pk" value="${esc(s.pollinationsKey)}" placeholder="pk_..." oninput="ST.settings.pollinationsKey=this.value;Scr.markSettingsDirty()"></div>
         </div>
         <div class="sett-grp">
           <div class="sett-gt">Aqua API (Premium Models)</div>
           <p style="font-size:12px;color:var(--tdim)">Unlocks Grok 4.1 Thinking for controllers and premium characters.</p>
-          <div class="field"><label class="lbl">Aqua API Key</label><input type="password" id="s-aq" value="${esc(s.aquaKey)}" placeholder="Paste key..." oninput="ST.settings.aquaKey=this.value"></div>
+          <div class="field"><label class="lbl">Aqua API Key</label><input type="password" id="s-aq" value="${esc(s.aquaKey)}" placeholder="Paste key..." oninput="ST.settings.aquaKey=this.value;Scr.markSettingsDirty()"></div>
         </div>
         <div class="sett-grp">
           <div class="sett-gt">Custom OpenAI-Compatible Endpoint</div>
-          <div class="field"><label class="lbl">Base URL</label><input type="url" id="s-curl" value="${esc(s.customUrl||'')}" placeholder="https://..." oninput="ST.settings.customUrl=this.value"></div>
-          <div class="field"><label class="lbl">API Key</label><input type="password" id="s-ckey" value="${esc(s.customKey||'')}" placeholder="Bearer token..." oninput="ST.settings.customKey=this.value"></div>
+          <div class="field"><label class="lbl">Base URL</label><input type="url" id="s-curl" value="${esc(s.customUrl||'')}" placeholder="https://..." oninput="ST.settings.customUrl=this.value;Scr.markSettingsDirty()"></div>
+          <div class="field"><label class="lbl">API Key</label><input type="password" id="s-ckey" value="${esc(s.customKey||'')}" placeholder="Bearer token..." oninput="ST.settings.customKey=this.value;Scr.markSettingsDirty()"></div>
         </div>
         <button class="btn bp bsm" onclick="Scr.saveSettings()">Save Provider Settings</button>
         <button class="btn bs bsm" onclick="Scr.fetchProviderModels()" style="margin-left:8px">${I('refresh',12)} Refresh Model List</button>
@@ -442,9 +475,10 @@ const Scr={
           <div class="sett-gt">Default Model Assignments</div>
           <div class="field"><label class="lbl">Character Default</label>${Scr.mpHtml('s-cm',s.charModel||'llama-scout')}</div>
           <div class="field"><label class="lbl">Controller Default</label>${Scr.mpHtml('s-ctm',s.ctrlModel||'llama-scout')}</div>
-          <div class="field"><label class="lbl">Image Model</label><input type="text" value="${esc(s.imgModel||'zimage')}" oninput="ST.settings.imgModel=this.value"></div>
-          <div class="field"><label class="lbl">TTS Model</label><input type="text" value="${esc(s.ttsModel||'tts-1')}" oninput="ST.settings.ttsModel=this.value"></div>
-          <div class="field"><label class="lbl">STT Model</label><input type="text" value="${esc(s.sttModel||'whisper-large-v3')}" oninput="ST.settings.sttModel=this.value"></div>
+          ${/* FIX #15: Image/TTS/STT models use custom pickers instead of raw text inputs */}
+          <div class="field"><label class="lbl">Image Model</label>${Scr.imgMpHtml('s-imgm',s.imgModel||'zimage')}</div>
+          <div class="field"><label class="lbl">TTS Model</label>${Scr.ttsMpHtml('s-ttsm',s.ttsModel||'tts-1')}</div>
+          <div class="field"><label class="lbl">STT Model</label>${Scr.sttMpHtml('s-sttm',s.sttModel||'whisper-large-v3')}</div>
           <div class="field"><label class="lbl">Default Voice</label>${Scr.vpHtml('s-dv',s.defVoice||'nova')}</div>
         </div>
         <button class="btn bp bsm" onclick="Scr.saveSettings()">Save Model Settings</button>
@@ -452,8 +486,8 @@ const Scr={
       <div class="sett-sec ${tab==='controllers'?'on':''}">
         <div class="sett-grp">
           <div class="sett-gt">Main Controller</div>
-          <div class="field" style="flex-direction:row;align-items:center;gap:12px"><label class="lbl" style="flex-shrink:0">Analysis Frequency</label><input type="number" min="3" max="100" value="${s.ctrlFreq||10}" style="width:70px" oninput="ST.settings.ctrlFreq=parseInt(this.value)||10"><span style="font-size:11px;color:var(--tmut)">messages between runs</span></div>
-          <div class="tgl-wrap" onclick="ST.settings.streaming=!ST.settings.streaming;$('#s-stream').classList.toggle('on',ST.settings.streaming)">
+          <div class="field" style="flex-direction:row;align-items:center;gap:12px"><label class="lbl" style="flex-shrink:0">Analysis Frequency</label><input type="number" min="3" max="100" value="${s.ctrlFreq||10}" style="width:70px" oninput="ST.settings.ctrlFreq=parseInt(this.value)||10;Scr.markSettingsDirty()"><span style="font-size:11px;color:var(--tmut)">messages between runs</span></div>
+          <div class="tgl-wrap" onclick="ST.settings.streaming=!ST.settings.streaming;$('#s-stream').classList.toggle('on',ST.settings.streaming);Scr.markSettingsDirty()">
             <div class="tgl ${s.streaming!==false?'on':''}" id="s-stream"></div>
             <span class="tgl-lbl">Enable streaming responses</span>
           </div>
@@ -463,7 +497,7 @@ const Scr={
       <div class="sett-sec ${tab==='memory'?'on':''}">
         <div class="sett-grp">
           <div class="sett-gt">Memory Configuration</div>
-          <div class="field" style="flex-direction:row;align-items:center;gap:12px"><label class="lbl" style="flex-shrink:0">Short-term Window</label><input type="number" min="5" max="100" value="${s.stWindow||30}" style="width:70px" oninput="ST.settings.stWindow=parseInt(this.value)||30"><span style="font-size:11px;color:var(--tmut)">messages in context</span></div>
+          <div class="field" style="flex-direction:row;align-items:center;gap:12px"><label class="lbl" style="flex-shrink:0">Short-term Window</label><input type="number" min="5" max="100" value="${s.stWindow||30}" style="width:70px" oninput="ST.settings.stWindow=parseInt(this.value)||30;Scr.markSettingsDirty()"><span style="font-size:11px;color:var(--tmut)">messages in context</span></div>
         </div>
         <button class="btn bp bsm" onclick="Scr.saveSettings()">Save Memory Settings</button>
       </div>
@@ -481,7 +515,10 @@ const Scr={
     </div>`;
   },
   async saveSettings(){
-    await DB.setSetting('app_settings',ST.settings);Toast.s('Settings saved');
+    if(Scr._settSaveTimer)clearTimeout(Scr._settSaveTimer);
+    await DB.setSetting('app_settings',ST.settings);
+    Scr._settDirty=false;
+    Toast.s('Settings saved');
   },
   async exportAll(){
     const data={_theatro:true,version:1,exportedAt:Date.now(),characters:await DB.getAll('characters'),scenarios:await DB.getAll('scenarios'),settings:ST.settings};
@@ -567,10 +604,75 @@ const Scr={
     const inp=$(`#${id}`);const lbl=$(`#${id}-lbl`);
     if(inp)inp.value=val;if(lbl)lbl.textContent=name;
     if(id==='cf-model')ST.charForm.modelId=val;
-    else if(id==='s-cm')ST.settings.charModel=val;
-    else if(id==='s-ctm')ST.settings.ctrlModel=val;
+    else if(id==='s-cm'){ST.settings.charModel=val;Scr.markSettingsDirty();}
+    else if(id==='s-ctm'){ST.settings.ctrlModel=val;Scr.markSettingsDirty();}
     Modal.close();
   },
+
+  // FIX #15: Image model picker
+  imgMpHtml(id,selId){
+    const m=IMG_MODELS.find(x=>x.id===selId);
+    return`<div><button class="mpbtn" onclick="Scr.openImgMP('${id}')" id="${id}-btn"><span id="${id}-lbl">${esc(m?.name||selId||'Select image model')}</span><span class="arr">▼</span></button><input type="hidden" id="${id}" value="${esc(selId||'zimage')}"></div>`;
+  },
+  openImgMP(id){
+    const cur=$(`#${id}`)?.value;
+    Modal.open({title:'Select Image Model',narrow:true,content:()=>`<div class="mlist">${
+      IMG_MODELS.map(m=>`<div class="mopt ${m.id===cur?'sel':''}" onclick="Scr.selImgModel('${id}','${m.id}','${esc(m.name)}')">
+        <div><div style="font-weight:600">${esc(m.name)}</div><div class="mopt-id">${esc(m.id)}</div></div>
+        ${m.rec?'<span class="mopt-rec">★ Rec</span>':''}
+      </div>`).join('')
+    }</div>`});
+  },
+  selImgModel(id,val,name){
+    const inp=$(`#${id}`);const lbl=$(`#${id}-lbl`);
+    if(inp)inp.value=val;if(lbl)lbl.textContent=name;
+    if(id==='s-imgm'){ST.settings.imgModel=val;Scr.markSettingsDirty();}
+    Modal.close();
+  },
+
+  // FIX #15: TTS model picker
+  ttsMpHtml(id,selId){
+    const m=TTS_MODELS.find(x=>x.id===selId);
+    return`<div><button class="mpbtn" onclick="Scr.openTTSMP('${id}')" id="${id}-btn"><span id="${id}-lbl">${esc(m?.name||selId||'Select TTS model')}</span><span class="arr">▼</span></button><input type="hidden" id="${id}" value="${esc(selId||'tts-1')}"></div>`;
+  },
+  openTTSMP(id){
+    const cur=$(`#${id}`)?.value;
+    Modal.open({title:'Select TTS Model',narrow:true,content:()=>`<div class="mlist">${
+      TTS_MODELS.map(m=>`<div class="mopt ${m.id===cur?'sel':''}" onclick="Scr.selTTSModel('${id}','${m.id}','${esc(m.name)}')">
+        <div><div style="font-weight:600">${esc(m.name)}</div><div class="mopt-id">${esc(m.id)}</div></div>
+        ${m.rec?'<span class="mopt-rec">★ Rec</span>':''}
+      </div>`).join('')
+    }</div>`});
+  },
+  selTTSModel(id,val,name){
+    const inp=$(`#${id}`);const lbl=$(`#${id}-lbl`);
+    if(inp)inp.value=val;if(lbl)lbl.textContent=name;
+    if(id==='s-ttsm'){ST.settings.ttsModel=val;Scr.markSettingsDirty();}
+    Modal.close();
+  },
+
+  // FIX #15: STT model picker
+  sttMpHtml(id,selId){
+    const m=STT_MODELS.find(x=>x.id===selId);
+    return`<div><button class="mpbtn" onclick="Scr.openSTTMP('${id}')" id="${id}-btn"><span id="${id}-lbl">${esc(m?.name||selId||'Select STT model')}</span><span class="arr">▼</span></button><input type="hidden" id="${id}" value="${esc(selId||'whisper-large-v3')}"></div>`;
+  },
+  openSTTMP(id){
+    const cur=$(`#${id}`)?.value;
+    Modal.open({title:'Select STT Model',narrow:true,content:()=>`<div class="mlist">${
+      STT_MODELS.map(m=>`<div class="mopt ${m.id===cur?'sel':''}" onclick="Scr.selSTTModel('${id}','${m.id}','${esc(m.name)}')">
+        <div><div style="font-weight:600">${esc(m.name)}</div><div class="mopt-id">${esc(m.id)}</div></div>
+        ${m.rec?'<span class="mopt-rec">★ Rec</span>':''}
+      </div>`).join('')
+    }</div>`});
+  },
+  selSTTModel(id,val,name){
+    const inp=$(`#${id}`);const lbl=$(`#${id}-lbl`);
+    if(inp)inp.value=val;if(lbl)lbl.textContent=name;
+    if(id==='s-sttm'){ST.settings.sttModel=val;Scr.markSettingsDirty();}
+    Modal.close();
+  },
+
+  // ---- VOICE PICKERS ----
   vpHtml(id,selId){
     const v=VOICES.find(x=>x.id===selId);
     return`<div><button class="mpbtn" onclick="Scr.openVP('${id}')" id="${id}-btn"><span id="${id}-lbl">${esc(v?.name||selId||'Select voice')}</span><span class="arr">▼</span></button><input type="hidden" id="${id}" value="${esc(selId||'nova')}"></div>`;
@@ -588,7 +690,7 @@ const Scr={
     const inp=$(`#${id}`);const lbl=$(`#${id}-lbl`);
     if(inp)inp.value=val;if(lbl)lbl.textContent=name;
     if(id==='cf-voice')ST.charForm.voice=val;
-    else if(id==='s-dv')ST.settings.defVoice=val;
+    else if(id==='s-dv'){ST.settings.defVoice=val;Scr.markSettingsDirty();}
     Modal.close();
   }
 };
