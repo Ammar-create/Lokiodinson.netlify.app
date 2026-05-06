@@ -6,6 +6,22 @@ async function init(){
     if(saved)Object.assign(ST.settings,saved);
   }catch{}
   Router.go('dashboard');
+
+  // FIX #16: Onboarding banner — persistent, dismissible Aqua key suggestion
+  const dismissed=await DB.getSetting('banner_dismissed');
+  if(!ST.settings.aquaKey&&!dismissed){
+    const banner=document.createElement('div');
+    banner.className='onboard-banner';
+    banner.innerHTML=`<div class="ob-inner">
+      <span class="ob-ico">🔱</span>
+      <div class="ob-text"><strong>Unlock premium models</strong> — Add your Aqua API key for Grok controllers and premium characters.</div>
+      <button class="btn bp bsm ob-action" onclick="Router.go('settings');ST.settTab='providers';this.closest('.onboard-banner').remove()">Add Key</button>
+      <button class="ob-x" onclick="DB.setSetting('banner_dismissed',true);this.closest('.onboard-banner').remove()">&times;</button>
+    </div>`;
+    const app=$('#app');
+    if(app)app.insertBefore(banner,app.children[1]||null);
+  }
+
   const chars=await DB.getAll('characters');
   if(!chars.length){
     setTimeout(()=>{
