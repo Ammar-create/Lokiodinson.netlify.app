@@ -8,16 +8,26 @@ Object.assign(Scr,{
     const el=$('#screen-chat');if(!el)return;
     const{scenario,characters,messages,panelOpen}=ST.chat;if(!scenario)return;
     const userChar=characters.find(c=>c.isUser)||characters[0];
-    el.innerHTML=`<div class="chat-main">
+    // BUG 24: Ensure whisperTarget exists (defensive — also set in Chat.init)
+    if(ST.chat.whisperTarget===undefined)ST.chat.whisperTarget=null;
+    // BUG 25: Dynamic layout class — 1-2 chars = DM, 3+ = group
+    const layoutClass=characters.length<=2?'dm-mode':'group-mode';
+    el.innerHTML=`<div class="chat-main ${layoutClass}">
       <div class="chat-hdr">
         <div style="display:flex;margin-right:4px">
           ${characters.slice(0,5).map(c=>`<div title="${esc(c.name)}" style="width:24px;height:24px;border-radius:50%;background:${c.color}22;border:2px solid ${c.color};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:var(--fd);color:${c.color};margin-left:-4px;overflow:hidden;flex-shrink:0">${c.avatar?`<img src="${esc(c.avatar)}" style="width:100%;height:100%;object-fit:cover">`:c.name[0]}</div>`).join('')}
         </div>
-        <span class="chat-title">${esc(scenario.lore?scenario.lore.slice(0,70)+(scenario.lore.length>70?'…':''):'No lore set')}</span>
+        <!-- BUG 27: Show scenario name as primary, lore as subtitle -->
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+          <span class="chat-title">${esc(scenario.name||'Untitled Scenario')}</span>
+          ${scenario.lore?`<span style="font-size:11px;color:var(--tmut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(scenario.lore.slice(0,60))}${scenario.lore.length>60?'…':''}</span>`:''}
+        </div>
         <button class="ibtn" title="Run Controller Now" onclick="Scr.runCtrl()" style="margin-left:auto;flex-shrink:0">${I('ctrl',15)}</button>
       </div>
       <div id="chat-log" class="chat-log"></div>
       <div class="chat-input-area">
+        <!-- BUG 24: Whisper indicator bar (hidden by default) -->
+        <div class="whisper-indicator" id="whisper-bar" style="display:none"></div>
         <div class="input-row">
           <div class="input-char-btn" id="char-av-btn" onclick="Scr.openCharPicker()" title="Switch character">
             ${userChar?.avatar?`<img src="${esc(userChar.avatar)}" style="width:100%;height:100%;object-fit:cover">`:
@@ -26,6 +36,8 @@ Object.assign(Scr,{
           <textarea id="chat-ta" placeholder='Write as ${esc(userChar?.name||"your character") }... (*action* and "dialogue")' rows="1"
             oninput="Scr.taResize(this)" onkeydown="Scr.taKey(event)"></textarea>
           <div class="input-btns">
+            <!-- BUG 24: Whisper (private message) button -->
+            <button class="ibtn" title="Whisper (Private Message)" onclick="Scr.openWhisperPicker()">🔒</button>
             <button class="ibtn" id="improve-btn" title="Auto-Improve" onclick="Scr.improve()">${I('improve',15)}</button>
             <button class="ibtn" id="mic-btn" title="Voice input (Whisper)" onclick="Chat.toggleSTT()">${I('mic',15)}</button>
             <button class="ibtn on" title="Send (Enter)" onclick="Scr.sendMsg()" style="color:var(--gold);border-color:var(--gdim)">${I('send',15)}</button>
@@ -68,21 +80,50 @@ Object.assign(Scr,{
       </div>
     </div>`;
 
-    // Render existing messages
+    // BUG 28: Opening message is now persisted to IndexedDB in Chat.init,
+    // so it arrives in the messages array — no special DOM-only rendering needed.
+    // Render existing messages (including persisted opening message)
     for(const msg of messages){
       const char=characters.find(c=>c.id===msg.charId)||{id:'narrator',name:'Narrator',color:'#8b7355',isUser:false};
       Chat.renderMsg(msg,char,true);
-    }
-    // Opening message
-    if(!messages.length&&scenario.openingMessage){
-      const narr={id:'narrator',name:'Narrator',color:'#8b7355',isUser:false};
-      Chat.renderMsg({id:uid(),scenarioId:scenario.id,charId:'narrator',content:scenario.openingMessage,timestamp:Date.now()},narr,false);
     }
     Chat.scrollEnd();
     Chat.renderCast();
     Chat.renderRels();
     Scr.updateCPill();
+    // BUG 24: Initialize whisper bar state
+    Scr.updateWhisperBar();
   },
+
+  // BUG 24: Update whisper indicator bar visibility + content
+  updateWhisperBar(){
+    const bar=$('#whisper-bar');if(!bar)return;
+    if(!ST.chat.whisperTarget){bar.style.display='none';return;}
+    const char=ST.chat.characters.find(c=>c.id===ST.chat.whisperTarget);
+    if(!char){bar.style.display='none';return;}
+    bar.style.display='flex';
+    bar.innerHTML=`🔒 Whisper to ${esc(char.name)} <span class="whisper-x" onclick="ST.chat.whisperTarget=null;Scr.updateWhisperBar()">×</span>`;
+  },
+
+  // BUG 24: Open whisper target picker modal
+  openWhisperPicker(){
+    const chars=ST.chat.characters.filter(c=>c.id!==ST.chat.activeCharId);
+    if(!chars.length){Toast.w('No other characters to whisper to');return;}
+    Modal.open({
+      title:'Whisper To',narrow:true,
+      content:`<div class="mlist">
+        <div class="mopt ${!ST.chat.whisperTarget?'sel':''}" onclick="ST.chat.whisperTarget=null;Scr.updateWhisperBar();Modal.close()">
+          <div><div style="font-weight:600">🌐 Public</div><div style="font-size:11px;color:var(--tmut)">Everyone can see this message</div></div>
+          ${!ST.chat.whisperTarget?'<span style="color:var(--gold)">✓</span>':''}
+        </div>
+        ${chars.map(c=>`<div class="mopt ${ST.chat.whisperTarget===c.id?'sel':''}" onclick="ST.chat.whisperTarget='${c.id}';Scr.updateWhisperBar();Modal.close()">
+          <div style="display:flex;align-items:center;gap:8px">${Chat.avHtml(c,22)}<div><div style="font-weight:600;color:${c.color}">${esc(c.name)}</div></div></div>
+          ${ST.chat.whisperTarget===c.id?'<span style="color:var(--gold)">✓</span>':''}
+        </div>`).join('')}
+      </div>`
+    });
+  },
+
   updateCPill(){
     const el=$('#cpill');if(!el)return;
     const char=ST.chat.characters.find(c=>c.id===ST.chat.activeCharId);if(!char)return;
@@ -108,11 +149,16 @@ Object.assign(Scr,{
   },
   taResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,110)+'px'},
   taKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();Scr.sendMsg();}},
+  // BUG 24: Modified sendMsg — supports whisperTarget for private messages
   async sendMsg(){
     const ta=$('#chat-ta');if(!ta)return;
     const content=ta.value.trim();if(!content)return;
     ta.value='';ta.style.height='auto';
-    await Chat.send(content,ST.chat.activeCharId);
+    const isPrivate=!!ST.chat.whisperTarget;
+    const privateWith=isPrivate?[ST.chat.whisperTarget]:[];
+    await Chat.send(content,ST.chat.activeCharId,isPrivate,privateWith);
+    // BUG 24: Clear whisper target after sending
+    if(isPrivate){ST.chat.whisperTarget=null;Scr.updateWhisperBar();}
   },
   setPTab(tab){
     ST.chat.panelTab=tab;
