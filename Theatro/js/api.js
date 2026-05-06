@@ -3,15 +3,27 @@
 const API={
   endpoint(model){
     const s=ST.settings;
+    // aqua: prefix convention — strip prefix for real Aqua model ID
+    if(model.startsWith('aqua:')){
+      const real=model.slice(5);
+      if(s.aquaKey)
+        return{url:'https://api.aquadevs.com/v1/chat/completions',headers:{'Content-Type':'application/json','Authorization':`Bearer ${s.aquaKey}`},model:real,provider:'aqua'};
+      // No Aqua key configured — fall back to Pollinations
+      return{...API._pollinationsEndpoint(),model:real,provider:'pollinations'};
+    }
     const m=MODELS.find(x=>x.id===model);
     if(m?.provider==='aqua'&&s.aquaKey)
-      return{url:'https://api.aquadevs.com/v1/chat/completions',headers:{'Content-Type':'application/json','Authorization':`Bearer ${s.aquaKey}`},provider:'aqua'};
+      return{url:'https://api.aquadevs.com/v1/chat/completions',headers:{'Content-Type':'application/json','Authorization':`Bearer ${s.aquaKey}`},model,provider:'aqua'};
     if(s.customUrl&&s.customKey)
-      return{url:s.customUrl.replace(/\/$/,'')+'/chat/completions',headers:{'Content-Type':'application/json','Authorization':`Bearer ${s.customKey}`},provider:'custom'};
+      return{url:s.customUrl.replace(/\/$/,'')+'/chat/completions',headers:{'Content-Type':'application/json','Authorization':`Bearer ${s.customKey}`},model,provider:'custom'};
+    return{...API._pollinationsEndpoint(),model,provider:'pollinations'};
+  },
+  _pollinationsEndpoint(){
+    const s=ST.settings;
     const url='https://gen.pollinations.ai/v1/chat/completions';
     const h={'Content-Type':'application/json'};
     h['Authorization']=`Bearer ${s.pollinationsKey||'pk_LUy70Tu8OwLI1HrU'}`;
-    return{url,headers:h,provider:'pollinations'};
+    return{url,headers:h};
   },
   _base(provider){
     const s=ST.settings;
@@ -36,45 +48,101 @@ const API={
   },
 
   async chat(msgs,model,opts={}){
-    const{url,headers,provider}=API.endpoint(model);
-    API.trackCall(provider);
-    const r=await fetch(url,{method:'POST',headers,body:JSON.stringify({model,messages:msgs,max_tokens:opts.maxTokens||1000,temperature:opts.temp??0.9,stream:false})});
-    if(!r.ok){const t=await r.text();throw new Error(`API ${r.status}: ${t.slice(0,150)}`);}
-    const d=await r.json();
-    return d.choices?.[0]?.message?.content||'';
+    const ep=API.endpoint(model);
+    API.trackCall(ep.provider);
+    const body={model:ep.model,messages:msgs,max_tokens:opts.maxTokens||1000,temperature:opts.temp??0.9,stream:false};
+    try{
+      const r=await fetch(ep.url,{method:'POST',headers:ep.headers,body:JSON.stringify(body)});
+      if(!r.ok){
+        if(ep.provider==='aqua'){
+          const errText=await r.text();
+          Ctrl?.dlog?.(`Aqua API ${r.status}: ${errText.slice(0,100)} — falling back to Pollinations`,'warn');
+          const pol=API._pollinationsEndpoint();
+          const fbModel=model.startsWith('aqua:')?model.slice(5):model;
+          const r2=await fetch(pol.url,{method:'POST',headers:pol.headers,body:JSON.stringify({...body,model:fbModel})});
+          if(!r2.ok){const t=await r2.text();throw new Error(`Pollinations fallback ${r2.status}: ${t.slice(0,150)}`);}
+          const d=await r2.json();return d.choices?.[0]?.message?.content||'';
+        }
+        const t=await r.text();throw new Error(`API ${r.status}: ${t.slice(0,150)}`);
+      }
+      const d=await r.json();return d.choices?.[0]?.message?.content||'';
+    }catch(err){
+      if(ep.provider==='aqua'&&!err.message.includes('Pollinations fallback')){
+        Ctrl?.dlog?.(`Aqua error: ${err.message} — falling back to Pollinations`,'warn');
+        try{
+          const pol=API._pollinationsEndpoint();
+          const fbModel=model.startsWith('aqua:')?model.slice(5):model;
+          body.model=fbModel;
+          const r=await fetch(pol.url,{method:'POST',headers:pol.headers,body:JSON.stringify(body)});
+          if(!r.ok){const t=await r.text();throw new Error(`Pollinations fallback ${r.status}: ${t.slice(0,150)}`);}
+          const d=await r.json();return d.choices?.[0]?.message?.content||'';
+        }catch(fbErr){throw new Error(`Both providers failed: Aqua=${err.message}, Pollinations=${fbErr.message}`);}
+      }
+      throw err;
+    }
   },
   async stream(msgs,model,onChunk,opts={}){
     if(!ST.settings.streaming){const t=await API.chat(msgs,model,opts);onChunk(t,true);return;}
-    const{url,headers,provider}=API.endpoint(model);
-    API.trackCall(provider);
-    const r=await fetch(url,{method:'POST',headers,body:JSON.stringify({model,messages:msgs,max_tokens:opts.maxTokens||1000,temperature:opts.temp??0.9,stream:true})});
-    if(!r.ok){const t=await r.text();throw new Error(`API ${r.status}: ${t.slice(0,150)}`);}
-    const reader=r.body.getReader();const dec=new TextDecoder();let buf='';
-    try{// FIX #18: try/catch around stream reading loop
-      while(true){
-        const{done,value}=await reader.read();if(done)break;
-        buf+=dec.decode(value,{stream:true});
-        const lines=buf.split('\n');buf=lines.pop();
-        for(const line of lines){
-          if(!line.startsWith('data: '))continue;
-          const data=line.slice(6).trim();if(data==='[DONE]')return;
-          try{const p=JSON.parse(data);const delta=p.choices?.[0]?.delta?.content;if(delta)onChunk(delta,false);}catch{}
+    const ep=API.endpoint(model);
+    API.trackCall(ep.provider);
+    try{
+      const r=await fetch(ep.url,{method:'POST',headers:ep.headers,body:JSON.stringify({model:ep.model,messages:msgs,max_tokens:opts.maxTokens||1000,temperature:opts.temp??0.9,stream:true})});
+      if(!r.ok){
+        if(ep.provider==='aqua'){
+          const errText=await r.text();
+          Ctrl?.dlog?.(`Aqua stream ${r.status}: ${errText.slice(0,100)} — falling back to Pollinations (non-stream)`,'warn');
+          const fbModel=model.startsWith('aqua:')?model.slice(5):model;
+          const text=await API.chat(msgs,fbModel,opts);
+          onChunk(text,true);return;
         }
+        const t=await r.text();throw new Error(`API ${r.status}: ${t.slice(0,150)}`);
+      }
+      const reader=r.body.getReader();const dec=new TextDecoder();let buf='';
+      try{// FIX #18: try/catch around stream reading loop
+        while(true){
+          const{done,value}=await reader.read();if(done)break;
+          buf+=dec.decode(value,{stream:true});
+          const lines=buf.split('\n');buf=lines.pop();
+          for(const line of lines){
+            if(!line.startsWith('data: '))continue;
+            const data=line.slice(6).trim();if(data==='[DONE]')return;
+            try{const p=JSON.parse(data);const delta=p.choices?.[0]?.delta?.content;if(delta)onChunk(delta,false);}catch{}
+          }
+        }
+      }catch(err){
+        Ctrl?.dlog?.(`Stream interrupted: ${err.message}`,'warn');
+        if(ep.provider==='aqua'){
+          Ctrl?.dlog?.('Aqua stream error — falling back to Pollinations (non-stream)','warn');
+          try{
+            const fbModel=model.startsWith('aqua:')?model.slice(5):model;
+            const text=await API.chat(msgs,fbModel,opts);
+            if(text)onChunk(text,true);return;
+          }catch(fbErr){Ctrl?.dlog?.(`Pollinations fallback failed: ${fbErr.message}`,'err');throw err;}
+        }
+        // Flush remaining buffer
+        if(buf.trim()){
+          const lines=buf.split('\n');
+          for(const line of lines){
+            if(!line.startsWith('data: '))continue;
+            const data=line.slice(6).trim();if(data==='[DONE]')break;
+            try{const p=JSON.parse(data);const delta=p.choices?.[0]?.delta?.content;if(delta)onChunk(delta,false);}catch{}
+          }
+        }
+        throw err;
+      }finally{
+        try{reader.releaseLock();}catch{}
       }
     }catch(err){
-      Ctrl?.dlog?.(`Stream interrupted: ${err.message}`,'warn');
-      // Flush remaining buffer
-      if(buf.trim()){
-        const lines=buf.split('\n');
-        for(const line of lines){
-          if(!line.startsWith('data: '))continue;
-          const data=line.slice(6).trim();if(data==='[DONE]')break;
-          try{const p=JSON.parse(data);const delta=p.choices?.[0]?.delta?.content;if(delta)onChunk(delta,false);}catch{}
-        }
+      // Outer catch: fetch-level errors (network failures, etc.)
+      if(ep.provider==='aqua'){
+        Ctrl?.dlog?.(`Aqua stream fetch error: ${err.message} — falling back to Pollinations (non-stream)`,'warn');
+        try{
+          const fbModel=model.startsWith('aqua:')?model.slice(5):model;
+          const text=await API.chat(msgs,fbModel,opts);
+          onChunk(text,true);return;
+        }catch(fbErr){throw new Error(`Both providers failed: Aqua=${err.message}, Pollinations=${fbErr.message}`);}
       }
       throw err;
-    }finally{
-      try{reader.releaseLock();}catch{}
     }
   },
   // BUG 2: Fixed image endpoint — gen.pollinations.ai/image instead of image.pollinations.ai/prompt
