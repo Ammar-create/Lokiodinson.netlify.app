@@ -28,7 +28,8 @@ const ST={
   editCharId:null,editScenId:null,
   charForm:{},scenForm:{},
   settings:{
-    pollinationsKey:'',aquaKey:'',customUrl:'',customKey:'',
+    pollinationsKey:'pk_LUy70Tu8OwLI1HrU', // Publishable API key
+    aquaKey:'',customUrl:'',customKey:'',
     charModel:'llama-scout',ctrlModel:'llama-scout',
     imgModel:'zimage',ttsModel:'tts-1',defVoice:'nova',
     ctrlFreq:10,stWindow:30,streaming:true,
