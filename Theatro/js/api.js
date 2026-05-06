@@ -33,6 +33,10 @@ const API={
       return{url:s.customUrl.replace(/\/$/,'')+'/v1',headers:{'Authorization':`Bearer ${s.customKey}`}};
     return{url:'https://gen.pollinations.ai/v1',headers:{'Authorization':`Bearer ${s.pollinationsKey||'pk_LUy70Tu8OwLI1HrU'}`}};
   },
+  // Helper: get the Pollinations API key for query-param usage (image URLs, etc.)
+  _pollinationsKey(){
+    return ST.settings.pollinationsKey||'pk_LUy70Tu8OwLI1HrU';
+  },
 
   // BUG 9: Simplified rate limit — log calls, show reminder every 10 calls for pollinations
   trackCall(provider){
@@ -145,21 +149,29 @@ const API={
       throw err;
     }
   },
-  // BUG 2: Fixed image endpoint — gen.pollinations.ai/image instead of image.pollinations.ai/prompt
+  // FIX: Image endpoint with API key passed as ?key= query parameter.
+  // Images are loaded via <img src> which cannot set Authorization headers,
+  // so the key must be in the URL as a query param per Pollinations docs.
   imageUrl(prompt,opts={}){
     const model=opts.model||ST.settings.imgModel||'zimage';
-    return`https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?model=${model}&width=${opts.w||512}&height=${opts.h||512}&nologo=true`;
+    const key=API._pollinationsKey();
+    return`https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?model=${model}&width=${opts.w||512}&height=${opts.h||512}&nologo=true&key=${encodeURIComponent(key)}`;
   },
-  // BUG 8: Clean TTS endpoint construction using _base helper instead of fragile regex replacement
+  // FIX: TTS endpoint now includes Content-Type: application/json header.
+  // _base() only returns Authorization — TTS POST needs Content-Type for JSON body.
   async tts(text,voice='nova'){
     const model=ST.settings.ttsModel||'openai-audio';
     const{url:baseUrl,headers}=API._base('pollinations');
     const ttsUrl=`${baseUrl}/audio/speech`;
-    const r=await fetch(ttsUrl,{method:'POST',headers,body:JSON.stringify({model,input:text,voice})});
-    if(!r.ok)throw new Error('TTS failed');
+    const ttsHeaders={...headers,'Content-Type':'application/json'};
+    const r=await fetch(ttsUrl,{method:'POST',headers:ttsHeaders,body:JSON.stringify({model,input:text,voice})});
+    if(!r.ok){
+      const errText=await r.text().catch(()=>'');
+      throw new Error(`TTS ${r.status}: ${errText.slice(0,100)||'failed'}`);
+    }
     return URL.createObjectURL(await r.blob());
   },
-  // BUG 6: Verified Pollinations STT endpoint.
+  // Verified Pollinations STT endpoint.
   // POST https://gen.pollinations.ai/v1/audio/transcriptions — confirmed in Pollinations API docs.
   // Supports models: whisper, whisper-large-v3 (1000 pollen), scribe/elevenlabs-scribe-v2 (200 pollen).
   async transcribe(audioBlob){
