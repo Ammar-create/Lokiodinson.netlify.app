@@ -22,6 +22,22 @@ const VOICES=[
   {id:'nova',name:'Nova',desc:'Warm female'},
   {id:'shimmer',name:'Shimmer',desc:'Clear female'},
 ];
+// FIX #15: Model arrays for image/TTS/STT pickers
+const IMG_MODELS=[
+  {id:'zimage',name:'ZImage',provider:'pollinations',desc:'Default image model',rec:true},
+  {id:'flux',name:'Flux',provider:'pollinations',desc:'Fast image generation'},
+  {id:'dall-e-3',name:'DALL-E 3',provider:'pollinations',desc:'OpenAI image model'},
+];
+const TTS_MODELS=[
+  {id:'tts-1',name:'TTS-1',provider:'pollinations',desc:'Standard voice model'},
+  {id:'tts-1-hd',name:'TTS-1 HD',provider:'pollinations',desc:'High quality voice'},
+  {id:'qwen-3-tts-flash',name:'Qwen 3 TTS Flash',provider:'pollinations',desc:'Fast multilingual TTS',rec:true},
+];
+const STT_MODELS=[
+  {id:'whisper-large-v3',name:'Whisper Large v3',provider:'pollinations',desc:'Best accuracy',rec:true},
+  {id:'whisper-large',name:'Whisper Large',provider:'pollinations',desc:'Good accuracy'},
+  {id:'whisper-1',name:'Whisper v1',provider:'pollinations',desc:'Standard'},
+];
 
 // ===== STATE =====
 const ST={
@@ -32,8 +48,16 @@ const ST={
     pollinationsKey:'pk_LUy70Tu8OwLI1HrU',
     aquaKey:'',customUrl:'',customKey:'',
     charModel:'llama-scout',ctrlModel:'llama-scout',
-    imgModel:'zimage',ttsModel:'tts-1',defVoice:'nova',
+    imgModel:'zimage',ttsModel:'tts-1',
+    // FIX #14: sttModel was missing from defaults
+    sttModel:'whisper-large-v3',
+    defVoice:'nova',
     ctrlFreq:10,stWindow:30,streaming:true,
+  },
+  // FIX #17: Rate limit tracking state
+  rateLimits:{
+    pollinations:{calls:[],warned:false},
+    aqua:{calls:[],warned:false},
   },
   chat:{
     scenId:null,scenario:null,characters:[],messages:[],rels:{},
@@ -41,7 +65,7 @@ const ST={
     activeCharId:null,autoChatRunning:false,autoChatStop:false,
     msgSinceCtrl:0,panelOpen:true,panelTab:'directive',
     directive:{next:'',details:''},debugLog:[],
-    sending:false,
+    sending:false,controllerRunning:false,
     modelsCache:{pollinations:[],aqua:[]},
     sttRecording:false,
   }
