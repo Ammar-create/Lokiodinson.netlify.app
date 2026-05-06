@@ -1,5 +1,7 @@
 'use strict';
 // ===== CHAT ENGINE =====
+// Core chat logic: messaging, AI responses, auto-chat, rendering, STT
+// Message actions (img/voice/regen/branch) moved to chat-actions.js
 const Chat={
   // STT state
   _sttRecorder:null,
@@ -19,6 +21,8 @@ const Chat={
   },
 
   async init(scenId){
+    // BUG 23: Stop any running auto-chat before overwriting state
+    if(ST.chat.autoChatRunning){Chat.stopAuto();await new Promise(r=>setTimeout(r,200));}
     const scenario=await DB.get('scenarios',scenId);
     if(!scenario){Toast.e('Scenario not found');return;}
     const chars=[];
@@ -34,6 +38,12 @@ const Chat={
     }
     let msgs=await DB.getByIndex('messages','scenarioId',scenId);
     msgs.sort((a,b)=>a.timestamp-b.timestamp);
+    // BUG 28: Persist opening message if no messages exist yet
+    if(!msgs.length&&scenario.openingMessage){
+      const openingMsg={id:'opening-'+scenId,scenarioId:scenId,charId:'narrator',content:scenario.openingMessage,timestamp:Date.now(),isUser:false};
+      msgs.push(openingMsg);
+      await DB.put('messages',openingMsg);
+    }
     const relData=await DB.get('relationships',scenId);
     const allChars=await DB.getAll('characters');
     const userChar=allChars.find(c=>c.isUser);
@@ -47,6 +57,7 @@ const Chat={
       directive:{next:'',details:''},debugLog:[],
       sending:false,controllerRunning:false,sttRecording:false,
       whisper:false,whisperWith:[],
+      whisperTarget:null,
     };
     Router.go('chat');
   },
@@ -75,7 +86,7 @@ const Chat={
           }
         }
       }
-      // FIX #1: Always trigger AI responses — aiKnowsUser only affects system prompt, not whether AI responds
+      // FIX #1: Always trigger AI responses
       await Chat.doResponses(charId);
     }finally{ST.chat.sending=false;}
   },
@@ -95,15 +106,17 @@ const Chat={
   async genResponse(char,visibleMessages){
     if(!char)return;
     const tid=`th-${char.id}-${Date.now()}`;
+    let msgId; // BUG 32: Declare outside try for catch cleanup
     Chat.addThinking(tid,char);Chat.scrollEnd();
     try{
       const msgs=visibleMessages||Chat.filterVisible(ST.chat.messages,char.id);
       const sys=Ctrl.buildSysPrompt(char,ST.chat.scenario,msgs,ST.chat.rels);
       const hist=Ctrl.buildConvo(char,msgs,ST.chat.characters);
-      const model=char.modelId||ST.settings.charModel||'llama-scout';
+      // BUG 33: Replaced 'llama-scout' with 'openai-fast'
+      const model=char.modelId||ST.settings.charModel||'openai-fast';
       Ctrl.dlog(`Generating for ${char.name} (${model})...`,'dinfo');
       let full='';
-      const msgId=uid();
+      msgId=uid();
       const el=Chat.createStreamEl(msgId,char);
       $(`#${tid}`)?.remove();
       await API.stream([{role:'system',content:sys},...hist],model,(chunk,done)=>{
@@ -115,7 +128,7 @@ const Chat={
       await DB.put('messages',msg);
       // Track this character's memory of what they said
       await Ctrl.addMemory(char.id,ST.chat.scenId,`I said: "${full.slice(0,150)}"`,'witnessed');
-      // Track other characters witnessing this message (only those who can see it)
+      // Track other characters witnessing this message
       for(const other of ST.chat.characters){
         if(other.id!==char.id){
           if(!msg.isPrivate||!msg.privateWith||msg.privateWith.includes(other.id)){
@@ -140,9 +153,16 @@ const Chat={
           }
         }
       }
+      // BUG 26: Use Media Controller for auto-image generation
       if(ST.chat.scenario?.settings?.autoImage){
         try{
-          const imgPrompt=`${char.appearance||''}, ${full.replace(/\*[^*]+\*/g,'').replace(/"[^"]+"/g,'').slice(0,200)}`;
+          let imgPrompt;
+          try{
+            const imgData=await Ctrl.genImagePrompt(msg,char,ST.chat.scenario);
+            imgPrompt=imgData?.prompt||`${char.appearance||''}, ${full.replace(/\*[^*]+\*/g,'').replace(/"[^"]+"/g,'').trim().slice(0,200)}`;
+          }catch{
+            imgPrompt=`${char.appearance||''}, ${full.replace(/\*[^*]+\*/g,'').replace(/"[^"]+"/g,'').trim().slice(0,200)}`;
+          }
           const imgUrl=API.imageUrl(imgPrompt);
           const mb=el.querySelector('.msg-body');
           if(mb){const img=document.createElement('img');img.className='msg-img';img.src=imgUrl;img.loading='lazy';mb.appendChild(img);}
@@ -154,6 +174,19 @@ const Chat={
       Ctrl.dlog(`${char.name} responded`,'dok');
     }catch(err){
       $(`#${tid}`)?.remove();
+      // BUG 32: Clean up partial stream message on error
+      if(msgId){
+        const partialEl=$(`#msg-${msgId}`);
+        if(partialEl){
+          const mb=partialEl.querySelector('.msg-body');
+          if(mb){
+            mb.classList.remove('stream');
+            if(!mb.textContent.trim()){
+              partialEl.remove();
+            }
+          }
+        }
+      }
       Toast.e(`${char.name} failed: ${err.message}`);
       Ctrl.dlog(`${char.name} error: ${err.message}`,'derr');
     }
@@ -215,7 +248,21 @@ const Chat={
     el.innerHTML=`<div class="msg-hdr"><div class="msg-av" style="background:var(--s3);color:var(--tmut);font-size:10px">⚙</div><span class="msg-name" style="color:var(--tmut);font-size:10px">System</span></div><div class="msg-body">${esc(text)}</div>`;
     log.appendChild(el);Chat.scrollEnd();
   },
-  scrollEnd(){const l=$('#chat-log');if(l)l.scrollTop=l.scrollHeight},
+  // BUG 30: scrollEnd also removes scroll-to-bottom button
+  scrollEnd(){const l=$('#chat-log');if(l)l.scrollTop=l.scrollHeight;$('#scroll-bottom-btn')?.remove();},
+  // BUG 30: Show scroll-to-bottom button when user is scrolled up during auto-chat
+  _showScrollBtn(){
+    let btn=$('#scroll-bottom-btn');
+    if(btn)return;
+    const log=$('#chat-log');if(!log)return;
+    btn=document.createElement('button');
+    btn.id='scroll-bottom-btn';
+    btn.className='scroll-bottom-btn';
+    btn.innerHTML='↓ New messages';
+    btn.onclick=()=>{Chat.scrollEnd();btn.remove();};
+    log.parentElement.style.position='relative';
+    log.parentElement.appendChild(btn);
+  },
   avHtml(char,sz=26){
     const st=`width:${sz}px;height:${sz}px;background:${char.color}22;border:2px solid ${char.color};`;
     if(char.avatar)return`<div class="msg-av" style="${st}"><img src="${esc(char.avatar)}" style="width:100%;height:100%;object-fit:cover"></div>`;
@@ -245,10 +292,14 @@ const Chat={
   async startAuto(){
     if(ST.chat.autoChatRunning)return;
     ST.chat.autoChatRunning=true;ST.chat.autoChatStop=false;
+    // BUG 23: Capture scenario ID for safety guard
+    const startedScenId=ST.chat.scenId;
     const btn=$('#auto-btn');if(btn){btn.classList.add('on');btn.innerHTML=`${I('pause',13)} Pause`;}
     Toast.i('Auto-chat started');
     const chars=ST.chat.characters.filter(c=>!c.isUser);
     while(!ST.chat.autoChatStop){
+      // BUG 23: Scenario ID mismatch guard — exit if state was overwritten
+      if(ST.chat.scenId!==startedScenId)break;
       if(!chars.length)break;
       // FIX #2: Race condition check — also check controllerRunning
       if(ST.chat.sending||ST.chat.controllerRunning){await sleep(500);continue;}
@@ -258,6 +309,11 @@ const Chat={
       // #12: Each character sees only their visible messages
       const visible=Chat.filterVisible(ST.chat.messages,next.id);
       await Chat.genResponse(next,visible);
+      // BUG 30: Show scroll button if user is scrolled up during auto-chat
+      const log=$('#chat-log');
+      if(log&&(log.scrollHeight-log.scrollTop-log.clientHeight)>100){
+        Chat._showScrollBtn();
+      }
       if(ST.chat.autoChatStop)break;
       await sleep(1200);
     }
@@ -365,99 +421,5 @@ const Chat={
   },
   toggleSTT(){
     if(ST.chat.sttRecording)Chat.stopSTT();else Chat.startSTT();
-  }
-};
-
-// ===== CHAT ACTIONS =====
-const CA={
-  async img(msgId){
-    const msg=ST.chat.messages.find(m=>m.id===msgId);
-    const char=msg?ST.chat.characters.find(c=>c.id===msg.charId):null;
-    if(!msg||!char)return;
-    Toast.i('Generating image...');
-    try{
-      // Use Media Controller for intelligent prompt if available
-      let prompt;
-      try{
-        const imgData=await Ctrl.genImagePrompt(msg,char,ST.chat.scenario);
-        prompt=imgData?.prompt||`${char.appearance||''}, ${msg.content.replace(/\*[^*]+\*/g,'').replace(/"[^"]+"/g,'').trim().slice(0,200)}`;
-      }catch{
-        prompt=`${char.appearance||''}, ${msg.content.replace(/\*[^*]+\*/g,'').replace(/"[^"]+"/g,'').trim().slice(0,200)}`;
-      }
-      const url=API.imageUrl(prompt);
-      const mb=$(`#msg-${msgId} .msg-body`);
-      if(mb){
-        const img=document.createElement('img');img.className='msg-img';img.src=url;img.loading='lazy';
-        img.onclick=()=>Modal.open({title:'Image',wide:true,content:`<img src="${esc(url)}" style="width:100%;border-radius:8px">`});
-        mb.appendChild(img);
-      }
-      // FIX #4: Persist imageUrl to IndexedDB
-      msg.imageUrl=url;
-      await DB.put('messages',msg);
-      Toast.s('Image generated');
-    }catch(err){Toast.e('Image failed: '+err.message);}
-  },
-  async voice(msgId){
-    const msg=ST.chat.messages.find(m=>m.id===msgId);
-    const char=msg?ST.chat.characters.find(c=>c.id===msg.charId):null;
-    if(!msg||!char)return;
-    Toast.i('Generating voice...');
-    try{
-      const text=msg.content.replace(/\*[^*]+\*/g,'').replace(/"/g,'').trim();
-      const voice=char.voice||ST.settings.defVoice||'nova';
-      const audioUrl=await API.tts(text,voice);
-      const mb=$(`#msg-${msgId} .msg-body`);
-      if(mb){
-        mb.querySelector('audio')?.remove();
-        const au=document.createElement('audio');au.controls=true;au.src=audioUrl;
-        au.style.cssText='width:200px;height:32px;margin-top:8px;display:block;filter:invert(.8)';
-        mb.appendChild(au);au.play().catch(()=>{});
-      }
-      Toast.s('Voice generated');
-    }catch(err){Toast.e('Voice failed: '+err.message);}
-  },
-  async regen(msgId){
-    const idx=ST.chat.messages.findIndex(m=>m.id===msgId);if(idx<0)return;
-    const msg=ST.chat.messages[idx];
-    const char=ST.chat.characters.find(c=>c.id===msg.charId);if(!char)return;
-    const ok=await Modal.confirm('Regenerate this message? Current version will be lost.',{ok:'Regenerate'});if(!ok)return;
-    ST.chat.messages.splice(idx,1);await DB.del('messages',msgId);
-    $(`#msg-${msgId}`)?.remove();
-    // #12: Regen with filtered visible messages
-    const visible=Chat.filterVisible(ST.chat.messages,char.id);
-    await Chat.genResponse(char,visible);
-  },
-  // FIX #10: Branch now copies memories and relationships
-  async branch(msgId){
-    const idx=ST.chat.messages.findIndex(m=>m.id===msgId);if(idx<0)return;
-    const ok=await Modal.confirm('Create a branch from this message point?',{ok:'Branch Here'});if(!ok)return;
-    const base=ST.chat.scenario?.name||'Scenario';
-    const all=await DB.getAll('scenarios');
-    const bc=all.filter(s=>s.parentId===ST.chat.scenId).length;
-    const bname=`${base}-${bc+2}`;
-    const bs={...ST.chat.scenario,id:uid(),name:bname,parentId:ST.chat.scenId,messageIds:[],summary:'',createdAt:Date.now(),updatedAt:Date.now()};
-    await DB.put('scenarios',bs);
-    // Copy messages up to branch point
-    for(const m of ST.chat.messages.slice(0,idx+1)){
-      const newMsg={...m,id:uid(),scenarioId:bs.id};
-      await DB.put('messages',newMsg);
-    }
-    // FIX #10: Copy relationship matrix
-    if(ST.chat.rels&&Object.keys(ST.chat.rels).length){
-      await DB.put('relationships',{scenarioId:bs.id,matrix:{...ST.chat.rels}});
-    }
-    // FIX #10: Copy character memories
-    for(const char of ST.chat.characters){
-      const memKey=`${char.id}_${ST.chat.scenId}`;
-      const mems=ST.chat.charMems?.[memKey];
-      if(mems&&mems.length){
-        const newMemKey=`${char.id}_${bs.id}`;
-        const copiedMems=mems.map(m=>({...m,id:uid(),scenId:bs.id}));
-        await DB.put('memories',{id:newMemKey,charId:char.id,scenId:bs.id,events:copiedMems});
-      }
-    }
-    Toast.s(`Branch "${bname}" created`);
-    const go=await Modal.confirm(`Branch "${bname}" created. Open it?`,{ok:'Open Branch'});
-    if(go)await Chat.init(bs.id);
   }
 };
