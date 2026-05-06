@@ -100,6 +100,62 @@
 .whisper-indicator .whisper-x{background:none;border:none;color:var(--tmut);cursor:pointer;font-size:14px;padding:0 2px}
 .whisper-indicator .whisper-x:hover{color:var(--criml)}
 
+/* CUSTOM AUDIO PLAYER */
+.audio-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-top: 8px;
+  max-width: 280px;
+  user-select: none;
+}
+.ap-play {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: none;
+  color: var(--bg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.ap-play:hover {
+  background: var(--glow);
+}
+.ap-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--s3);
+  border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.ap-fill {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 2px;
+  width: 0%;
+  transition: none;
+}
+.ap-time {
+  font-size: 10px;
+  color: var(--tmut);
+  flex-shrink: 0;
+  min-width: 32px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 /* MOBILE RESPONSIVE */
 @media(max-width:700px){
   :root{--pw:100vw}
