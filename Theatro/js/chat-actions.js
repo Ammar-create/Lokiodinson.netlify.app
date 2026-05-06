@@ -41,11 +41,18 @@ const CA={
       const audioUrl=await API.tts(text,voice);
       const mb=$(`#msg-${msgId} .msg-body`);
       if(mb){
-        mb.querySelector('audio')?.remove();
-        const au=document.createElement('audio');au.controls=true;au.src=audioUrl;
-        au.style.cssText='width:200px;height:32px;margin-top:8px;display:block;filter:invert(.8)';
-        mb.appendChild(au);au.play().catch(()=>{});
+        // Remove any existing audio player for this message
+        mb.querySelector('.audio-player')?.remove();
+        // Create custom audio player using Chat helper
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = Chat._audioPlayerHtml(audioUrl);
+        const playerEl = wrapper.firstElementChild;
+        mb.appendChild(playerEl);
+        // Auto-play
+        Chat._apToggle(playerEl.id);
       }
+      msg.audioUrl=audioUrl;
+      await DB.put('messages',msg);
       Toast.s('Voice generated');
     }catch(err){Toast.e('Voice failed: '+err.message);}
   },
