@@ -68,5 +68,7 @@ const ST={
     sending:false,controllerRunning:false,
     modelsCache:{pollinations:[],aqua:[]},
     sttRecording:false,
+    // #11 & #12: DM layout + private conversations (whisper)
+    whisper:false,whisperWith:[],
   }
 };
