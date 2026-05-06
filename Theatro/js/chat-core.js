@@ -95,16 +95,35 @@ const Chat={
           }
         }
       }
-      // FIX #1: Always trigger AI responses
-      await Chat.doResponses(charId);
+      // FIX #1: Trigger AI responses after user message.
+      // Pass true to skipSendingCheck so doResponses runs even though
+      // sending is still true (it gets reset in the finally block below).
+      // Pass whisperTarget so only the targeted character responds in group mode.
+      const whisperResp=isPrivate&&privateWith.length?privateWith[0]:null;
+      await Chat.doResponses(charId,true,whisperResp);
     }finally{ST.chat.sending=false;}
   },
 
-  async doResponses(excludeId){
-    const responders=ST.chat.characters.filter(c=>c.id!==excludeId&&!c.isUser);
+  // doResponses: trigger AI character replies after a user message.
+  // skipSendingCheck: when true, bypass the sending guard (used when called
+  //   from inside send() where sending=true but we still want responses).
+  // onlyCharId: when set, ONLY this character responds (whisper routing).
+  async doResponses(excludeId,skipSendingCheck=false,onlyCharId=null){
+    let responders=ST.chat.characters.filter(c=>c.id!==excludeId&&!c.isUser);
+    // Whisper routing: if onlyCharId is set, filter to just that character
+    if(onlyCharId){
+      responders=responders.filter(c=>c.id===onlyCharId);
+    }
+    if(!responders.length){
+      Ctrl?.dlog?.('No AI characters available to respond','warn');
+      return;
+    }
     for(const c of responders){
       if(ST.chat.autoChatStop)break;
-      if(ST.chat.sending&&!ST.chat.autoChatRunning)break;
+      // When called from send(), skipSendingCheck is true so we skip this guard.
+      // When called from auto-chat (startAuto), skipSendingCheck is false and
+      // the guard prevents responses during an active user send.
+      if(!skipSendingCheck&&ST.chat.sending&&!ST.chat.autoChatRunning)break;
       // #12: Each character only sees messages they're allowed to see
       const visible=Chat.filterVisible(ST.chat.messages,c.id);
       await Chat.genResponse(c,visible);
