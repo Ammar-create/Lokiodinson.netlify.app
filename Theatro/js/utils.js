@@ -3,23 +3,37 @@
 const $=(s,c=document)=>c.querySelector(s);
 const $$=(s,c=document)=>[...c.querySelectorAll(s)];
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+// FIX #19: 10-char random suffix instead of 4 — reduces collision risk from 1.6M to ~3.6T per ms
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8)+Math.random().toString(36).slice(2,6);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const fmtT=ts=>new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 const fmtD=ts=>new Date(ts).toLocaleDateString([],{month:'short',day:'numeric'});
 
+// FIX #9: More robust RP parser — handles **bold**, nested markers, and edge cases
 function parseRP(text,color){
   if(!text)return '';
   let h='',i=0;
   const c=esc(color||'#c9a84c');
   while(i<text.length){
+    // Bold **text**
+    if(text[i]==='*'&&i+1<text.length&&text[i+1]==='*'){
+      const e=text.indexOf('**',i+2);
+      if(e!==-1&&e>i+2){h+=`<strong style="color:${c}">${esc(text.slice(i+2,e))}</strong>`;i=e+2;continue}
+    }
+    // Italic *text* — must contain at least one letter (avoids matching math like 3*5)
     if(text[i]==='*'){
       const e=text.indexOf('*',i+1);
-      if(e!==-1){h+=`<em style="color:${c};opacity:.85">${esc(text.slice(i+1,e))}</em>`;i=e+1;continue}
+      if(e!==-1&&e>i+1){
+        const inner=text.slice(i+1,e);
+        if(/[a-zA-Z]/.test(inner)){
+          h+=`<em style="color:${c};opacity:.85">${esc(inner)}</em>`;i=e+1;continue;
+        }
+      }
     }
+    // Dialogue "text"
     if(text[i]==='"'){
       const e=text.indexOf('"',i+1);
-      if(e!==-1){h+=`<span style="color:${c};font-weight:500">${esc(text.slice(i,e+1))}</span>`;i=e+1;continue}
+      if(e!==-1&&e>i){h+=`<span style="color:${c};font-weight:500">${esc(text.slice(i,e+1))}</span>`;i=e+1;continue}
     }
     if(text[i]==='\n'){h+='<br>';i++;continue}
     h+=esc(text[i]);i++;
@@ -56,6 +70,7 @@ function I(n,s=16){
     film:`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>`,
     x:`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
     refresh:`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>`,
+    warn:`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
   };
   return M[n]||`<svg width="${s}" height="${s}" viewBox="0 0 24 24"></svg>`;
 }
