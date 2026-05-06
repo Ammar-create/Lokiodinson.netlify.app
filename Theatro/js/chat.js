@@ -119,6 +119,7 @@ const Chat={
       msgId=uid();
       const el=Chat.createStreamEl(msgId,char);
       $(`#${tid}`)?.remove();
+      // BUG 2: Use smart scrollEnd — only scrolls if user is near bottom
       await API.stream([{role:'system',content:sys},...hist],model,(chunk,done)=>{
         full+=chunk;Chat.updateStreamEl(el,char,full,done);Chat.scrollEnd();
       },{temp:0.93});
@@ -248,8 +249,25 @@ const Chat={
     el.innerHTML=`<div class="msg-hdr"><div class="msg-av" style="background:var(--s3);color:var(--tmut);font-size:10px">⚙</div><span class="msg-name" style="color:var(--tmut);font-size:10px">System</span></div><div class="msg-body">${esc(text)}</div>`;
     log.appendChild(el);Chat.scrollEnd();
   },
-  // BUG 30: scrollEnd also removes scroll-to-bottom button
-  scrollEnd(){const l=$('#chat-log');if(l)l.scrollTop=l.scrollHeight;$('#scroll-bottom-btn')?.remove();},
+  // BUG 2: scrollEnd now checks if user is near bottom (within 200px).
+  // Only force-scrolls when near bottom; otherwise shows scroll-to-bottom button.
+  // BUG 5: 200px threshold matches Bug 30 spec.
+  scrollEnd(force){
+    const l=$('#chat-log');
+    if(!l)return;
+    if(force||Chat._nearBottom()){
+      l.scrollTop=l.scrollHeight;
+      $('#scroll-bottom-btn')?.remove();
+    }else{
+      Chat._showScrollBtn();
+    }
+  },
+  // BUG 2+5: Check if user is scrolled within 200px of the bottom
+  _nearBottom(){
+    const l=$('#chat-log');
+    if(!l)return true;
+    return(l.scrollHeight-l.scrollTop-l.clientHeight)<=200;
+  },
   // BUG 30: Show scroll-to-bottom button when user is scrolled up during auto-chat
   _showScrollBtn(){
     let btn=$('#scroll-bottom-btn');
@@ -259,7 +277,7 @@ const Chat={
     btn.id='scroll-bottom-btn';
     btn.className='scroll-bottom-btn';
     btn.innerHTML='↓ New messages';
-    btn.onclick=()=>{Chat.scrollEnd();btn.remove();};
+    btn.onclick=()=>{Chat.scrollEnd(true);};
     log.parentElement.style.position='relative';
     log.parentElement.appendChild(btn);
   },
@@ -309,11 +327,8 @@ const Chat={
       // #12: Each character sees only their visible messages
       const visible=Chat.filterVisible(ST.chat.messages,next.id);
       await Chat.genResponse(next,visible);
-      // BUG 30: Show scroll button if user is scrolled up during auto-chat
-      const log=$('#chat-log');
-      if(log&&(log.scrollHeight-log.scrollTop-log.clientHeight)>100){
-        Chat._showScrollBtn();
-      }
+      // BUG 2: scrollEnd now handles near-bottom check + button display internally
+      // BUG 5: No duplicate threshold check needed — scrollEnd uses _nearBottom() with 200px
       if(ST.chat.autoChatStop)break;
       await sleep(1200);
     }
