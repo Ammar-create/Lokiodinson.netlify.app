@@ -7,7 +7,14 @@ const Chat={
     const chars=[];
     for(const cid of scenario.characterIds||[]){
       const c=await DB.get('characters',cid);
-      if(c)chars.push({...c,emotionalState:'neutral',moodNotes:'',systemInjection:''});
+      if(c){
+        // Preserve existing emotional states from IndexedDB
+        chars.push({...c,
+          emotionalState:c.emotionalState||'neutral',
+          moodNotes:c.moodNotes||'',
+          systemInjection:c.systemInjection||''
+        });
+      }
     }
     let msgs=await DB.getByIndex('messages','scenarioId',scenId);
     msgs.sort((a,b)=>a.timestamp-b.timestamp);
