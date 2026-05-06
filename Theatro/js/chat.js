@@ -1,6 +1,11 @@
 'use strict';
 // ===== CHAT ENGINE =====
 const Chat={
+  // STT state
+  _sttRecorder:null,
+  _sttChunks:[],
+  _sttStream:null,
+
   async init(scenId){
     const scenario=await DB.get('scenarios',scenId);
     if(!scenario){Toast.e('Scenario not found');return;}
@@ -8,7 +13,6 @@ const Chat={
     for(const cid of scenario.characterIds||[]){
       const c=await DB.get('characters',cid);
       if(c){
-        // Preserve existing emotional states from IndexedDB
         chars.push({...c,
           emotionalState:c.emotionalState||'neutral',
           moodNotes:c.moodNotes||'',
@@ -21,30 +25,54 @@ const Chat={
     const relData=await DB.get('relationships',scenId);
     const allChars=await DB.getAll('characters');
     const userChar=allChars.find(c=>c.isUser);
+    // Load per-character private memories
+    await Ctrl.loadMemories(scenId,chars);
     ST.chat={
       ...ST.chat,scenId,scenario,characters:chars,messages:msgs,rels:relData?.matrix||{},
       activeCharId:userChar?.id||chars[0]?.id||null,
       autoChatRunning:false,autoChatStop:false,msgSinceCtrl:0,
       panelOpen:window.innerWidth>900,panelTab:'directive',
       directive:{next:'',details:''},debugLog:[],
+      sending:false,sttRecording:false,
     };
     Router.go('chat');
   },
+
   async send(content,charId){
     if(!content.trim())return;
-    const char=ST.chat.characters.find(c=>c.id===charId);if(!char)return;
-    const msg={id:uid(),scenarioId:ST.chat.scenId,charId,content:content.trim(),timestamp:Date.now(),isUser:!!char.isUser};
-    ST.chat.messages.push(msg);
-    await DB.put('messages',msg);
-    Chat.renderMsg(msg,char,true);
-    Chat.scrollEnd();
-    const isUserChar=char.isUser||ST.chat.scenario?.settings?.aiKnowsUser!==false;
-    if(isUserChar)await Chat.doResponses(charId);
+    // Race condition guard
+    if(ST.chat.sending){Toast.w('Please wait — still processing...');return;}
+    ST.chat.sending=true;
+    try{
+      const char=ST.chat.characters.find(c=>c.id===charId);if(!char)return;
+      const msg={id:uid(),scenarioId:ST.chat.scenId,charId,content:content.trim(),timestamp:Date.now(),isUser:!!char.isUser};
+      ST.chat.messages.push(msg);
+      await DB.put('messages',msg);
+      Chat.renderMsg(msg,char,true);
+      Chat.scrollEnd();
+      // Track user's own message in their memory
+      await Ctrl.addMemory(char.id,ST.chat.scenId,`I said: "${content.trim().slice(0,150)}"`,'witnessed');
+      // Other characters witness this message
+      for(const other of ST.chat.characters){
+        if(other.id!==char.id){
+          await Ctrl.addMemory(other.id,ST.chat.scenId,`${char.name} said: "${content.trim().slice(0,100)}"`,'witnessed');
+        }
+      }
+      const isUserChar=char.isUser||ST.chat.scenario?.settings?.aiKnowsUser!==false;
+      if(isUserChar)await Chat.doResponses(charId);
+    }finally{ST.chat.sending=false;}
   },
+
   async doResponses(excludeId){
     const responders=ST.chat.characters.filter(c=>c.id!==excludeId&&!c.isUser);
-    for(const c of responders){await Chat.genResponse(c);if(ST.chat.autoChatStop)break;}
+    for(const c of responders){
+      if(ST.chat.autoChatStop)break;
+      if(ST.chat.sending&&!ST.chat.autoChatRunning)break;
+      await Chat.genResponse(c);
+      if(ST.chat.autoChatStop)break;
+    }
   },
+
   async genResponse(char){
     if(!char)return;
     const tid=`th-${char.id}-${Date.now()}`;
@@ -65,6 +93,14 @@ const Chat={
       const msg={id:msgId,scenarioId:ST.chat.scenId,charId:char.id,content:full,timestamp:Date.now(),isUser:false};
       ST.chat.messages.push(msg);
       await DB.put('messages',msg);
+      // Track this character's memory of what they said
+      await Ctrl.addMemory(char.id,ST.chat.scenId,`I said: "${full.slice(0,150)}"`,'witnessed');
+      // Track other characters witnessing this message
+      for(const other of ST.chat.characters){
+        if(other.id!==char.id){
+          await Ctrl.addMemory(other.id,ST.chat.scenId,`${char.name} said: "${full.slice(0,100)}"`,'witnessed');
+        }
+      }
       ST.chat.msgSinceCtrl++;
       const freq=ST.chat.scenario?.settings?.controllerFreq||ST.settings.ctrlFreq||10;
       if(ST.chat.msgSinceCtrl>=freq){
@@ -89,6 +125,7 @@ const Chat={
       Ctrl.dlog(`${char.name} error: ${err.message}`,'derr');
     }
   },
+
   addThinking(id,char){
     const log=$('#chat-log');if(!log)return;
     const el=document.createElement('div');el.className='msg';el.id=id;
@@ -176,6 +213,8 @@ const Chat={
     const chars=ST.chat.characters.filter(c=>!c.isUser);
     while(!ST.chat.autoChatStop){
       if(!chars.length)break;
+      // Race condition check
+      if(ST.chat.sending){await sleep(500);continue;}
       const last=ST.chat.messages[ST.chat.messages.length-1];
       const li=last?chars.findIndex(c=>c.id===last.charId):-1;
       const next=chars[(li+1)%chars.length];
@@ -214,6 +253,62 @@ const Chat={
       }catch{Toast.e('Load failed');}
     };
     inp.click();
+  },
+
+  // ===== STT (Speech-to-Text) =====
+  async startSTT(){
+    if(ST.chat.sttRecording)return;
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      Chat._sttStream=stream;
+      Chat._sttChunks=[];
+      const recorder=new MediaRecorder(stream,{mimeType:'audio/webm;codecs=opus'});
+      Chat._sttRecorder=recorder;
+      recorder.ondataavailable=e=>{if(e.data.size>0)Chat._sttChunks.push(e.data);};
+      recorder.onstop=async()=>{
+        // Cleanup stream tracks
+        stream.getTracks().forEach(t=>t.stop());
+        Chat._sttStream=null;
+        if(!Chat._sttChunks.length)return;
+        const blob=new Blob(Chat._sttChunks,{type:'audio/webm'});
+        Chat._sttChunks=[];
+        const micBtn=$('#mic-btn');
+        if(micBtn){micBtn.disabled=true;micBtn.innerHTML=`<div class="spinner" style="width:14px;height:14px"></div>`;}
+        try{
+          Toast.i('Transcribing...');
+          const text=await API.transcribe(blob,ST.settings.sttModel||'whisper-large-v3');
+          const ta=$('#chat-ta');
+          if(ta&&text){
+            ta.value=(ta.value?ta.value+' ':'')+text;
+            Scr.taResize(ta);ta.focus();
+          }
+          Toast.s('Transcribed');
+        }catch(err){
+          Toast.e('Transcription failed: '+err.message);
+          Ctrl.dlog(`STT error: ${err.message}`,'err');
+        }finally{
+          if(micBtn){micBtn.disabled=false;micBtn.innerHTML=I('mic',15);}
+        }
+      };
+      recorder.start();
+      ST.chat.sttRecording=true;
+      const micBtn=$('#mic-btn');
+      if(micBtn){micBtn.classList.add('recording');micBtn.innerHTML=I('stop',15);}
+      Toast.i('Recording... click mic again to stop');
+    }catch(err){
+      Toast.e('Microphone access denied');
+      Ctrl.dlog(`STT mic error: ${err.message}`,'err');
+    }
+  },
+  stopSTT(){
+    if(!ST.chat.sttRecording||!Chat._sttRecorder)return;
+    Chat._sttRecorder.stop();
+    ST.chat.sttRecording=false;
+    const micBtn=$('#mic-btn');
+    if(micBtn){micBtn.classList.remove('recording');micBtn.innerHTML=I('mic',15);}
+  },
+  toggleSTT(){
+    if(ST.chat.sttRecording)Chat.stopSTT();else Chat.startSTT();
   }
 };
 
@@ -225,7 +320,14 @@ const CA={
     if(!msg||!char)return;
     Toast.i('Generating image...');
     try{
-      const prompt=`${char.appearance||''}, ${msg.content.replace(/\*[^*]+\*/g,'').replace(/"[^"]+"/g,'').trim().slice(0,200)}`;
+      // Use Media Controller for intelligent prompt if available
+      let prompt;
+      try{
+        const imgData=await Ctrl.genImagePrompt(msg,char,ST.chat.scenario);
+        prompt=imgData?.prompt||`${char.appearance||''}, ${msg.content.replace(/\*[^*]+\*/g,'').replace(/"[^"]+"/g,'').trim().slice(0,200)}`;
+      }catch{
+        prompt=`${char.appearance||''}, ${msg.content.replace(/\*[^*]+\*/g,'').replace(/"[^"]+"/g,'').trim().slice(0,200)}`;
+      }
       const url=API.imageUrl(prompt);
       const mb=$(`#msg-${msgId} .msg-body`);
       if(mb){

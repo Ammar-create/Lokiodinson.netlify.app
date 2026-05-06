@@ -12,6 +12,7 @@ const MODELS=[
   {id:'phi',name:'Phi-4',provider:'pollinations',desc:'Microsoft compact model'},
   {id:'grok',name:'Grok 4 Fast',provider:'aqua',desc:'Requires Aqua API key'},
   {id:'grok-4.1-thinking',name:'Grok 4.1 Thinking',provider:'aqua',desc:'Best for controllers — Aqua key required'},
+  {id:'grok-4.2',name:'Grok 4.2',provider:'aqua',desc:'Premium reasoning — Aqua key required'},
 ];
 const VOICES=[
   {id:'alloy',name:'Alloy',desc:'Neutral, balanced'},
@@ -28,7 +29,7 @@ const ST={
   editCharId:null,editScenId:null,
   charForm:{},scenForm:{},
   settings:{
-    pollinationsKey:'pk_LUy70Tu8OwLI1HrU', // Publishable API key
+    pollinationsKey:'pk_LUy70Tu8OwLI1HrU',
     aquaKey:'',customUrl:'',customKey:'',
     charModel:'llama-scout',ctrlModel:'llama-scout',
     imgModel:'zimage',ttsModel:'tts-1',defVoice:'nova',
@@ -36,8 +37,12 @@ const ST={
   },
   chat:{
     scenId:null,scenario:null,characters:[],messages:[],rels:{},
+    charMems:{},
     activeCharId:null,autoChatRunning:false,autoChatStop:false,
     msgSinceCtrl:0,panelOpen:true,panelTab:'directive',
     directive:{next:'',details:''},debugLog:[],
+    sending:false,
+    modelsCache:{pollinations:[],aqua:[]},
+    sttRecording:false,
   }
 };

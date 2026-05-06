@@ -52,7 +52,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
   color:var(--tdim);cursor:pointer;transition:var(--t) var(--ease);display:inline-flex;align-items:center;justify-content:center}
 .ibtn:hover{color:var(--text);border-color:var(--border);background:var(--s2)}
 .ibtn.on{color:var(--gold);border-color:var(--gdim);background:var(--gglow)}
+.ibtn.recording{color:var(--criml);border-color:var(--criml);background:rgba(194,48,80,.12);animation:micPulse 1s ease-in-out infinite}
 .ibtn svg{pointer-events:none}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(194,48,80,.3)}50%{box-shadow:0 0 0 6px rgba(194,48,80,0)}}
 
 /* FIELDS */
 .field{display:flex;flex-direction:column;gap:5px}
@@ -220,9 +222,10 @@ input::placeholder,textarea::placeholder{color:var(--tmut)}
 .csw{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .1s,border-color .1s}
 .csw:hover{transform:scale(1.2)}.csw.sel{border-color:#fff;box-shadow:0 0 0 2px var(--surface)}
 
-/* MODEL LIST */
-.mpbtn{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--fb);font-size:13px;padding:9px 11px;width:100%;cursor:pointer;text-align:left;transition:var(--t) var(--ease);display:flex;align-items:center;justify-content:space-between}
+/* MODEL / VOICE LISTS */
+.mpbtn{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--fb);font-size:13px;padding:9px 11px;width:100%;cursor:pointer;text-align:left;transition:var(--t) var(--ease);display:flex;align-items:center;justify-content:space-between;gap:8px}
 .mpbtn:hover{border-color:var(--bl)}.mpbtn .arr{color:var(--tmut);font-size:10px}
+.mp-prov{font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;border:1px solid currentColor;letter-spacing:.04em;flex-shrink:0}
 .mlist{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);overflow-y:auto;max-height:200px;margin-top:4px}
 .mopt{padding:9px 11px;cursor:pointer;font-size:12px;transition:background var(--t) var(--ease);display:flex;justify-content:space-between;align-items:flex-start}
 .mopt:hover{background:var(--s3)}.mopt.sel{background:var(--gglow)}
