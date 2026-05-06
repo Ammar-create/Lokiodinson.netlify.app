@@ -33,19 +33,18 @@ const API={
       return{url:s.customUrl.replace(/\/$/,'')+'/v1',headers:{'Authorization':`Bearer ${s.customKey}`}};
     return{url:'https://gen.pollinations.ai/v1',headers:{'Authorization':`Bearer ${s.pollinationsKey||'pk_LUy70Tu8OwLI1HrU'}`}};
   },
-  // Helper: get the Pollinations API key for query-param usage (image URLs, etc.)
+  // Helper: get the Pollinations API key for query-param usage (image URLs, GET TTS, etc.)
   _pollinationsKey(){
     return ST.settings.pollinationsKey||'pk_LUy70Tu8OwLI1HrU';
   },
 
-  // BUG 9: Simplified rate limit — log calls, show reminder every 10 calls for pollinations
+  // Rate limit tracking — log calls, show reminder every 10 calls for pollinations
   trackCall(provider){
     const now=Date.now();
     const bucket=ST.rateLimits[provider];
     if(!bucket)return;
     bucket.calls.push(now);
     bucket.calls=bucket.calls.filter(t=>now-t<3600000);
-    // Show reminder every 10 calls
     if(bucket.calls.length%10===0&&bucket.calls.length>0){
       Ctrl?.dlog?.(`Pollinations: ${bucket.calls.length} calls this hour. pk_ keys are limited to 1 pollen/hr. Monitor your balance at gen.pollinations.ai/account/balance`,'warn');
     }
@@ -102,7 +101,7 @@ const API={
         const t=await r.text();throw new Error(`API ${r.status}: ${t.slice(0,150)}`);
       }
       const reader=r.body.getReader();const dec=new TextDecoder();let buf='';
-      try{// FIX #18: try/catch around stream reading loop
+      try{
         while(true){
           const{done,value}=await reader.read();if(done)break;
           buf+=dec.decode(value,{stream:true});
@@ -123,7 +122,6 @@ const API={
             if(text)onChunk(text,true);return;
           }catch(fbErr){Ctrl?.dlog?.(`Pollinations fallback failed: ${fbErr.message}`,'err');throw err;}
         }
-        // Flush remaining buffer
         if(buf.trim()){
           const lines=buf.split('\n');
           for(const line of lines){
@@ -137,7 +135,6 @@ const API={
         try{reader.releaseLock();}catch{}
       }
     }catch(err){
-      // Outer catch: fetch-level errors (network failures, etc.)
       if(ep.provider==='aqua'){
         Ctrl?.dlog?.(`Aqua stream fetch error: ${err.message} — falling back to Pollinations (non-stream)`,'warn');
         try{
@@ -149,31 +146,50 @@ const API={
       throw err;
     }
   },
-  // FIX: Image endpoint with API key passed as ?key= query parameter.
-  // Images are loaded via <img src> which cannot set Authorization headers,
-  // so the key must be in the URL as a query param per Pollinations docs.
-  imageUrl(prompt,opts={}){
-    const model=opts.model||ST.settings.imgModel||'zimage';
+
+  // Image endpoint — positional args for backward compat with all callers.
+  // Auth key passed as ?key= query param because <img> tags cannot send Authorization headers.
+  imageUrl(prompt, w=512, h=512, model=null){
+    model=model||ST.settings.imgModel||'zimage';
     const key=API._pollinationsKey();
-    return`https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?model=${model}&width=${opts.w||512}&height=${opts.h||512}&nologo=true&key=${encodeURIComponent(key)}`;
+    return`https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?model=${model}&width=${w}&height=${h}&nologo=true&key=${encodeURIComponent(key)}`;
   },
-  // FIX: TTS endpoint now includes Content-Type: application/json header.
-  // _base() only returns Authorization — TTS POST needs Content-Type for JSON body.
-  async tts(text,voice='nova'){
+
+  // TTS — POST to /v1/audio/speech with full error logging, GET fallback if POST fails.
+  async tts(text, voice='nova'){
     const model=ST.settings.ttsModel||'openai-audio';
+    const key=API._pollinationsKey();
     const{url:baseUrl,headers}=API._base('pollinations');
     const ttsUrl=`${baseUrl}/audio/speech`;
     const ttsHeaders={...headers,'Content-Type':'application/json'};
-    const r=await fetch(ttsUrl,{method:'POST',headers:ttsHeaders,body:JSON.stringify({model,input:text,voice})});
-    if(!r.ok){
-      const errText=await r.text().catch(()=>'');
-      throw new Error(`TTS ${r.status}: ${errText.slice(0,100)||'failed'}`);
+    // Try POST first (OpenAI-compatible endpoint)
+    try{
+      const r=await fetch(ttsUrl,{method:'POST',headers:ttsHeaders,body:JSON.stringify({model,input:text,voice})});
+      if(!r.ok){
+        const errText=await r.text().catch(()=>'');
+        Ctrl?.dlog?.(`TTS POST ${r.status}: ${errText.slice(0,200)}`,'err');
+        throw new Error(`TTS ${r.status}: ${errText.slice(0,80)||r.statusText}`);
+      }
+      return URL.createObjectURL(await r.blob());
+    }catch(postErr){
+      // Fallback: try the simpler GET endpoint /audio/{text}
+      Ctrl?.dlog?.(`TTS POST failed (${postErr.message}), trying GET fallback...`,'warn');
+      try{
+        const getUrl=`https://gen.pollinations.ai/audio/${encodeURIComponent(text)}?model=${model}&voice=${voice}&key=${encodeURIComponent(key)}`;
+        const r2=await fetch(getUrl);
+        if(!r2.ok){
+          const err2=await r2.text().catch(()=>'');
+          Ctrl?.dlog?.(`TTS GET ${r2.status}: ${err2.slice(0,200)}`,'err');
+          throw new Error(`TTS GET ${r2.status}: ${err2.slice(0,80)||r2.statusText}`);
+        }
+        return URL.createObjectURL(await r2.blob());
+      }catch(getErr){
+        throw new Error(`TTS failed — POST: ${postErr.message} | GET: ${getErr.message}`);
+      }
     }
-    return URL.createObjectURL(await r.blob());
   },
-  // Verified Pollinations STT endpoint.
-  // POST https://gen.pollinations.ai/v1/audio/transcriptions — confirmed in Pollinations API docs.
-  // Supports models: whisper, whisper-large-v3 (1000 pollen), scribe/elevenlabs-scribe-v2 (200 pollen).
+
+  // STT — POST /v1/audio/transcriptions
   async transcribe(audioBlob){
     const model=ST.settings.sttModel||'whisper-large-v3';
     const{url,headers}=API._base('pollinations');
@@ -186,6 +202,7 @@ const API={
     const d=await r.json();
     return d.text||'';
   },
+
   // Fetch available models from provider's /v1/models endpoint
   async fetchModels(provider='pollinations'){
     try{
