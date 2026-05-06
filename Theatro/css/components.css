@@ -103,6 +103,9 @@
   .two-col{grid-template-columns:1fr}
   .sett-nav{width:44px}.sett-ni span:last-child{display:none}
   .cards{grid-template-columns:1fr}
+  /* BUG 10: Onboarding banner responsive — stack vertically on mobile */
   .ob-inner{flex-wrap:wrap;gap:8px}
   .ob-text{flex:0 0 100%}
+  .ob-action{width:100%;text-align:center}
+  .ob-x{position:absolute;top:8px;right:8px}
 }
