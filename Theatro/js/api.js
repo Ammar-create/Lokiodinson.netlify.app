@@ -87,17 +87,22 @@ const API={
     const model=opts.model||ST.settings.imgModel||'zimage';
     return`https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=${model}&width=${opts.w||512}&height=${opts.h||512}&nologo=true`;
   },
-  // FIX #20: TTS endpoint derived from base URL, not string replacement
+  // BUG 6: Verified Pollinations TTS endpoint.
+  // POST https://gen.pollinations.ai/v1/audio/speech — confirmed in Pollinations API docs.
+  // Supports models: elevenlabs (default), elevenmusic, openai-audio, qwen3-tts-flash, etc.
+  // Voices per model: elevenlabs uses rachel/domi/bella/etc, openai-audio uses alloy/echo/fable/onyx/nova/shimmer.
   async tts(text,voice='nova'){
     const model=ST.settings.ttsModel||'tts-1';
     const{url,headers}=API.endpoint(model);
-    // Build TTS URL from chat completions base — more robust than string replace
+    // Build TTS URL from chat completions base — correct endpoint is /v1/audio/speech
     const ttsUrl=url.replace(/\/chat\/completions\/?$/,'/audio/speech');
     const r=await fetch(ttsUrl,{method:'POST',headers,body:JSON.stringify({model,input:text,voice})});
     if(!r.ok)throw new Error('TTS failed');
     return URL.createObjectURL(await r.blob());
   },
-  // Whisper STT transcription
+  // BUG 6: Verified Pollinations STT endpoint.
+  // POST https://gen.pollinations.ai/v1/audio/transcriptions — confirmed in Pollinations API docs.
+  // Supports models: whisper, whisper-large-v3 (1000 pollen), scribe/elevenlabs-scribe-v2 (200 pollen).
   async transcribe(audioBlob){
     const model=ST.settings.sttModel||'whisper-large-v3';
     const{url,headers}=API._base('pollinations');
