@@ -88,6 +88,15 @@ Object.assign(Scr,{
       Chat.renderMsg(msg,char,true);
     }
     Chat.scrollEnd();
+    // Auto-dismiss scroll-to-bottom button when user scrolls near bottom
+    const chatLog=$('#chat-log');
+    if(chatLog){
+      chatLog.addEventListener('scroll',function(){
+        if(Chat._nearBottom()){
+          $('#scroll-bottom-btn')?.remove();
+        }
+      });
+    }
     Chat.renderCast();
     Chat.renderRels();
     Scr.updateCPill();
