@@ -3,6 +3,10 @@
 // Extends Scr with settings + model/voice pickers (loaded after screens.js)
 Object.assign(Scr,{
 
+  // BUG 31: Snapshot the original hardcoded model count at load time
+  // This prevents duplicates when fetchProviderModels re-fetches from API
+  _ORIGINAL_MODELS_COUNT: MODELS.length,
+
   // --- SETTINGS ---
   // FIX #8: Mark settings dirty + start debounce auto-save
   markSettingsDirty(){
@@ -45,10 +49,11 @@ Object.assign(Scr,{
       <div class="sett-sec ${tab==='models'?'on':''}">
         <div class="sett-grp">
           <div class="sett-gt">Default Model Assignments</div>
-          <div class="field"><label class="lbl">Character Default</label>${Scr.mpHtml('s-cm',s.charModel||'llama-scout')}</div>
-          <div class="field"><label class="lbl">Controller Default</label>${Scr.mpHtml('s-ctm',s.ctrlModel||'llama-scout')}</div>
+          <!-- BUG 33: Replaced 'llama-scout' fallbacks with 'openai-fast'/'openai' -->
+          <div class="field"><label class="lbl">Character Default</label>${Scr.mpHtml('s-cm',s.charModel||'openai-fast')}</div>
+          <div class="field"><label class="lbl">Controller Default</label>${Scr.mpHtml('s-ctm',s.ctrlModel||'openai')}</div>
           <div class="field"><label class="lbl">Image Model</label>${Scr.imgMpHtml('s-imgm',s.imgModel||'zimage')}</div>
-          <div class="field"><label class="lbl">TTS Model</label>${Scr.ttsMpHtml('s-ttsm',s.ttsModel||'tts-1')}</div>
+          <div class="field"><label class="lbl">TTS Model</label>${Scr.ttsMpHtml('s-ttsm',s.ttsModel||'openai-audio')}</div>
           <div class="field"><label class="lbl">STT Model</label>${Scr.sttMpHtml('s-sttm',s.sttModel||'whisper-large-v3')}</div>
           <div class="field"><label class="lbl">Default Voice</label>${Scr.vpHtml('s-dv',s.defVoice||'nova')}</div>
         </div>
@@ -122,8 +127,9 @@ Object.assign(Scr,{
         API.fetchModels('pollinations'),
         ST.settings.aquaKey?API.fetchModels('aqua'):Promise.resolve([])
       ]);
-      ST.chat.modelsCache={pollinations:polli,aqua};
-      // Merge fetched models into MODELS array, preferring existing entries
+      // BUG 31: Truncate MODELS back to original hardcoded set before merging
+      MODELS.length=Scr._ORIGINAL_MODELS_COUNT;
+      // Merge fetched models, deduplicating against the hardcoded set
       const existing=new Set(MODELS.map(m=>m.id));
       for(const m of polli){
         if(!existing.has(m.id)){
@@ -155,7 +161,6 @@ Object.assign(Scr,{
   openMP(id){
     const cur=$(`#${id}`)?.value;
     Modal.open({title:'Select Model',content:()=>{
-      // Group models by provider with custom overlay (no native popup)
       const pollis=MODELS.filter(m=>m.provider==='pollinations');
       const aquas=MODELS.filter(m=>m.provider==='aqua');
       return`<div style="display:flex;flex-direction:column;gap:10px">
@@ -204,7 +209,7 @@ Object.assign(Scr,{
   // FIX #15: TTS model picker
   ttsMpHtml(id,selId){
     const m=TTS_MODELS.find(x=>x.id===selId);
-    return`<div><button class="mpbtn" onclick="Scr.openTTSMP('${id}')" id="${id}-btn"><span id="${id}-lbl">${esc(m?.name||selId||'Select TTS model')}</span><span class="arr">▼</span></button><input type="hidden" id="${id}" value="${esc(selId||'tts-1')}"></div>`;
+    return`<div><button class="mpbtn" onclick="Scr.openTTSMP('${id}')" id="${id}-btn"><span id="${id}-lbl">${esc(m?.name||selId||'Select TTS model')}</span><span class="arr">▼</span></button><input type="hidden" id="${id}" value="${esc(selId||'openai-audio')}"></div>`;
   },
   openTTSMP(id){
     const cur=$(`#${id}`)?.value;
