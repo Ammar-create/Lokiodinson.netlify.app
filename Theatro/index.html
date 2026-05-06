@@ -32,7 +32,10 @@
 <script src="js/api.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/controllers.js"></script>
-<script src="js/chat.js"></script>
+<!-- Chat engine split into 3 modules (load in order: core → render → session) -->
+<script src="js/chat-core.js"></script>
+<script src="js/chat-render.js"></script>
+<script src="js/chat-session.js"></script>
 <script src="js/chat-actions.js"></script>
 <script src="js/header.js"></script>
 <script src="js/screens.js"></script>
