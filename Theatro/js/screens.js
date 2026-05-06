@@ -296,6 +296,7 @@ const Scr={
             oninput="Scr.taResize(this)" onkeydown="Scr.taKey(event)"></textarea>
           <div class="input-btns">
             <button class="ibtn" id="improve-btn" title="Auto-Improve" onclick="Scr.improve()">${I('improve',15)}</button>
+            <button class="ibtn" id="mic-btn" title="Voice input (Whisper)" onclick="Chat.toggleSTT()">${I('mic',15)}</button>
             <button class="ibtn on" title="Send (Enter)" onclick="Scr.sendMsg()" style="color:var(--gold);border-color:var(--gdim)">${I('send',15)}</button>
           </div>
         </div>
@@ -434,6 +435,7 @@ const Scr={
           <div class="field"><label class="lbl">API Key</label><input type="password" id="s-ckey" value="${esc(s.customKey||'')}" placeholder="Bearer token..." oninput="ST.settings.customKey=this.value"></div>
         </div>
         <button class="btn bp bsm" onclick="Scr.saveSettings()">Save Provider Settings</button>
+        <button class="btn bs bsm" onclick="Scr.fetchProviderModels()" style="margin-left:8px">${I('refresh',12)} Refresh Model List</button>
       </div>
       <div class="sett-sec ${tab==='models'?'on':''}">
         <div class="sett-grp">
@@ -442,6 +444,7 @@ const Scr={
           <div class="field"><label class="lbl">Controller Default</label>${Scr.mpHtml('s-ctm',s.ctrlModel||'llama-scout')}</div>
           <div class="field"><label class="lbl">Image Model</label><input type="text" value="${esc(s.imgModel||'zimage')}" oninput="ST.settings.imgModel=this.value"></div>
           <div class="field"><label class="lbl">TTS Model</label><input type="text" value="${esc(s.ttsModel||'tts-1')}" oninput="ST.settings.ttsModel=this.value"></div>
+          <div class="field"><label class="lbl">STT Model</label><input type="text" value="${esc(s.sttModel||'whisper-large-v3')}" oninput="ST.settings.sttModel=this.value"></div>
           <div class="field"><label class="lbl">Default Voice</label>${Scr.vpHtml('s-dv',s.defVoice||'nova')}</div>
         </div>
         <button class="btn bp bsm" onclick="Scr.saveSettings()">Save Model Settings</button>
@@ -503,19 +506,62 @@ const Scr={
     const r=indexedDB.deleteDatabase('theatro');r.onsuccess=()=>{Toast.s('All data cleared. Reloading...');setTimeout(()=>location.reload(),1500)};
   },
 
+  // ---- MODEL FETCH & PICKER ----
+  async fetchProviderModels(){
+    Toast.i('Fetching models from providers...');
+    try{
+      const [polli,aqua]=await Promise.all([
+        API.fetchModels('pollinations'),
+        ST.settings.aquaKey?API.fetchModels('aqua'):Promise.resolve([])
+      ]);
+      ST.chat.modelsCache={pollinations:polli,aqua};
+      // Merge fetched models into MODELS array, preferring existing entries
+      const existing=new Set(MODELS.map(m=>m.id));
+      for(const m of polli){
+        if(!existing.has(m.id)){
+          MODELS.push({id:m.id,name:m.name||m.id,provider:'pollinations',desc:m.desc||'Fetched from API'});
+          existing.add(m.id);
+        }
+      }
+      for(const m of aqua){
+        if(!existing.has(m.id)){
+          MODELS.push({id:m.id,name:m.name||m.id,provider:'aqua',desc:m.desc||'Fetched from API'});
+          existing.add(m.id);
+        }
+      }
+      // Save to cache in DB
+      await DB.put('providers',{id:'model_cache',polli,aqua,cachedAt:Date.now()});
+      Toast.s(`Fetched ${polli.length} Pollinations + ${aqua.length} Aqua models`);
+      Ctrl.dlog(`Model cache updated: ${polli.length} P + ${aqua.length} A`,'ok');
+    }catch(err){
+      Toast.e('Model fetch failed: '+err.message);
+    }
+  },
+
   // ---- MODEL / VOICE PICKERS ----
   mpHtml(id,selId){
     const m=MODELS.find(x=>x.id===selId);
-    return`<div><button class="mpbtn" onclick="Scr.openMP('${id}')" id="${id}-btn"><span id="${id}-lbl">${esc(m?.name||selId||'Select model')}</span><span class="arr">▼</span></button><input type="hidden" id="${id}" value="${esc(selId||'')}"></div>`;
+    const provider=m?.provider||'pollinations';
+    return`<div><button class="mpbtn" onclick="Scr.openMP('${id}')" id="${id}-btn"><span id="${id}-lbl">${esc(m?.name||selId||'Select model')}</span><span class="mp-prov" style="color:${provider==='aqua'?'var(--criml)':'var(--gold)'}">${provider==='aqua'?'A':'P'}</span><span class="arr">▼</span></button><input type="hidden" id="${id}" value="${esc(selId||'')}"></div>`;
   },
   openMP(id){
     const cur=$(`#${id}`)?.value;
-    Modal.open({title:'Select Model',content:()=>`<div class="mlist">${
-      MODELS.map(m=>`<div class="mopt ${m.id===cur?'sel':''}" onclick="Scr.selModel('${id}','${m.id}','${esc(m.name)}')">
-        <div><div style="font-weight:600">${esc(m.name)}</div><div class="mopt-id">${esc(m.id)} · ${esc(m.provider)}</div><div style="font-size:11px;color:var(--tdim)">${esc(m.desc||'')}</div></div>
-        ${m.rec?'<span class="mopt-rec">★ Recommended</span>':''}
-      </div>`).join('')
-    }</div>`});
+    Modal.open({title:'Select Model',content:()=>{
+      // Group models by provider with custom overlay (no native popup)
+      const pollis=MODELS.filter(m=>m.provider==='pollinations');
+      const aquas=MODELS.filter(m=>m.provider==='aqua');
+      return`<div style="display:flex;flex-direction:column;gap:10px">
+        <div class="plbl">📡 Pollinations</div>
+        <div class="mlist">${pollis.map(m=>`<div class="mopt ${m.id===cur?'sel':''}" onclick="Scr.selModel('${id}','${m.id}','${esc(m.name)}')">
+          <div><div style="font-weight:600">${esc(m.name)}</div><div class="mopt-id">${esc(m.id)}</div><div style="font-size:11px;color:var(--tdim)">${esc(m.desc||'')}</div></div>
+          ${m.rec?'<span class="mopt-rec">★ Recommended</span>':''}
+        </div>`).join('')}</div>
+        <div class="plbl">🔱 Aqua ${!ST.settings.aquaKey?'<span style="font-size:9px">(add key in Settings)</span>':''}</div>
+        <div class="mlist">${aquas.length?aquas.map(m=>`<div class="mopt ${m.id===cur?'sel':''}" onclick="Scr.selModel('${id}','${m.id}','${esc(m.name)}')">
+          <div><div style="font-weight:600">${esc(m.name)}</div><div class="mopt-id">${esc(m.id)}</div></div>
+        </div>`).join(''):'<div style="padding:10px;color:var(--tmut);font-size:11px">No Aqua models available. Add API key in Settings → Providers, then click "Refresh Model List".</div>'}</div>
+      </div>`;
+    }});
   },
   selModel(id,val,name){
     const inp=$(`#${id}`);const lbl=$(`#${id}-lbl`);
