@@ -1,0 +1,84 @@
+/* CHAT SCREEN */
+#screen-chat{flex-direction:row}
+.chat-main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.chat-hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.chat-title{font-family:var(--fd);font-size:13px;font-weight:600;color:var(--tdim);letter-spacing:.04em;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-log{flex:1;overflow-y:auto;padding:18px 16px 10px;display:flex;flex-direction:column;gap:4px}
+
+/* MESSAGES */
+.msg{display:flex;flex-direction:column;gap:3px;animation:msgIn .25s var(--ease)}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.msg-hdr{display:flex;align-items:center;gap:7px}
+.msg-av{width:26px;height:26px;border-radius:50%;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:var(--fd)}
+.msg-av img{width:100%;height:100%;object-fit:cover}
+.msg-name{font-family:var(--fd);font-size:12px;font-weight:600;letter-spacing:.06em}
+.msg-time{font-size:10px;color:var(--tmut);margin-left:auto}
+.msg-body{padding:10px 13px;background:var(--surface);border-radius:3px var(--rl) var(--rl) var(--rl);
+  border-left:2px solid var(--mc,var(--border));font-size:13.5px;line-height:1.75;max-width:680px;word-break:break-word}
+.msg-body.stream::after{content:'';display:inline-block;width:2px;height:13px;
+  background:var(--mc,var(--gold));margin-left:2px;vertical-align:middle;animation:cur .7s step-end infinite}
+@keyframes cur{0%,100%{opacity:1}50%{opacity:0}}
+.msg.usr .msg-hdr{flex-direction:row-reverse}
+.msg.usr .msg-time{margin-left:0;margin-right:auto}
+.msg.usr .msg-body{background:var(--s2);margin-left:auto;border-left:none;border-right:2px solid var(--mc,var(--gold));border-radius:var(--rl) 3px var(--rl) var(--rl)}
+.msg.ctrl .msg-body{background:transparent;border:1px dashed var(--border);border-left:2px solid var(--tmut);font-size:11px;color:var(--tmut);font-style:italic;max-width:500px}
+.msg-ar{display:flex;gap:4px;padding-left:33px;margin-top:2px;opacity:0;transition:opacity var(--t) var(--ease)}
+.msg:hover .msg-ar{opacity:1}
+.msg.usr .msg-ar{flex-direction:row-reverse;padding-left:0;padding-right:33px}
+.mabtn{background:var(--s2);border:1px solid var(--border);border-radius:5px;color:var(--tmut);
+  font-size:10px;padding:2px 7px;cursor:pointer;transition:var(--t) var(--ease);display:flex;align-items:center;gap:3px;white-space:nowrap;font-family:var(--fb)}
+.mabtn:hover{color:var(--text);border-color:var(--bl)}
+.msg-img{max-width:280px;border-radius:var(--r);margin-top:8px;cursor:pointer;display:block;border:1px solid var(--border)}
+.thinking{display:flex;gap:4px;align-items:center;padding:8px 13px}
+.thinking span{width:5px;height:5px;background:var(--mc,var(--tmut));border-radius:50%;animation:dp 1.2s ease-in-out infinite}
+.thinking span:nth-child(2){animation-delay:.2s}.thinking span:nth-child(3){animation-delay:.4s}
+@keyframes dp{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+
+/* CHAT INPUT */
+.chat-input-area{background:var(--surface);border-top:1px solid var(--border);padding:10px 14px;flex-shrink:0}
+.input-row{display:flex;align-items:flex-end;gap:7px;background:var(--s2);border:1px solid var(--border);
+  border-radius:var(--rl);padding:6px;transition:border-color var(--t) var(--ease)}
+.input-row:focus-within{border-color:var(--gdim)}
+.input-char-btn{width:30px;height:30px;border-radius:50%;background:var(--s3);border:2px solid var(--gdim);cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:var(--fd);
+  align-self:flex-end;margin-bottom:2px;overflow:hidden;transition:var(--t) var(--ease)}
+.input-char-btn:hover{border-color:var(--gold)}
+.input-char-btn img{width:100%;height:100%;object-fit:cover}
+#chat-ta{flex:1;background:none;border:none;color:var(--text);font-family:var(--fb);font-size:13.5px;resize:none;outline:none;min-height:32px;max-height:110px;line-height:1.5;padding:3px 4px}
+.input-btns{display:flex;gap:4px;align-items:flex-end;padding-bottom:2px;flex-shrink:0}
+.input-sub-row{display:flex;gap:8px;margin-top:7px;align-items:center}
+.char-pill{display:flex;align-items:center;gap:5px;padding:3px 8px 3px 4px;background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;font-size:11px;color:var(--tdim);cursor:pointer;transition:var(--t) var(--ease);user-select:none}
+.char-pill:hover{border-color:var(--bl)}
+.char-pill .dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.char-pill .arr{font-size:8px;color:var(--tmut)}
+
+/* SIDE PANEL */
+.spanel{width:var(--pw);background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:width var(--t) var(--ease);overflow:hidden;position:relative}
+.spanel.collapsed{width:0;border-left:none}
+/* FIX #5: Panel toggle — stays visible on desktop, moves to chat header on mobile */
+.ptoggle{position:absolute;left:-28px;top:10px;background:var(--surface);border:1px solid var(--border);border-right:none;border-radius:6px 0 0 6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--tdim);z-index:10;transition:color var(--t) var(--ease)}
+.ptoggle:hover{color:var(--text)}
+.ptabs{display:flex;border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0}
+.ptab{background:none;border:none;border-bottom:2px solid transparent;padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tmut);cursor:pointer;white-space:nowrap;transition:var(--t) var(--ease);flex-shrink:0}
+.ptab:hover{color:var(--tdim)}.ptab.on{color:var(--gold);border-bottom-color:var(--gold)}
+.pcontent{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:14px}
+.p-sec{display:none;flex-direction:column;gap:12px}.p-sec.on{display:flex}
+.plbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--tmut);margin-bottom:4px}
+.rel-entry{background:var(--s2);border-radius:var(--r);padding:8px 10px;font-size:12px;display:flex;flex-direction:column;gap:4px}
+.rel-chars{color:var(--tdim)}.rel-reason{font-size:11px;color:var(--tmut)}
+.rmood{display:inline-block;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.rmood.pos{background:rgba(61,138,95,.2);color:#4a9b6f}.rmood.neg{background:rgba(176,37,64,.2);color:#c23050}
+.rmood.neu{background:var(--s3);color:var(--tmut)}.rmood.rom{background:rgba(139,34,50,.2);color:#e06080}
+.debug-area{background:#000;border:1px solid var(--border);border-radius:var(--r);padding:8px;font-family:monospace;font-size:10px;color:#50c8f0;height:180px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+.debug-area .derr{color:#f06050}.debug-area .dok{color:#50f090}.debug-area .dwarn{color:#f0c050}.debug-area .dinfo{color:#9090f0}
+.act-char-row{display:flex;align-items:center;gap:8px;padding:7px 8px;background:var(--s2);border-radius:var(--r);font-size:12px}
+
+/* FIX #5: Mobile — panel toggle moves inside chat header (never off-screen) */
+@media(max-width:700px){
+  :root{--pw:100vw}
+  .spanel{position:fixed;right:0;top:var(--hdr);height:calc(100vh - var(--hdr));z-index:500}
+  /* Mobile panel toggle: reposition to be inside the spanel, flipping direction */
+  .ptoggle{left:auto;right:0;top:10px;border:1px solid var(--border);border-right:1px solid var(--border);border-left:none;border-radius:6px 0 0 6px}
+  .spanel.collapsed .ptoggle{right:-28px}
+}
