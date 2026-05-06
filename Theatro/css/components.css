@@ -98,6 +98,24 @@
 .toast.s{border-left:3px solid var(--ok)}.toast.e{border-left:3px solid var(--err)}.toast.w{border-left:3px solid var(--warn)}.toast.i{border-left:3px solid var(--gold)}
 @keyframes tIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
 
+/* BUG 13: Onboarding banner responsive styles */
+.onboard-banner { background: linear-gradient(135deg, var(--s2), var(--s3)); border-bottom: 1px solid var(--gold); padding: 0; width: 100%; z-index: 50; }
+.ob-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; gap: 12px; padding: 10px 16px; }
+.ob-ico { font-size: 20px; flex-shrink: 0; }
+.ob-text { flex: 1; font-size: 13px; color: var(--tdim); line-height: 1.4; }
+.ob-text strong { color: var(--gold); }
+.ob-action { flex-shrink: 0; }
+.ob-x { background: none; border: none; color: var(--tmut); font-size: 18px; cursor: pointer; padding: 4px; flex-shrink: 0; }
+.ob-x:hover { color: var(--text); }
+@media (max-width: 600px) {
+  .ob-inner { flex-wrap: wrap; padding: 10px 12px; }
+  .ob-text { width: 100%; order: 1; }
+  .ob-ico { order: 0; }
+  .ob-action { order: 2; }
+  .ob-x { order: 3; position: absolute; top: 6px; right: 8px; }
+  .onboard-banner { position: relative; }
+}
+
 /* MOBILE RESPONSIVE */
 @media(max-width:700px){
   .two-col{grid-template-columns:1fr}
