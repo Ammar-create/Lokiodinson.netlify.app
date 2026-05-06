@@ -17,8 +17,6 @@ const MODELS=[
   {id:'grok-aqua',name:'Grok (Aqua)',provider:'aqua',desc:'Requires Aqua API key — premium Grok access'},
   {id:'custom-aqua',name:'Custom Aqua Model',provider:'aqua',desc:'Any model available via Aqua API'},
 ];
-// BUG 15: Track original hardcoded count so fetchProviderModels can trim back before re-merging
-const MODELS_ORIGINAL_COUNT = MODELS.length;
 // BUG 7: Updated VOICES with all openai-audio supported voices (13 total)
 const VOICES=[
   {id:'alloy',name:'Alloy',desc:'Neutral, balanced'},
