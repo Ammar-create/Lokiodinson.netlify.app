@@ -218,7 +218,7 @@ Return ONLY a JSON object — no other text:
     }
   },
 
-  // ===== AUTO-IMPROVE =====
+  // FIX #12: autoImprove now streams into the textarea progressively
   async autoImprove(userChar,scenario,messages){
     const model=ST.settings.ctrlModel||'llama-scout';
     const recent=messages.slice(-15).map(m=>{const c=ST.chat.characters.find(x=>x.id===m.charId);return`${c?.name||'?'}: ${m.content}`;}).join('\n');
@@ -236,6 +236,18 @@ RECENT CONVERSATION:
 ${recent}
 
 Write only ${userChar.name}'s next message using *actions* and "dialogue". No labels.`;
+
+    // Stream into textarea if streaming enabled
+    if(ST.settings.streaming){
+      const ta=$('#chat-ta');
+      if(ta){ta.value='';Scr.taResize(ta);}
+      let full='';
+      await API.stream([{role:'user',content:prompt}],model,(chunk,done)=>{
+        full+=chunk;
+        if(ta){ta.value=full;Scr.taResize(ta);}
+      },{temp:0.94,maxTokens:600});
+      return full;
+    }
     return await API.chat([{role:'user',content:prompt}],model,{temp:0.94,maxTokens:600});
   },
 
