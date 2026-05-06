@@ -7,12 +7,19 @@ const API={
     if(m?.provider==='aqua'&&s.aquaKey)
       return{url:'https://api.aquadevs.com/v1/chat/completions',headers:{'Content-Type':'application/json','Authorization':`Bearer ${s.aquaKey}`}};
     if(s.customUrl&&s.customKey)
-      return{url:s.customUrl,headers:{'Content-Type':'application/json','Authorization':`Bearer ${s.customKey}`}};
-    // Use single base URL for Pollinations with publishable key
+      return{url:s.customUrl.replace(/\/$/,'')+'/chat/completions',headers:{'Content-Type':'application/json','Authorization':`Bearer ${s.customKey}`}};
     const url='https://gen.pollinations.ai/v1/chat/completions';
     const h={'Content-Type':'application/json'};
-    h['Authorization']=`Bearer pk_LUy70Tu8OwLI1HrU`; // Publishable API key
+    h['Authorization']=`Bearer ${s.pollinationsKey||'pk_LUy70Tu8OwLI1HrU'}`;
     return{url,headers:h};
+  },
+  _base(provider){
+    const s=ST.settings;
+    if(provider==='aqua'&&s.aquaKey)
+      return{url:'https://api.aquadevs.com/v1',headers:{'Authorization':`Bearer ${s.aquaKey}`}};
+    if(provider==='custom'&&s.customUrl&&s.customKey)
+      return{url:s.customUrl.replace(/\/$/,'')+'/v1',headers:{'Authorization':`Bearer ${s.customKey}`}};
+    return{url:'https://gen.pollinations.ai/v1',headers:{'Authorization':`Bearer ${s.pollinationsKey||'pk_LUy70Tu8OwLI1HrU'}`}};
   },
   async chat(msgs,model,opts={}){
     const{url,headers}=API.endpoint(model);
@@ -48,5 +55,38 @@ const API={
     const r=await fetch(ttsUrl,{method:'POST',headers,body:JSON.stringify({model,input:text,voice})});
     if(!r.ok)throw new Error('TTS failed');
     return URL.createObjectURL(await r.blob());
+  },
+  // Whisper STT transcription
+  async transcribe(audioBlob,model='whisper-large-v3'){
+    const{url,headers}=API._base('pollinations');
+    const fd=new FormData();
+    fd.append('file',audioBlob,'recording.webm');
+    fd.append('model',model);
+    const h={'Authorization':headers.Authorization};
+    const r=await fetch(`${url}/audio/transcriptions`,{method:'POST',headers:h,body:fd});
+    if(!r.ok){const t=await r.text();throw new Error(`STT ${r.status}: ${t.slice(0,100)}`);}
+    const d=await r.json();
+    return d.text||'';
+  },
+  // Fetch available models from provider's /v1/models endpoint
+  async fetchModels(provider='pollinations'){
+    try{
+      const{url,headers}=API._base(provider);
+      const r=await fetch(`${url}/models`,{method:'GET',headers});
+      if(!r.ok)throw new Error(`${provider} models: ${r.status}`);
+      const d=await r.json();
+      const raw=Array.isArray(d)?d:d.data||[];
+      return raw.map(m=>({
+        id:m.id,
+        name:m.name||m.id,
+        provider,
+        desc:m.description||m.owned_by||'',
+        object:m.object||'model',
+        raw:m
+      }));
+    }catch(err){
+      Ctrl?.dlog?.(`Failed to fetch ${provider} models: ${err.message}`,'warn');
+      return[];
+    }
   }
 };
