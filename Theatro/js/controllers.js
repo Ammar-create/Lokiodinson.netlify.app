@@ -69,7 +69,7 @@ Return this exact structure:
 }`;
     const usr=`CHARACTERS:\n${charList}\n\nCONVERSATION:\n${convo}\n\nUSER DIRECTIVE: ${ST.chat.directive.next||'Continue naturally'}\nSTORY NOTES: ${ST.chat.directive.details||'None'}`;
     try{
-      const raw=await API.chat([{role:'user',content:usr}],model,{temp:0.7,maxTokens:1500});
+      const raw=await API.chat([{role:'system',content:sys},{role:'user',content:usr}],model,{temp:0.7,maxTokens:1500});
       Ctrl.dlog('Main Controller: response received','dok');
       let parsed;
       try{parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());}
@@ -77,7 +77,18 @@ Return this exact structure:
       if(parsed.characterUpdates){
         for(const u of parsed.characterUpdates){
           const c=ST.chat.characters.find(x=>x.id===u.charId);
-          if(c){c.emotionalState=u.emotionalState||c.emotionalState;c.moodNotes=u.moodNotes||'';c.systemInjection=u.systemInjection||'';}
+          if(c){
+            c.emotionalState=u.emotionalState||c.emotionalState;
+            c.moodNotes=u.moodNotes||'';
+            c.systemInjection=u.systemInjection||'';
+            // Persist emotional state to IndexedDB
+            try{
+              await DB.put('characters',{...c,updatedAt:Date.now()});
+              Ctrl.dlog(`Persisted emotional state for ${c.name}`,'ok');
+            }catch(err){
+              Ctrl.dlog(`Failed to persist emotional state for ${c.name}: ${err.message}`,'warn');
+            }
+          }
         }
       }
       if(parsed.relationshipUpdates){
@@ -102,7 +113,7 @@ Return this exact structure:
 Respond ONLY with valid JSON — no other text, no markdown fences:
 {"name":"Name","personality":"2-3 sentence personality","appearance":"2-3 sentence appearance","voice":"alloy|echo|fable|onyx|nova|shimmer","colorHint":"#hexcolor matching the character vibe","backstory":"brief backstory"}`;
     try{
-      const raw=await API.chat([{role:'user',content:`Create a character based on: ${brief}`}],model,{temp:0.97,maxTokens:800});
+      const raw=await API.chat([{role:'system',content:sys},{role:'user',content:`Create a character based on: ${brief}`}],model,{temp:0.97,maxTokens:800});
       return JSON.parse(raw.replace(/```json|```/g,'').trim());
     }catch(err){Ctrl.dlog('Creative Controller failed: '+err.message,'derr');return null;}
   },
