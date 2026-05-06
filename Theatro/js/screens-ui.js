@@ -138,9 +138,10 @@ Object.assign(Scr,{
         }
       }
       for(const m of aqua){
-        if(!existing.has(m.id)){
-          MODELS.push({id:m.id,name:m.name||m.id,provider:'aqua',desc:m.desc||'Fetched from API'});
-          existing.add(m.id);
+        const prefixed='aqua:'+m.id;
+        if(!existing.has(prefixed)){
+          MODELS.push({id:prefixed,name:m.name||m.id,provider:'aqua',desc:m.desc||'Fetched from Aqua API'});
+          existing.add(prefixed);
         }
       }
       // Save to cache in DB
@@ -171,7 +172,7 @@ Object.assign(Scr,{
         </div>`).join('')}</div>
         <div class="plbl">🔱 Aqua ${!ST.settings.aquaKey?'<span style="font-size:9px">(add key in Settings)</span>':''}</div>
         <div class="mlist">${aquas.length?aquas.map(m=>`<div class="mopt ${m.id===cur?'sel':''}" onclick="Scr.selModel('${id}','${m.id}','${esc(m.name)}')">
-          <div><div style="font-weight:600">${esc(m.name)}</div><div class="mopt-id">${esc(m.id)}</div></div>
+          <div><div style="font-weight:600">${esc(m.name)}</div><div class="mopt-id">${esc(m.id.replace('aqua:',''))}${m.premium?' <span style="color:var(--criml);font-size:9px">★ Premium</span>':''}</div></div>
         </div>`).join(''):'<div style="padding:10px;color:var(--tmut);font-size:11px">No Aqua models available. Add API key in Settings → Providers, then click "Refresh Model List".</div>'}</div>
       </div>`;
     }});
