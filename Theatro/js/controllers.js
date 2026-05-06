@@ -55,7 +55,8 @@ const Ctrl={
 
   // ===== MAIN CONTROLLER =====
   async runMain(scenario,chars,messages,rels){
-    const model=ST.settings.ctrlModel||'llama-scout';
+    // BUG 1 fix: replaced invalid 'llama-scout' fallback with 'openai'
+    const model=ST.settings.ctrlModel||'openai';
     Ctrl.dlog(`Main Controller firing (${model})...`,'dinfo');
     const stw=ST.settings.stWindow||30;
     const recent=messages.slice(-stw);
@@ -117,7 +118,8 @@ const Ctrl={
 
   // ===== SCENARIO CONTROLLER =====
   async runScenario(scenario,chars,messages,rels,hint){
-    const model=ST.settings.ctrlModel||'llama-scout';
+    // BUG 1 fix: replaced invalid 'llama-scout' fallback with 'openai'
+    const model=ST.settings.ctrlModel||'openai';
     Ctrl.dlog(`Scenario Controller firing (${model})...`,'dinfo');
     const stw=ST.settings.stWindow||30;
     const recent=messages.slice(-stw);
@@ -157,7 +159,8 @@ const Ctrl={
 
   // ===== CREATIVE CONTROLLER =====
   async runCreative(brief){
-    const model=ST.settings.ctrlModel||'llama-scout';
+    // BUG 1 fix: replaced invalid 'llama-scout' fallback with 'openai'
+    const model=ST.settings.ctrlModel||'openai';
     Ctrl.dlog(`Creative Controller: generating character from brief...`,'dinfo');
     const sys=`You are the Creative Controller. Generate a complete roleplay character from a brief description.\nRespond ONLY with valid JSON \u2014 no other text, no markdown fences:\n{"name":"Name","personality":"2-3 sentence personality","appearance":"2-3 sentence appearance","voice":"alloy|echo|fable|onyx|nova|shimmer","colorHint":"#hexcolor matching the character vibe","backstory":"brief backstory"}`;
     try{
@@ -175,7 +178,8 @@ const Ctrl={
 
   // ===== MEDIA CONTROLLER =====
   async genImagePrompt(msg,char,scenario){
-    const model=ST.settings.ctrlModel||'llama-scout';
+    // BUG 1 fix: replaced invalid 'llama-scout' fallback with 'openai'
+    const model=ST.settings.ctrlModel||'openai';
     Ctrl.dlog('Media Controller: generating image prompt...','dinfo');
     const sys=`You are the Media Controller. Generate a detailed image generation prompt based on the current moment in a roleplay.\nReturn ONLY a JSON object \u2014 no other text:\n{"prompt":"detailed visual description (2-3 sentences, include lighting, mood, character appearance, action)","style":"anime|realistic|cinematic|painterly|comic","aspect":"16:9|1:1|9:16"}`;
     const usr=`CHARACTER: ${char.name}\nAPPEARANCE: ${char.appearance||'Not specified'}\nMOOD: ${char.emotionalState||'neutral'}\nSCENARIO: ${scenario.name}\nMESSAGE: ${msg.content.slice(0,300)}`;
@@ -188,7 +192,8 @@ const Ctrl={
     }
   },
   async genVoiceHint(msg,char){
-    const model=ST.settings.ctrlModel||'llama-scout';
+    // BUG 1 fix: replaced invalid 'llama-scout' fallback with 'openai'
+    const model=ST.settings.ctrlModel||'openai';
     const sys=`Analyze the message and character mood for voice generation. Return ONLY JSON:\n{"emotion":"dominant emotion","intensity":7,"speed":"normal|slow|fast","emphasis":"key phrases or empty string"}`;
     const usr=`CHARACTER: ${char.name}\nMOOD: ${char.emotionalState||'neutral'}\nMESSAGE: ${msg.content.slice(0,300)}`;
     try{
@@ -204,7 +209,8 @@ const Ctrl={
     if(Ctrl._improveRunning){Ctrl._improveAbort=true;return '';}
     Ctrl._improveRunning=true;
     Ctrl._improveAbort=false;
-    const model=ST.settings.ctrlModel||'llama-scout';
+    // BUG 1 fix: replaced invalid 'llama-scout' fallback with 'openai'
+    const model=ST.settings.ctrlModel||'openai';
     const recent=messages.slice(-15).map(m=>{const c=ST.chat.characters.find(x=>x.id===m.charId);return`${c?.name||'?'}: ${m.content}`;}).join('\n');
     const memKey=`${userChar.id}_${ST.chat.scenId}`;
     const mems=ST.chat.charMems?.[memKey]||[];
