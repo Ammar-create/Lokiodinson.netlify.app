@@ -42,7 +42,7 @@ Object.assign(Chat,{
     el.className=cls;el.id=`msg-${msg.id}`;
     const privateTag=msg.isPrivate?'<span class="priv-tag">🔒 whisper</span>':'';
     el.innerHTML=`<div class="msg-hdr">${Chat.avHtml(char,26)}<span class="msg-name" style="color:${esc(char.color)}">${esc(char.name)}</span>${privateTag}<span class="msg-time">${fmtT(msg.timestamp)}</span></div>
-    <div class="msg-body" style="--mc:${esc(char.color)}">${parseRP(msg.content,char.color)}${msg.imageUrl?`<img class="msg-img" src="${esc(msg.imageUrl)}" loading="lazy">`:''}</div>`;
+    <div class="msg-body" style="--mc:${esc(char.color)}">${parseRP(msg.content,char.color)}${msg.imageUrl?`<img class="msg-img" src="${esc(msg.imageUrl)}" loading="lazy">`:''}${msg.audioUrl?Chat._audioPlayerHtml(msg.audioUrl):''}</div>`;
     if(withActions){
       const ar=document.createElement('div');ar.className='msg-ar';
       ar.innerHTML=`<button class="mabtn" onclick="CA.img('${msg.id}')">${I('image',11)} Image</button>
@@ -95,6 +95,66 @@ Object.assign(Chat,{
     const st=`width:${sz}px;height:${sz}px;background:${char.color}22;border:2px solid ${char.color};`;
     if(char.avatar)return`<div class="msg-av" style="${st}"><img src="${esc(char.avatar)}" style="width:100%;height:100%;object-fit:cover"></div>`;
     return`<div class="msg-av" style="${st};color:${char.color};font-size:${Math.floor(sz*.4)}px">${char.name[0].toUpperCase()}</div>`;
+  },
+  _audioPlayerHtml(src) {
+    const id = 'ap-' + uid();
+    return `<div class="audio-player" id="${id}" data-src="${esc(src)}">
+      <button class="ap-play" onclick="Chat._apToggle('${id}')">▶</button>
+      <div class="ap-bar" onclick="Chat._apSeek(event, '${id}')">
+        <div class="ap-fill"></div>
+      </div>
+      <span class="ap-time">0:00</span>
+    </div>`;
+  },
+  _apToggle(playerId) {
+    const el = document.getElementById(playerId);
+    if (!el) return;
+    let audio = el._audio;
+    if (!audio) {
+      audio = new Audio(el.dataset.src);
+      el._audio = audio;
+      audio.ontimeupdate = () => {
+        const fill = el.querySelector('.ap-fill');
+        const time = el.querySelector('.ap-time');
+        if (fill) fill.style.width = (audio.currentTime / audio.duration * 100 || 0) + '%';
+        if (time) time.textContent = Chat._fmtAudioTime(audio.currentTime);
+      };
+      audio.onended = () => {
+        const btn = el.querySelector('.ap-play');
+        if (btn) btn.textContent = '▶';
+        const fill = el.querySelector('.ap-fill');
+        if (fill) fill.style.width = '0%';
+      };
+    }
+    if (audio.paused) {
+      // Pause all other audio players first
+      document.querySelectorAll('.audio-player').forEach(p => {
+        if (p.id !== playerId && p._audio && !p._audio.paused) {
+          p._audio.pause();
+          const btn = p.querySelector('.ap-play');
+          if (btn) btn.textContent = '▶';
+        }
+      });
+      audio.play();
+      el.querySelector('.ap-play').textContent = '⏸';
+    } else {
+      audio.pause();
+      el.querySelector('.ap-play').textContent = '▶';
+    }
+  },
+  _apSeek(event, playerId) {
+    const el = document.getElementById(playerId);
+    if (!el || !el._audio || !el._audio.duration) return;
+    const bar = event.currentTarget;
+    const rect = bar.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    el._audio.currentTime = pct * el._audio.duration;
+  },
+  _fmtAudioTime(sec) {
+    if (!sec || isNaN(sec)) return '0:00';
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return m + ':' + (s < 10 ? '0' : '') + s;
   },
   renderRels(){
     const c=$('#rel-container');if(!c)return;
