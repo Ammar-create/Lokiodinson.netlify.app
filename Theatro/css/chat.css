@@ -74,6 +74,39 @@
 .debug-area .derr{color:#f06050}.debug-area .dok{color:#50f090}.debug-area .dwarn{color:#f0c050}.debug-area .dinfo{color:#9090f0}
 .act-char-row{display:flex;align-items:center;gap:8px;padding:7px 8px;background:var(--s2);border-radius:var(--r);font-size:12px}
 
+/* BUG 10: DM Mode — compact, intimate */
+.chat-main.dm-mode .msg { padding: 6px 12px; }
+.chat-main.dm-mode .msg-av { width: 20px; height: 20px; }
+.chat-main.dm-mode .msg-name { font-size: 11px; }
+.chat-main.dm-mode .msg-hdr { margin-bottom: 2px; }
+.chat-main.dm-mode .msg + .msg { margin-top: 4px; }
+
+/* BUG 10: Group Mode — spacious, prominent names */
+.chat-main.group-mode .msg { padding: 10px 14px; }
+.chat-main.group-mode .msg-av { width: 32px; height: 32px; }
+.chat-main.group-mode .msg-name { font-size: 13px; font-weight: 700; }
+.chat-main.group-mode .msg-hdr { margin-bottom: 4px; }
+.chat-main.group-mode .msg + .msg { margin-top: 8px; }
+
+/* BUG 10: DM mode — hide avatars for consecutive same-character messages */
+.chat-main.dm-mode .msg + .msg[msg-same-char="true"] .msg-hdr { display: none; }
+
+/* BUG 10: Group mode — always show full header with avatar and name */
+.chat-main.group-mode .msg-hdr { display: flex; }
+
+/* BUG 11: Private message indicator */
+.priv-tag { font-size: 10px; color: var(--tmut); background: var(--s2); padding: 1px 6px; border-radius: 8px; margin-left: 6px; display: inline-flex; align-items: center; gap: 3px; }
+.msg.private { border-left: 2px solid var(--gold); opacity: 0.95; }
+
+/* BUG 12: Scroll-to-bottom button */
+.scroll-bottom-btn { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--s3); color: var(--gold); border: 1px solid var(--border); border-radius: 20px; padding: 6px 16px; font-size: 12px; font-family: var(--fr); cursor: pointer; z-index: 10; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); transition: opacity 0.2s; }
+.scroll-bottom-btn:hover { background: var(--s4); }
+
+/* BUG 14: Whisper mode — whisper target indicator in input area */
+.whisper-indicator { display: flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--s2); border: 1px solid var(--gold); border-radius: var(--r); font-size: 11px; color: var(--gold); margin-bottom: 4px; }
+.whisper-indicator .whisper-x { background: none; border: none; color: var(--tmut); cursor: pointer; font-size: 14px; padding: 0 2px; }
+.whisper-indicator .whisper-x:hover { color: var(--criml); }
+
 /* FIX #5: Mobile — panel toggle moves inside chat header (never off-screen) */
 @media(max-width:700px){
   :root{--pw:100vw}
