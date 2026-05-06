@@ -22,23 +22,17 @@ const API={
     return{url:'https://gen.pollinations.ai/v1',headers:{'Authorization':`Bearer ${s.pollinationsKey||'pk_LUy70Tu8OwLI1HrU'}`}};
   },
 
-  // FIX #17: Client-side rate limit tracking
+  // BUG 9: Simplified rate limit — log calls, show reminder every 10 calls for pollinations
   trackCall(provider){
     const now=Date.now();
     const bucket=ST.rateLimits[provider];
     if(!bucket)return;
     bucket.calls.push(now);
-    // Prune calls older than 1 hour
     bucket.calls=bucket.calls.filter(t=>now-t<3600000);
-    const limit=provider==='pollinations'?24:100; // 0.4 credit/hr ≈ 24 calls/hr for pollinations
-    const pct=bucket.calls.length/limit;
-    if(pct>=0.8&&!bucket.warned){
-      bucket.warned=true;
-      Toast.w(`Rate limit warning: ${provider} at ${Math.round(pct*100)}% (${bucket.calls.length}/${limit}/hr). Consider adding Aqua key.`);
-      Ctrl?.dlog?.(`Rate limit: ${provider} ${bucket.calls.length}/${limit} calls this hour`,'warn');
+    // Show reminder every 10 calls
+    if(bucket.calls.length%10===0&&bucket.calls.length>0){
+      Ctrl?.dlog?.(`Pollinations: ${bucket.calls.length} calls this hour. pk_ keys are limited to 1 pollen/hr. Monitor your balance at gen.pollinations.ai/account/balance`,'warn');
     }
-    // Reset warned flag if usage drops below 60%
-    if(pct<0.6)bucket.warned=false;
   },
 
   async chat(msgs,model,opts={}){
