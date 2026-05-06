@@ -54,7 +54,7 @@ const Scr={
           <div class="cav" style="border-color:${c.color};background:${c.color}22;color:${c.color}">${c.avatar?`<img src="${esc(c.avatar)}">`:c.name[0]}</div>
           <div style="flex:1;min-width:0">
             <div class="ccard-name">${esc(c.name)}</div>
-            <div class="ccard-sub">${esc(c.modelId||'llama-scout')} · ${esc(c.voice||'nova')}</div>
+            <div class="ccard-sub">${esc(c.modelId||'openai-fast')} · ${esc(c.voice||'nova')}</div>
           </div>
           ${c.isUser?'<span class="pill g" style="margin-left:auto;font-size:10px">You</span>':''}
         </div>
@@ -70,7 +70,8 @@ const Scr={
   // --- CHAR CREATE ---
   newChar(){
     ST.editCharId=null;
-    ST.charForm={name:'',color:COLORS[0],personality:'',appearance:'',modelId:ST.settings.charModel||'llama-scout',voice:'nova',avatar:'',isUser:false};
+    // BUG 33: Changed default model from 'llama-scout' to 'openai-fast'
+    ST.charForm={name:'',color:COLORS[0],personality:'',appearance:'',modelId:ST.settings.charModel||'openai-fast',voice:'nova',avatar:'',isUser:false};
     Router.go('char-create');
   },
   async editChar(id){
@@ -164,7 +165,8 @@ const Scr={
       const all=await DB.getAll('characters');
       for(const c of all)if(c.isUser&&c.id!==ST.editCharId){c.isUser=false;await DB.put('characters',c);}
     }
-    const char={id:ST.editCharId||uid(),name:f.name.trim(),color:f.color||COLORS[0],personality:f.personality||'',appearance:f.appearance||'',modelId:f.modelId||'llama-scout',voice:f.voice||'nova',avatar:f.avatar||'',isUser:!!f.isUser,updatedAt:Date.now()};
+    // BUG 33: Changed default model from 'llama-scout' to 'openai-fast'
+    const char={id:ST.editCharId||uid(),name:f.name.trim(),color:f.color||COLORS[0],personality:f.personality||'',appearance:f.appearance||'',modelId:f.modelId||'openai-fast',voice:f.voice||'nova',avatar:f.avatar||'',isUser:!!f.isUser,updatedAt:Date.now()};
     if(!ST.editCharId)char.createdAt=Date.now();
     else{const ex=await DB.get('characters',char.id);char.createdAt=ex?.createdAt||Date.now();}
     await DB.put('characters',char);
@@ -194,22 +196,37 @@ const Scr={
     ST.editScenId=id;ST.scenForm={name:s.name||'',lore:s.lore||'',characterIds:[...(s.characterIds||[])],settings:{...s.settings},openingMessage:s.openingMessage||''};
     Router.go('scenario-create');
   },
-  // FIX #11: Scenario deletion now cleans up messages, memories, relationships
+  // FIX #11 + BUG 29: Scenario deletion now cleans up messages, memories, relationships, AND branches
   async delScen(id){
-    const ok=await Modal.confirm('Delete scenario? All messages will be lost.',{ok:'Delete',danger:true});if(!ok)return;
-    await DB.del('scenarios',id);
-    // Delete all messages for this scenario
-    const msgs=await DB.getByIndex('messages','scenarioId',id);
-    for(const m of msgs)await DB.del('messages',m.id);
-    // Delete relationship matrix
-    await DB.del('relationships',id);
-    // Delete per-character memories for this scenario
-    const chars=await DB.getAll('characters');
-    for(const c of chars){
-      const memKey=`${c.id}_${id}`;
-      await DB.del('memories',memKey);
+    // BUG 29: Find all branch scenarios that are children of this scenario
+    const allScens=await DB.getAll('scenarios');
+    const branches=allScens.filter(s=>s.parentId===id);
+    let ok;
+    if(branches.length){
+      ok=await Modal.confirm(`Delete scenario and ${branches.length} branch${branches.length>1?'es':''}? All messages will be lost.`,{ok:'Delete All',danger:true});
+    }else{
+      ok=await Modal.confirm('Delete scenario? All messages will be lost.',{ok:'Delete',danger:true});
     }
-    Toast.s('Scenario deleted');Scr.dashboard();
+    if(!ok)return;
+    // BUG 29: Clean up branch data first
+    const cleanupScenario=async(scenId)=>{
+      await DB.del('scenarios',scenId);
+      const msgs=await DB.getByIndex('messages','scenarioId',scenId);
+      for(const m of msgs)await DB.del('messages',m.id);
+      await DB.del('relationships',scenId);
+      const chars=await DB.getAll('characters');
+      for(const c of chars){
+        await DB.del('memories',`${c.id}_${scenId}`);
+      }
+    };
+    // Delete all branches first
+    for(const branch of branches){
+      await cleanupScenario(branch.id);
+    }
+    // Then delete the main scenario
+    await cleanupScenario(id);
+    Toast.s(branches.length?`Scenario and ${branches.length} branch${branches.length>1?'es':''} deleted`:'Scenario deleted');
+    Scr.dashboard();
   },
   async scenCreate(){
     const el=$('#screen-scenario-create');if(!el)return;
