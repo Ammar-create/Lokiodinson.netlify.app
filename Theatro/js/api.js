@@ -149,10 +149,17 @@ const API={
 
   // Image endpoint — positional args for backward compat with all callers.
   // Auth key passed as ?key= query param because <img> tags cannot send Authorization headers.
+  // Supports Aqua image models via 'aqua:' prefix — routes to Aqua API base.
   imageUrl(prompt, w=512, h=512, model=null){
-    model=model||ST.settings.imgModel||'zimage';
+    model=model||ST.settings.imgModel||'flux';
+    // Aqua image models: route to Aqua API
+    if(model.startsWith('aqua:')&&ST.settings.aquaKey){
+      const realId=model.slice(5);
+      return`https://api.aquadevs.com/v1/image/${encodeURIComponent(prompt)}?model=${realId}&width=${w}&height=${h}&nologo=true&key=${encodeURIComponent(ST.settings.aquaKey)}`;
+    }
     const key=API._pollinationsKey();
-    return`https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?model=${model}&width=${w}&height=${h}&nologo=true&key=${encodeURIComponent(key)}`;
+    const actualModel=model.startsWith('aqua:')?model.slice(5):model;
+    return`https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?model=${actualModel}&width=${w}&height=${h}&nologo=true&key=${encodeURIComponent(key)}`;
   },
 
   // TTS — POST to /v1/audio/speech with full error logging, GET fallback if POST fails.
