@@ -1,0 +1,1314 @@
+/* ============================================
+   VOYAGE AI — Chat & Typing Bar Styles
+   File 5 of 16: css/chat.css
+   
+   Covers:
+   1.  Message list
+   2.  User messages
+   3.  AI messages
+   4.  Thinking block
+   5.  Message actions
+   6.  Stats bar
+   7.  Markdown rendering
+   8.  Code blocks
+   9.  Inline media (images, videos)
+   10. Tool call results
+   11. Empty state & templates
+   12. Typing indicator
+   13. Private badge
+   14. Typing bar (input, send, toolbar)
+   ============================================ */
+
+
+/* =============================================
+   1. MESSAGE LIST
+   ============================================= */
+
+.v-ch-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 24px 0;
+  max-width: 780px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Scroll-to-bottom anchor */
+.v-ch-scroll-anchor {
+  height: 1px;
+  flex-shrink: 0;
+}
+
+
+/* =============================================
+   2. USER MESSAGES
+   ============================================= */
+
+.v-ch-msg-user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.v-ch-msg-bubble {
+  background: var(--accent);
+  color: #fff;
+  padding: 11px 16px;
+  border-radius: 18px 18px 4px 18px;
+  max-width: 75%;
+  font-size: 14.5px;
+  font-weight: 400;
+  line-height: 1.55;
+  word-break: break-word;
+  position: relative;
+}
+
+/* When editing user message */
+.v-ch-msg-bubble[contenteditable="true"] {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+  cursor: text;
+}
+
+
+/* =============================================
+   3. AI MESSAGES
+   ============================================= */
+
+.v-ch-msg-ai {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 100%;
+}
+
+/* AI message header: avatar + model name */
+.v-ch-msg-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.v-ch-msg-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--accent),
+    hsl(calc(var(--accent-h) + 30), var(--accent-s), var(--accent-l))
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.v-ch-msg-model {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  letter-spacing: -0.01em;
+}
+
+/* AI message body */
+.v-ch-msg-body {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  max-width: 100%;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+
+/* =============================================
+   4. THINKING BLOCK
+   ============================================= */
+
+/* Collapsed pill */
+.v-th-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  margin-bottom: 10px;
+  user-select: none;
+}
+
+.v-th-pill:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-default);
+  color: var(--text-secondary);
+}
+
+.v-th-pill .v-th-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.v-th-pill .v-th-label {
+  white-space: nowrap;
+}
+
+.v-th-pill .v-th-chevron {
+  font-size: 10px;
+  transition: transform var(--transition-normal);
+  flex-shrink: 0;
+}
+
+/* Expanded state */
+.v-th-pill.expanded {
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+}
+
+.v-th-pill.expanded .v-th-chevron {
+  transform: rotate(180deg);
+}
+
+/* Expanded content panel */
+.v-th-content {
+  display: none;
+  padding: 14px 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  line-height: 1.65;
+  font-style: italic;
+  animation: v-fadeUp 0.2s ease;
+}
+
+.v-th-content.show {
+  display: block;
+}
+
+@keyframes v-fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* =============================================
+   5. MESSAGE ACTIONS
+   ============================================= */
+
+.v-ch-msg-actions {
+  display: flex;
+  gap: 2px;
+  margin-top: 6px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+/* Show actions on message hover */
+.v-ch-msg-user:hover .v-ch-msg-actions,
+.v-ch-msg-ai:hover .v-ch-msg-actions {
+  opacity: 1;
+}
+
+/* Keep visible if menu is open */
+.v-ch-msg-actions.menu-open {
+  opacity: 1;
+}
+
+.v-ch-action-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 14px;
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: var(--font-sans);
+}
+
+.v-ch-action-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.v-ch-action-btn:active {
+  transform: scale(0.92);
+}
+
+/* Copied state feedback */
+.v-ch-action-btn.copied {
+  color: var(--success);
+}
+
+
+/* =============================================
+   6. STATS BAR
+   ============================================= */
+
+.v-st-stats {
+  display: flex;
+  gap: 14px;
+  margin-top: 8px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+}
+
+.v-st-stats .v-st-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+/* Streaming in-progress stats */
+.v-st-stats.streaming .v-st-item {
+  animation: v-pulse-text 1.5s ease-in-out infinite;
+}
+
+@keyframes v-pulse-text {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+
+/* =============================================
+   7. MARKDOWN RENDERING
+   ============================================= */
+
+/* Paragraphs */
+.v-ch-msg-body p {
+  margin-bottom: 12px;
+}
+
+.v-ch-msg-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* Bold */
+.v-ch-msg-body strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Italic */
+.v-ch-msg-body em {
+  font-style: italic;
+}
+
+/* Strikethrough */
+.v-ch-msg-body del {
+  text-decoration: line-through;
+  color: var(--text-tertiary);
+}
+
+/* Inline code */
+.v-ch-msg-body code:not(pre code) {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  background: var(--bg-tertiary);
+  padding: 2px 7px;
+  border-radius: 4px;
+  color: var(--accent);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Links */
+.v-ch-msg-body a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--transition-fast);
+}
+
+.v-ch-msg-body a:hover {
+  border-bottom-color: var(--accent);
+}
+
+/* Blockquote */
+.v-ch-msg-body blockquote {
+  border-left: 3px solid var(--accent-medium);
+  padding: 8px 16px;
+  margin: 12px 0;
+  color: var(--text-secondary);
+  font-style: italic;
+  background: var(--accent-glow);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* Unordered list */
+.v-ch-msg-body ul {
+  padding-left: 22px;
+  margin: 10px 0;
+  list-style: disc;
+}
+
+.v-ch-msg-body ul li {
+  margin-bottom: 5px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.v-ch-msg-body ul li::marker {
+  color: var(--text-muted);
+}
+
+/* Ordered list */
+.v-ch-msg-body ol {
+  padding-left: 22px;
+  margin: 10px 0;
+  list-style: decimal;
+}
+
+.v-ch-msg-body ol li {
+  margin-bottom: 5px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.v-ch-msg-body ol li::marker {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+/* Horizontal rule */
+.v-ch-msg-body hr {
+  border: none;
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 16px 0;
+}
+
+/* Tables */
+.v-ch-msg-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 13px;
+}
+
+.v-ch-msg-body thead th {
+  text-align: left;
+  padding: 8px 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 2px solid var(--border-default);
+  background: var(--bg-tertiary);
+}
+
+.v-ch-msg-body thead th:first-child {
+  border-radius: var(--radius-sm) 0 0 0;
+}
+
+.v-ch-msg-body thead th:last-child {
+  border-radius: 0 var(--radius-sm) 0 0;
+}
+
+.v-ch-msg-body tbody td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.v-ch-msg-body tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.v-ch-msg-body tbody tr:nth-child(even) {
+  background: var(--accent-glow);
+}
+
+/* Images inside markdown */
+.v-ch-msg-body img {
+  max-width: 100%;
+  border-radius: var(--radius-md);
+  margin: 8px 0;
+  border: 1px solid var(--border-subtle);
+}
+
+/* Headings inside AI response (rare but possible) */
+.v-ch-msg-body h1,
+.v-ch-msg-body h2,
+.v-ch-msg-body h3 {
+  margin: 16px 0 8px;
+  color: var(--text-primary);
+}
+
+.v-ch-msg-body h1 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.v-ch-msg-body h2 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.v-ch-msg-body h3 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+
+/* =============================================
+   8. CODE BLOCKS
+   ============================================= */
+
+.v-ch-code-block {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin: 14px 0;
+  overflow: hidden;
+}
+
+.v-ch-code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  background: var(--bg-hover);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.v-ch-code-lang {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.v-ch-code-copy {
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: var(--font-sans);
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+}
+
+.v-ch-code-copy:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.v-ch-code-copy.copied {
+  color: var(--success);
+}
+
+.v-ch-code-pre {
+  padding: 14px;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  overflow-x: auto;
+  white-space: pre;
+  scrollbar-width: thin;
+}
+
+.v-ch-code-pre::-webkit-scrollbar {
+  height: 4px;
+}
+
+.v-ch-code-pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.v-ch-code-pre::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 2px;
+}
+
+/* Syntax token classes (optional — for basic highlighting) */
+.v-ch-code-pre .v-tok-keyword {
+  color: #C678DD;
+}
+
+.v-ch-code-pre .v-tok-string {
+  color: #98C379;
+}
+
+.v-ch-code-pre .v-tok-number {
+  color: #D19A66;
+}
+
+.v-ch-code-pre .v-tok-comment {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.v-ch-code-pre .v-tok-function {
+  color: #61AFEF;
+}
+
+.v-ch-code-pre .v-tok-operator {
+  color: #56B6C2;
+}
+
+
+/* =============================================
+   9. INLINE MEDIA
+   ============================================= */
+
+/* Inline generated image */
+.v-ch-inline-image {
+  max-width: 320px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  margin: 10px 0;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.v-ch-inline-image:hover {
+  border-color: var(--accent);
+  transform: scale(1.01);
+}
+
+.v-ch-inline-image .v-ch-img-placeholder {
+  height: 200px;
+  background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-hover));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: var(--text-muted);
+}
+
+.v-ch-inline-image .v-ch-img-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.v-ch-inline-image .v-ch-img-caption {
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-style: italic;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.v-ch-inline-image .v-ch-img-actions {
+  display: flex;
+  gap: 4px;
+  padding: 6px 12px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.v-ch-img-action {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: none;
+  background: none;
+  font-family: var(--font-sans);
+}
+
+.v-ch-img-action:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* Inline video */
+.v-ch-inline-video {
+  max-width: 400px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  margin: 10px 0;
+}
+
+.v-ch-inline-video video {
+  width: 100%;
+  display: block;
+  background: #000;
+}
+
+.v-ch-inline-video .v-ch-video-caption {
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-style: italic;
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Inline audio */
+.v-ch-inline-audio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin: 10px 0;
+  max-width: 360px;
+}
+
+.v-ch-inline-audio audio {
+  flex: 1;
+  height: 32px;
+}
+
+
+/* =============================================
+   10. TOOL CALL RESULTS
+   ============================================= */
+
+.v-ch-tool-call {
+  margin: 10px 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-tertiary);
+}
+
+.v-ch-tool-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg-hover);
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.v-ch-tool-header:hover {
+  background: var(--bg-elevated);
+}
+
+.v-ch-tool-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.v-ch-tool-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.v-ch-tool-status {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.v-ch-tool-status.running {
+  background: rgba(251, 191, 36, 0.1);
+  color: var(--warning);
+}
+
+.v-ch-tool-status.done {
+  background: rgba(52, 211, 153, 0.1);
+  color: var(--success);
+}
+
+.v-ch-tool-status.error {
+  background: rgba(248, 113, 113, 0.1);
+  color: var(--error);
+}
+
+.v-ch-tool-chevron {
+  font-size: 10px;
+  color: var(--text-muted);
+  transition: transform var(--transition-normal);
+}
+
+.v-ch-tool-header.expanded .v-ch-tool-chevron {
+  transform: rotate(180deg);
+}
+
+.v-ch-tool-body {
+  display: none;
+  padding: 12px 14px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-height: 300px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  animation: v-fadeUp 0.15s ease;
+}
+
+.v-ch-tool-body.show {
+  display: block;
+}
+
+/* Search results inside tool call */
+.v-ch-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.v-ch-search-item {
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.v-ch-search-item .v-ch-search-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+  margin-bottom: 4px;
+  text-decoration: none;
+}
+
+.v-ch-search-item .v-ch-search-title:hover {
+  text-decoration: underline;
+}
+
+.v-ch-search-item .v-ch-search-url {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v-ch-search-item .v-ch-search-snippet {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+
+/* =============================================
+   11. EMPTY STATE & TEMPLATES
+   ============================================= */
+
+.v-ch-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.v-ch-empty-icon {
+  font-size: 40px;
+  margin-bottom: 16px;
+  opacity: 0.8;
+}
+
+.v-ch-empty-greeting {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.v-ch-empty-greeting .v-ch-empty-accent {
+  color: var(--accent);
+}
+
+.v-ch-empty-sub {
+  font-size: 15px;
+  color: var(--text-tertiary);
+  margin-bottom: 32px;
+  line-height: 1.5;
+}
+
+/* Quick prompt chips above templates */
+.v-ch-empty-chips {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 36px;
+}
+
+.v-ch-empty-chip {
+  padding: 8px 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  white-space: nowrap;
+}
+
+.v-ch-empty-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+
+/* Template cards — horizontal scroll */
+.v-ch-templates {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  width: 100%;
+  max-width: 560px;
+  scrollbar-width: none;
+}
+
+.v-ch-templates::-webkit-scrollbar {
+  display: none;
+}
+
+.v-ch-template-card {
+  min-width: 140px;
+  max-width: 140px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+
+.v-ch-template-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.v-ch-template-thumb {
+  height: 80px;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.v-ch-template-label {
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* =============================================
+   12. TYPING INDICATOR
+   ============================================= */
+
+.v-ch-typing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.v-ch-typing-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--accent),
+    hsl(calc(var(--accent-h) + 30), var(--accent-s), var(--accent-l))
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.v-ch-typing-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 18px;
+}
+
+.v-ch-typing-dots .v-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: v-typing-bounce 1.4s ease-in-out infinite;
+}
+
+.v-ch-typing-dots .v-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.v-ch-typing-dots .v-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes v-typing-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+
+/* =============================================
+   13. PRIVATE BADGE
+   ============================================= */
+
+.v-pv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--warning);
+  white-space: nowrap;
+}
+
+.v-pv-badge .v-pv-icon {
+  font-size: 12px;
+}
+
+
+/* =============================================
+   14. TYPING BAR
+   ============================================= */
+
+.v-typ-bar {
+  border-top: 1px solid var(--border-subtle);
+  padding: 14px 0 12px;
+  background: var(--bg-primary);
+  flex-shrink: 0;
+  max-width: 780px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Hidden when not on chat page */
+.v-typ-bar.hidden {
+  display: none;
+}
+
+/* Input wrapper — rounded, multi-element */
+.v-typ-wrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  padding: 6px 8px 6px 6px;
+  transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.v-typ-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Attach button (left) */
+.v-typ-attach {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: none;
+  background: none;
+  font-size: 20px;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.v-typ-attach:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+/* Text input */
+.v-typ-input {
+  flex: 1;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font-size: 14.5px;
+  font-family: var(--font-sans);
+  outline: none;
+  padding: 8px 4px;
+  resize: none;
+  min-height: 20px;
+  max-height: 160px;
+  line-height: 1.45;
+  overflow-y: auto;
+}
+
+.v-typ-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Send button (right) */
+.v-typ-send {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  flex-shrink: 0;
+  transition: all var(--transition-normal);
+  padding: 0;
+}
+
+.v-typ-send:hover {
+  filter: brightness(1.12);
+  box-shadow: var(--shadow-glow);
+}
+
+.v-typ-send:active {
+  transform: scale(0.92);
+}
+
+/* Disabled state when streaming */
+.v-typ-send.streaming {
+  background: var(--bg-hover);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.v-typ-send.streaming:hover {
+  filter: none;
+  box-shadow: none;
+}
+
+/* Toolbar below input */
+.v-typ-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding: 0 4px;
+}
+
+/* Left side: model indicator */
+.v-typ-model-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  transition: all var(--transition-fast);
+}
+
+.v-typ-model-indicator:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.v-typ-model-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  flex-shrink: 0;
+}
+
+/* Offline indicator */
+.v-typ-model-dot.offline {
+  background: var(--error);
+}
+
+.v-typ-model-dot.loading {
+  background: var(--warning);
+  animation: v-pulse-text 1s ease-in-out infinite;
+}
+
+/* Right side: tool chips */
+.v-typ-tools {
+  display: flex;
+  gap: 4px;
+}
+
+.v-typ-chip {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.v-typ-chip:hover {
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+}
+
+.v-typ-chip.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent-medium);
+}
+
+
+/* =============================================
+   RESPONSIVE
+   ============================================= */
+
+@media (max-width: 768px) {
+  .v-ch-messages {
+    padding: 16px 0;
+    gap: 20px;
+  }
+
+  .v-ch-msg-bubble {
+    max-width: 88%;
+  }
+
+  .v-ch-msg-body {
+    font-size: 14px;
+  }
+
+  .v-ch-msg-actions {
+    opacity: 1; /* always visible on mobile */
+  }
+
+  .v-ch-empty-greeting {
+    font-size: 22px;
+  }
+
+  .v-ch-empty-chips {
+    gap: 6px;
+  }
+
+  .v-ch-empty-chip {
+    font-size: 11px;
+    padding: 6px 12px;
+  }
+
+  .v-ch-template-card {
+    min-width: 120px;
+    max-width: 120px;
+  }
+
+  .v-ch-template-thumb {
+    height: 64px;
+  }
+
+  .v-typ-toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 520px) {
+  .v-ch-empty {
+    padding: 32px 16px;
+  }
+
+  .v-ch-empty-greeting {
+    font-size: 20px;
+  }
+
+  .v-ch-inline-image {
+    max-width: 260px;
+  }
+
+  .v-ch-inline-video {
+    max-width: 100%;
+  }
+
+  .v-typ-wrap {
+    border-radius: var(--radius-lg);
+  }
+
+  .v-typ-chip {
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+}
