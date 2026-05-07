@@ -54,10 +54,27 @@ const VOICES=[
   {id:'dan',name:'Dan',desc:'Casual, friendly'},
 ];
 // FIX #15: Model arrays for image/TTS/STT pickers
+// Expanded with all Pollinations + Aqua image models
 const IMG_MODELS=[
-  {id:'zimage',name:'ZImage',provider:'pollinations',desc:'Default image model',rec:true},
-  {id:'flux',name:'Flux',provider:'pollinations',desc:'Fast image generation'},
-  {id:'dall-e-3',name:'DALL-E 3',provider:'pollinations',desc:'OpenAI image model'},
+  // Pollinations image models
+  {id:'flux',name:'Flux',provider:'pollinations',desc:'Fast, high-quality image generation',rec:true},
+  {id:'gptimage-large',name:'GPT Image Large',provider:'pollinations',desc:'Large OpenAI image model'},
+  {id:'seedream',name:'Seedream',provider:'pollinations',desc:'Seedream image generation'},
+  {id:'kontext',name:'Kontext',provider:'pollinations',desc:'Kontext image model'},
+  {id:'zimage',name:'ZImage',provider:'pollinations',desc:'ZImage default model'},
+  {id:'gptimage',name:'GPT Image',provider:'pollinations',desc:'Standard GPT image model'},
+  {id:'seedream5',name:'Seedream 5',provider:'pollinations',desc:'Seedream 5 image model'},
+  // Aqua image models — prefixed with 'aqua:'
+  {id:'aqua:flux-2',name:'Flux 2',provider:'aqua',desc:'Flux 2 via Aqua'},
+  {id:'aqua:zimage',name:'ZImage',provider:'aqua',desc:'ZImage via Aqua'},
+  {id:'aqua:qwen-image',name:'Qwen Image',provider:'aqua',desc:'Qwen image generation via Aqua'},
+  {id:'aqua:nanobanana',name:'NanoBanana',provider:'aqua',desc:'NanoBanana image model via Aqua'},
+  {id:'aqua:gptimage-1.5',name:'GPT Image 1.5',provider:'aqua',desc:'GPT Image 1.5 via Aqua'},
+  {id:'aqua:gptimage-2',name:'GPT Image 2',provider:'aqua',desc:'GPT Image 2 via Aqua'},
+  {id:'aqua:imagen4',name:'Imagen 4',provider:'aqua',desc:'Google Imagen 4 via Aqua'},
+  {id:'aqua:seedream',name:'Seedream 5 Lite',provider:'aqua',desc:'Seedream 5 Lite via Aqua'},
+  {id:'aqua:midjourney',name:'Midjourney 7',provider:'aqua',desc:'Midjourney 7 via Aqua'},
+  {id:'aqua:grok-image',name:'Grok Imagine 1.0',provider:'aqua',desc:'Grok Imagine 1.0 via Aqua'},
 ];
 // BUG 5: Updated TTS_MODELS with confirmed valid Pollinations TTS models
 const TTS_MODELS=[
@@ -86,7 +103,7 @@ const ST={
     aquaKey:'',customUrl:'',customKey:'',
     // BUG 4: Updated default model settings
     charModel:'openai-fast',ctrlModel:'openai',
-    imgModel:'zimage',ttsModel:'openai-audio',
+    imgModel:'flux',ttsModel:'openai-audio',
     // FIX #14: sttModel was missing from defaults
     sttModel:'whisper-large-v3',
     defVoice:'nova',
@@ -94,6 +111,8 @@ const ST={
     // Creative Controller dedicated model settings (null = falls back to ctrlModel / imgModel)
     creativeModel:null,
     creativeImgModel:null,
+    // Tweaks: Custom image prompt mode (when ON, "Generate Image" opens a prompt input instead of auto-generating from description)
+    customImagePrompt:false,
   },
   // FIX #17: Rate limit tracking state
   rateLimits:{
