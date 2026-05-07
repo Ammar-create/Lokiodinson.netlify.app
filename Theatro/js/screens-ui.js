@@ -22,7 +22,7 @@ Object.assign(Scr,{
     const el=$('#screen-settings');if(!el)return;
     const s=ST.settings;const tab=ST.settTab||'providers';
     el.innerHTML=`<nav class="sett-nav">
-      ${[['providers','🔑','API Keys'],['models','🤖','Models'],['controllers','⚙','Controllers'],['memory','🧠','Memory'],['storage','💾','Storage']].map(([id,ico,label])=>`
+      ${[['providers','🔑','API Keys'],['models','🤖','Models'],['controllers','⚙','Controllers'],['memory','🧠','Memory'],['tweaks','⚡','Tweaks'],['storage','💾','Storage']].map(([id,ico,label])=>`
         <div class="sett-ni ${tab===id?'on':''}" onclick="ST.settTab='${id}';Scr.settings()"><span>${ico}</span><span>${esc(label)}</span></div>
       `).join('')}
     </nav>
@@ -52,7 +52,7 @@ Object.assign(Scr,{
           <!-- BUG 33: Replaced 'llama-scout' fallbacks with 'openai-fast'/'openai' -->
           <div class="field"><label class="lbl">Character Default</label>${Scr.mpHtml('s-cm',s.charModel||'openai-fast')}</div>
           <div class="field"><label class="lbl">Controller Default</label>${Scr.mpHtml('s-ctm',s.ctrlModel||'openai')}</div>
-          <div class="field"><label class="lbl">Image Model</label>${Scr.imgMpHtml('s-imgm',s.imgModel||'zimage')}</div>
+          <div class="field"><label class="lbl">Image Model</label>${Scr.imgMpHtml('s-imgm',s.imgModel||'flux')}</div>
           <div class="field"><label class="lbl">TTS Model</label>${Scr.ttsMpHtml('s-ttsm',s.ttsModel||'openai-audio')}</div>
           <div class="field"><label class="lbl">STT Model</label>${Scr.sttMpHtml('s-sttm',s.sttModel||'whisper-large-v3')}</div>
           <div class="field"><label class="lbl">Default Voice</label>${Scr.vpHtml('s-dv',s.defVoice||'nova')}</div>
@@ -61,7 +61,7 @@ Object.assign(Scr,{
           <div class="sett-gt">Creative Controller</div>
           <p style="font-size:11px;color:var(--tmut)">Used for character auto-creation, scenario auto-creation, and character image generation. Falls back to the default controller/image model if not set.</p>
           <div class="field"><label class="lbl">Text Model</label>${Scr.mpHtml('s-crtm',s.creativeModel||s.ctrlModel||'openai')}</div>
-          <div class="field"><label class="lbl">Image Model</label>${Scr.imgMpHtml('s-crimgm',s.creativeImgModel||s.imgModel||'zimage')}</div>
+          <div class="field"><label class="lbl">Image Model</label>${Scr.imgMpHtml('s-crimgm',s.creativeImgModel||s.imgModel||'flux')}</div>
         </div>
         <button class="btn bp bsm" onclick="Scr.saveSettings()">Save Model Settings</button>
       </div>
@@ -82,6 +82,24 @@ Object.assign(Scr,{
           <div class="field" style="flex-direction:row;align-items:center;gap:12px"><label class="lbl" style="flex-shrink:0">Short-term Window</label><input type="number" min="5" max="100" value="${s.stWindow||30}" style="width:70px" oninput="ST.settings.stWindow=parseInt(this.value)||30;Scr.markSettingsDirty()"><span style="font-size:11px;color:var(--tmut)">messages in context</span></div>
         </div>
         <button class="btn bp bsm" onclick="Scr.saveSettings()">Save Memory Settings</button>
+      </div>
+      <div class="sett-sec ${tab==='tweaks'?'on':''}">
+        <div class="sett-grp">
+          <div class="sett-gt">Character Image Generation</div>
+          <div class="tgl-wrap" onclick="ST.settings.customImagePrompt=!ST.settings.customImagePrompt;$('#tweak-cip').classList.toggle('on',ST.settings.customImagePrompt);Scr.markSettingsDirty()">
+            <div class="tgl ${s.customImagePrompt?'on':''}" id="tweak-cip"></div>
+            <span class="tgl-lbl">Custom Prompt Field — When generating character image, show prompt input instead of auto-using description</span>
+          </div>
+        </div>
+        <div class="sett-grp">
+          <div class="sett-gt">Memory Management</div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <button class="btn bs bsm" onclick="Scr.resetMemoryModal()">${I('refresh',12)} Reset Memory (per character, per scenario)</button>
+            <button class="btn bd bsm" onclick="Scr.clearAllMemories()">${I('trash',12)} Clear All Memories (all characters, all scenarios)</button>
+            <p style="font-size:11px;color:var(--tmut);margin-top:4px">Reset Memory lets you wipe a specific character's memory in a specific scenario. Clear All Memories removes all memory data — use with caution.</p>
+          </div>
+        </div>
+        <button class="btn bp bsm" onclick="Scr.saveSettings()">Save Tweaks</button>
       </div>
       <div class="sett-sec ${tab==='storage'?'on':''}">
         <div class="sett-grp">
@@ -123,6 +141,121 @@ Object.assign(Scr,{
   async clearAll(){
     const ok=await Modal.confirm('Permanently delete ALL data? Cannot be undone.',{ok:'Delete Everything',danger:true});if(!ok)return;
     const r=indexedDB.deleteDatabase('theatro');r.onsuccess=()=>{Toast.s('All data cleared. Reloading...');setTimeout(()=>location.reload(),1500)};
+  },
+
+  // ---- MEMORY RESET FUNCTIONS ----
+  async resetMemoryModal(){
+    const allChars=await DB.getAll('characters');
+    if(!allChars.length){Toast.e('No characters found');return;}
+    let selectedCharId=null;
+    let selectedScenId=null;
+    // Step 1: pick character
+    const charPickerHtml=`
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="plbl">Select Character</div>
+        <div class="mlist" style="max-height:300px;overflow-y:auto">
+          ${allChars.map(c=>`
+            <div class="mopt char-opt" data-char-id="${c.id}" data-char-name="${esc(c.name)}" onclick="Scr._tempCharSelected('${c.id}','${esc(c.name)}')" style="cursor:pointer">
+              <div><strong>${esc(c.name)}</strong></div>
+              <div style="font-size:11px;color:var(--tdim)">Model: ${c.modelId||'default'}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    Modal.open({title:'Reset Memory — Select Character',content:()=>charPickerHtml});
+    // We need a temporary global callback for character selection
+    window._tempCharSelected=(charId,charName)=>{
+      selectedCharId=charId;
+      Modal.close();
+      Scr._showScenarioPickerForMemoryReset(charId,charName);
+    };
+  },
+  async _showScenarioPickerForMemoryReset(charId,charName){
+    // Load all memory keys for this character
+    const db=await DB.open();
+    const tx=db.transaction('memories','readonly');
+    const store=tx.objectStore('memories');
+    const allKeys=await store.getAllKeys();
+    const memKeys=allKeys.filter(k=>k.startsWith(`${charId}_`));
+    // Extract scenario IDs from keys (format: charId_scenarioId)
+    const scenIds=new Set();
+    for(const key of memKeys){
+      const parts=key.split('_');
+      if(parts.length>=2){
+        const scenId=parts.slice(1).join('_');
+        scenIds.add(scenId);
+      }
+    }
+    // If no memories, show message
+    if(scenIds.size===0){
+      Toast.i(`No memories found for ${charName}`);
+      return;
+    }
+    // Load scenario details
+    const allScens=await DB.getAll('scenarios');
+    const scenariosWithMem=[];
+    for(const s of allScens){
+      if(scenIds.has(s.id))scenariosWithMem.push(s);
+    }
+    // If still empty, maybe scenario was deleted but memory remains
+    if(scenariosWithMem.length===0){
+      const ok=await Modal.confirm(`${charName} has memories in ${scenIds.size} scenario(s) that no longer exist. Clear these orphaned memories?`,{ok:'Clear Orphans'});
+      if(ok){
+        for(const key of memKeys){
+          await DB.del('memories',key);
+        }
+        // Also clear from ST.chat if currently in chat
+        if(ST.chat.charMems){
+          for(const key of memKeys){
+            delete ST.chat.charMems[key];
+          }
+        }
+        Toast.s(`Cleared ${memKeys.length} orphaned memory entries for ${charName}`);
+      }
+      return;
+    }
+    scenariosWithMem.sort((a,b)=>a.name.localeCompare(b.name));
+    const scenPickerHtml=`
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="plbl">Character: ${esc(charName)}</div>
+        <div class="plbl">Select Scenario (memories will be cleared)</div>
+        <div class="mlist" style="max-height:300px;overflow-y:auto">
+          ${scenariosWithMem.map(s=>`
+            <div class="mopt" onclick="Scr._confirmMemoryReset('${charId}','${s.id}','${esc(charName)}','${esc(s.name)}')" style="cursor:pointer">
+              <div><strong>${esc(s.name)}</strong></div>
+              <div style="font-size:11px;color:var(--tdim)">${s.lore?.slice(0,80)||'No lore'}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    Modal.open({title:'Reset Memory — Select Scenario',content:()=>scenPickerHtml});
+  },
+  async _confirmMemoryReset(charId,scenId,charName,scenName){
+    Modal.close();
+    const ok=await Modal.confirm(`Clear memory for ${charName} in scenario "${scenName}"? This cannot be undone.`,{ok:'Clear Memory',danger:true});
+    if(!ok)return;
+    const key=`${charId}_${scenId}`;
+    // Delete from DB
+    await DB.del('memories',key);
+    // Also clear from current in-memory chat state if this scenario is active
+    if(ST.chat.scenId===scenId && ST.chat.charMems){
+      delete ST.chat.charMems[key];
+    }
+    Toast.s(`Cleared memory for ${charName} in "${scenName}"`);
+  },
+  async clearAllMemories(){
+    const ok=await Modal.confirm('This will delete ALL memories for ALL characters in ALL scenarios. This action cannot be undone. Continue?',{ok:'Delete All Memories',danger:true});
+    if(!ok)return;
+    // Clear entire memories store
+    const db=await DB.open();
+    const tx=db.transaction('memories','readwrite');
+    const store=tx.objectStore('memories');
+    await store.clear();
+    // Also clear in-memory
+    ST.chat.charMems={};
+    Toast.s('All memories cleared');
   },
 
   // ---- MODEL FETCH & PICKER ----
@@ -193,19 +326,31 @@ Object.assign(Scr,{
     Modal.close();
   },
 
-  // FIX #15: Image model picker
+  // FIX #15: Image model picker with provider separation (Pollinations vs Aqua)
   imgMpHtml(id,selId){
     const m=IMG_MODELS.find(x=>x.id===selId);
-    return`<div><button class="mpbtn" onclick="Scr.openImgMP('${id}')" id="${id}-btn"><span id="${id}-lbl">${esc(m?.name||selId||'Select image model')}</span><span class="arr">▼</span></button><input type="hidden" id="${id}" value="${esc(selId||'zimage')}"></div>`;
+    const provider=m?.provider||'pollinations';
+    return`<div><button class="mpbtn" onclick="Scr.openImgMP('${id}')" id="${id}-btn"><span id="${id}-lbl">${esc(m?.name||selId||'Select image model')}</span><span class="mp-prov" style="color:${provider==='aqua'?'var(--criml)':'var(--gold)'}">${provider==='aqua'?'A':'P'}</span><span class="arr">▼</span></button><input type="hidden" id="${id}" value="${esc(selId||'flux')}"></div>`;
   },
   openImgMP(id){
     const cur=$(`#${id}`)?.value;
-    Modal.open({title:'Select Image Model',narrow:true,content:()=>`<div class="mlist">${
-      IMG_MODELS.map(m=>`<div class="mopt ${m.id===cur?'sel':''}" onclick="Scr.selImgModel('${id}','${m.id}','${esc(m.name)}')">
-        <div><div style="font-weight:600">${esc(m.name)}</div><div class="mopt-id">${esc(m.id)}</div></div>
-        ${m.rec?'<span class="mopt-rec">★ Rec</span>':''}
-      </div>`).join('')
-    }</div>`});
+    const pollis=IMG_MODELS.filter(m=>m.provider==='pollinations');
+    const aquas=IMG_MODELS.filter(m=>m.provider==='aqua');
+    Modal.open({title:'Select Image Model',narrow:true,content:()=>`<div style="display:flex;flex-direction:column;gap:10px">
+      <div class="plbl">📡 Pollinations</div>
+      <div class="mlist">${
+        pollis.map(m=>`<div class="mopt ${m.id===cur?'sel':''}" onclick="Scr.selImgModel('${id}','${m.id}','${esc(m.name)}')">
+          <div><div style="font-weight:600">${esc(m.name)}</div><div class="mopt-id">${esc(m.id)}</div><div style="font-size:11px;color:var(--tdim)">${esc(m.desc||'')}</div></div>
+          ${m.rec?'<span class="mopt-rec">★ Rec</span>':''}
+        </div>`).join('')
+      }</div>
+      <div class="plbl">🔱 Aqua ${!ST.settings.aquaKey?'<span style="font-size:9px">(add key in Settings)</span>':''}</div>
+      <div class="mlist">${
+        aquas.length?aquas.map(m=>`<div class="mopt ${m.id===cur?'sel':''}" onclick="Scr.selImgModel('${id}','${m.id}','${esc(m.name)}')">
+          <div><div style="font-weight:600">${esc(m.name)}</div><div class="mopt-id">${esc(m.id.replace('aqua:',''))}</div></div>
+        </div>`).join(''):'<div style="padding:10px;color:var(--tmut);font-size:11px">No Aqua image models available. Add API key in Settings → Providers.</div>'
+      }</div>
+    </div>`});
   },
   selImgModel(id,val,name){
     const inp=$(`#${id}`);const lbl=$(`#${id}-lbl`);
