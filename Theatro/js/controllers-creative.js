@@ -54,7 +54,7 @@ Respond ONLY with valid JSON — no other text, no markdown fences:
   // ===== CREATIVE CONTROLLER — Character Image Generation =====
   async generateCharacterImages(characters){
     const model=ST.settings.creativeModel||ST.settings.ctrlModel||'openai';
-    const imgModel=ST.settings.creativeImgModel||ST.settings.imgModel||'zimage';
+    const imgModel=ST.settings.creativeImgModel||ST.settings.imgModel||'flux';
     Ctrl.dlog(`Creative Controller: generating ${characters.length} character image(s) (prompt model: ${model}, image model: ${imgModel})...`,'dinfo');
     const results=[];
     for(const char of characters){
@@ -68,14 +68,19 @@ Respond ONLY with a valid JSON object — no other text, no markdown fences:
         let w=512,h=512;
         if(parsed.aspect==='16:9'){w=768;h=432;}else if(parsed.aspect==='9:16'){w=432;h=768;}
         const prompt=parsed.prompt||`${char.appearance||char.name}, portrait`;
-        const imageUrl=API.imageUrl(prompt,w,h,imgModel);
+        const imageUrl=await API.generateImageUrl(prompt,w,h,imgModel);
         results.push({charId:char.id,imageUrl,prompt,style:parsed.style||'cinematic'});
         Ctrl.dlog(`Image prompt generated for ${char.name}`,'ok');
       }catch(err){
         Ctrl.dlog(`Image generation failed for ${char.name}: ${err.message}`,'warn');
         const fallbackPrompt=`${char.appearance||char.name}, character portrait, detailed`;
-        const imageUrl=API.imageUrl(fallbackPrompt,512,512,imgModel);
-        results.push({charId:char.id,imageUrl,prompt:fallbackPrompt,style:'cinematic',fallback:true});
+        try{
+          const imageUrl=await API.generateImageUrl(fallbackPrompt,512,512,imgModel);
+          results.push({charId:char.id,imageUrl,prompt:fallbackPrompt,style:'cinematic',fallback:true});
+        }catch(fbErr){
+          Ctrl.dlog(`Fallback image generation also failed: ${fbErr.message}`,'err');
+          results.push({charId:char.id,imageUrl:null,prompt:fallbackPrompt,style:'cinematic',fallback:true,error:true});
+        }
       }
     }
     return results;
