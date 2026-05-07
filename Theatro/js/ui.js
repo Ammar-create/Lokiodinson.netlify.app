@@ -15,7 +15,12 @@ const Toast={
 
 // ===== MODAL =====
 const Modal={
+  _closeTimer: null,  // track pending close timeout so Modal.open() can cancel it
+
   open(opts){
+    // Cancel any pending close timer from a previous Modal.close()
+    // This prevents a stale timeout from wiping the new modal content.
+    if(Modal._closeTimer){clearTimeout(Modal._closeTimer);Modal._closeTimer=null;}
     const ov=$('#modal-overlay');
     const{title,content,footer,wide,narrow,onClose,afterOpen}=opts;
     ov.innerHTML=`<div class="modal ${wide?'wide':''} ${narrow?'narrow':''}">
@@ -34,7 +39,9 @@ const Modal={
   close(cb){
     const ov=$('#modal-overlay');
     ov.classList.remove('open');
-    setTimeout(()=>{ov.innerHTML=''},200);
+    // Store the timer reference so Modal.open() can cancel it if
+    // a new modal opens before the 200ms cleanup fires.
+    Modal._closeTimer=setTimeout(()=>{ov.innerHTML='';Modal._closeTimer=null;},200);
     if(cb)cb();
   },
   confirm(msg,opts={}){
