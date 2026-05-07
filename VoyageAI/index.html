@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voyage AI</title>
+  <meta name="description" content="Browser-native AI workstation. Zero dependencies. Zero frameworks.">
+  <meta name="theme-color" content="#09090B">
+
+  <!-- Fonts: DM Sans (UI) + JetBrains Mono (code/stats) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Stylesheets (cascade: tokens → structure → components → chat → settings) -->
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/chat.css">
+  <link rel="stylesheet" href="css/settings.css">
+
+  <!-- Favicon: inline SVG compass -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
+</head>
+
+<body>
+
+  <!-- ================================================================
+       ROOT APPLICATION CONTAINER
+       Everything lives inside #v-app. JS modules hook into IDs.
+       ================================================================ -->
+  <div id="v-app" class="v-app">
+
+    <!-- ============================================================
+         SIDEBAR
+         Fixed 280px column. Contains nav, chat list, user card.
+         Mobile: overlay with .v-sb-open toggle class.
+         ============================================================ -->
+    <aside id="v-sidebar" class="v-sidebar" aria-label="Sidebar navigation">
+
+      <!-- Sidebar Header: Brand + New Chat -->
+      <div class="v-sb-header">
+        <span class="v-sb-brand">🧭 Voyage AI</span>
+        <button
+          id="v-sb-new-chat"
+          class="v-ct-btn-icon"
+          title="New chat"
+          aria-label="Create new chat"
+        >✎</button>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="v-sb-nav" aria-label="Main navigation">
+        <div id="v-sb-nav-chat" class="v-sb-nav-item active" role="button" tabindex="0" aria-current="page">
+          <span class="v-sb-nav-icon">💬</span>
+          <span class="v-sb-nav-label">Chat</span>
+        </div>
+        <div id="v-sb-nav-images" class="v-sb-nav-item" role="button" tabindex="0">
+          <span class="v-sb-nav-icon">🎨</span>
+          <span class="v-sb-nav-label">Image Generation</span>
+        </div>
+        <div id="v-sb-nav-settings" class="v-sb-nav-item" role="button" tabindex="0">
+          <span class="v-sb-nav-icon">⚙</span>
+          <span class="v-sb-nav-label">Settings</span>
+        </div>
+      </nav>
+
+      <!-- Chat History List -->
+      <div id="v-sb-chat-list" class="v-sb-chat-list" role="list" aria-label="Chat history">
+        <!-- Populated by js/ui.js → renderChatList()
+             Each item structure:
+             <div class="v-sb-chat-item active" role="listitem" data-chat-id="...">
+               <span class="v-sb-chat-icon">💬</span>
+               <span class="v-sb-chat-label">Chat title</span>
+               <button class="v-sb-chat-menu" aria-label="Chat options">⋯</button>
+             </div>
+        -->
+      </div>
+
+      <!-- User Card at Bottom -->
+      <div class="v-sb-footer">
+        <div id="v-sb-user-card" class="v-sb-user" role="button" tabindex="0" aria-label="User profile and settings">
+          <div class="v-sb-user-avatar">V</div>
+          <div class="v-sb-user-info">
+            <div class="v-sb-user-name">User</div>
+            <div class="v-sb-user-plan">Not configured</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Sidebar overlay backdrop (mobile only) -->
+    <div class="v-sb-overlay" aria-hidden="true"></div>
+
+
+    <!-- ============================================================
+         MAIN AREA
+         Contains topbar, page containers, and typing bar.
+         ============================================================ -->
+    <main id="v-main" class="v-main">
+
+      <!-- ========================================
+           TOP BAR
+           ======================================== -->
+      <header id="v-topbar" class="v-tb-wrapper">
+        <button
+          id="v-tb-hamburger"
+          class="v-tb-hamburger v-ct-btn-icon"
+          aria-label="Toggle sidebar"
+          title="Toggle sidebar"
+        >☰</button>
+
+        <div class="v-tb-title-area">
+          <h1 id="v-tb-chat-title" class="v-tb-chat-title">New Chat</h1>
+          <span id="v-tb-chat-model-info" class="v-tb-chat-model-info"></span>
+        </div>
+
+        <div class="v-tb-actions">
+          <span id="v-tb-private-badge" class="v-pv-badge" style="display:none" aria-label="Private chat">🔒 Private</span>
+          <button
+            id="v-tb-private-btn"
+            class="v-ct-btn-icon"
+            title="Toggle private mode"
+            aria-label="Toggle private mode"
+          >🔒</button>
+          <button
+            id="v-tb-edit-chat"
+            class="v-ct-btn-icon"
+            title="Rename chat"
+            aria-label="Rename chat"
+          >✎</button>
+          <div class="v-md-module-wrap">
+            <button
+              id="v-tb-module-btn"
+              class="v-md-trigger"
+              aria-haspopup="true"
+              aria-expanded="false"
+              aria-label="Select model"
+            >
+              <span id="v-md-trigger-label">Module</span>
+              <span class="v-md-chevron">▾</span>
+            </button>
+
+            <!-- Module Selector Dropdown -->
+            <div id="v-md-dropdown" class="v-md-dropdown" role="menu" aria-label="Provider and model selection" style="display:none">
+              <div id="v-md-providers-area" class="v-md-providers">
+                <!-- Populated by js/ui.js → renderModuleSelector()
+                     Each provider:
+                     <div class="v-md-provider active" data-provider-id="...">
+                       <div class="v-md-provider-icon">A</div>
+                       <div class="v-md-provider-info">
+                         <div class="v-md-provider-name">AquaDevs</div>
+                         <div class="v-md-provider-desc">34 standard + 17 premium</div>
+                       </div>
+                       <span class="v-md-provider-check">✓</span>
+                     </div>
+                     <div class="v-md-models-list">
+                       <div class="v-md-model active" data-model-id="...">gpt-5</div>
+                       ...
+                     </div>
+                -->
+              </div>
+              <div class="v-md-divider"></div>
+              <div id="v-md-add-provider" class="v-md-add-provider" role="menuitem" tabindex="0">
+                <span class="v-md-add-icon">+</span>
+                <span class="v-md-add-text">Add Provider</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+
+      <!-- ========================================
+           PAGE: CHAT
+           Default visible page. Messages + empty state.
+           ======================================== -->
+      <section id="v-page-chat" class="v-ch-page" role="main" aria-label="Chat">
+
+        <!-- Empty/Welcome State -->
+        <div id="v-ch-empty-state" class="v-ch-empty">
+          <div class="v-ch-empty-icon">🧭</div>
+          <h2 class="v-ch-empty-greeting">What are you working on?</h2>
+          <p class="v-ch-empty-sub">Start a conversation or try a template below</p>
+
+          <!-- Template Cards (scrollable) -->
+          <div id="v-ch-templates" class="v-ch-templates" role="list" aria-label="Template suggestions">
+            <!-- Populated by js/ui.js → renderEmptyState()
+                 Each card:
+                 <div class="v-ch-template-card" role="listitem" data-template-id="...">
+                   <div class="v-ch-template-thumb">✍️</div>
+                   <div class="v-ch-template-label">Write code</div>
+                 </div>
+            -->
+          </div>
+        </div>
+
+        <!-- Message List (hidden when empty state is shown) -->
+        <div id="v-ch-messages" class="v-ch-messages" role="log" aria-live="polite" aria-label="Chat messages" style="display:none">
+          <!-- Populated by js/chat.js → renderMessages()
+               User message:
+               <div class="v-ch-msg-user" data-msg-id="...">
+                 <div class="v-ch-msg-bubble">...</div>
+                 <div class="v-ch-msg-actions">...</div>
+               </div>
+
+               AI message:
+               <div class="v-ch-msg-ai" data-msg-id="...">
+                 <div class="v-ch-msg-header">
+                   <div class="v-ch-msg-avatar">V</div>
+                   <span class="v-ch-msg-model-name">gpt-5</span>
+                 </div>
+                 <div class="v-th-pill" role="button">...</div>
+                 <div class="v-th-content">...</div>
+                 <div class="v-ch-msg-body">...</div>
+                 <div class="v-ch-msg-actions">...</div>
+                 <div class="v-st-stats">...</div>
+               </div>
+          -->
+
+          <!-- Streaming typing indicator -->
+          <div id="v-ch-typing-indicator" class="v-ch-typing" style="display:none" aria-label="AI is typing">
+            <div class="v-ch-typing-dot"></div>
+            <div class="v-ch-typing-dot"></div>
+            <div class="v-ch-typing-dot"></div>
+          </div>
+
+          <!-- Scroll anchor -->
+          <div id="v-ch-scroll-anchor" aria-hidden="true"></div>
+        </div>
+      </section>
+
+
+      <!-- ========================================
+           PAGE: SETTINGS
+           Hidden by default, shown by router.
+           ======================================== -->
+      <section id="v-page-settings" class="v-set-page" style="display:none" role="main" aria-label="Settings">
+
+        <h2 class="v-set-page-title">Settings</h2>
+        <p class="v-set-page-subtitle">Customize your Voyage AI experience</p>
+
+        <!-- Settings Navigation (card-based) -->
+        <div id="v-set-nav" class="v-set-nav">
+
+          <!-- My AI Section -->
+          <div class="v-set-section">
+            <h3 class="v-set-section-label">My AI</h3>
+            <div id="v-set-nav-personalization" class="v-ct-card" data-setting-tab="personalization" role="button" tabindex="0">
+              <div class="v-ct-card-icon">👤</div>
+              <div class="v-ct-card-content">
+                <div class="v-ct-card-title">Personalization</div>
+                <div class="v-ct-card-desc">Tone, characteristics, custom instructions</div>
+              </div>
+              <span class="v-ct-card-chevron">›</span>
+            </div>
+            <div id="v-set-nav-memory" class="v-ct-card" data-setting-tab="memory" role="button" tabindex="0">
+              <div class="v-ct-card-icon">🧠</div>
+              <div class="v-ct-card-content">
+                <div class="v-ct-card-title">Memory</div>
+                <div class="v-ct-card-desc">Manage stored memories and personal fields</div>
+              </div>
+              <span class="v-ct-card-chevron">›</span>
+            </div>
+          </div>
+
+          <!-- Account Section -->
+          <div class="v-set-section">
+            <h3 class="v-set-section-label">Account</h3>
+            <div id="v-set-nav-profile" class="v-ct-card" data-setting-tab="profile" role="button" tabindex="0">
+              <div class="v-ct-card-icon">✎</div>
+              <div class="v-ct-card-content">
+                <div class="v-ct-card-title">Profile</div>
+                <div class="v-ct-card-desc">Name, picture, nickname</div>
+              </div>
+              <span class="v-ct-card-chevron">›</span>
+            </div>
+          </div>
+
+          <!-- Preferences Section -->
+          <div class="v-set-section">
+            <h3 class="v-set-section-label">Preferences</h3>
+            <div id="v-set-nav-appearance" class="v-ct-card" data-setting-tab="appearance" role="button" tabindex="0">
+              <div class="v-ct-card-icon">◐</div>
+              <div class="v-ct-card-content">
+                <div class="v-ct-card-title">Appearance</div>
+                <div class="v-ct-card-desc">Theme, accent color, streaming toggle</div>
+              </div>
+              <span class="v-ct-card-chevron">›</span>
+            </div>
+            <div id="v-set-nav-providers" class="v-ct-card" data-setting-tab="providers" role="button" tabindex="0">
+              <div class="v-ct-card-icon">🔌</div>
+              <div class="v-ct-card-content">
+                <div class="v-ct-card-title">Providers</div>
+                <div class="v-ct-card-desc">API keys, model management, tools</div>
+              </div>
+              <span class="v-ct-card-chevron">›</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Settings Content Area (panels swap here) -->
+        <div id="v-set-content" class="v-set-content">
+          <!-- Populated by js/settings.js per active tab:
+
+               Personalization:
+               <div id="v-set-personalization" class="v-set-panel">...</div>
+
+               Memory:
+               <div id="v-set-memory" class="v-set-panel">...</div>
+
+               Profile:
+               <div id="v-set-profile" class="v-set-panel">...</div>
+
+               Appearance:
+               <div id="v-set-appearance" class="v-set-panel">...</div>
+
+               Providers:
+               <div id="v-set-providers" class="v-set-panel">...</div>
+          -->
+        </div>
+      </section>
+
+
+      <!-- ========================================
+           PAGE: IMAGE GENERATION
+           Hidden by default, shown by router.
+           ======================================== -->
+      <section id="v-page-imagegen" class="v-img-page" style="display:none" role="main" aria-label="Image Generation">
+
+        <div class="v-img-header">
+          <h2 class="v-img-title">🎨 Image Generation</h2>
+          <p class="v-img-desc">Create images with AI. Enter a prompt, pick a ratio, and optionally add a reference image.</p>
+        </div>
+
+        <div class="v-img-body">
+          <!-- Prompt Input -->
+          <div class="v-img-prompt-area">
+            <label for="v-img-prompt" class="v-ct-label">Prompt</label>
+            <textarea
+              id="v-img-prompt"
+              class="v-ct-textarea v-img-prompt"
+              placeholder="A futuristic cyberpunk city at night, neon lights reflecting on wet streets, cinematic lighting..."
+              rows="4"
+              aria-label="Image generation prompt"
+            ></textarea>
+          </div>
+
+          <!-- Aspect Ratio Selector -->
+          <div class="v-img-ratio-area">
+            <label class="v-ct-label">Aspect Ratio</label>
+            <div id="v-img-ratio" class="v-img-ratios" role="radiogroup" aria-label="Aspect ratio">
+              <button class="v-ct-chip active" data-ratio="1:1" role="radio" aria-checked="true">1:1 Square</button>
+              <button class="v-ct-chip" data-ratio="9:16" role="radio" aria-checked="false">9:16 Portrait</button>
+              <button class="v-ct-chip" data-ratio="16:9" role="radio" aria-checked="false">16:9 Landscape</button>
+              <button class="v-ct-chip" data-ratio="4:3" role="radio" aria-checked="false">4:3</button>
+              <button class="v-ct-chip" data-ratio="custom" role="radio" aria-checked="false">Custom</button>
+            </div>
+          </div>
+
+          <!-- Reference Image Upload -->
+          <div class="v-img-ref-area">
+            <label class="v-ct-label">Reference Image <span class="v-ct-label-optional">(Optional)</span></label>
+            <div
+              id="v-img-ref-upload"
+              class="v-ct-upload-area v-img-ref-upload"
+              role="button"
+              tabindex="0"
+              aria-label="Upload reference image"
+            >
+              <div class="v-ct-upload-icon">🖼</div>
+              <div class="v-ct-upload-text">Drop an image here, or <strong>click to browse</strong></div>
+              <div class="v-ct-upload-subtext">or paste an image URL</div>
+            </div>
+            <!-- Preview area for uploaded reference -->
+            <div id="v-img-ref-preview" class="v-img-ref-preview" style="display:none">
+              <img id="v-img-ref-preview-img" class="v-img-ref-preview-img" alt="Reference image preview">
+              <button id="v-img-ref-remove" class="v-ct-btn-icon v-img-ref-remove" title="Remove reference" aria-label="Remove reference image">✕</button>
+            </div>
+          </div>
+
+          <!-- Actions: Generate + Model Picker -->
+          <div class="v-img-actions">
+            <button id="v-img-generate-btn" class="v-ct-btn-primary v-img-generate" aria-label="Generate image">
+              ✨ Generate Image
+            </button>
+            <div class="v-ct-select-wrap v-img-model-wrap">
+              <div
+                id="v-img-model-select"
+                class="v-ct-select-trigger"
+                role="button"
+                tabindex="0"
+                aria-haspopup="listbox"
+                aria-label="Select image model"
+              >
+                <span id="v-img-model-label">flux-2</span>
+              </div>
+              <div class="v-ct-select-dropdown v-img-model-dropdown" role="listbox" style="display:none">
+                <!-- Populated by js/settings.js or js/ui.js
+                     <div class="v-ct-select-option selected" data-model="flux-2" role="option">flux-2 <span class="v-ct-check">✓</span></div>
+                     <div class="v-ct-select-option" data-model="gptimage-2" role="option">gptimage-2</div>
+                     ...
+                -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gallery -->
+        <div class="v-img-gallery-section">
+          <div class="v-img-gallery-header">
+            <h3 class="v-img-gallery-label">Gallery</h3>
+            <span id="v-img-gallery-count" class="v-img-gallery-count">0 images</span>
+          </div>
+          <div id="v-img-gallery" class="v-img-gallery" role="grid" aria-label="Generated images gallery">
+            <!-- Populated by js/ui.js or js/tools.js
+                 <div class="v-img-gallery-item" data-image-id="..." role="gridcell">
+                   <img src="..." alt="Generated image" loading="lazy">
+                   <div class="v-img-gallery-overlay">
+                     <span class="v-img-gallery-prompt">Prompt text...</span>
+                   </div>
+                   <div class="v-img-gallery-actions">
+                     <button class="v-ct-btn-icon" title="Download">↓</button>
+                     <button class="v-ct-btn-icon" title="Copy prompt">📋</button>
+                   </div>
+                 </div>
+            -->
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ========================================
+           TYPING BAR
+           Sticky at bottom. Visible on chat page.
+           ======================================== -->
+      <footer id="v-typing-bar" class="v-typ-bar" aria-label="Message input">
+
+        <!-- Input Row -->
+        <div class="v-typ-input-row">
+          <button
+            id="v-typ-attach"
+            class="v-typ-attach"
+            title="Attach file"
+            aria-label="Attach file"
+          >+</button>
+
+          <div class="v-typ-input-wrap">
+            <textarea
+              id="v-typ-input"
+              class="v-typ-input"
+              placeholder="Ask anything..."
+              rows="1"
+              aria-label="Message input"
+            ></textarea>
+          </div>
+
+          <button
+            id="v-typ-send"
+            class="v-typ-send"
+            title="Send message"
+            aria-label="Send message"
+            disabled
+          >↑</button>
+        </div>
+
+        <!-- Toolbar Row: Model indicator + Tool chips -->
+        <div class="v-typ-toolbar">
+          <button id="v-typ-model-indicator" class="v-typ-model" aria-label="Current model">
+            <span class="v-typ-model-dot"></span>
+            <span id="v-typ-model-name">Select model</span>
+          </button>
+
+          <div id="v-typ-tools" class="v-typ-tools" aria-label="Tool toggles">
+            <button class="v-ct-chip v-typ-tool" data-tool="web_search" aria-pressed="false">
+              <span class="v-typ-tool-icon">🔍</span>
+              <span class="v-typ-tool-label">Search</span>
+            </button>
+            <button class="v-ct-chip v-typ-tool" data-tool="thinking" aria-pressed="false">
+              <span class="v-typ-tool-icon">💡</span>
+              <span class="v-typ-tool-label">Think</span>
+            </button>
+            <button class="v-ct-chip v-typ-tool" data-tool="image_gen" aria-pressed="false">
+              <span class="v-typ-tool-icon">🎨</span>
+              <span class="v-typ-tool-label">Create</span>
+            </button>
+          </div>
+        </div>
+      </footer>
+
+    </main><!-- /v-main -->
+
+
+    <!-- ============================================================
+         OVERLAY LAYERS
+         Positioned fixed/absolute. Shown conditionally.
+         ============================================================ -->
+
+    <!-- ========================================
+         ONBOARDING MODAL
+         3-step flow. Shown if onboarding_complete is false.
+         ======================================== -->
+    <div id="v-onb-modal" class="v-onb-modal" role="dialog" aria-modal="true" aria-label="Onboarding" style="display:none">
+      <div class="v-onb-backdrop" aria-hidden="true"></div>
+      <div class="v-onb-card">
+
+        <!-- Step 1: Personal Info -->
+        <div id="v-onb-step1" class="v-onb-step" data-step="1">
+          <div class="v-onb-logo">🧭</div>
+          <h2 class="v-onb-title">Welcome to Voyage AI</h2>
+          <p class="v-onb-desc">Let's personalize your experience. Tell us a bit about yourself.</p>
+          <div class="v-onb-fields">
+            <div class="v-onb-field-group">
+              <label for="v-onb-first-name" class="v-ct-label">First name</label>
+              <input id="v-onb-first-name" class="v-ct-input" type="text" placeholder="First name" autocomplete="given-name">
+            </div>
+            <div class="v-onb-field-group">
+              <label for="v-onb-last-name" class="v-ct-label">Last name</label>
+              <input id="v-onb-last-name" class="v-ct-input" type="text" placeholder="Last name" autocomplete="family-name">
+            </div>
+            <div class="v-onb-field-group">
+              <label for="v-onb-nickname" class="v-ct-label">Nickname <span class="v-ct-label-optional">(what should AI call you?)</span></label>
+              <input id="v-onb-nickname" class="v-ct-input" type="text" placeholder="Nickname" autocomplete="nickname">
+            </div>
+          </div>
+          <div class="v-onb-actions">
+            <button id="v-onb-skip1" class="v-ct-btn-ghost">Skip</button>
+            <button id="v-onb-next1" class="v-ct-btn-primary">Continue</button>
+          </div>
+        </div>
+
+        <!-- Step 2: Profile Picture -->
+        <div id="v-onb-step2" class="v-onb-step" data-step="2" style="display:none">
+          <div class="v-onb-logo">📷</div>
+          <h2 class="v-onb-title">Profile Picture</h2>
+          <p class="v-onb-desc">Upload a profile picture to personalize your workspace.</p>
+          <div class="v-onb-avatar-upload">
+            <div class="v-onb-avatar-preview" id="v-onb-avatar-preview">
+              <span class="v-onb-avatar-placeholder">📷</span>
+            </div>
+            <div
+              id="v-onb-avatar-drop"
+              class="v-ct-upload-area"
+              role="button"
+              tabindex="0"
+              aria-label="Upload profile picture"
+            >
+              <div class="v-ct-upload-icon">🖼</div>
+              <div class="v-ct-upload-text">Drop your photo here, or <strong>click to browse</strong></div>
+            </div>
+          </div>
+          <div class="v-onb-actions">
+            <button id="v-onb-skip2" class="v-ct-btn-ghost">Skip</button>
+            <button id="v-onb-next2" class="v-ct-btn-primary">Continue</button>
+          </div>
+        </div>
+
+        <!-- Step 3: API Key -->
+        <div id="v-onb-step3" class="v-onb-step" data-step="3" style="display:none">
+          <div class="v-onb-logo">🔑</div>
+          <h2 class="v-onb-title">Connect Your API</h2>
+          <p class="v-onb-desc">Enter your API key to get started. You can change this anytime in settings.</p>
+          <div class="v-onb-fields">
+            <div class="v-onb-field-group">
+              <label for="v-onb-provider-select" class="v-ct-label">Provider</label>
+              <div class="v-ct-select-wrap">
+                <div id="v-onb-provider-select" class="v-ct-select-trigger" role="button" tabindex="0" aria-haspopup="listbox">
+                  <span id="v-onb-provider-label">AquaDevs</span>
+                </div>
+                <div class="v-ct-select-dropdown" role="listbox" style="display:none">
+                  <div class="v-ct-select-option selected" data-provider="aquadevs" role="option">AquaDevs <span class="v-ct-check">✓</span></div>
+                  <div class="v-ct-select-option" data-provider="custom" role="option">Custom (OpenAI-compatible)</div>
+                </div>
+              </div>
+            </div>
+            <div class="v-onb-field-group">
+              <label for="v-onb-api-key" class="v-ct-label">API Key <span class="v-ct-label-optional">(required)</span></label>
+              <input
+                id="v-onb-api-key"
+                class="v-ct-input"
+                type="password"
+                placeholder="Paste your API key here..."
+                autocomplete="off"
+              >
+            </div>
+            <div id="v-onb-custom-url" class="v-onb-field-group" style="display:none">
+              <label for="v-onb-base-url" class="v-ct-label">Base URL</label>
+              <input
+                id="v-onb-base-url"
+                class="v-ct-input"
+                type="url"
+                placeholder="https://api.example.com"
+              >
+            </div>
+          </div>
+          <div class="v-onb-actions">
+            <button id="v-onb-finish" class="v-ct-btn-primary v-onb-finish">Get Started →</button>
+          </div>
+        </div>
+
+        <!-- Step Dots -->
+        <div class="v-onb-steps" aria-label="Onboarding progress">
+          <div id="v-onb-dot1" class="v-onb-step-dot active" aria-label="Step 1"></div>
+          <div id="v-onb-dot2" class="v-onb-step-dot" aria-label="Step 2"></div>
+          <div id="v-onb-dot3" class="v-onb-step-dot" aria-label="Step 3"></div>
+        </div>
+
+      </div><!-- /v-onb-card -->
+    </div><!-- /v-onb-modal -->
+
+
+    <!-- ========================================
+         CONTEXT MENU (floating, shown on demand)
+         ======================================== -->
+    <div id="v-cm-menu" class="v-cm-menu" role="menu" style="display:none">
+      <!-- Populated dynamically by js/chat.js based on message type
+           User message:
+           <div class="v-cm-item" data-action="edit" role="menuitem"><span class="v-cm-icon">✎</span> Edit</div>
+           <div class="v-cm-item" data-action="fork" role="menuitem"><span class="v-cm-icon">⑂</span> Fork from here</div>
+           <div class="v-cm-divider"></div>
+           <div class="v-cm-item v-cm-danger" data-action="delete" role="menuitem"><span class="v-cm-icon">🗑</span> Delete</div>
+
+           AI message:
+           <div class="v-cm-item" data-action="copy-select" role="menuitem"><span class="v-cm-icon">✂</span> Copy & Select</div>
+           <div class="v-cm-item" data-action="share" role="menuitem"><span class="v-cm-icon">↗</span> Share</div>
+           <div class="v-cm-divider"></div>
+           <div class="v-cm-item v-cm-danger" data-action="delete" role="menuitem"><span class="v-cm-icon">🗑</span> Delete</div>
+      -->
+    </div>
+
+
+    <!-- ========================================
+         MEDIA PICKER (floating dropdown)
+         ======================================== -->
+    <div id="v-mp-picker" class="v-mp-picker" role="menu" aria-label="Attach file" style="display:none">
+      <div class="v-mp-option" data-type="image" role="menuitem" tabindex="0">
+        <div class="v-mp-option-icon" style="background:rgba(52,211,153,0.1);color:var(--success)">🖼</div>
+        <div class="v-mp-option-info">
+          <div class="v-mp-option-text">Image</div>
+          <div class="v-mp-option-desc">PNG, JPG, WebP up to 20MB</div>
+        </div>
+      </div>
+      <div class="v-mp-option" data-type="document" role="menuitem" tabindex="0">
+        <div class="v-mp-option-icon" style="background:var(--accent-soft);color:var(--accent)">📄</div>
+        <div class="v-mp-option-info">
+          <div class="v-mp-option-text">Document</div>
+          <div class="v-mp-option-desc">PDF, DOCX, TXT, CSV</div>
+        </div>
+      </div>
+      <div class="v-mp-option" data-type="audio" role="menuitem" tabindex="0">
+        <div class="v-mp-option-icon" style="background:rgba(251,191,36,0.1);color:var(--warning)">🎵</div>
+        <div class="v-mp-option-info">
+          <div class="v-mp-option-text">Audio</div>
+          <div class="v-mp-option-desc">MP3, WAV, M4A</div>
+        </div>
+      </div>
+      <div class="v-mp-option" data-type="other" role="menuitem" tabindex="0">
+        <div class="v-mp-option-icon" style="background:rgba(168,85,247,0.1);color:#A855F7">📁</div>
+        <div class="v-mp-option-info">
+          <div class="v-mp-option-text">Other</div>
+          <div class="v-mp-option-desc">Any file type</div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ========================================
+         TOAST CONTAINER (bottom-right, fixed)
+         ======================================== -->
+    <div id="v-toast-container" class="v-toast-container" aria-live="polite" aria-label="Notifications">
+      <!-- Toasts appended dynamically by js/ui.js → showToast()
+           <div class="v-tt-toast" role="alert">
+             <span class="v-tt-icon">✅</span>
+             <span class="v-tt-text">Settings saved</span>
+             <button class="v-tt-close" aria-label="Dismiss">✕</button>
+           </div>
+      -->
+    </div>
+
+  </div><!-- /v-app -->
+
+
+  <!-- ================================================================
+       APPLICATION ENTRY POINT
+       Single ES module that bootstraps everything.
+       ================================================================ -->
+  <script type="module" src="js/app.js"></script>
+
+</body>
+</html>
