@@ -1,5 +1,6 @@
 'use strict';
 // ===== SCREENS =====
+// Dashboard + scenario create/edit. Character create/edit → screens-char.js
 const Scr={
   // FIX #8: Settings auto-save debounce
   _settSaveTimer:null,
@@ -67,124 +68,6 @@ const Scr={
     }</div>`;
   },
 
-  // --- CHAR CREATE ---
-  newChar(){
-    ST.editCharId=null;
-    // BUG 33: Changed default model from 'llama-scout' to 'openai-fast'
-    ST.charForm={name:'',color:COLORS[0],personality:'',appearance:'',modelId:ST.settings.charModel||'openai-fast',voice:'nova',avatar:'',isUser:false};
-    Router.go('char-create');
-  },
-  async editChar(id){
-    const c=await DB.get('characters',id);if(!c)return;
-    ST.editCharId=id;ST.charForm={...c};Router.go('char-create');
-  },
-  async delChar(id){
-    const ok=await Modal.confirm('Delete this character?',{ok:'Delete',danger:true});if(!ok)return;
-    await DB.del('characters',id);Toast.s('Character deleted');Scr.dashboard();
-  },
-  async charCreate(){
-    const el=$('#screen-char-create');if(!el)return;
-    const f=ST.charForm;const isEdit=!!ST.editCharId;
-    el.innerHTML=`<div class="create-wrap">
-      <div class="create-hdr">
-        <button class="ibtn" onclick="Router.go('dashboard')">${I('back',16)}</button>
-        <h1 class="create-title">${isEdit?'Edit Character':'New Character'}</h1>
-        <div style="margin-left:auto"><button class="btn bs bsm" id="auto-gen-btn" onclick="Scr.autoGenChar()">${I('magic',13)} Auto-Create</button></div>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:16px">
-        <div>
-          <div class="lbl" style="margin-bottom:6px">Avatar</div>
-          <div class="av-uploader" id="av-drop" onclick="Scr.trigAvatar()">${f.avatar?`<img src="${esc(f.avatar)}">`:`${I('user',22)}<span>Upload</span>`}</div>
-          <input type="file" id="av-file" accept="image/*" style="display:none" onchange="Scr.handleAvatar(event)">
-        </div>
-        <div style="flex:1;display:flex;flex-direction:column;gap:12px">
-          <div class="field">
-            <label class="lbl">Name <span>*</span></label>
-            <input type="text" id="cf-name" value="${esc(f.name)}" placeholder="Character name" oninput="ST.charForm.name=this.value">
-          </div>
-          <div class="field">
-            <label class="lbl">Avatar URL</label>
-            <input type="url" id="cf-av-url" placeholder="https://..." value="${f.avatar?.startsWith('http')?esc(f.avatar):''}" oninput="Scr.setAvUrl(this.value)">
-          </div>
-        </div>
-      </div>
-      <div class="field">
-        <label class="lbl">Character Color</label>
-        <div class="cgrid">${COLORS.map(c=>`<div class="csw ${c===f.color?'sel':''}" style="background:${c}" onclick="Scr.pickColor('${c}')"></div>`).join('')}</div>
-        <div style="margin-top:6px;display:flex;gap:8px;align-items:center">
-          <input type="text" id="cf-color" value="${esc(f.color)}" placeholder="#c9a84c" style="width:100px" oninput="Scr.pickColor(this.value)">
-          <div id="cp" style="width:26px;height:26px;border-radius:50%;background:${esc(f.color)};border:2px solid var(--border)"></div>
-        </div>
-      </div>
-      <div class="field">
-        <label class="lbl">Personality <span>*</span></label>
-        <textarea id="cf-p" rows="3" placeholder="Personality, traits, speaking style, quirks..." oninput="ST.charForm.personality=this.value">${esc(f.personality)}</textarea>
-      </div>
-      <div class="field">
-        <label class="lbl">Appearance</label>
-        <textarea id="cf-a" rows="2" placeholder="Physical description, clothing, distinctive features..." oninput="ST.charForm.appearance=this.value">${esc(f.appearance)}</textarea>
-      </div>
-      <div class="two-col">
-        <div class="field"><label class="lbl">AI Model</label>${Scr.mpHtml('cf-model',f.modelId)}</div>
-        <div class="field"><label class="lbl">Voice</label>${Scr.vpHtml('cf-voice',f.voice)}</div>
-      </div>
-      <div class="tgl-wrap" onclick="Scr.toggleUser()">
-        <div class="tgl ${f.isUser?'on':''}" id="cf-usr"></div>
-        <span class="tgl-lbl">This character represents me (the user)</span>
-      </div>
-      <hr>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button class="btn bg" onclick="Router.go('dashboard')">Cancel</button>
-        <button class="btn bp" onclick="Scr.saveChar()">${I('check',14)} ${isEdit?'Save Changes':'Create Character'}</button>
-      </div>
-    </div>`;
-  },
-  trigAvatar(){$('#av-file')?.click()},
-  handleAvatar(e){
-    const file=e.target.files[0];if(!file)return;
-    const r=new FileReader();
-    r.onload=ev=>{ST.charForm.avatar=ev.target.result;const d=$('#av-drop');if(d)d.innerHTML=`<img src="${esc(ev.target.result)}" style="width:100%;height:100%;object-fit:cover">`};
-    r.readAsDataURL(file);
-  },
-  setAvUrl(url){
-    ST.charForm.avatar=url;
-    const d=$('#av-drop');
-    if(d&&url.startsWith('http'))d.innerHTML=`<img src="${esc(url)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='<span style=&quot;font-size:10px&quot;>Invalid URL</span>'">`;
-  },
-  pickColor(color){
-    ST.charForm.color=color;
-    $$('.csw').forEach(s=>{s.classList.remove('sel');if(s.style.background===color||s.title===color)s.classList.add('sel');});
-    const cp=$('#cp');if(cp)cp.style.background=color;
-    const ci=$('#cf-color');if(ci)ci.value=color;
-  },
-  toggleUser(){ST.charForm.isUser=!ST.charForm.isUser;$('#cf-usr')?.classList.toggle('on',ST.charForm.isUser)},
-  async saveChar(){
-    const f=ST.charForm;
-    if(!f.name.trim()){Toast.e('Name is required');return;}
-    if(f.isUser){
-      const all=await DB.getAll('characters');
-      for(const c of all)if(c.isUser&&c.id!==ST.editCharId){c.isUser=false;await DB.put('characters',c);}
-    }
-    // BUG 33: Changed default model from 'llama-scout' to 'openai-fast'
-    const char={id:ST.editCharId||uid(),name:f.name.trim(),color:f.color||COLORS[0],personality:f.personality||'',appearance:f.appearance||'',modelId:f.modelId||'openai-fast',voice:f.voice||'nova',avatar:f.avatar||'',isUser:!!f.isUser,updatedAt:Date.now()};
-    if(!ST.editCharId)char.createdAt=Date.now();
-    else{const ex=await DB.get('characters',char.id);char.createdAt=ex?.createdAt||Date.now();}
-    await DB.put('characters',char);
-    Toast.s(`"${char.name}" saved`);
-    ST.dashTab='characters';Router.go('dashboard');
-  },
-  async autoGenChar(){
-    const brief=await Modal.prompt('Describe the character briefly:',{title:'Auto-Create Character',placeholder:'e.g. A sarcastic medieval knight with a hidden soft side',ok:'Generate'});
-    if(!brief)return;
-    const btn=$('#auto-gen-btn');if(btn){btn.disabled=true;btn.innerHTML=`<div class="spinner" style="width:13px;height:13px"></div> Generating...`;}
-    try{
-      const r=await Ctrl.runCreative(brief);if(!r){Toast.e('Generation failed');return;}
-      ST.charForm={...ST.charForm,name:r.name||'',personality:r.personality||'',appearance:r.appearance||'',voice:r.voice||'nova',color:r.colorHint||COLORS[Math.floor(Math.random()*COLORS.length)]};
-      await Scr.charCreate();Toast.s('Character generated!');
-    }catch(err){Toast.e('Failed: '+err.message);}
-    finally{const b=$('#auto-gen-btn');if(b){b.disabled=false;b.innerHTML=`${I('magic',13)} Auto-Create`;}}
-  },
-
   // --- SCENARIO CREATE ---
   newScenario(){
     ST.editScenId=null;
@@ -236,6 +119,7 @@ const Scr={
       <div class="create-hdr">
         <button class="ibtn" onclick="Router.go('dashboard')">${I('back',16)}</button>
         <h1 class="create-title">${isEdit?'Edit Scenario':'New Scenario'}</h1>
+        ${isEdit?'':`<div style="margin-left:auto"><button class="btn bs bsm" onclick="Scr.autoGenScen()">${I('magic',13)} Auto-Create</button></div>`}
       </div>
       <div class="field">
         <label class="lbl">Scenario Name <span>*</span></label>
@@ -256,7 +140,7 @@ const Scr={
           <div class="cs-item ${f.characterIds.includes(c.id)?'sel':''}" style="--cc:${c.color}" onclick="Scr.toggleChar('${c.id}')">
             <div style="width:24px;height:24px;border-radius:50%;background:${c.color}22;border:2px solid ${c.color};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:var(--fd);color:${c.color};flex-shrink:0;overflow:hidden">${c.avatar?`<img src="${esc(c.avatar)}" style="width:100%;height:100%;object-fit:cover">`:c.name[0]}</div>
             <span style="flex:1;color:${c.color};font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name)}</span>
-            <span class="chk">${f.characterIds.includes(c.id)?'✓':'○'}</span>
+            <span class="chk">${f.characterIds.includes(c.id)?'\u2713':'\u25cb'}</span>
           </div>`).join('')}
         </div>`}
       </div>
@@ -288,7 +172,7 @@ const Scr={
     }
     $$('.cs-item').forEach(el=>{
       const m=el.getAttribute('onclick')?.match(/'([^']+)'/);
-      if(m){const sel=f.characterIds.includes(m[1]);el.classList.toggle('sel',sel);const chk=el.querySelector('.chk');if(chk)chk.textContent=sel?'✓':'○';}
+      if(m){const sel=f.characterIds.includes(m[1]);el.classList.toggle('sel',sel);const chk=el.querySelector('.chk');if(chk)chk.textContent=sel?'\u2713':'\u25cb';}
     });
   },
   togSS(key){
@@ -307,5 +191,50 @@ const Scr={
     Toast.s(`"${scen.name}" saved`);
     if(!ST.editScenId){const go=await Modal.confirm(`"${scen.name}" created! Open it now?`,{ok:'Open Scenario'});if(go){await Chat.init(scen.id);return;}}
     Router.go('dashboard');
+  },
+
+  // --- SCENARIO AUTO-CREATE ---
+  async autoGenScen(){
+    const allChars=await DB.getAll('characters');
+    if(!allChars.length){Toast.e('Create characters first');return;}
+    const charsHtml=allChars.map(c=>`<div class="ascen-chk cs-item" data-char-id="${c.id}" style="--cc:${c.color}" onclick="Scr._toggleAutoGenChar(this)">
+      <div style="width:24px;height:24px;border-radius:50%;background:${c.color}22;border:2px solid ${c.color};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:var(--fd);color:${c.color};flex-shrink:0;overflow:hidden">${c.avatar?`<img src="${esc(c.avatar)}" style="width:100%;height:100%;object-fit:cover">`:c.name[0]}</div>
+      <span style="flex:1;color:${c.color};font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name)}</span>
+      <span class="chk">\u25cb</span>
+    </div>`).join('');
+    Modal.open({title:'Auto-Create Scenario',content:()=>`<div style="display:flex;flex-direction:column;gap:14px">
+      <div class="field"><label class="lbl">Scenario Description</label><textarea id="ascen-desc" rows="3" placeholder="Describe the scenario you want to create... e.g. A group of adventurers meets in a tavern on a stormy night"></textarea></div>
+      <div class="field"><label class="lbl">Select Characters <span style="font-weight:400;color:var(--tdim)">(max 11)</span></label><div class="char-sel-grid">${charsHtml}</div></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn bp" id="ascen-gen-btn" onclick="Scr._doAutoGenScen()">${I('magic',13)} Generate Scenario</button></div>
+    </div>`});
+  },
+  _toggleAutoGenChar(el){
+    el.classList.toggle('sel');
+    const chk=el.querySelector('.chk');
+    if(chk)chk.textContent=el.classList.contains('sel')?'\u2713':'\u25cb';
+  },
+  async _doAutoGenScen(){
+    const desc=$('#ascen-desc')?.value;
+    if(!desc?.trim()){Toast.e('Enter a description');return;}
+    const selectedIds=[];
+    $$('.ascen-chk.sel').forEach(el=>{const id=el.dataset.charId;if(id)selectedIds.push(id);});
+    if(!selectedIds.length){Toast.e('Select at least one character');return;}
+    if(selectedIds.length>11){Toast.w('Maximum 11 characters');return;}
+    const btn=$('#ascen-gen-btn');
+    if(btn){btn.disabled=true;btn.innerHTML=`<div class="spinner" style="width:13px;height:13px"></div> Generating...`;}
+    try{
+      const allChars=await DB.getAll('characters');
+      const selectedChars=allChars.filter(c=>selectedIds.includes(c.id));
+      const result=await Ctrl.createScenario(desc.trim(),selectedChars);
+      if(!result){Toast.e('Generation failed');return;}
+      ST.scenForm.name=result.name||'';
+      ST.scenForm.lore=result.lore||'';
+      ST.scenForm.openingMessage=result.openingMessage||'';
+      ST.scenForm.characterIds=selectedIds;
+      Modal.close();
+      await Scr.scenCreate();
+      Toast.s('Scenario generated!');
+    }catch(err){Toast.e('Failed: '+err.message);}
+    finally{if(btn){btn.disabled=false;btn.innerHTML=`${I('magic',13)} Generate Scenario`;}}
   }
 };
