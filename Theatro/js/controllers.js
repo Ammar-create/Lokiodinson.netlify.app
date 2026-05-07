@@ -33,8 +33,9 @@ const Ctrl={
       .map(([,r])=>`  \u2022 Toward ${r.toName||r.toId}: ${r.mood||'neutral'} (${r.intensity||5}/10) \u2014 ${r.reason||''}`)
       .join('\n');
     const cast=ST.chat.characters.map(c=>c.name).join(', ');
-    // Per-character private memory injection
-    const memKey=`${char.id}_${ST.chat.scenId}`;
+    // Per-character private memory injection – respect unifiedMemory flag
+    const isUnified = scenario?.unifiedMemory === true;
+    const memKey = isUnified ? `${char.id}_global` : `${char.id}_${ST.chat.scenId}`;
     const mems=ST.chat.charMems?.[memKey]||[];
     const memCtx=mems.length?`\nYOUR PRIVATE MEMORIES (things you personally witnessed/felt \u2014 only you know these):\n${mems.slice(-20).map(m=>`- [${m.type}] ${m.content}`).join('\n')}`:'';
     return`You are ${char.name}. You are NOT an AI assistant \u2014 you are this character, fully immersed in the roleplay. Never break character. Never admit you are an AI.\n\nSCENARIO: ${scenario.name}\nSETTING: ${scenario.lore||'Unspecified setting.'}\nYOUR PERSONALITY: ${char.personality||'No specific personality.'}\nYOUR APPEARANCE: ${char.appearance||'No specific appearance.'}\nYOUR CURRENT MOOD: ${char.emotionalState||'neutral'}\nMOOD NOTES: ${char.moodNotes||'None'}\n${relCtx?`\nYOUR RELATIONSHIPS:\n${relCtx}`:''}\n${scenario.summary?`\nSTORY SO FAR: ${scenario.summary}`:''}\nOTHERS PRESENT: ${cast}\n${memCtx}\n\nFORMAT: Use *italics* for actions, "quotes" for dialogue. Mix freely: *smirks* "Is that so?"\nBe natural, immersive, authentic to your personality. Vary response length based on the scene.\n${scenario.settings?.aiKnowsUser===false?'You do not know which participant is the real human. Treat everyone as characters.':''}\n${char.systemInjection?`\n[PRIVATE DIRECTOR NOTE - only you see this]: ${char.systemInjection}`:''}\n${ST.chat.directive.next?`\n[STORY DIRECTION]: ${ST.chat.directive.next}`:''}`;
@@ -86,10 +87,11 @@ const Ctrl={
           }
         }
       }
-      // Per-character memory updates from controller analysis
+      // Per-character memory updates from controller analysis – respect unified flag
+      const unified = scenario?.unifiedMemory === true;
       if(parsed.memoryUpdates){
         for(const mu of parsed.memoryUpdates){
-          await Ctrl.addMemory(mu.charId,ST.chat.scenId,mu.content,mu.type);
+          await Ctrl.addMemory(mu.charId, ST.chat.scenId, mu.content, mu.type, unified);
         }
         Ctrl.dlog(`Added ${parsed.memoryUpdates.length} memory entries`,'ok');
       }
@@ -135,9 +137,10 @@ const Ctrl={
       if(parsed.narration)Chat.addCtrlMsg(`\ud83c\udfac ${parsed.narration}`);
       if(parsed.sceneChange){Ctrl.dlog(`Scene changed: ${parsed.sceneChange}`,'ok');Chat.addCtrlMsg(`\ud83d\udccd Scene: ${parsed.sceneChange}`);}
       if(parsed.surpriseEvent){Ctrl.dlog(`Surprise event: ${parsed.surpriseEvent}`,'ok');Chat.addCtrlMsg(`\u26a1 Event: ${parsed.surpriseEvent}`);}
+      const unified = scenario?.unifiedMemory === true;
       if(parsed.characterEffects){
         for(const eff of parsed.characterEffects){
-          await Ctrl.addMemory(eff.charId,ST.chat.scenId,`[Event] ${eff.effect}`,'witnessed');
+          await Ctrl.addMemory(eff.charId, ST.chat.scenId, `[Event] ${eff.effect}`, 'witnessed', unified);
           const c=ST.chat.characters.find(x=>x.id===eff.charId);
           if(c){
             const existing=c.systemInjection||'';
@@ -157,21 +160,21 @@ const Ctrl={
   },
 
   // ===== PRIVATE MEMORY SYSTEM =====
-  async addMemory(charId,scenId,content,type='witnessed'){
-    const key=`${charId}_${scenId}`;
+  async addMemory(charId, scenId, content, type='witnessed', unified=false){
+    const key = unified ? `${charId}_global` : `${charId}_${scenId}`;
     if(!ST.chat.charMems)ST.chat.charMems={};
     if(!ST.chat.charMems[key])ST.chat.charMems[key]=[];
     const mem={id:uid(),charId,scenId,content,type,timestamp:Date.now()};
     ST.chat.charMems[key].push(mem);
-    // Cap at 50 memories per character per scenario to prevent unbounded growth
+    // Cap at 50 memories per key to prevent unbounded growth
     if(ST.chat.charMems[key].length>50)ST.chat.charMems[key]=ST.chat.charMems[key].slice(-50);
     await DB.put('memories',{id:key,charId,scenId,events:ST.chat.charMems[key]});
     return mem;
   },
-  async loadMemories(scenId,chars){
+  async loadMemories(scenId, chars, unified=false){
     ST.chat.charMems={};
     for(const c of chars){
-      const key=`${c.id}_${scenId}`;
+      const key = unified ? `${c.id}_global` : `${c.id}_${scenId}`;
       const stored=await DB.get('memories',key);
       if(stored?.events)ST.chat.charMems[key]=stored.events;
     }
