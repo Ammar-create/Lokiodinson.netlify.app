@@ -56,8 +56,9 @@ const Chat={
     const relData=await DB.get('relationships',scenId);
     const allChars=await DB.getAll('characters');
     const userChar=allChars.find(c=>c.isUser);
-    // Load per-character private memories
-    await Ctrl.loadMemories(scenId,chars);
+    // Load memories – respect unified flag
+    const unified = scenario.unifiedMemory === true;
+    await Ctrl.loadMemories(scenId, chars, unified);
     ST.chat={
       ...ST.chat,scenId,scenario,characters:chars,messages:msgs,rels:relData?.matrix||{},
       activeCharId:userChar?.id||chars[0]?.id||null,
@@ -85,13 +86,14 @@ const Chat={
       await DB.put('messages',msg);
       Chat.renderMsg(msg,char,true);
       Chat.scrollEnd();
-      // Track user's own message in their memory
-      await Ctrl.addMemory(char.id,ST.chat.scenId,`I said: "${content.trim().slice(0,150)}"`,'witnessed');
+      // Track user's own message in their memory – respect unified flag
+      const unified = ST.chat.scenario?.unifiedMemory === true;
+      await Ctrl.addMemory(char.id, ST.chat.scenId, `I said: "${content.trim().slice(0,150)}"`, 'witnessed', unified);
       // Other characters witness this message (only if they can see it)
       for(const other of ST.chat.characters){
         if(other.id!==charId){
           if(!isPrivate||privateWith.includes(other.id)){
-            await Ctrl.addMemory(other.id,ST.chat.scenId,`${char.name} said: "${content.trim().slice(0,100)}"`,'witnessed');
+            await Ctrl.addMemory(other.id, ST.chat.scenId, `${char.name} said: "${content.trim().slice(0,100)}"`, 'witnessed', unified);
           }
         }
       }
@@ -155,13 +157,14 @@ const Chat={
       const msg={id:msgId,scenarioId:ST.chat.scenId,charId:char.id,content:full,timestamp:Date.now(),isUser:false};
       ST.chat.messages.push(msg);
       await DB.put('messages',msg);
-      // Track this character's memory of what they said
-      await Ctrl.addMemory(char.id,ST.chat.scenId,`I said: "${full.slice(0,150)}"`,'witnessed');
+      // Track this character's memory of what they said – respect unified flag
+      const unified = ST.chat.scenario?.unifiedMemory === true;
+      await Ctrl.addMemory(char.id, ST.chat.scenId, `I said: "${full.slice(0,150)}"`, 'witnessed', unified);
       // Track other characters witnessing this message
       for(const other of ST.chat.characters){
         if(other.id!==char.id){
           if(!msg.isPrivate||!msg.privateWith||msg.privateWith.includes(other.id)){
-            await Ctrl.addMemory(other.id,ST.chat.scenId,`${char.name} said: "${full.slice(0,100)}"`,'witnessed');
+            await Ctrl.addMemory(other.id, ST.chat.scenId, `${char.name} said: "${full.slice(0,100)}"`, 'witnessed', unified);
           }
         }
       }
@@ -183,7 +186,6 @@ const Chat={
         }
       }
       // BUG 26: Use Media Controller for auto-image generation
-      // FIX: Use async generateImageUrl for Aqua compatibility
       if(ST.chat.scenario?.settings?.autoImage){
         try{
           let imgPrompt;
@@ -193,16 +195,14 @@ const Chat={
           }catch{
             imgPrompt=`${char.appearance||''}, ${full.replace(/\*[^*]+\*/g,'').replace(/"[^"]+"/g,'').trim().slice(0,200)}`;
           }
-          // Use async generation with the default image model
-          const imgUrl=await API.generateImageUrl(imgPrompt, 512, 512, ST.settings.imgModel);
+          const imgModel = ST.settings.imgModel || 'flux';
+          const imgUrl = await API.generateImageUrl(imgPrompt, 512, 512, imgModel);
           const mb=el.querySelector('.msg-body');
           if(mb){const img=document.createElement('img');img.className='msg-img';img.src=imgUrl;img.loading='lazy';mb.appendChild(img);}
           // FIX #4: Persist imageUrl to IndexedDB
           msg.imageUrl=imgUrl;
           await DB.put('messages',msg);
-        }catch(err){
-          Ctrl.dlog(`Auto-image generation failed: ${err.message}`,'warn');
-        }
+        }catch{}
       }
       Ctrl.dlog(`${char.name} responded`,'dok');
     }catch(err){
