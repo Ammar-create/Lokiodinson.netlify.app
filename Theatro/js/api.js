@@ -149,6 +149,32 @@ const API = {
     }
   },
 
+  // Fetch a media blob (image/audio) and store it in IndexedDB.
+  // Does not throw (silently logs on failure). Already cached = skip.
+  async _cacheMedia(url, kind = 'image') {
+    if (!url) return;
+    try {
+      if (await DB.hasBlob(url)) return;
+      const response = await fetch(url, { method: 'GET' });
+      if (!response.ok) return;
+      const blob = await response.blob();
+      if (!blob || blob.size === 0) return;
+      await DB.cacheBlob(url, blob, kind);
+      Ctrl?.dlog?.(`Cached ${kind} blob for ${url.slice(0, 60)}`, 'ok');
+    } catch (err) {
+      // Failures are non‑critical; the media will be served from the network next time.
+      Ctrl?.dlog?.(`Media cache failed for ${url.slice(0, 60)}: ${err.message}`, 'warn');
+    }
+  },
+
+  // Store a generated audio blob in IndexedDB and return a local object URL.
+  // This keeps audio playable even offline and avoids re-fetching.
+  async _cacheAndReturnBlob(blob, kind = 'audio') {
+    const pseudoUrl = 'blob://tts/' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+    await DB.cacheBlob(pseudoUrl, blob, kind);
+    return DB.getBlobUrl(pseudoUrl);
+  },
+
   // Asynchronously generate an image via Aqua POST endpoint or Pollinations GET.
   // For Aqua: POST /v1/images/generations, returns URL.
   // For Pollinations: returns direct GET URL for immediate embedding.
@@ -190,30 +216,18 @@ const API = {
     return pollUrl;
   },
 
-  // Fetch a media blob (image/audio) and store it in IndexedDB.
-  // Does not throw (silently logs on failure). Already cached = skip.
-  async _cacheMedia(url, kind = 'image') {
-    if (!url) return;
-    try {
-      if (await DB.hasBlob(url)) return;
-      const response = await fetch(url, { method: 'GET' });
-      if (!response.ok) return;
-      const blob = await response.blob();
-      if (!blob || blob.size === 0) return;
-      await DB.cacheBlob(url, blob, kind);
-      Ctrl?.dlog?.(`Cached ${kind} blob for ${url.slice(0, 60)}`, 'ok');
-    } catch (err) {
-      // Failures are non‑critical; the media will be served from the network next time.
-      Ctrl?.dlog?.(`Media cache failed for ${url.slice(0, 60)}: ${err.message}`, 'warn');
+  // Legacy synchronous image URL generation (only for Pollinations).
+  // For Aqua, use generateImageUrl instead.
+  imageUrl(prompt, w = 512, h = 512, model = null) {
+    model = model || ST.settings.imgModel || 'flux';
+    if (model.startsWith('aqua:')) {
+      throw new Error('Aqua image models require async generateImageUrl. Use await API.generateImageUrl(...)');
     }
-  },
-
-  // Store a generated audio blob in IndexedDB and return a local object URL.
-  // This keeps audio playable even offline and avoids re-fetching.
-  async _cacheAndReturnBlob(blob, kind = 'audio') {
-    const pseudoUrl = 'blob://tts/' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
-    await DB.cacheBlob(pseudoUrl, blob, kind);
-    return DB.getBlobUrl(pseudoUrl);
+    const key = API._pollinationsKey();
+    const pollUrl = `https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?model=${model}&width=${w}&height=${h}&nologo=true&key=${encodeURIComponent(key)}`;
+    // Fire-and-forget cache (but note: this is synchronous, so we don't await)
+    API._cacheMedia(pollUrl, 'image').catch(() => { });
+    return pollUrl;
   },
 
   // TTS — POST to /v1/audio/speech with full error logging, GET fallback if POST fails.
