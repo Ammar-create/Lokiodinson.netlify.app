@@ -47,83 +47,21 @@ const API={
     bucket.calls=bucket.calls.filter(t=>now-t<3600000);
     if(bucket.calls.length%10===0&&bucket.calls.length>0){
       Ctrl?.dlog?.(`Pollinations: ${bucket.calls.length} calls this hour. pk_ keys are limited to 1 pollen/hr. Monitor your balance at gen.pollinations.ai/account/balance`,'warn');
-    }
-  },
-
-  async chat(msgs,model,opts={}){
-    const ep=API.endpoint(model);
-    API.trackCall(ep.provider);
-    const body={model:ep.model,messages:msgs,max_tokens:opts.maxTokens||1000,temperature:opts.temp??0.9,stream:false};
-    try{
-      const r=await fetch(ep.url,{method:'POST',headers:ep.headers,body:JSON.stringify(body)});
-      if(!r.ok){
-        if(ep.provider==='aqua'){
-          const errText=await r.text();
-          Ctrl?.dlog?.(`Aqua API ${r.status}: ${errText.slice(0,100)} — falling back to Pollinations`,'warn');
-          const pol=API._pollinationsEndpoint();
-          const fbModel=model.startsWith('aqua:')?model.slice(5):model;
-          const r2=await fetch(pol.url,{method:'POST',headers:pol.headers,body:JSON.stringify({...body,model:fbModel})});
-          if(!r2.ok){const t=await r2.text();throw new Error(`Pollinations fallback ${r2.status}: ${t.slice(0,150)}`);}
-          const d=await r2.json();return d.choices?.[0]?.message?.content||'';
-        }
-        const t=await r.text();throw new Error(`API ${r.status}: ${t.slice(0,150)}`);
-      }
-      const d=await r.json();return d.choices?.[0]?.message?.content||'';
-    }catch(err){
-      if(ep.provider==='aqua'&&!err.message.includes('Pollinations fallback')){
-        Ctrl?.dlog?.(`Aqua error: ${err.message} — falling back to Pollinations`,'warn');
+ p=API.endpoint(models,max_tokens:opts.ma,stream:false};
+   rs:ep.headers,body:JSON.stringify(body)}
+        if(ep.prov=await r.text();
+  ng back to Pollinati();
+          const        const r2=awapol.headers,body:JSO){const t=await r2.trn d.choices?.[0]?.mt();throw new Error(      }
+      const.message?.content||'er==='aqua'&&!err.me{
+        Ctrl?.dlorr.message} — fnations`,'warn');
         try{
-          const pol=API._pollinationsEndpoint();
-          const fbModel=model.startsWith('aqua:')?model.slice(5):model;
-          body.model=fbModel;
-          const r=await fetch(pol.url,{method:'POST',headers:pol.headers,body:JSON.stringify(body)});
-          if(!r.ok){const t=await r.text();throw new Error(`Pollinations fallback ${r.status}: ${t.slice(0,150)}`);}
-          const d=await r.json();return d.choices?.[0]?.message?.content||'';
-        }catch(fbErr){throw new Error(`Both providers failed: Aqua=${err.message}, Pollinations=${fbErr.message}`);}
-      }
-      throw err;
-    }
-  },
-  async stream(msgs,model,onChunk,opts={}){
-    if(!ST.settings.streaming){const t=await API.chat(msgs,model,opts);onChunk(t,true);return;}
-    const ep=API.endpoint(model);
-    API.trackCall(ep.provider);
-    try{
-      const r=await fetch(ep.url,{method:'POST',headers:ep.headers,body:JSON.stringify({model:ep.model,messages:msgs,max_tokens:opts.maxTokens||1000,temperature:opts.temp??0.9,stream:true})});
-      if(!r.ok){
-        if(ep.provider==='aqua'){
-          const errText=await r.text();
-          Ctrl?.dlog?.(`Aqua stream ${r.status}: ${errText.slice(0,100)} — falling back to Pollinations (non-stream)`,'warn');
-          const fbModel=model.startsWith('aqua:')?model.slice(5):model;
-          const text=await API.chat(msgs,fbModel,opts);
-          onChunk(text,true);return;
-        }
-        const t=await r.text();throw new Error(`API ${r.status}: ${t.slice(0,150)}`);
-      }
-      const reader=r.body.getReader();const dec=new TextDecoder();let buf='';
-      try{
-        while(true){
-          const{done,value}=await reader.read();if(done)break;
-          buf+=dec.decode(value,{stream:true});
-          const lines=buf.split('\n');buf=lines.pop();
-          for(const line of lines){
-            if(!line.startsWith('data: '))continue;
-            const data=line.slice(6).trim();if(data==='[DONE]')return;
-            try{const p=JSON.parse(data);const delta=p.choices?.[0]?.delta?.content;if(delta)onChunk(delta,false);}catch{}
-          }
-        }
-      }catch(err){
-        Ctrl?.dlog?.(`Stream interrupted: ${err.message}`,'warn');
-        if(ep.provider==='aqua'){
-          Ctrl?.dlog?.('Aqua stream error — falling back to Pollinations (non-stream)','warn');
-          try{
-            const fbModel=model.startsWith('aqua:')?model.slice(5):model;
-            const text=await API.chat(msgs,fbModel,opts);
-            if(text)onChunk(text,true);return;
-          }catch(fbErr){Ctrl?.dlog?.(`Pollinations fallback failed: ${fbErr.message}`,'err');throw err;}
-        }
-        if(buf.trim()){
-          const lines=buf.split('\n');
+       llinationsEndpoint()ith('aqua:')?model.slice(5):model;
+    odel;
+          conbody:JSON.stringify(ns fallback ${r.stat||'';
+        }catcns=${fbErr.message}`msgs,model,onChunk,ohat(msgs,model,opts)
+    API.trackCall(:ep.headers,body:JSOxTokens||1000,temper     if(ep.provider=   Ctrl?.dlog?.(`Aqun');
+          cons         const text=  }
+        const t         const lines=buf.split('\n');
           for(const line of lines){
             if(!line.startsWith('data: '))continue;
             const data=line.slice(6).trim();if(data==='[DONE]')break;
@@ -150,6 +88,7 @@ const API={
   // Asynchronously generate an image via Aqua POST endpoint or Pollinations GET.
   // For Aqua: POST /v1/images/generations, returns URL.
   // For Pollinations: returns direct GET URL for immediate embedding.
+  // After returning the URL, automatically fetches and caches the binary blob.
   async generateImageUrl(prompt, w=512, h=512, model=null){
     model=model||ST.settings.imgModel||'flux';
     const realModel=model.startsWith('aqua:')?model.slice(5):model;
@@ -172,6 +111,8 @@ const API={
         if(!data.success||!data.url){
           throw new Error('Aqua image generation response missing success or url');
         }
+        // Fire-and-forget cache (don't block UI on download)
+        API._cacheMedia(data.url,'image').catch(()=>{});
         return data.url;
       }catch(err){
         Ctrl?.dlog?.(`Aqua image generation error: ${err.message}`,'err');
@@ -180,26 +121,21 @@ const API={
     }
     // Pollinations: direct URL (synchronous)
     const key=API._pollinationsKey();
-    return`https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?model=${realModel}&width=${w}&height=${h}&nologo=true&key=${encodeURIComponent(key)}`;
+    const pollUrl=`https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?model=${realModel}&width=${w}&height=${h}&nologo=true&key=${encodeURIComponent(key)}`;
+    // Fire-ations.ai/image/${en{h}&nologo=true&key=url;
   },
 
-  // Legacy synchronous image URL generation (only for Pollinations).
-  // For Aqua, use generateImageUrl instead.
-  imageUrl(prompt, w=512, h=512, model=null){
-    model=model||ST.settings.imgModel||'flux';
-    if(model.startsWith('aqua:')){
-      throw new Error('Aqua image models require async generateImageUrl. Use await API.generateImageUrl(...)');
-    }
-    const key=API._pollinationsKey();
-    return`https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?model=${model}&width=${w}&height=${h}&nologo=true&key=${encodeURIComponent(key)}`;
+  // In  // Does not throw (silently logs on facheMedia(url,kind=' DB.hasBlob(url))retawait fetch(url,{metif(!r.ok)return;
+   r.blob();
+      ifeturn;
+      await ?.dlog?.(`Cached ${ke}b for ${url.slice( // Failures are nontill be served from trl?.dlog?.(`Media crl.slice(0,60)}: ${en    }
   },
 
-  // TTS — POST to /v1/audio/speech with full error logging, GET fallback if POST fails.
-  async tts(text, voice='nova'){
-    const model=ST.settings.ttsModel||'openai-audio';
-    const key=API._pollinationsKey();
+  ///v1/audio/speech wit, GET fallback if PO'){
+    const modell||'openai-audio';
+ollinationsKey();
     const{url:baseUrl,headers}=API._base('pollinations');
-    const ttsUrl=`${baseUrl}/audio/speech`;
+  seUrl}/audio/speech`;
     const ttsHeaders={...headers,'Content-Type':'application/json'};
     // Try POST first (OpenAI-compatible endpoint)
     try{
@@ -209,7 +145,10 @@ const API={
         Ctrl?.dlog?.(`TTS POST ${r.status}: ${errText.slice(0,200)}`,'err');
         throw new Error(`TTS ${r.status}: ${errText.slice(0,80)||r.statusText}`);
       }
-      return URL.createObjectURL(await r.blob());
+      const blob=await r.blob();
+      // Cache the audio blob locally
+      const audioUrl=await API._cacheAndReturnBlob(blob,'audio');
+      return audioUrl;
     }catch(postErr){
       // Fallback: try the simpler GET endpoint /audio/{text}
       Ctrl?.dlog?.(`TTS POST failed (${postErr.message}), trying GET fallback...`,'warn');
@@ -221,11 +160,21 @@ const API={
           Ctrl?.dlog?.(`TTS GET ${r2.status}: ${err2.slice(0,200)}`,'err');
           throw new Error(`TTS GET ${r2.status}: ${err2.slice(0,80)||r2.statusText}`);
         }
-        return URL.createObjectURL(await r2.blob());
+        const blob=await r2.blob();
+        const audioUrl=await API._cacheAndReturnBlob(blob,'audio');
+        return audioUrl;
       }catch(getErr){
         throw new Error(`TTS failed — POST: ${postErr.message} | GET: ${getErr.message}`);
       }
     }
+  },
+
+  // Store a generated audio blob in IndexedDB and return a local object URL.
+  // This keeps audio playable even offline and avoids re-fetching.
+  async _cacheAndReturnBlob(blob,kind='audio'){
+    const pseudoUrl='blob://tts/'+Date.now()+'_'+Math.random().toString(36).slice(2,10);
+    await DB.cacheBlob(pseudoUrl,blob,kind);
+    return DB.getBlobUrl(pseudoUrl);
   },
 
   // STT — POST /v1/audio/transcriptions
