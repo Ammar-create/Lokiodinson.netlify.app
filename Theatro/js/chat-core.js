@@ -183,6 +183,7 @@ const Chat={
         }
       }
       // BUG 26: Use Media Controller for auto-image generation
+      // FIX: Use async generateImageUrl for Aqua compatibility
       if(ST.chat.scenario?.settings?.autoImage){
         try{
           let imgPrompt;
@@ -192,13 +193,16 @@ const Chat={
           }catch{
             imgPrompt=`${char.appearance||''}, ${full.replace(/\*[^*]+\*/g,'').replace(/"[^"]+"/g,'').trim().slice(0,200)}`;
           }
-          const imgUrl=API.imageUrl(imgPrompt);
+          // Use async generation with the default image model
+          const imgUrl=await API.generateImageUrl(imgPrompt, 512, 512, ST.settings.imgModel);
           const mb=el.querySelector('.msg-body');
           if(mb){const img=document.createElement('img');img.className='msg-img';img.src=imgUrl;img.loading='lazy';mb.appendChild(img);}
           // FIX #4: Persist imageUrl to IndexedDB
           msg.imageUrl=imgUrl;
           await DB.put('messages',msg);
-        }catch{}
+        }catch(err){
+          Ctrl.dlog(`Auto-image generation failed: ${err.message}`,'warn');
+        }
       }
       Ctrl.dlog(`${char.name} responded`,'dok');
     }catch(err){
