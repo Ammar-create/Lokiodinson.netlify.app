@@ -91,6 +91,9 @@ const ST={
     sttModel:'whisper-large-v3',
     defVoice:'nova',
     ctrlFreq:10,stWindow:30,streaming:true,
+    // Creative Controller dedicated model settings (null = falls back to ctrlModel / imgModel)
+    creativeModel:null,
+    creativeImgModel:null,
   },
   // FIX #17: Rate limit tracking state
   rateLimits:{
