@@ -71,12 +71,14 @@ const Scr={
   // --- SCENARIO CREATE ---
   newScenario(){
     ST.editScenId=null;
-    ST.scenForm={name:'',lore:'',characterIds:[],settings:{aiKnowsUser:true,autoImage:false,autoTTS:false,controllerFreq:null},openingMessage:''};
+    // Add unifiedMemory: false for new scenarios
+    ST.scenForm={name:'',lore:'',characterIds:[],settings:{aiKnowsUser:true,autoImage:false,autoTTS:false,controllerFreq:null},openingMessage:'',unifiedMemory:false};
     Router.go('scenario-create');
   },
   async editScen(id){
     const s=await DB.get('scenarios',id);if(!s)return;
-    ST.editScenId=id;ST.scenForm={name:s.name||'',lore:s.lore||'',characterIds:[...(s.characterIds||[])],settings:{...s.settings},openingMessage:s.openingMessage||''};
+    // Load unifiedMemory from existing scenario (default false for old scenarios)
+    ST.editScenId=id;ST.scenForm={name:s.name||'',lore:s.lore||'',characterIds:[...(s.characterIds||[])],settings:{...s.settings},openingMessage:s.openingMessage||'',unifiedMemory:s.unifiedMemory===true};
     Router.go('scenario-create');
   },
   // FIX #11 + BUG 29: Scenario deletion now cleans up messages, memories, relationships, AND branches
@@ -99,7 +101,9 @@ const Scr={
       await DB.del('relationships',scenId);
       const chars=await DB.getAll('characters');
       for(const c of chars){
+        // Delete both per-scenario and possible unified memory keys
         await DB.del('memories',`${c.id}_${scenId}`);
+        await DB.del('memories',`${c.id}_global`);
       }
     };
     // Delete all branches first
@@ -140,7 +144,7 @@ const Scr={
           <div class="cs-item ${f.characterIds.includes(c.id)?'sel':''}" style="--cc:${c.color}" onclick="Scr.toggleChar('${c.id}')">
             <div style="width:24px;height:24px;border-radius:50%;background:${c.color}22;border:2px solid ${c.color};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:var(--fd);color:${c.color};flex-shrink:0;overflow:hidden">${c.avatar?`<img src="${esc(c.avatar)}" style="width:100%;height:100%;object-fit:cover">`:c.name[0]}</div>
             <span style="flex:1;color:${c.color};font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name)}</span>
-            <span class="chk">${f.characterIds.includes(c.id)?'\u2713':'\u25cb'}</span>
+            <span class="chk">${f.characterIds.includes(c.id)?'\\u2713':'\\u25cb'}</span>
           </div>`).join('')}
         </div>`}
       </div>
@@ -149,6 +153,7 @@ const Scr={
         <div class="tgl-wrap" onclick="Scr.togSS('aiKnowsUser')"><div class="tgl ${f.settings.aiKnowsUser?'on':''}" id="ss-aiku"></div><span class="tgl-lbl">AI characters know who the real user is</span></div>
         <div class="tgl-wrap" onclick="Scr.togSS('autoImage')"><div class="tgl ${f.settings.autoImage?'on':''}" id="ss-aimg"></div><span class="tgl-lbl">Auto-generate images for AI messages</span></div>
         <div class="tgl-wrap" onclick="Scr.togSS('autoTTS')"><div class="tgl ${f.settings.autoTTS?'on':''}" id="ss-atts"></div><span class="tgl-lbl">Auto-generate voice for AI messages</span></div>
+        <div class="tgl-wrap" onclick="Scr.togUnifiedMemory()"><div class="tgl ${f.unifiedMemory?'on':''}" id="ss-uniMem"></div><span class="tgl-lbl">Unified Memory — characters share memory across all scenarios</span></div>
         <div class="field" style="flex-direction:row;align-items:center;gap:12px">
           <label class="lbl" style="flex-shrink:0">Controller Frequency</label>
           <input type="number" min="3" max="100" value="${f.settings.controllerFreq||ST.settings.ctrlFreq||10}" style="width:70px" oninput="ST.scenForm.settings.controllerFreq=parseInt(this.value)||10">
@@ -172,7 +177,7 @@ const Scr={
     }
     $$('.cs-item').forEach(el=>{
       const m=el.getAttribute('onclick')?.match(/'([^']+)'/);
-      if(m){const sel=f.characterIds.includes(m[1]);el.classList.toggle('sel',sel);const chk=el.querySelector('.chk');if(chk)chk.textContent=sel?'\u2713':'\u25cb';}
+      if(m){const sel=f.characterIds.includes(m[1]);el.classList.toggle('sel',sel);const chk=el.querySelector('.chk');if(chk)chk.textContent=sel?'\\u2713':'\\u25cb';}
     });
   },
   togSS(key){
@@ -180,11 +185,16 @@ const Scr={
     const ids={aiKnowsUser:'ss-aiku',autoImage:'ss-aimg',autoTTS:'ss-atts'};
     $(`#${ids[key]}`)?.classList.toggle('on',ST.scenForm.settings[key]);
   },
+  // New toggle for unified memory
+  togUnifiedMemory(){
+    ST.scenForm.unifiedMemory=!ST.scenForm.unifiedMemory;
+    $('#ss-uniMem')?.classList.toggle('on',ST.scenForm.unifiedMemory);
+  },
   async saveScen(){
     const f=ST.scenForm;
     if(!f.name.trim()){Toast.e('Name is required');return;}
     if(!f.characterIds.length){Toast.e('Add at least one character');return;}
-    const scen={id:ST.editScenId||uid(),name:f.name.trim(),lore:f.lore.trim(),characterIds:f.characterIds,settings:f.settings,openingMessage:f.openingMessage.trim(),messageIds:[],summary:'',updatedAt:Date.now()};
+    const scen={id:ST.editScenId||uid(),name:f.name.trim(),lore:f.lore.trim(),characterIds:f.characterIds,settings:f.settings,openingMessage:f.openingMessage.trim(),messageIds:[],summary:'',unifiedMemory:f.unifiedMemory===true,updatedAt:Date.now()};
     if(!ST.editScenId)scen.createdAt=Date.now();
     else{const ex=await DB.get('scenarios',scen.id);scen.createdAt=ex?.createdAt||Date.now();scen.messageIds=ex?.messageIds||[];scen.summary=ex?.summary||'';}
     await DB.put('scenarios',scen);
@@ -200,7 +210,7 @@ const Scr={
     const charsHtml=allChars.map(c=>`<div class="ascen-chk cs-item" data-char-id="${c.id}" style="--cc:${c.color}" onclick="Scr._toggleAutoGenChar(this)">
       <div style="width:24px;height:24px;border-radius:50%;background:${c.color}22;border:2px solid ${c.color};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:var(--fd);color:${c.color};flex-shrink:0;overflow:hidden">${c.avatar?`<img src="${esc(c.avatar)}" style="width:100%;height:100%;object-fit:cover">`:c.name[0]}</div>
       <span style="flex:1;color:${c.color};font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name)}</span>
-      <span class="chk">\u25cb</span>
+      <span class="chk">\\u25cb</span>
     </div>`).join('');
     Modal.open({title:'Auto-Create Scenario',content:()=>`<div style="display:flex;flex-direction:column;gap:14px">
       <div class="field"><label class="lbl">Scenario Description</label><textarea id="ascen-desc" rows="3" placeholder="Describe the scenario you want to create... e.g. A group of adventurers meets in a tavern on a stormy night"></textarea></div>
@@ -211,7 +221,7 @@ const Scr={
   _toggleAutoGenChar(el){
     el.classList.toggle('sel');
     const chk=el.querySelector('.chk');
-    if(chk)chk.textContent=el.classList.contains('sel')?'\u2713':'\u25cb';
+    if(chk)chk.textContent=el.classList.contains('sel')?'\\u2713':'\\u25cb';
   },
   async _doAutoGenScen(){
     const desc=$('#ascen-desc')?.value;
@@ -231,6 +241,7 @@ const Scr={
       ST.scenForm.lore=result.lore||'';
       ST.scenForm.openingMessage=result.openingMessage||'';
       ST.scenForm.characterIds=selectedIds;
+      ST.scenForm.unifiedMemory=false;  // default for auto‑created scenarios
       Modal.close();
       await Scr.scenCreate();
       Toast.s('Scenario generated!');
