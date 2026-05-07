@@ -1,11 +1,12 @@
 'use strict';
-// ===== CONTROLLERS =====
+// ===== CONTROLLERS — CORE =====
+// Orchestrator: helpers, Main Controller, Scenario Controller, Memory System.
+// Creative Controller, Media Controller, and autoImprove → controllers-creative.js
+//
 // NOTE: AI character responses are always treated as public messages.
 // Only user messages can be private (isPrivate flag).
 // This is intentional — AI characters have no concept of whispering.
 const Ctrl={
-  _improveRunning:false,
-  _improveAbort:false,
   async _withTimeout(promise,ms=30000){
     let timer;
     const timeout=new Promise((_,rej)=>{timer=setTimeout(()=>rej(new Error('Controller timeout')),ms);});
@@ -55,7 +56,6 @@ const Ctrl={
 
   // ===== MAIN CONTROLLER =====
   async runMain(scenario,chars,messages,rels){
-    // BUG 1 fix: replaced invalid 'llama-scout' fallback with 'openai'
     const model=ST.settings.ctrlModel||'openai';
     Ctrl.dlog(`Main Controller firing (${model})...`,'dinfo');
     const stw=ST.settings.stWindow||30;
@@ -66,10 +66,10 @@ const Ctrl={
     const usr=`CHARACTERS:\n${charList}\n\nCONVERSATION:\n${convo}\n\nUSER DIRECTIVE: ${ST.chat.directive.next||'Continue naturally'}\nSTORY NOTES: ${ST.chat.directive.details||'None'}`;
     try{
       const raw=await Ctrl._withTimeout(API.chat([{role:'system',content:sys},{role:'user',content:usr}],model,{temp:0.7,maxTokens:1500}));
-      Ctrl.dlog('Main Controller: response received','dok');
+      Ctrl.dlog('Main Controller: response received','ok');
       let parsed;
       try{parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());}
-      catch{Ctrl.dlog('Main Controller: JSON parse failed','derr');return null;}
+      catch{Ctrl.dlog('Main Controller: JSON parse failed','err');return null;}
       if(parsed.characterUpdates){
         for(const u of parsed.characterUpdates){
           const c=ST.chat.characters.find(x=>x.id===u.charId);
@@ -104,7 +104,7 @@ const Ctrl={
         const sm=$('#panel-memory');if(sm)sm.textContent=parsed.storySummary;
         await DB.put('scenarios',scenario);
       }
-      Ctrl.dlog(`Applied: ${parsed.characterUpdates?.length||0} char updates, ${parsed.relationshipUpdates?.length||0} rel updates`,'dok');
+      Ctrl.dlog(`Applied: ${parsed.characterUpdates?.length||0} char updates, ${parsed.relationshipUpdates?.length||0} rel updates`,'ok');
       if(parsed.storySummary)Chat.addCtrlMsg('\u25c6 Narrative updated by Main Controller');
       Chat.renderCast();
       // Auto-trigger Scenario Controller if requested
@@ -113,12 +113,11 @@ const Ctrl={
         setTimeout(()=>Ctrl.runScenario(scenario,chars,messages,rels,parsed.scenarioHint),300);
       }
       return parsed;
-    }catch(err){Ctrl.dlog(`Main Controller error: ${err.message}`,'derr');return null;}
+    }catch(err){Ctrl.dlog(`Main Controller error: ${err.message}`,'err');return null;}
   },
 
   // ===== SCENARIO CONTROLLER =====
   async runScenario(scenario,chars,messages,rels,hint){
-    // BUG 1 fix: replaced invalid 'llama-scout' fallback with 'openai'
     const model=ST.settings.ctrlModel||'openai';
     Ctrl.dlog(`Scenario Controller firing (${model})...`,'dinfo');
     const stw=ST.settings.stWindow||30;
@@ -129,10 +128,10 @@ const Ctrl={
     const usr=`SCENARIO: ${scenario.name}\nSETTING: ${scenario.lore||'Unspecified'}\n\nCHARACTERS:\n${charList}\n\nRECENT CONVERSATION:\n${convo}\n\nHINT: ${hint||ST.chat.directive.next||'Continue naturally with a surprise'}`;
     try{
       const raw=await Ctrl._withTimeout(API.chat([{role:'system',content:sys},{role:'user',content:usr}],model,{temp:0.92,maxTokens:800}));
-      Ctrl.dlog('Scenario Controller: response received','dok');
+      Ctrl.dlog('Scenario Controller: response received','ok');
       let parsed;
       try{parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());}
-      catch{Ctrl.dlog('Scenario Controller: JSON parse failed','derr');return null;}
+      catch{Ctrl.dlog('Scenario Controller: JSON parse failed','err');return null;}
       if(parsed.narration)Chat.addCtrlMsg(`\ud83c\udfac ${parsed.narration}`);
       if(parsed.sceneChange){Ctrl.dlog(`Scene changed: ${parsed.sceneChange}`,'ok');Chat.addCtrlMsg(`\ud83d\udccd Scene: ${parsed.sceneChange}`);}
       if(parsed.surpriseEvent){Ctrl.dlog(`Surprise event: ${parsed.surpriseEvent}`,'ok');Chat.addCtrlMsg(`\u26a1 Event: ${parsed.surpriseEvent}`);}
@@ -154,93 +153,7 @@ const Ctrl={
       }
       Chat.scrollEnd();
       return parsed;
-    }catch(err){Ctrl.dlog(`Scenario Controller error: ${err.message}`,'derr');return null;}
-  },
-
-  // ===== CREATIVE CONTROLLER =====
-  async runCreative(brief){
-    // BUG 1 fix: replaced invalid 'llama-scout' fallback with 'openai'
-    const model=ST.settings.ctrlModel||'openai';
-    Ctrl.dlog(`Creative Controller: generating character from brief...`,'dinfo');
-    const sys=`You are the Creative Controller. Generate a complete roleplay character from a brief description.\nRespond ONLY with valid JSON \u2014 no other text, no markdown fences:\n{"name":"Name","personality":"2-3 sentence personality","appearance":"2-3 sentence appearance","voice":"alloy|echo|fable|onyx|nova|shimmer","colorHint":"#hexcolor matching the character vibe","backstory":"brief backstory"}`;
-    try{
-      const raw=await Ctrl._withTimeout(API.chat([{role:'system',content:sys},{role:'user',content:`Create a character based on: ${brief}`}],model,{temp:0.97,maxTokens:800}));
-      const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
-      if(!parsed.name?.trim())parsed.name='Character-'+Math.random().toString(36).slice(2,8);
-      parsed.personality=parsed.personality||'';
-      parsed.appearance=parsed.appearance||'';
-      parsed.voice=parsed.voice||'nova';
-      parsed.colorHint=parsed.colorHint||'#c9a84c';
-      parsed.backstory=parsed.backstory||'';
-      return parsed;
-    }catch(err){Ctrl.dlog('Creative Controller failed: '+err.message,'derr');return null;}
-  },
-
-  // ===== MEDIA CONTROLLER =====
-  async genImagePrompt(msg,char,scenario){
-    // BUG 1 fix: replaced invalid 'llama-scout' fallback with 'openai'
-    const model=ST.settings.ctrlModel||'openai';
-    Ctrl.dlog('Media Controller: generating image prompt...','dinfo');
-    const sys=`You are the Media Controller. Generate a detailed image generation prompt based on the current moment in a roleplay.\nReturn ONLY a JSON object \u2014 no other text:\n{"prompt":"detailed visual description (2-3 sentences, include lighting, mood, character appearance, action)","style":"anime|realistic|cinematic|painterly|comic","aspect":"16:9|1:1|9:16"}`;
-    const usr=`CHARACTER: ${char.name}\nAPPEARANCE: ${char.appearance||'Not specified'}\nMOOD: ${char.emotionalState||'neutral'}\nSCENARIO: ${scenario.name}\nMESSAGE: ${msg.content.slice(0,300)}`;
-    try{
-      const raw=await Ctrl._withTimeout(API.chat([{role:'system',content:sys},{role:'user',content:usr}],model,{temp:0.85,maxTokens:400}));
-      return JSON.parse(raw.replace(/```json|```/g,'').trim());
-    }catch(err){
-      Ctrl.dlog(`Media Controller image error: ${err.message}`,'warn');
-      return{prompt:`${char.appearance||''}, ${msg.content.replace(/\*[^*]+\*/g,'').replace(/"[^"]+"/g,'').trim().slice(0,200)}`,style:'cinematic',aspect:'1:1'};
-    }
-  },
-  async genVoiceHint(msg,char){
-    // BUG 1 fix: replaced invalid 'llama-scout' fallback with 'openai'
-    const model=ST.settings.ctrlModel||'openai';
-    const sys=`Analyze the message and character mood for voice generation. Return ONLY JSON:\n{"emotion":"dominant emotion","intensity":7,"speed":"normal|slow|fast","emphasis":"key phrases or empty string"}`;
-    const usr=`CHARACTER: ${char.name}\nMOOD: ${char.emotionalState||'neutral'}\nMESSAGE: ${msg.content.slice(0,300)}`;
-    try{
-      const raw=await Ctrl._withTimeout(API.chat([{role:'system',content:sys},{role:'user',content:usr}],model,{temp:0.6,maxTokens:200}),15000);
-      return JSON.parse(raw.replace(/```json|```/g,'').trim());
-    }catch(err){
-      return{emotion:char.emotionalState||'neutral',intensity:5,speed:'normal',emphasis:''};
-    }
-  },
-
-  // FIX #12: autoImprove now streams into the textarea progressively
-  async autoImprove(userChar,scenario,messages){
-    if(Ctrl._improveRunning){Ctrl._improveAbort=true;return '';}
-    Ctrl._improveRunning=true;
-    Ctrl._improveAbort=false;
-    // BUG 1 fix: replaced invalid 'llama-scout' fallback with 'openai'
-    const model=ST.settings.ctrlModel||'openai';
-    const recent=messages.slice(-15).map(m=>{const c=ST.chat.characters.find(x=>x.id===m.charId);return`${c?.name||'?'}: ${m.content}`;}).join('\n');
-    const memKey=`${userChar.id}_${ST.chat.scenId}`;
-    const mems=ST.chat.charMems?.[memKey]||[];
-    const memCtx=mems.length?`\n${userChar.name}'S PRIVATE MEMORIES:\n${mems.slice(-10).map(m=>`- [${m.type}] ${m.content}`).join('\n')}`:'';
-    const prompt=`Write the next in-character message for ${userChar.name} in this roleplay.\n\nSCENARIO: ${scenario.name} \u2014 ${scenario.lore||''}\n${userChar.name}'s PERSONALITY: ${userChar.personality||''}\nDIRECTIVE: ${ST.chat.directive.next||'Continue naturally'}\n${memCtx}\n\nRECENT CONVERSATION:\n${recent}\n\nWrite only ${userChar.name}'s next message using *actions* and "dialogue". No labels.`;
-
-    // Stream into textarea if streaming enabled
-    if(ST.settings.streaming){
-      const ta=$('#chat-ta');
-      if(ta){ta.value='';Scr.taResize(ta);}
-      let full='';
-      try{
-        await API.stream([{role:'user',content:prompt}],model,(chunk,done)=>{
-          if(Ctrl._improveAbort)throw new Error('Cancelled by user');
-          full+=chunk;
-          if(ta){ta.value=full;Scr.taResize(ta);}
-        },{temp:0.94,maxTokens:600});
-      }catch(err){
-        if(err.message!=='Cancelled by user')Ctrl.dlog(`autoImprove stream error: ${err.message}`,'warn');
-      }
-      Ctrl._improveRunning=false;
-      Ctrl._improveAbort=false;
-      return full;
-    }
-    try{
-      return await API.chat([{role:'user',content:prompt}],model,{temp:0.94,maxTokens:600});
-    }finally{
-      Ctrl._improveRunning=false;
-      Ctrl._improveAbort=false;
-    }
+    }catch(err){Ctrl.dlog(`Scenario Controller error: ${err.message}`,'err');return null;}
   },
 
   // ===== PRIVATE MEMORY SYSTEM =====
