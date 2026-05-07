@@ -147,19 +147,51 @@ const API={
     }
   },
 
-  // Image endpoint — positional args for backward compat with all callers.
-  // Auth key passed as ?key= query param because <img> tags cannot send Authorization headers.
-  // Supports Aqua image models via 'aqua:' prefix — routes to Aqua API base.
+  // Asynchronously generate an image via Aqua POST endpoint or Pollinations GET.
+  // For Aqua: POST /v1/images/generations, returns URL.
+  // For Pollinations: returns direct GET URL for immediate embedding.
+  async generateImageUrl(prompt, w=512, h=512, model=null){
+    model=model||ST.settings.imgModel||'flux';
+    const realModel=model.startsWith('aqua:')?model.slice(5):model;
+    // Aqua image generation via POST
+    if(model.startsWith('aqua:')&&ST.settings.aquaKey){
+      // Determine ratio from w/h
+      let ratio='square';
+      if(w>h) ratio='landscape';
+      else if(h>w) ratio='portrait';
+      const body={model:realModel,prompt,ratio};
+      const url='https://api.aquadevs.com/v1/images/generations';
+      const headers={'Authorization':`Bearer ${ST.settings.aquaKey}`,'Content-Type':'application/json'};
+      try{
+        const response=await fetch(url,{method:'POST',headers,body:JSON.stringify(body)});
+        if(!response.ok){
+          const errText=await response.text();
+          throw new Error(`Aqua image generation failed: ${response.status} - ${errText.slice(0,100)}`);
+        }
+        const data=await response.json();
+        if(!data.success||!data.url){
+          throw new Error('Aqua image generation response missing success or url');
+        }
+        return data.url;
+      }catch(err){
+        Ctrl?.dlog?.(`Aqua image generation error: ${err.message}`,'err');
+        throw err;
+      }
+    }
+    // Pollinations: direct URL (synchronous)
+    const key=API._pollinationsKey();
+    return`https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?model=${realModel}&width=${w}&height=${h}&nologo=true&key=${encodeURIComponent(key)}`;
+  },
+
+  // Legacy synchronous image URL generation (only for Pollinations).
+  // For Aqua, use generateImageUrl instead.
   imageUrl(prompt, w=512, h=512, model=null){
     model=model||ST.settings.imgModel||'flux';
-    // Aqua image models: route to Aqua API
-    if(model.startsWith('aqua:')&&ST.settings.aquaKey){
-      const realId=model.slice(5);
-      return`https://api.aquadevs.com/v1/image/${encodeURIComponent(prompt)}?model=${realId}&width=${w}&height=${h}&nologo=true&key=${encodeURIComponent(ST.settings.aquaKey)}`;
+    if(model.startsWith('aqua:')){
+      throw new Error('Aqua image models require async generateImageUrl. Use await API.generateImageUrl(...)');
     }
     const key=API._pollinationsKey();
-    const actualModel=model.startsWith('aqua:')?model.slice(5):model;
-    return`https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?model=${actualModel}&width=${w}&height=${h}&nologo=true&key=${encodeURIComponent(key)}`;
+    return`https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?model=${model}&width=${w}&height=${h}&nologo=true&key=${encodeURIComponent(key)}`;
   },
 
   // TTS — POST to /v1/audio/speech with full error logging, GET fallback if POST fails.
