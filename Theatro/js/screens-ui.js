@@ -57,6 +57,12 @@ Object.assign(Scr,{
           <div class="field"><label class="lbl">STT Model</label>${Scr.sttMpHtml('s-sttm',s.sttModel||'whisper-large-v3')}</div>
           <div class="field"><label class="lbl">Default Voice</label>${Scr.vpHtml('s-dv',s.defVoice||'nova')}</div>
         </div>
+        <div class="sett-grp">
+          <div class="sett-gt">Creative Controller</div>
+          <p style="font-size:11px;color:var(--tmut)">Used for character auto-creation, scenario auto-creation, and character image generation. Falls back to the default controller/image model if not set.</p>
+          <div class="field"><label class="lbl">Text Model</label>${Scr.mpHtml('s-crtm',s.creativeModel||s.ctrlModel||'openai')}</div>
+          <div class="field"><label class="lbl">Image Model</label>${Scr.imgMpHtml('s-crimgm',s.creativeImgModel||s.imgModel||'zimage')}</div>
+        </div>
         <button class="btn bp bsm" onclick="Scr.saveSettings()">Save Model Settings</button>
       </div>
       <div class="sett-sec ${tab==='controllers'?'on':''}">
@@ -183,6 +189,7 @@ Object.assign(Scr,{
     if(id==='cf-model')ST.charForm.modelId=val;
     else if(id==='s-cm'){ST.settings.charModel=val;Scr.markSettingsDirty();}
     else if(id==='s-ctm'){ST.settings.ctrlModel=val;Scr.markSettingsDirty();}
+    else if(id==='s-crtm'){ST.settings.creativeModel=val;Scr.markSettingsDirty();}
     Modal.close();
   },
 
@@ -204,6 +211,7 @@ Object.assign(Scr,{
     const inp=$(`#${id}`);const lbl=$(`#${id}-lbl`);
     if(inp)inp.value=val;if(lbl)lbl.textContent=name;
     if(id==='s-imgm'){ST.settings.imgModel=val;Scr.markSettingsDirty();}
+    else if(id==='s-crimgm'){ST.settings.creativeImgModel=val;Scr.markSettingsDirty();}
     Modal.close();
   },
 
@@ -215,8 +223,8 @@ Object.assign(Scr,{
   openTTSMP(id){
     const cur=$(`#${id}`)?.value;
     Modal.open({title:'Select TTS Model',narrow:true,content:()=>`<div class="mlist">${
-      TTS_MODELS.map(m=>`<div class="mopt ${m.id===cur?'sel':''}" onclick="Scr.selTTSModel('${id}','${m.id}','${esc(m.name)}')">
-        <div><div style="font-weight:600">${esc(m.name)}</div><div class="mopt-id">${esc(m.id)}</div></div>
+      TTS_MODELS.map(m=>`<div class="vopt ${m.id===cur?'sel':''}" onclick="Scr.selTTSModel('${id}','${m.id}','${esc(m.name)}')">
+        <div style="flex:1"><div style="font-weight:600">${esc(m.name)}</div><div class="mopt-id">${esc(m.id)}</div></div>
         ${m.rec?'<span class="mopt-rec">★ Rec</span>':''}
       </div>`).join('')
     }</div>`});
