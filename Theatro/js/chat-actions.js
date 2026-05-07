@@ -13,15 +13,15 @@ const CA={
       let prompt;
       try{
         const imgData=await Ctrl.genImagePrompt(msg,char,ST.chat.scenario);
-        prompt=imgData?.prompt||`${char.appearance||''}, ${msg.content.replace(/\*[^*]+\*/g,'').replace(/"[^"]+"/g,'').trim().slice(0,200)}`;
+        prompt=imgData?.prompt||`${char.appearance||''}, ${msg.content.replace(/\*[^*]+\*/g,'').replace(/\"[^\"]+\"/g,'').trim().slice(0,200)}`;
       }catch{
-        prompt=`${char.appearance||''}, ${msg.content.replace(/\*[^*]+\*/g,'').replace(/"[^"]+"/g,'').trim().slice(0,200)}`;
+        prompt=`${char.appearance||''}, ${msg.content.replace(/\*[^*]+\*/g,'').replace(/\"[^\"]+\"/g,'').trim().slice(0,200)}`;
       }
       const url=API.imageUrl(prompt);
       const mb=$(`#msg-${msgId} .msg-body`);
       if(mb){
         const img=document.createElement('img');img.className='msg-img';img.src=url;img.loading='lazy';
-        img.onclick=()=>Modal.open({title:'Image',wide:true,content:`<img src="${esc(url)}" style="width:100%;border-radius:8px">`});
+        img.onclick=()=>Modal.open({title:'Image',wide:true,content:`<img src=\"${esc(url)}\" style=\"width:100%;border-radius:8px\">`});
         mb.appendChild(img);
       }
       // FIX #4: Persist imageUrl to IndexedDB
@@ -36,7 +36,7 @@ const CA={
     if(!msg||!char)return;
     Toast.i('Generating voice...');
     try{
-      const text=msg.content.replace(/\*[^*]+\*/g,'').replace(/"/g,'').trim();
+      const text=msg.content.replace(/\*[^*]+\*/g,'').replace(/\"/g,'').trim();
       const voice=char.voice||ST.settings.defVoice||'nova';
       const audioUrl=await API.tts(text,voice);
       const mb=$(`#msg-${msgId} .msg-body`);
@@ -99,5 +99,38 @@ const CA={
     Toast.s(`Branch "${bname}" created`);
     const go=await Modal.confirm(`Branch "${bname}" created. Open it?`,{ok:'Open Branch'});
     if(go)await Chat.init(bs.id);
+  },
+
+  // === Utility: cache all existing media from current chat ===
+  // Useful for exporting images/audio that were generated before auto‑caching was added.
+  async cacheAllMedia(){
+    const messages = ST.chat.messages || [];
+    let count = 0;
+    for (const msg of messages) {
+      // Cache image URL
+      if (msg.imageUrl && typeof msg.imageUrl === 'string' && !(await DB.hasBlob(msg.imageUrl))) {
+        try {
+          const res = await fetch(msg.imageUrl);
+          if (res.ok) {
+            const blob = await res.blob();
+            await DB.cacheBlob(msg.imageUrl, blob, 'image');
+            count++;
+          }
+        } catch (e) { Ctrl?.dlog?.(`Failed to cache image ${msg.imageUrl}: ${e.message}`, 'warn'); }
+      }
+      // Cache audio URL
+      if (msg.audioUrl && typeof msg.audioUrl === 'string' && !(await DB.hasBlob(msg.audioUrl))) {
+        try {
+          const res = await fetch(msg.audioUrl);
+          if (res.ok) {
+            const blob = await res.blob();
+            await DB.cacheBlob(msg.audioUrl, blob, 'audio');
+            count++;
+          }
+        } catch (e) { Ctrl?.dlog?.(`Failed to cache audio ${msg.audioUrl}: ${e.message}`, 'warn'); }
+      }
+    }
+    Toast.s(`Cached ${count} media blob(s) from current chat`);
+    return count;
   }
 };
