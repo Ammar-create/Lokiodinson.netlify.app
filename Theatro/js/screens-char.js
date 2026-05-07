@@ -70,6 +70,10 @@ Object.assign(Scr,{
         <div class="tgl ${f.isUser?'on':''}" id="cf-usr"></div>
         <span class="tgl-lbl">This character represents me (the user)</span>
       </div>
+      ${isEdit?`<hr><div class="tgl-wrap" onclick="Scr.nukeCharMemory('${ST.editCharId}')">
+        <div class="tgl" style="background:var(--criml)" id="cf-nuke"></div>
+        <span class="tgl-lbl" style="color:var(--criml)">Clear All Memory (this character in all scenarios)</span>
+      </div>`:''}
       <hr>
       <div class="tgl-wrap" onclick="ST.charForm.createImage=!ST.charForm.createImage;$('#cf-cimg')?.classList.toggle('on',ST.charForm.createImage)">
         <div class="tgl ${f.createImage?'on':''}" id="cf-cimg"></div>
@@ -91,7 +95,7 @@ Object.assign(Scr,{
   setAvUrl(url){
     ST.charForm.avatar=url;
     const d=$('#av-drop');
-    if(d&&url.startsWith('http'))d.innerHTML=`<img src="${esc(url)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='<span style=&quot;font-size:10px&quot;>Invalid URL</span>'">`;
+    if(d&&url.startsWith('http'))d.innerHTML=`<img src="${esc(url)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='<span style="font-size:10px">Invalid URL</span>'">`;
   },
   pickColor(color){
     ST.charForm.color=color;
@@ -101,28 +105,48 @@ Object.assign(Scr,{
   },
   toggleUser(){ST.charForm.isUser=!ST.charForm.isUser;$('#cf-usr')?.classList.toggle('on',ST.charForm.isUser)},
 
-  // --- CHARACTER IMAGE GENERATION ---
+  // --- CHARACTER IMAGE GENERATION (with custom prompt mode) ---
   async generateCharImage(){
     const f=ST.charForm;
-    if(!f.name?.trim()&&!f.personality?.trim()&&!f.appearance?.trim()){
-      Toast.w('Enter a name or description first');
-      return;
+    const customMode=ST.settings.customImagePrompt===true;
+    let promptText=null;
+    if(customMode){
+      promptText=await Modal.prompt('Enter custom image prompt:',{title:'Custom Image Prompt',placeholder:'e.g. A futuristic warrior with glowing eyes, cyberpunk style',ok:'Generate'});
+      if(!promptText)return;
+    }else{
+      if(!f.name?.trim()&&!f.personality?.trim()&&!f.appearance?.trim()){
+        Toast.w('Enter a name or description first');
+        return;
+      }
     }
     const btn=$('#gen-img-btn');
     if(btn){btn.disabled=true;btn.innerHTML=`<div class="spinner" style="width:13px;height:13px"></div> Generating...`;}
     try{
-      const char={id:'temp',name:f.name||'Character',personality:f.personality||'',appearance:f.appearance||'',color:f.color||'#c9a84c'};
-      const results=await Ctrl.generateCharacterImages([char]);
-      if(results?.[0]?.imageUrl){
-        ST.charForm.avatar=results[0].imageUrl;
+      let imageUrl;
+      if(customMode){
+        // Use custom prompt directly
+        const imgModel=ST.settings.creativeImgModel||ST.settings.imgModel||'flux';
+        imageUrl=API.imageUrl(promptText,512,512,imgModel);
+        ST.charForm.avatar=imageUrl;
         const d=$('#av-drop');
-        if(d)d.innerHTML=`<img src="${esc(results[0].imageUrl)}" style="width:100%;height:100%;object-fit:cover" loading="lazy">`;
-        // Also update the URL field if visible
+        if(d)d.innerHTML=`<img src="${esc(imageUrl)}" style="width:100%;height:100%;object-fit:cover" loading="lazy">`;
         const urlInp=$('#cf-av-url');
-        if(urlInp&&results[0].imageUrl.startsWith('http'))urlInp.value=results[0].imageUrl;
-        Toast.s('Image generated!');
+        if(urlInp&&imageUrl.startsWith('http'))urlInp.value=imageUrl;
+        Toast.s('Image generated from custom prompt!');
       }else{
-        Toast.e('Image generation failed');
+        // Auto-generate prompt from character description
+        const char={id:'temp',name:f.name||'Character',personality:f.personality||'',appearance:f.appearance||'',color:f.color||'#c9a84c'};
+        const results=await Ctrl.generateCharacterImages([char]);
+        if(results?.[0]?.imageUrl){
+          ST.charForm.avatar=results[0].imageUrl;
+          const d=$('#av-drop');
+          if(d)d.innerHTML=`<img src="${esc(results[0].imageUrl)}" style="width:100%;height:100%;object-fit:cover" loading="lazy">`;
+          const urlInp=$('#cf-av-url');
+          if(urlInp&&results[0].imageUrl.startsWith('http'))urlInp.value=results[0].imageUrl;
+          Toast.s('Image generated!');
+        }else{
+          Toast.e('Image generation failed');
+        }
       }
     }catch(err){
       Toast.e('Failed: '+err.message);
@@ -131,11 +155,35 @@ Object.assign(Scr,{
     }
   },
 
+  // --- CHARACTER MEMORY NUKE (Feature 5) ---
+  async nukeCharMemory(charId){
+    const char=await DB.get('characters',charId);
+    if(!char)return;
+    const ok=await Modal.confirm(`Permanently delete ALL memories for "${char.name}" across ALL scenarios? This cannot be undone.`,{ok:'Delete All Memories',danger:true});
+    if(!ok)return;
+    // Delete all memory keys that start with `${charId}_`
+    const db=await DB.open();
+    const tx=db.transaction('memories','readwrite');
+    const store=tx.objectStore('memories');
+    const allKeys=await store.getAllKeys();
+    const toDelete=allKeys.filter(k=>k.startsWith(`${charId}_`));
+    for(const key of toDelete){
+      await store.delete(key);
+    }
+    // Also clear from current in-memory chat state if this character is loaded
+    if(ST.chat.charMems){
+      for(const key of toDelete){
+        delete ST.chat.charMems[key];
+      }
+    }
+    Toast.s(`Cleared ${toDelete.length} memory entries for ${char.name}`);
+  },
+
   async saveChar(){
     const f=ST.charForm;
     if(!f.name.trim()){Toast.e('Name is required');return;}
 
-    // If "Create Image" checkbox is on, generate image before saving
+    // If "Create Image" checkbox is on and no avatar yet, generate image
     if(f.createImage&&!f.avatar){
       await Scr.generateCharImage();
     }
