@@ -105,6 +105,14 @@ Object.assign(Scr,{
         <div class="sett-grp">
           <div class="sett-gt">Data Management</div>
           <p style="font-size:12px;color:var(--tdim)">All data is stored locally in your browser's IndexedDB. Export regularly to back up your scenarios and characters.</p>
+          <div style="display:flex;gap:20px;margin-bottom:12px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" id="export-images-checkbox" style="width:16px;height:16px;margin:0"> <span>📷 Export images</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" id="export-audio-checkbox" style="width:16px;height:16px;margin:0"> <span>🎵 Export audio files</span>
+            </label>
+          </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
             <button class="btn bs bsm" onclick="Scr.exportAll()">${I('download',12)} Export All</button>
             <button class="btn bs bsm" onclick="Scr.importAll()">${I('upload',12)} Import</button>
@@ -121,9 +129,56 @@ Object.assign(Scr,{
     Toast.s('Settings saved');
   },
   async exportAll(){
-    const data={_theatro:true,version:1,exportedAt:Date.now(),characters:await DB.getAll('characters'),scenarios:await DB.getAll('scenarios'),settings:ST.settings};
-    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
-    a.download=`theatro_backup_${Date.now()}.json`;a.click();Toast.s('Exported');
+    const includeImages = !!$('#export-images-checkbox')?.checked;
+    const includeAudio = !!$('#export-audio-checkbox')?.checked;
+    const data = {
+      _theatro: true,
+      version: 2, // version bump because we now may include blobs
+      exportedAt: Date.now(),
+      characters: await DB.getAll('characters'),
+      scenarios: await DB.getAll('scenarios'),
+      settings: ST.settings
+    };
+    // Add blobs if requested
+    if (includeImages || includeAudio) {
+      const allBlobs = await DB.getAllBlobs();
+      const filtered = allBlobs.filter(b => {
+        if (includeImages && b.kind === 'image') return true;
+        if (includeAudio && b.kind === 'audio') return true;
+        return false;
+      });
+      const blobEntries = await Promise.all(filtered.map(async (b) => {
+        let base64 = '';
+        try {
+          if (b.blob) {
+            const reader = new FileReader();
+            const promise = new Promise((res, rej) => {
+              reader.onload = () => res(reader.result);
+              reader.onerror = rej;
+            });
+            reader.readAsDataURL(b.blob);
+            base64 = await promise;
+          }
+        } catch (err) {
+          Ctrl?.dlog?.(`Failed to convert blob ${b.id}: ${err.message}`, 'warn');
+        }
+        return {
+          id: b.id,
+          url: b.url,
+          kind: b.kind,
+          type: b.type,
+          size: b.size,
+          cachedAt: b.cachedAt,
+          data: base64
+        };
+      }));
+      data.blobs = blobEntries;
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+    a.download = `theatro_backup_${Date.now()}.json`;
+    a.click();
+    Toast.s(`Exported${includeImages||includeAudio?' with images/audio':''}`);
   },
   async importAll(){
     const inp=document.createElement('input');inp.type='file';inp.accept='.json';
@@ -134,6 +189,21 @@ Object.assign(Scr,{
         const ok=await Modal.confirm('Import characters and scenarios from file?',{ok:'Import'});if(!ok)return;
         for(const c of data.characters||[])await DB.put('characters',c);
         for(const s of data.scenarios||[])await DB.put('scenarios',s);
+        // Optionally restore blobs if present (version >=2 and has blobs array)
+        if (data.version >= 2 && data.blobs && Array.isArray(data.blobs)) {
+          for (const blobEntry of data.blobs) {
+            if (blobEntry.data && blobEntry.data.startsWith('data:')) {
+              try {
+                const response = await fetch(blobEntry.data);
+                const blob = await response.blob();
+                await DB.cacheBlob(blobEntry.url, blob, blobEntry.kind);
+              } catch (err) {
+                Ctrl?.dlog?.(`Failed to restore blob ${blobEntry.id}: ${err.message}`, 'warn');
+              }
+            }
+          }
+          Toast.s(`Imported ${data.blobs.length} blobs`);
+        }
         Toast.s('Import complete');Scr.dashboard();
       }catch{Toast.e('Import failed');}
     };inp.click();
