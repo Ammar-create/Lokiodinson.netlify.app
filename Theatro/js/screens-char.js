@@ -124,9 +124,9 @@ Object.assign(Scr,{
     try{
       let imageUrl;
       if(customMode){
-        // Use custom prompt directly
+        // Use custom prompt directly via async generation
         const imgModel=ST.settings.creativeImgModel||ST.settings.imgModel||'flux';
-        imageUrl=API.imageUrl(promptText,512,512,imgModel);
+        imageUrl=await API.generateImageUrl(promptText,512,512,imgModel);
         ST.charForm.avatar=imageUrl;
         const d=$('#av-drop');
         if(d)d.innerHTML=`<img src="${esc(imageUrl)}" style="width:100%;height:100%;object-fit:cover" loading="lazy">`;
