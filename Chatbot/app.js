@@ -43,11 +43,11 @@ var state = {
   defaultModel: 'gptimage-2',
   enhanceEnabled: false,
   enhanceModel: 'gpt-5.4-mini',
-  enhanceManual: false,       // NEW
-  enhanceWebSearch: false,    // NEW
+  enhanceManual: false,
+  enhanceWebSearch: false,
   nameEnabled: false,
   nameModel: 'gpt-5.4-mini',
-  parallelGeneration: false,  // NEW
+  parallelGeneration: false,
   images: [],
   currentFilter: 'all',
   selectedModel: 'gptimage-2',
@@ -57,9 +57,9 @@ var state = {
   refImageData: null,
   refPreviewUrl: null,
   isGenerating: false,
-  genMinimized: false,        // NEW
-  genStartTime: 0,            // NEW
-  genElapsedTimer: null       // NEW
+  genMinimized: false,
+  genStartTime: 0,
+  genElapsedTimer: null
 };
 
 var blobUrlCache = {};
@@ -88,12 +88,10 @@ var dom = {
   settingsDefaultModel: $('settingsDefaultModel'),
   settingsEnhanceToggle: $('settingsEnhanceToggle'),
   settingsEnhanceModel: $('settingsEnhanceModel'),
-  // NEW
   settingsEnhanceManual: $('settingsEnhanceManual'),
   settingsEnhanceWeb: $('settingsEnhanceWeb'),
   settingsNameToggle: $('settingsNameToggle'),
   settingsNameModel: $('settingsNameModel'),
-  // NEW
   settingsParallel: $('settingsParallel'),
   themeOrange: $('themeOrange'),
   themeBlue: $('themeBlue'),
@@ -104,7 +102,6 @@ var dom = {
   genStatusText: $('genStatusText'),
   genCurrentCount: $('genCurrentCount'),
   genTotalCount: $('genTotalCount'),
-  // NEW
   genSlots: $('genSlots'),
   genMinimizeBtn: $('genMinimizeBtn'),
   genMini: $('genMini'),
@@ -138,12 +135,10 @@ var dom = {
   addStyleRow: $('addStyleRow'),
   customStyleInput: $('customStyleInput'),
   addStyleConfirm: $('addStyleConfirm'),
-  // NEW
   customRatioWrap: $('customRatioWrap'),
   customRatioInput: $('customRatioInput'),
   customRatioApply: $('customRatioApply'),
   customRatioBtn: $('customRatioBtn'),
-  // NEW
   enhanceSection: $('enhanceSection'),
   enhanceBtn: $('enhanceBtn'),
   generateBtn: $('generateBtn'),
@@ -225,7 +220,7 @@ function dbGetAll(store) {
   });
 }
 
-// ==================== IMAGE BLOB STORAGE (NEW) ====================
+// ==================== IMAGE BLOB STORAGE ====================
 
 async function fetchAndStoreBlob(imageUrl) {
   try {
@@ -271,15 +266,15 @@ async function loadSettings() {
     state.defaultModel = map.defaultModel || 'gptimage-2';
     state.enhanceEnabled = !!map.enhanceEnabled;
     state.enhanceModel = map.enhanceModel || 'gpt-5.4-mini';
-    state.enhanceManual = !!map.enhanceManual;       // NEW
-    state.enhanceWebSearch = !!map.enhanceWebSearch; // NEW
+    state.enhanceManual = !!map.enhanceManual;
+    state.enhanceWebSearch = !!map.enhanceWebSearch;
     state.nameEnabled = !!map.nameEnabled;
     state.nameModel = map.nameModel || 'gpt-5.4-mini';
-    state.parallelGeneration = !!map.parallelGeneration; // NEW
+    state.parallelGeneration = !!map.parallelGeneration;
 
     applyTheme(state.theme);
     applyProfileUI();
-    updateEnhanceButton();  // NEW
+    updateEnhanceButton();
 
     if (!state.setupComplete || !state.apiKey) {
       showSetupModal();
@@ -310,7 +305,6 @@ function applyProfileUI() {
     dom.setupAvatarPreview.style.display = 'block';
     var ph = dom.setupAvatarWrap.querySelector('.setup-avatar-placeholder');
     if (ph) ph.style.display = 'none';
-
     dom.settingsAvatarPreview.src = state.avatarData;
     dom.settingsAvatarPreview.style.display = 'block';
     var sph = dom.settingsAvatarWrap.querySelector('.settings-avatar-ph');
@@ -328,19 +322,17 @@ function applyProfileUI() {
   dom.settingsDefaultModel.value = state.defaultModel;
   dom.settingsEnhanceToggle.checked = state.enhanceEnabled;
   dom.settingsEnhanceModel.value = state.enhanceModel;
-  // NEW
   dom.settingsEnhanceManual.checked = state.enhanceManual;
   dom.settingsEnhanceWeb.checked = state.enhanceWebSearch;
   dom.settingsNameToggle.checked = state.nameEnabled;
   dom.settingsNameModel.value = state.nameModel;
-  // NEW
   dom.settingsParallel.checked = state.parallelGeneration;
 }
 
-// NEW: Show/hide the Enhance button based on manual mode
 function updateEnhanceButton() {
   if (dom.enhanceSection) {
-    dom.enhanceSection.style.display = (state.enhanceEnabled && state.enhanceManual) ? 'block' : 'none';
+    dom.enhanceSection.style.display =
+      (state.enhanceEnabled && state.enhanceManual) ? 'block' : 'none';
   }
 }
 
@@ -425,7 +417,9 @@ function renderGallery() {
   }
 
   var total = state.images.length;
-  var recent = state.images.filter(function(i) { return i.timestamp > Date.now() - 86400000; }).length;
+  var recent = state.images.filter(function(i) {
+    return i.timestamp > Date.now() - 86400000;
+  }).length;
   var favs = state.images.filter(function(i) { return i.favorite; }).length;
 
   dom.tabAll.textContent = total ? '(' + total + ')' : '';
@@ -439,20 +433,28 @@ function renderGallery() {
   } else {
     dom.emptyState.style.display = 'none';
     dom.galleryGrid.innerHTML = filtered.map(function(img, i) {
-      var imgSrc = getDisplayUrl(img); // NEW: use blob URL if available
-      return '<div class="gcard" data-id="' + img.id + '" style="animation-delay:' + Math.min(i * 40, 240) + 'ms">' +
-        '<img src="' + esc(imgSrc) + '" alt="' + esc(img.name || img.prompt) + '" loading="lazy">' +
+      var imgSrc = getDisplayUrl(img);
+      return '<div class="gcard" data-id="' + img.id +
+        '" style="animation-delay:' + Math.min(i * 40, 240) + 'ms">' +
+        '<img src="' + esc(imgSrc) + '" alt="' +
+        esc(img.name || img.prompt) + '" loading="lazy">' +
         '<div class="gcard-badge">' + esc(img.model) + '</div>' +
         '<div class="gcard-actions">' +
           '<button class="gcard-dl" data-id="' + img.id + '" title="Download">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
-          '</button>' +
-          '<button class="gcard-fav' + (img.favorite ? ' active' : '') + '" data-id="' + img.id + '" title="Favorite">' +
-            '<svg viewBox="0 0 24 24" fill="' + (img.favorite ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
-          '</button>' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+            '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
+            '<polyline points="7 10 12 15 17 10"/>' +
+            '<line x1="12" y1="15" x2="12" y2="3"/></svg></button>' +
+          '<button class="gcard-fav' + (img.favorite ? ' active' : '') +
+            '" data-id="' + img.id + '" title="Favorite">' +
+            '<svg viewBox="0 0 24 24" fill="' +
+            (img.favorite ? 'currentColor' : 'none') +
+            '" stroke="currentColor" stroke-width="2">' +
+            '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>' +
           '<button class="gcard-copy" data-id="' + img.id + '" title="Copy Prompt">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
-          '</button>' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+            '<rect x="9" y="9" width="13" height="13" rx="2"/>' +
+            '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>' +
         '</div>' +
         '<div class="gcard-overlay">' +
           '<div class="gcard-name">' + esc(img.name || img.prompt) + '</div>' +
@@ -474,8 +476,7 @@ function findImage(id) {
 
 function openViewer(img) {
   currentViewerImage = img;
-  var imgSrc = getDisplayUrl(img); // NEW: use blob
-  dom.viewerImg.src = imgSrc;
+  dom.viewerImg.src = getDisplayUrl(img);
   dom.viewerPrompt.textContent = img.prompt;
   dom.viewerMeta.innerHTML =
     '<span>' + esc(img.model) + '</span>' +
@@ -539,10 +540,8 @@ async function uploadToCatbox(fileBlob) {
   var formData = new FormData();
   formData.append('reqtype', 'fileupload');
   formData.append('fileToUpload', fileBlob, 'reference.jpg');
-
   var controller = new AbortController();
   var timeout = setTimeout(function() { controller.abort(); }, 20000);
-
   try {
     var res = await fetch('https://catbox.moe/user/api.php', {
       method: 'POST',
@@ -625,7 +624,7 @@ function updateRefSection() {
   if (!show) clearRefImage();
 }
 
-// ==================== ENHANCEMENT (UPDATED) ====================
+// ==================== ENHANCEMENT ====================
 
 async function enhancePrompt(prompt, style) {
   var systemMsg = 'You are an expert image prompt engineer. Given a user prompt, rewrite it into a more detailed, vivid, and descriptive version optimized for AI image generation. Keep it under 300 characters. Return ONLY the enhanced prompt, nothing else.';
@@ -656,7 +655,6 @@ async function enhancePrompt(prompt, style) {
     : null;
 }
 
-// NEW: Web search enhancement with tool calling
 async function enhanceWithWebSearch(prompt, style) {
   var systemMsg = 'You are an expert image prompt engineer with access to a web_search tool. Your job is to enhance prompts for AI image generation. If the prompt references current events, real-world facts, people, or anything you are not fully confident about, use the web_search tool to get accurate information first. Then craft a single, vivid, descriptive enhanced prompt. Keep it under 400 characters. Return ONLY the final enhanced prompt, nothing else.';
   if (style) {
@@ -676,14 +674,16 @@ async function enhanceWithWebSearch(prompt, style) {
       parameters: {
         type: 'object',
         properties: {
-          query: { type: 'string', description: 'The search query to find relevant information' }
+          query: {
+            type: 'string',
+            description: 'The search query to find relevant information'
+          }
         },
         required: ['query']
       }
     }
   }];
 
-  // First call — model decides if it needs to search
   var res1 = await fetch('https://api.aquadevs.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -703,15 +703,17 @@ async function enhanceWithWebSearch(prompt, style) {
   var data1 = await res1.json();
   var choice = data1.choices ? data1.choices[0] : null;
 
-  if (choice && choice.finish_reason === 'tool_calls' && choice.message && choice.message.tool_calls) {
-    // Model wants to search
+  if (choice && choice.finish_reason === 'tool_calls' &&
+      choice.message && choice.message.tool_calls) {
     messages.push(choice.message);
 
     for (var t = 0; t < choice.message.tool_calls.length; t++) {
       var toolCall = choice.message.tool_calls[t];
       if (toolCall.function && toolCall.function.name === 'web_search') {
         var args = JSON.parse(toolCall.function.arguments);
-        dom.genStatusText && (dom.genStatusText.textContent = 'Searching: "' + args.query + '"...');
+        if (dom.genStatusText) {
+          dom.genStatusText.textContent = 'Searching: "' + args.query + '"...';
+        }
 
         var searchResult = await webSearch(args.query);
         messages.push({
@@ -722,7 +724,6 @@ async function enhanceWithWebSearch(prompt, style) {
       }
     }
 
-    // Second call — model returns enhanced prompt using search results
     var res2 = await fetch('https://api.aquadevs.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -743,11 +744,9 @@ async function enhanceWithWebSearch(prompt, style) {
       : null;
   }
 
-  // No tool call — return direct enhancement
   return choice && choice.message ? choice.message.content.trim() : null;
 }
 
-// NEW: Execute web search via AquaDevs API
 async function webSearch(query) {
   try {
     var res = await fetch('https://api.aquadevs.com/v1/search', {
@@ -765,7 +764,6 @@ async function webSearch(query) {
   }
 }
 
-// NEW: Manual enhance — fills textarea with enhanced prompt
 async function manualEnhance() {
   var prompt = dom.promptInput.value.trim();
   if (!prompt) {
@@ -804,7 +802,7 @@ async function manualEnhance() {
   dom.enhanceBtn.querySelector('span').textContent = 'Enhance Prompt';
 }
 
-// ==================== GENERATION (UPDATED) ====================
+// ==================== GENERATION ====================
 
 async function generateImages() {
   if (state.isGenerating) return;
@@ -828,7 +826,8 @@ async function generateImages() {
   // Auto-enhance (only when NOT manual mode)
   if (state.enhanceEnabled && !state.enhanceManual) {
     try {
-      dom.genPromptText.textContent = state.enhanceWebSearch ? 'Searching & enhancing...' : 'Enhancing your prompt...';
+      dom.genPromptText.textContent = state.enhanceWebSearch
+        ? 'Searching & enhancing...' : 'Enhancing your prompt...';
       showGenOverlay();
       var enhanced;
       if (state.enhanceWebSearch) {
@@ -845,12 +844,13 @@ async function generateImages() {
   // Build full prompt (style already integrated if enhancement was on)
   var fullPrompt;
   if (state.enhanceEnabled) {
-    fullPrompt = prompt; // Style already baked in by enhancer
+    fullPrompt = prompt;
   } else {
-    fullPrompt = state.selectedStyle ? prompt + ', ' + state.selectedStyle + ' style' : prompt;
+    fullPrompt = state.selectedStyle
+      ? prompt + ', ' + state.selectedStyle + ' style'
+      : prompt;
   }
 
-  // Prepare ratio value
   var ratioValue = state.selectedRatio;
 
   showGenOverlay();
@@ -861,7 +861,6 @@ async function generateImages() {
   dom.genBarFill.style.width = '0%';
   dom.genStatusText.textContent = 'Generating...';
 
-  // Parallel or sequential
   if (state.parallelGeneration && state.selectedCount > 1) {
     await generateParallel(fullPrompt, ratioValue);
   } else {
@@ -874,14 +873,14 @@ async function generateImages() {
   dom.generateBtn.disabled = false;
 }
 
-// NEW: Sequential generation (original behavior)
 async function generateSequential(fullPrompt, ratioValue) {
   var results = [];
   var done = 0;
 
   for (var i = 0; i < state.selectedCount; i++) {
     try {
-      dom.genStatusText.textContent = 'Generating image ' + (i + 1) + ' of ' + state.selectedCount + '...';
+      dom.genStatusText.textContent = 'Generating image ' + (i + 1) +
+        ' of ' + state.selectedCount + '...';
       var imageUrl = await callImageAPI(fullPrompt, ratioValue);
       if (imageUrl) {
         var blob = await fetchAndStoreBlob(imageUrl);
@@ -917,15 +916,16 @@ async function generateSequential(fullPrompt, ratioValue) {
   if (results.length) {
     state.images = results.concat(state.images);
     renderGallery();
-    toast('success', 'Generation Complete', 'Created ' + results.length + ' image' + (results.length > 1 ? 's' : ''));
+    toast('success', 'Generation Complete',
+      'Created ' + results.length + ' image' + (results.length > 1 ? 's' : ''));
   }
 }
 
-// NEW: Parallel generation
 async function generateParallel(fullPrompt, ratioValue) {
   dom.genSlots.innerHTML = '';
   for (var s = 0; s < state.selectedCount; s++) {
-    dom.genSlots.innerHTML += '<div class="gen-slot waiting" data-slot="' + s + '">' + (s + 1) + '</div>';
+    dom.genSlots.innerHTML += '<div class="gen-slot waiting" data-slot="' +
+      s + '">' + (s + 1) + '</div>';
   }
 
   var completed = 0;
@@ -938,7 +938,8 @@ async function generateParallel(fullPrompt, ratioValue) {
         var slotEl = dom.genSlots.querySelector('[data-slot="' + index + '"]');
         try {
           slotEl.className = 'gen-slot active';
-          dom.genStatusText.textContent = 'Processing ' + state.selectedCount + ' images...';
+          dom.genStatusText.textContent = 'Processing ' +
+            state.selectedCount + ' images...';
 
           var imageUrl = await callImageAPI(fullPrompt, ratioValue);
           if (imageUrl) {
@@ -975,7 +976,8 @@ async function generateParallel(fullPrompt, ratioValue) {
         }
         completed++;
         dom.genCurrentCount.textContent = completed;
-        dom.genBarFill.style.width = Math.round((completed / state.selectedCount) * 100) + '%';
+        dom.genBarFill.style.width =
+          Math.round((completed / state.selectedCount) * 100) + '%';
       })(i)
     );
   }
@@ -985,11 +987,11 @@ async function generateParallel(fullPrompt, ratioValue) {
   if (results.length) {
     state.images = results.concat(state.images);
     renderGallery();
-    toast('success', 'Generation Complete', 'Created ' + results.length + ' image' + (results.length > 1 ? 's' : ''));
+    toast('success', 'Generation Complete',
+      'Created ' + results.length + ' image' + (results.length > 1 ? 's' : ''));
   }
 }
 
-// NEW: Shared API call
 async function callImageAPI(fullPrompt, ratioValue) {
   var body = {
     model: state.selectedModel,
@@ -997,7 +999,8 @@ async function callImageAPI(fullPrompt, ratioValue) {
     ratio: ratioValue
   };
 
-  if (state.refImageData && REF_IMAGE_MODELS.indexOf(state.selectedModel) !== -1) {
+  if (state.refImageData &&
+      REF_IMAGE_MODELS.indexOf(state.selectedModel) !== -1) {
     body.image = state.refImageData;
   }
 
@@ -1013,8 +1016,10 @@ async function callImageAPI(fullPrompt, ratioValue) {
   var data = await res.json();
   if (!data.success) throw new Error(data.error || 'Generation failed');
 
-  if (POLLING_MODELS.indexOf(state.selectedModel) !== -1 && (data.task_id || data.url)) {
-    var pollUrl = data.url || ('https://api.aquadevs.com/v1/images/tasks/' + data.task_id);
+  if (POLLING_MODELS.indexOf(state.selectedModel) !== -1 &&
+      (data.task_id || data.url)) {
+    var pollUrl = data.url ||
+      ('https://api.aquadevs.com/v1/images/tasks/' + data.task_id);
     return await pollForImage(pollUrl);
   }
 
@@ -1039,7 +1044,8 @@ async function pollForImage(url, maxTime) {
     if (data.status === 'failed') throw new Error('Async generation failed');
 
     var elapsed = Math.round((Date.now() - start) / 1000);
-    dom.genStatusText.textContent = 'Processing... (' + elapsed + 's elapsed)';
+    dom.genStatusText.textContent =
+      'Processing... (' + elapsed + 's elapsed)';
     dom.genBarFill.style.width = Math.min(85, elapsed * 3) + '%';
   }
 
@@ -1056,7 +1062,10 @@ async function autoName(prompt) {
     body: JSON.stringify({
       model: state.nameModel,
       messages: [
-        { role: 'system', content: 'Generate a short, catchy title (3-6 words) for an image based on the prompt. Return ONLY the title, nothing else. No quotes.' },
+        {
+          role: 'system',
+          content: 'Generate a short, catchy title (3-6 words) for an image based on the prompt. Return ONLY the title, nothing else. No quotes.'
+        },
         { role: 'user', content: prompt }
       ],
       max_tokens: 30,
@@ -1086,7 +1095,6 @@ function hideGenOverlay() {
   if (state.genElapsedTimer) clearInterval(state.genElapsedTimer);
 }
 
-// NEW: Timer
 function startGenTimer() {
   state.genStartTime = Date.now();
   if (state.genElapsedTimer) clearInterval(state.genElapsedTimer);
@@ -1103,7 +1111,6 @@ function stopGenTimer() {
   }
 }
 
-// NEW: Minimize
 function minimizeGen() {
   state.genMinimized = true;
   dom.genOverlay.classList.remove('active');
@@ -1143,8 +1150,12 @@ function downloadImage(url, prompt) {
 }
 
 function sanitizeFilename(text) {
-  return text.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')
-    .replace(/-+/g, '-').replace(/^-|-$/g, '').substring(0, 80) || 'image';
+  return text.toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 80) || 'image';
 }
 
 // ==================== TOAST ====================
@@ -1220,7 +1231,9 @@ function addCustomStyle() {
   dom.styleChips.appendChild(btn);
   dom.customStyleInput.value = '';
   dom.addStyleRow.style.display = 'none';
-  document.querySelectorAll('.schip').forEach(function(c) { c.classList.remove('active'); });
+  document.querySelectorAll('.schip').forEach(function(c) {
+    c.classList.remove('active');
+  });
   btn.classList.add('active');
   state.selectedStyle = val.toLowerCase();
   toast('success', 'Style Added', '"' + val + '" added to your styles');
@@ -1231,7 +1244,10 @@ function addCustomStyle() {
 function bindEvents() {
 
   // ---- Setup Modal ----
-  dom.setupAvatarWrap.addEventListener('click', function() { dom.setupAvatarFile.click(); });
+  dom.setupAvatarWrap.addEventListener('click', function() {
+    dom.setupAvatarFile.click();
+  });
+
   dom.setupAvatarFile.addEventListener('change', function(e) {
     var file = e.target.files[0];
     if (!file) return;
@@ -1247,7 +1263,8 @@ function bindEvents() {
   });
 
   dom.setupEyeToggle.addEventListener('click', function() {
-    dom.setupApiKey.type = dom.setupApiKey.type === 'password' ? 'text' : 'password';
+    dom.setupApiKey.type = dom.setupApiKey.type === 'password'
+      ? 'text' : 'password';
   });
 
   dom.setupApiKey.addEventListener('input', function() {
@@ -1293,7 +1310,10 @@ function bindEvents() {
   dom.settingsCloseBtn.addEventListener('click', closeSettings);
   dom.sidebarSettingsBtn.addEventListener('click', openSettings);
 
-  dom.settingsAvatarWrap.addEventListener('click', function() { dom.settingsAvatarFile.click(); });
+  dom.settingsAvatarWrap.addEventListener('click', function() {
+    dom.settingsAvatarFile.click();
+  });
+
   dom.settingsAvatarFile.addEventListener('change', function(e) {
     var file = e.target.files[0];
     if (!file) return;
@@ -1309,11 +1329,16 @@ function bindEvents() {
   });
 
   dom.settingsEyeToggle.addEventListener('click', function() {
-    dom.settingsApiKey.type = dom.settingsApiKey.type === 'password' ? 'text' : 'password';
+    dom.settingsApiKey.type = dom.settingsApiKey.type === 'password'
+      ? 'text' : 'password';
   });
 
-  dom.themeOrange.addEventListener('click', function() { state.theme = 'orange'; applyTheme('orange'); });
-  dom.themeBlue.addEventListener('click', function() { state.theme = 'blue'; applyTheme('blue'); });
+  dom.themeOrange.addEventListener('click', function() {
+    state.theme = 'orange'; applyTheme('orange');
+  });
+  dom.themeBlue.addEventListener('click', function() {
+    state.theme = 'blue'; applyTheme('blue');
+  });
 
   dom.settingsModal.addEventListener('click', function(e) {
     if (e.target === dom.settingsModal) closeSettings();
@@ -1327,11 +1352,11 @@ function bindEvents() {
     state.defaultModel = dom.settingsDefaultModel.value;
     state.enhanceEnabled = dom.settingsEnhanceToggle.checked;
     state.enhanceModel = dom.settingsEnhanceModel.value;
-    state.enhanceManual = dom.settingsEnhanceManual.checked;    // NEW
-    state.enhanceWebSearch = dom.settingsEnhanceWeb.checked;    // NEW
+    state.enhanceManual = dom.settingsEnhanceManual.checked;
+    state.enhanceWebSearch = dom.settingsEnhanceWeb.checked;
     state.nameEnabled = dom.settingsNameToggle.checked;
     state.nameModel = dom.settingsNameModel.value;
-    state.parallelGeneration = dom.settingsParallel.checked;    // NEW
+    state.parallelGeneration = dom.settingsParallel.checked;
 
     await saveSetting('apiKey', state.apiKey);
     await saveSetting('userName', state.userName);
@@ -1340,11 +1365,11 @@ function bindEvents() {
     await saveSetting('defaultModel', state.defaultModel);
     await saveSetting('enhanceEnabled', state.enhanceEnabled);
     await saveSetting('enhanceModel', state.enhanceModel);
-    await saveSetting('enhanceManual', state.enhanceManual);    // NEW
-    await saveSetting('enhanceWebSearch', state.enhanceWebSearch); // NEW
+    await saveSetting('enhanceManual', state.enhanceManual);
+    await saveSetting('enhanceWebSearch', state.enhanceWebSearch);
     await saveSetting('nameEnabled', state.nameEnabled);
     await saveSetting('nameModel', state.nameModel);
-    await saveSetting('parallelGeneration', state.parallelGeneration); // NEW
+    await saveSetting('parallelGeneration', state.parallelGeneration);
 
     applyProfileUI();
     updateEnhanceButton();
@@ -1371,9 +1396,15 @@ function bindEvents() {
     item.addEventListener('click', function() {
       var view = item.dataset.view;
       if (view === 'settings') { openSettings(); closeSidebar(); return; }
-      document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
-      document.querySelectorAll('.mnav').forEach(function(n) { n.classList.remove('active'); });
-      document.querySelectorAll('[data-view="' + view + '"]').forEach(function(n) { n.classList.add('active'); });
+      document.querySelectorAll('.nav-item').forEach(function(n) {
+        n.classList.remove('active');
+      });
+      document.querySelectorAll('.mnav').forEach(function(n) {
+        n.classList.remove('active');
+      });
+      document.querySelectorAll('[data-view="' + view + '"]').forEach(
+        function(n) { n.classList.add('active'); }
+      );
       state.currentFilter = view === 'favorites' ? 'favorites' : 'all';
       renderGallery();
       closeSidebar();
@@ -1386,7 +1417,9 @@ function bindEvents() {
   // ---- Gallery Tabs ----
   document.querySelectorAll('.g-tab').forEach(function(tab) {
     tab.addEventListener('click', function() {
-      document.querySelectorAll('.g-tab').forEach(function(t) { t.classList.remove('active'); });
+      document.querySelectorAll('.g-tab').forEach(function(t) {
+        t.classList.remove('active');
+      });
       tab.classList.add('active');
       state.currentFilter = tab.dataset.filter;
       renderGallery();
@@ -1412,14 +1445,18 @@ function bindEvents() {
       if (img2) {
         img2.favorite = !img2.favorite;
         dbPut('gallery', img2).then(renderGallery);
-        toast('success', img2.favorite ? 'Added to Favorites' : 'Removed from Favorites');
+        toast('success',
+          img2.favorite ? 'Added to Favorites' : 'Removed from Favorites');
       }
       return;
     }
     if (copyBtn) {
       e.stopPropagation();
       var img3 = findImage(Number(copyBtn.dataset.id));
-      if (img3) { copyText(img3.originalPrompt || img3.prompt); toast('success', 'Prompt Copied', 'Ready to paste'); }
+      if (img3) {
+        copyText(img3.originalPrompt || img3.prompt);
+        toast('success', 'Prompt Copied', 'Ready to paste');
+      }
       return;
     }
     if (card) {
@@ -1454,9 +1491,15 @@ function bindEvents() {
   updateRefSection();
 
   // ---- Reference Image ----
-  dom.refDrop.addEventListener('click', function() { dom.refFileInput.click(); });
-  dom.refDrop.addEventListener('dragover', function(e) { e.preventDefault(); dom.refDrop.classList.add('dragover'); });
-  dom.refDrop.addEventListener('dragleave', function() { dom.refDrop.classList.remove('dragover'); });
+  dom.refDrop.addEventListener('click', function() {
+    dom.refFileInput.click();
+  });
+  dom.refDrop.addEventListener('dragover', function(e) {
+    e.preventDefault(); dom.refDrop.classList.add('dragover');
+  });
+  dom.refDrop.addEventListener('dragleave', function() {
+    dom.refDrop.classList.remove('dragover');
+  });
   dom.refDrop.addEventListener('drop', function(e) {
     e.preventDefault(); e.stopPropagation();
     dom.refDrop.classList.remove('dragover');
@@ -1479,47 +1522,56 @@ function bindEvents() {
     dom.clearRefBtn.style.display = 'flex';
     toast('success', 'Reference Set', 'URL loaded as reference');
   });
-  dom.refUrlInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') dom.refUrlBtn.click(); });
+  dom.refUrlInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') dom.refUrlBtn.click();
+  });
   dom.clearRefBtn.addEventListener('click', clearRefImage);
 
   // ---- Ratio ----
   document.querySelectorAll('.ratio-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
-      document.querySelectorAll('.ratio-btn').forEach(function(b) { b.classList.remove('active'); });
+      document.querySelectorAll('.ratio-btn').forEach(function(b) {
+        b.classList.remove('active');
+      });
       btn.classList.add('active');
       state.selectedRatio = btn.dataset.ratio;
-      // NEW: clear custom ratio
       dom.customRatioWrap.classList.remove('show');
       dom.customRatioInput.value = '';
     });
   });
 
-  // NEW: Custom ratio
   dom.customRatioBtn.addEventListener('click', function() {
     dom.customRatioWrap.classList.toggle('show');
-    if (dom.customRatioWrap.classList.contains('show')) dom.customRatioInput.focus();
+    if (dom.customRatioWrap.classList.contains('show')) {
+      dom.customRatioInput.focus();
+    }
   });
 
   dom.customRatioApply.addEventListener('click', function() {
     var val = dom.customRatioInput.value.trim();
     if (!val) return;
-    // Validate format: number:number
     if (!/^\d+:\d+$/.test(val)) {
       toast('error', 'Invalid Ratio', 'Use format like 4:7 or 21:9');
       return;
     }
-    document.querySelectorAll('.ratio-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.ratio-btn').forEach(function(b) {
+      b.classList.remove('active');
+    });
     state.selectedRatio = val;
     toast('success', 'Custom Ratio Set', val);
   });
 
-  dom.customRatioInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') dom.customRatioApply.click(); });
+  dom.customRatioInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') dom.customRatioApply.click();
+  });
 
   // ---- Style Chips ----
   dom.styleChips.addEventListener('click', function(e) {
     var chip = e.target.closest('.schip');
     if (!chip) return;
-    document.querySelectorAll('.schip').forEach(function(c) { c.classList.remove('active'); });
+    document.querySelectorAll('.schip').forEach(function(c) {
+      c.classList.remove('active');
+    });
     chip.classList.add('active');
     state.selectedStyle = chip.dataset.style;
   });
@@ -1530,40 +1582,56 @@ function bindEvents() {
     if (show) dom.customStyleInput.focus();
   });
   dom.addStyleConfirm.addEventListener('click', addCustomStyle);
-  dom.customStyleInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') addCustomStyle(); });
+  dom.customStyleInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') addCustomStyle();
+  });
 
   // ---- Count ----
   document.querySelectorAll('.cbtn').forEach(function(btn) {
     btn.addEventListener('click', function() {
-      document.querySelectorAll('.cbtn').forEach(function(b) { b.classList.remove('active'); });
+      document.querySelectorAll('.cbtn').forEach(function(b) {
+        b.classList.remove('active');
+      });
       btn.classList.add('active');
       state.selectedCount = parseInt(btn.dataset.count, 10);
     });
   });
 
-  // NEW: Enhance button (manual mode)
+  // ---- Enhance Button (manual mode) ----
   dom.enhanceBtn.addEventListener('click', manualEnhance);
 
   // ---- Generate ----
   dom.generateBtn.addEventListener('click', generateImages);
 
-  // NEW: Minimize / Expand
+  // ---- Minimize / Expand ----
   dom.genMinimizeBtn.addEventListener('click', minimizeGen);
   dom.genMiniShow.addEventListener('click', expandGen);
   dom.genMini.addEventListener('click', function(e) {
-    if (e.target === dom.genMini || e.target === dom.genMiniInfo || e.target === dom.genMiniText) expandGen();
+    if (e.target === dom.genMini || e.target === dom.genMiniInfo ||
+        e.target === dom.genMiniText) {
+      expandGen();
+    }
   });
 
   // ---- Viewer ----
   dom.viewerClose.addEventListener('click', closeViewer);
-  dom.imageModal.addEventListener('click', function(e) { if (e.target === dom.imageModal) closeViewer(); });
+  dom.imageModal.addEventListener('click', function(e) {
+    if (e.target === dom.imageModal) closeViewer();
+  });
 
   dom.viewerDownload.addEventListener('click', function() {
-    if (currentViewerImage) downloadImage(currentViewerImage.url, currentViewerImage.name || currentViewerImage.originalPrompt || currentViewerImage.prompt);
+    if (currentViewerImage) {
+      downloadImage(currentViewerImage.url,
+        currentViewerImage.name || currentViewerImage.originalPrompt ||
+        currentViewerImage.prompt);
+    }
   });
 
   dom.viewerCopy.addEventListener('click', function() {
-    if (currentViewerImage) { copyText(currentViewerImage.originalPrompt || currentViewerImage.prompt); toast('success', 'Prompt Copied'); }
+    if (currentViewerImage) {
+      copyText(currentViewerImage.originalPrompt || currentViewerImage.prompt);
+      toast('success', 'Prompt Copied');
+    }
   });
 
   dom.viewerFav.addEventListener('click', async function() {
@@ -1572,13 +1640,16 @@ function bindEvents() {
     await dbPut('gallery', currentViewerImage);
     dom.viewerFav.classList.toggle('active', currentViewerImage.favorite);
     renderGallery();
-    toast('success', currentViewerImage.favorite ? 'Added to Favorites' : 'Removed from Favorites');
+    toast('success',
+      currentViewerImage.favorite ? 'Added to Favorites' : 'Removed from Favorites');
   });
 
   dom.viewerDelete.addEventListener('click', async function() {
     if (!currentViewerImage) return;
     await dbRemove('gallery', currentViewerImage.id);
-    state.images = state.images.filter(function(i) { return i.id !== currentViewerImage.id; });
+    state.images = state.images.filter(function(i) {
+      return i.id !== currentViewerImage.id;
+    });
     if (blobUrlCache[currentViewerImage.id]) {
       URL.revokeObjectURL(blobUrlCache[currentViewerImage.id]);
       delete blobUrlCache[currentViewerImage.id];
