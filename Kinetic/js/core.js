@@ -1,5 +1,5 @@
 /* ============================================================
-   KINETIC — CORE MODULE
+   KINETIC — CORE MODULE (FIXED)
    IndexedDB, state, settings, theme, custom select, toasts,
    utilities, PWA install, sidebar/nav binding, init
    ============================================================ */
@@ -8,11 +8,6 @@
 
 const DB_NAME = 'KineticDB';
 const DB_VERSION = 3;
-
-const REF_IMAGE_MODELS_DEFAULT = [
-  'gptimage-2', 'gptimage-1.5', 'flux-2',
-  'qwen-image', 'nanobanana', 'nanobanana-pro'
-];
 
 const DEFAULT_IMAGE_MODELS = [
   { id: 'flux-2', name: 'Flux 2', enabled: true, refImages: false, polling: false },
@@ -135,7 +130,6 @@ const state = {
 // ==================== DOM REFS ====================
 
 const $ = (id) => document.getElementById(id);
-
 const dom = {};
 
 function cacheDom() {
@@ -187,7 +181,17 @@ function cacheDom() {
     'imagePickerModal','pickerClose','pickerSearch','pickerGrid',
     'toastWrap','fabBtn','topbarAvatar','topbarAvatarLetter'
   ];
-  ids.forEach(id => { dom[id] = $(id); });
+
+  let missing = [];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    dom[id] = el;
+    if (!el) missing.push(id);
+  });
+
+  if (missing.length) {
+    console.warn('[Kinetic] Missing DOM elements:', missing.join(', '));
+  }
 }
 
 // ==================== INDEXEDDB ====================
@@ -208,12 +212,13 @@ function openDB() {
       if (!d.objectStoreNames.contains('blobs')) d.createObjectStore('blobs', { keyPath: 'id' });
     };
     req.onsuccess = (e) => { db = e.target.result; resolve(db); };
-    req.onerror = (e) => reject(e.target.error);
+    req.onerror = (e) => { console.error('[Kinetic] IndexedDB error:', e.target.error); reject(e.target.error); };
   });
 }
 
 function dbGet(store, key) {
   return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error('DB not initialized'));
     const tx = db.transaction(store, 'readonly');
     const req = tx.objectStore(store).get(key);
     req.onsuccess = () => resolve(req.result);
@@ -223,6 +228,7 @@ function dbGet(store, key) {
 
 function dbPut(store, data) {
   return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error('DB not initialized'));
     const tx = db.transaction(store, 'readwrite');
     const req = tx.objectStore(store).put(data);
     req.onsuccess = () => resolve(req.result);
@@ -232,6 +238,7 @@ function dbPut(store, data) {
 
 function dbRemove(store, key) {
   return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error('DB not initialized'));
     const tx = db.transaction(store, 'readwrite');
     const req = tx.objectStore(store).delete(key);
     req.onsuccess = () => resolve();
@@ -241,6 +248,7 @@ function dbRemove(store, key) {
 
 function dbGetAll(store) {
   return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error('DB not initialized'));
     const tx = db.transaction(store, 'readonly');
     const req = tx.objectStore(store).getAll();
     req.onsuccess = () => resolve(req.result);
@@ -254,9 +262,16 @@ const selectInstances = [];
 
 class KineticSelect {
   constructor(wrapEl, options, onChange) {
+    if (!wrapEl) {
+      console.warn('[Kinetic] KineticSelect: wrapper element is null, skipping.');
+      this._disabled = true;
+      return;
+    }
+    this._disabled = false;
     this.wrap = wrapEl;
-    this.options = options;
-    this.value = wrapEl.dataset.value || (options[0] && options[0].value) || '';
+    this.options = options || [];
+    this.value = wrapEl.dataset ? (wrapEl.dataset.value || '') : '';
+    if (!this.value && this.options.length) this.value = this.options[0].value;
     this.onChange = onChange || (() => {});
     this.isOpen = false;
     this.render();
@@ -265,6 +280,7 @@ class KineticSelect {
   }
 
   render() {
+    if (this._disabled) return;
     const sel = this.options.find(o => o.value === this.value);
     this.wrap.innerHTML = `
       <div class="cselect" tabindex="0">
@@ -287,6 +303,7 @@ class KineticSelect {
   }
 
   bind() {
+    if (this._disabled || !this.el) return;
     this.el.addEventListener('click', (e) => {
       if (e.target.closest('.cselect-search')) return;
       this.isOpen ? this.close() : this.open();
@@ -310,6 +327,7 @@ class KineticSelect {
   }
 
   open() {
+    if (this._disabled) return;
     selectInstances.forEach(s => { if (s !== this) s.close(); });
     this.isOpen = true;
     this.el.classList.add('open');
@@ -319,33 +337,41 @@ class KineticSelect {
   }
 
   close() {
+    if (this._disabled) return;
     this.isOpen = false;
-    this.el.classList.remove('open');
+    if (this.el) this.el.classList.remove('open');
   }
 
   select(value) {
+    if (this._disabled) return;
     this.value = value;
     const sel = this.options.find(o => o.value === value);
-    this.labelEl.textContent = sel ? sel.label : 'Select...';
-    this.dropdown.querySelectorAll('.cselect-option').forEach(o => {
-      o.classList.toggle('selected', o.dataset.value === value);
-    });
+    if (this.labelEl) this.labelEl.textContent = sel ? sel.label : 'Select...';
+    if (this.dropdown) {
+      this.dropdown.querySelectorAll('.cselect-option').forEach(o => {
+        o.classList.toggle('selected', o.dataset.value === value);
+      });
+    }
     this.close();
     this.onChange(value);
   }
 
-  getValue() { return this.value; }
+  getValue() { return this._disabled ? '' : this.value; }
 
   setValue(val) {
+    if (this._disabled) return;
     this.value = val;
     const sel = this.options.find(o => o.value === val);
-    if (sel) this.labelEl.textContent = sel.label;
-    this.dropdown.querySelectorAll('.cselect-option').forEach(o => {
-      o.classList.toggle('selected', o.dataset.value === val);
-    });
+    if (sel && this.labelEl) this.labelEl.textContent = sel.label;
+    if (this.dropdown) {
+      this.dropdown.querySelectorAll('.cselect-option').forEach(o => {
+        o.classList.toggle('selected', o.dataset.value === val);
+      });
+    }
   }
 
   setOptions(opts) {
+    if (this._disabled) return;
     this.options = opts;
     this.render();
     this.bind();
@@ -356,7 +382,19 @@ class KineticSelect {
 // ==================== SETTINGS ====================
 
 async function loadSettings() {
-  const rows = await dbGetAll('settings');
+  if (!db) {
+    console.warn('[Kinetic] DB not available, using defaults.');
+    return;
+  }
+
+  let rows = [];
+  try {
+    rows = await dbGetAll('settings');
+  } catch (e) {
+    console.error('[Kinetic] loadSettings failed:', e);
+    return;
+  }
+
   const map = {};
   rows.forEach(r => map[r.key] = r.value);
 
@@ -391,22 +429,28 @@ async function loadSettings() {
   applyAnimations(state.animationsEnabled);
 
   if (!state.setupComplete || !state.apiKey) {
-    dom.setupModal.classList.add('open');
+    if (dom.setupModal) dom.setupModal.classList.add('open');
   } else {
-    dom.setupModal.classList.remove('open');
-    if (typeof loadGallery === 'function') await loadGallery();
+    if (dom.setupModal) dom.setupModal.classList.remove('open');
+    if (typeof loadGallery === 'function') {
+      try { await loadGallery(); } catch (e) { console.warn('[Kinetic] loadGallery failed:', e); }
+    }
   }
 }
 
 async function saveSetting(key, value) {
-  await dbPut('settings', { key, value });
   state[key] = value;
+  try {
+    await dbPut('settings', { key, value });
+  } catch (e) {
+    console.warn('[Kinetic] saveSetting failed for', key, e);
+  }
 }
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
-  dom.themeOrange.classList.toggle('active', theme === 'orange');
-  dom.themeBlue.classList.toggle('active', theme === 'blue');
+  if (dom.themeOrange) dom.themeOrange.classList.toggle('active', theme === 'orange');
+  if (dom.themeBlue) dom.themeBlue.classList.toggle('active', theme === 'blue');
 }
 
 function applyAnimations(enabled) {
@@ -416,40 +460,43 @@ function applyAnimations(enabled) {
 
 function applyProfileUI() {
   if (state.avatarData) {
-    dom.topbarAvatar.innerHTML = '<img src="' + state.avatarData + '" alt="">';
+    if (dom.topbarAvatar) dom.topbarAvatar.innerHTML = '<img src="' + state.avatarData + '" alt="">';
   } else if (state.userName) {
-    dom.topbarAvatarLetter.textContent = state.userName.charAt(0).toUpperCase();
+    if (dom.topbarAvatarLetter) dom.topbarAvatarLetter.textContent = state.userName.charAt(0).toUpperCase();
   }
 
   if (state.avatarData) {
-    dom.setupAvatarPreview.src = state.avatarData;
-    dom.setupAvatarPreview.style.display = 'block';
-    const ph = dom.setupAvatarWrap.querySelector('.setup-avatar-ph');
-    if (ph) ph.style.display = 'none';
-    dom.settingsAvatarPreview.src = state.avatarData;
-    dom.settingsAvatarPreview.style.display = 'block';
-    const sph = dom.settingsAvatarWrap.querySelector('.settings-avatar-ph');
-    if (sph) sph.style.display = 'none';
+    if (dom.setupAvatarPreview) {
+      dom.setupAvatarPreview.src = state.avatarData;
+      dom.setupAvatarPreview.style.display = 'block';
+      const ph = dom.setupAvatarWrap ? dom.setupAvatarWrap.querySelector('.setup-avatar-ph') : null;
+      if (ph) ph.style.display = 'none';
+    }
+    if (dom.settingsAvatarPreview) {
+      dom.settingsAvatarPreview.src = state.avatarData;
+      dom.settingsAvatarPreview.style.display = 'block';
+      const sph = dom.settingsAvatarWrap ? dom.settingsAvatarWrap.querySelector('.settings-avatar-ph') : null;
+      if (sph) sph.style.display = 'none';
+    }
   }
 
-  dom.settingsName.value = state.userName;
-  dom.settingsApiKey.value = state.apiKey || '';
-  dom.settingsRecentLimit.value = state.recentLimit;
-  dom.settingsParallel.checked = state.parallelGeneration;
-  dom.settingsBackground.checked = state.backgroundGeneration;
-  dom.settingsAnimations.checked = state.animationsEnabled;
-  dom.settingsEnhanceToggle.checked = state.enhanceEnabled;
-  dom.enhanceSub.style.display = state.enhanceEnabled ? '' : 'none';
-  dom.settingsEnhanceManual.checked = state.enhanceManual;
-  dom.settingsEnhanceWeb.checked = state.enhanceWebSearch;
-  dom.settingsNameToggle.checked = state.nameEnabled;
-  dom.nameSub.style.display = state.nameEnabled ? '' : 'none';
-  dom.settingsRemixAuto.checked = state.remixAutoMode;
-  dom.settingsRemixWeb.checked = state.remixWebSearch;
-
-  dom.psEnhancePrompt.value = state.enhancePrompt;
-  dom.psNamePrompt.value = state.namePrompt;
-  dom.psRemixPrompt.value = state.remixPrompt;
+  if (dom.settingsName) dom.settingsName.value = state.userName;
+  if (dom.settingsApiKey) dom.settingsApiKey.value = state.apiKey || '';
+  if (dom.settingsRecentLimit) dom.settingsRecentLimit.value = state.recentLimit;
+  if (dom.settingsParallel) dom.settingsParallel.checked = state.parallelGeneration;
+  if (dom.settingsBackground) dom.settingsBackground.checked = state.backgroundGeneration;
+  if (dom.settingsAnimations) dom.settingsAnimations.checked = state.animationsEnabled;
+  if (dom.settingsEnhanceToggle) dom.settingsEnhanceToggle.checked = state.enhanceEnabled;
+  if (dom.enhanceSub) dom.enhanceSub.style.display = state.enhanceEnabled ? '' : 'none';
+  if (dom.settingsEnhanceManual) dom.settingsEnhanceManual.checked = state.enhanceManual;
+  if (dom.settingsEnhanceWeb) dom.settingsEnhanceWeb.checked = state.enhanceWebSearch;
+  if (dom.settingsNameToggle) dom.settingsNameToggle.checked = state.nameEnabled;
+  if (dom.nameSub) dom.nameSub.style.display = state.nameEnabled ? '' : 'none';
+  if (dom.settingsRemixAuto) dom.settingsRemixAuto.checked = state.remixAutoMode;
+  if (dom.settingsRemixWeb) dom.settingsRemixWeb.checked = state.remixWebSearch;
+  if (dom.psEnhancePrompt) dom.psEnhancePrompt.value = state.enhancePrompt;
+  if (dom.psNamePrompt) dom.psNamePrompt.value = state.namePrompt;
+  if (dom.psRemixPrompt) dom.psRemixPrompt.value = state.remixPrompt;
 }
 
 // ==================== TOAST ====================
@@ -461,6 +508,7 @@ function toast(type, title, msg) {
     info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>',
     warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
   };
+  if (!dom.toastWrap) { console.log('[Toast]', type, title, msg); return; }
   const el = document.createElement('div');
   el.className = 'toast';
   el.innerHTML = `<div class="toast-icon ${type}">${icons[type] || icons.info}</div><div class="toast-body"><div class="toast-title">${esc(title)}</div>${msg ? '<div class="toast-msg">' + esc(msg) + '</div>' : ''}</div>`;
@@ -481,9 +529,7 @@ function esc(text) {
   return d.innerHTML;
 }
 
-function sleep(ms) {
-  return new Promise(r => setTimeout(r, ms));
-}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function timeAgo(ts) {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -556,7 +602,7 @@ async function storeImageBlob(id, url) {
     await dbPut('blobs', { id, blob, url });
     return blob;
   } catch (e) {
-    console.warn('Blob store failed:', e);
+    console.warn('[Kinetic] Blob store failed:', e);
     return null;
   }
 }
@@ -573,7 +619,6 @@ async function getImageUrl(id) {
 // ==================== PWA INSTALL ====================
 
 let deferredInstallPrompt = null;
-
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredInstallPrompt = e;
@@ -583,57 +628,78 @@ window.addEventListener('beforeinstallprompt', (e) => {
 // ==================== NAVIGATION & SIDEBAR ====================
 
 function openSidebar() {
+  if (!dom.sidebar || !dom.sidebarOverlay) return;
   dom.sidebar.classList.add('open');
   dom.sidebarOverlay.classList.add('active');
+  dom.sidebarOverlay.style.zIndex = '450';
 }
 
 function closeSidebar() {
+  if (!dom.sidebar || !dom.sidebarOverlay) return;
   dom.sidebar.classList.remove('open');
-  if (!dom.genPanel.classList.contains('open') && !dom.remixPanel.classList.contains('open')) {
+  const panelOpen = (dom.genPanel && dom.genPanel.classList.contains('open')) ||
+                    (dom.remixPanel && dom.remixPanel.classList.contains('open'));
+  if (!panelOpen) {
     dom.sidebarOverlay.classList.remove('active');
+    dom.sidebarOverlay.style.zIndex = '';
   }
 }
 
 function openGenPanel() {
+  if (!dom.genPanel || !dom.remixPanel || !dom.sidebarOverlay) return;
   dom.genPanel.classList.add('open');
   dom.remixPanel.classList.remove('open');
   dom.sidebarOverlay.classList.add('active');
   dom.sidebarOverlay.style.zIndex = '750';
+  closeSidebar();
 }
 
 function closeGenPanel() {
+  if (!dom.genPanel || !dom.sidebarOverlay) return;
   dom.genPanel.classList.remove('open');
-  if (!dom.sidebar.classList.contains('open')) {
+  const sidebarOpen = dom.sidebar && dom.sidebar.classList.contains('open');
+  if (!sidebarOpen) {
     dom.sidebarOverlay.classList.remove('active');
     dom.sidebarOverlay.style.zIndex = '';
   }
 }
 
 function openRemixPanel() {
+  if (!dom.remixPanel || !dom.genPanel || !dom.sidebarOverlay) return;
   dom.remixPanel.classList.add('open');
   dom.genPanel.classList.remove('open');
   dom.sidebarOverlay.classList.add('active');
   dom.sidebarOverlay.style.zIndex = '750';
+  closeSidebar();
   if (typeof initRemixPanel === 'function') initRemixPanel();
 }
 
 function closeRemixPanel() {
+  if (!dom.remixPanel || !dom.sidebarOverlay) return;
   dom.remixPanel.classList.remove('open');
-  if (!dom.sidebar.classList.contains('open')) {
+  const sidebarOpen = dom.sidebar && dom.sidebar.classList.contains('open');
+  if (!sidebarOpen) {
     dom.sidebarOverlay.classList.remove('active');
     dom.sidebarOverlay.style.zIndex = '';
   }
 }
 
 function showView(view) {
-  dom.galleryView.style.display = view === 'images' ? '' : 'none';
-  dom.promptView.style.display = view === 'prompts' ? '' : 'none';
+  if (dom.galleryView) dom.galleryView.style.display = view === 'images' ? '' : 'none';
+  if (dom.promptView) dom.promptView.style.display = view === 'prompts' ? '' : 'none';
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === view));
+}
+
+function openSettings() {
+  if (dom.settingsModal) dom.settingsModal.classList.add('open');
+  closeSidebar();
+  renderModelList();
 }
 
 // ==================== IMAGE MODEL LIST (Settings) ====================
 
 function renderModelList() {
+  if (!dom.imageModelList) return;
   let html = '';
   state.imageModels.forEach((m, i) => {
     html += `<div class="model-item">
@@ -671,36 +737,52 @@ function renderModelList() {
   });
 }
 
+// ==================== SAFE BIND HELPER ====================
+
+function safeBind(id, event, handler) {
+  const el = dom[id];
+  if (el) {
+    el.addEventListener(event, handler);
+  } else {
+    console.warn('[Kinetic] Cannot bind ' + event + ' on missing element: #' + id);
+  }
+}
+
 // ==================== BIND CORE EVENTS ====================
 
 function bindCoreEvents() {
-  // Setup modal
-  dom.setupAvatarWrap.addEventListener('click', () => dom.setupAvatarFile.click());
-  dom.setupAvatarFile.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-  dom.setupAvatarFile.addEventListener('change', (e) => {
+  console.log('[Kinetic] Binding core events...');
+
+  // Setup modal avatar
+  safeBind('setupAvatarWrap', 'click', () => { if (dom.setupAvatarFile) dom.setupAvatarFile.click(); });
+  safeBind('setupAvatarFile', 'change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      dom.setupAvatarPreview.src = ev.target.result;
-      dom.setupAvatarPreview.style.display = 'block';
-      const ph = dom.setupAvatarWrap.querySelector('.setup-avatar-ph');
+      if (dom.setupAvatarPreview) {
+        dom.setupAvatarPreview.src = ev.target.result;
+        dom.setupAvatarPreview.style.display = 'block';
+      }
+      const ph = dom.setupAvatarWrap ? dom.setupAvatarWrap.querySelector('.setup-avatar-ph') : null;
       if (ph) ph.style.display = 'none';
       state.avatarData = ev.target.result;
     };
     reader.readAsDataURL(file);
   });
 
-  dom.setupEyeToggle.addEventListener('click', () => {
-    dom.setupApiKey.type = dom.setupApiKey.type === 'password' ? 'text' : 'password';
+  // Setup eye toggle
+  safeBind('setupEyeToggle', 'click', () => {
+    if (dom.setupApiKey) dom.setupApiKey.type = dom.setupApiKey.type === 'password' ? 'text' : 'password';
   });
 
-  dom.setupApiKey.addEventListener('input', () => {
-    dom.setupSaveBtn.disabled = !dom.setupApiKey.value.trim();
+  // Setup API key input
+  safeBind('setupApiKey', 'input', () => {
+    if (dom.setupSaveBtn) dom.setupSaveBtn.disabled = !dom.setupApiKey.value.trim();
   });
 
-  dom.setupSaveBtn.addEventListener('click', async () => {
+  // Setup save
+  safeBind('setupSaveBtn', 'click', async () => {
     const key = dom.setupApiKey.value.trim();
     if (!key) return;
     dom.setupSaveBtn.disabled = true;
@@ -712,58 +794,67 @@ function bindCoreEvents() {
       const data = await res.json();
       if (data.status === 'online') {
         state.apiKey = key;
-        state.userName = dom.setupName.value.trim();
+        state.userName = dom.setupName ? dom.setupName.value.trim() : '';
         state.setupComplete = true;
         await saveSetting('apiKey', key);
         await saveSetting('userName', state.userName);
         if (state.avatarData) await saveSetting('avatarData', state.avatarData);
         await saveSetting('setupComplete', true);
         applyProfileUI();
-        dom.setupModal.classList.remove('open');
+        if (dom.setupModal) dom.setupModal.classList.remove('open');
         if (typeof loadGallery === 'function') await loadGallery();
         toast('success', 'Welcome!', 'Your workspace is ready.');
       } else {
         toast('error', 'Connection Failed', 'Invalid response from API.');
       }
     } catch (err) {
-      toast('error', 'Connection Error', 'Could not reach AquaDevs API.');
+      toast('error', 'Connection Error', 'Could not reach AquaDevs API. ' + (err.message || ''));
     }
     dom.setupSaveBtn.disabled = false;
     dom.setupSaveBtn.innerHTML = '<span>Get Started</span>';
   });
 
-  // Settings modal
-  dom.settingsCloseBtn.addEventListener('click', () => dom.settingsModal.classList.remove('open'));
-  dom.settingsModal.addEventListener('click', (e) => { if (e.target === dom.settingsModal) dom.settingsModal.classList.remove('open'); });
+  // Settings modal close
+  safeBind('settingsCloseBtn', 'click', () => { if (dom.settingsModal) dom.settingsModal.classList.remove('open'); });
+  if (dom.settingsModal) {
+    dom.settingsModal.addEventListener('click', (e) => {
+      if (e.target === dom.settingsModal) dom.settingsModal.classList.remove('open');
+    });
+  }
 
-  dom.settingsAvatarWrap.addEventListener('click', () => dom.settingsAvatarFile.click());
-  dom.settingsAvatarFile.addEventListener('change', (e) => {
+  // Settings avatar
+  safeBind('settingsAvatarWrap', 'click', () => { if (dom.settingsAvatarFile) dom.settingsAvatarFile.click(); });
+  safeBind('settingsAvatarFile', 'change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
       state.avatarData = ev.target.result;
-      dom.settingsAvatarPreview.src = ev.target.result;
-      dom.settingsAvatarPreview.style.display = 'block';
-      const sph = dom.settingsAvatarWrap.querySelector('.settings-avatar-ph');
+      if (dom.settingsAvatarPreview) {
+        dom.settingsAvatarPreview.src = ev.target.result;
+        dom.settingsAvatarPreview.style.display = 'block';
+      }
+      const sph = dom.settingsAvatarWrap ? dom.settingsAvatarWrap.querySelector('.settings-avatar-ph') : null;
       if (sph) sph.style.display = 'none';
     };
     reader.readAsDataURL(file);
   });
 
-  dom.settingsEyeToggle.addEventListener('click', () => {
-    dom.settingsApiKey.type = dom.settingsApiKey.type === 'password' ? 'text' : 'password';
+  // Settings eye toggle
+  safeBind('settingsEyeToggle', 'click', () => {
+    if (dom.settingsApiKey) dom.settingsApiKey.type = dom.settingsApiKey.type === 'password' ? 'text' : 'password';
   });
 
-  dom.themeOrange.addEventListener('click', () => { state.theme = 'orange'; applyTheme('orange'); });
-  dom.themeBlue.addEventListener('click', () => { state.theme = 'blue'; applyTheme('blue'); });
+  // Theme buttons
+  safeBind('themeOrange', 'click', () => { state.theme = 'orange'; applyTheme('orange'); });
+  safeBind('themeBlue', 'click', () => { state.theme = 'blue'; applyTheme('blue'); });
 
-  dom.settingsEnhanceToggle.addEventListener('change', () => {
-    dom.enhanceSub.style.display = dom.settingsEnhanceToggle.checked ? '' : 'none';
+  // Toggle subs
+  safeBind('settingsEnhanceToggle', 'change', () => {
+    if (dom.enhanceSub) dom.enhanceSub.style.display = dom.settingsEnhanceToggle.checked ? '' : 'none';
   });
-
-  dom.settingsNameToggle.addEventListener('change', () => {
-    dom.nameSub.style.display = dom.settingsNameToggle.checked ? '' : 'none';
+  safeBind('settingsNameToggle', 'change', () => {
+    if (dom.nameSub) dom.nameSub.style.display = dom.settingsNameToggle.checked ? '' : 'none';
   });
 
   // Recent limit presets
@@ -771,30 +862,30 @@ function bindCoreEvents() {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.rl-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      dom.settingsRecentLimit.value = btn.dataset.limit;
+      if (dom.settingsRecentLimit) dom.settingsRecentLimit.value = btn.dataset.limit;
     });
   });
 
   // Settings save
-  dom.settingsSaveBtn.addEventListener('click', async () => {
-    const key = dom.settingsApiKey.value.trim();
+  safeBind('settingsSaveBtn', 'click', async () => {
+    const key = dom.settingsApiKey ? dom.settingsApiKey.value.trim() : '';
     if (key) state.apiKey = key;
-    state.userName = dom.settingsName.value.trim();
-    state.defaultModel = defaultModelSelect ? defaultModelSelect.getValue() : 'gptimage-2';
+    state.userName = dom.settingsName ? dom.settingsName.value.trim() : '';
+    state.defaultModel = defaultModelSelect && !defaultModelSelect._disabled ? defaultModelSelect.getValue() : 'gptimage-2';
     state.selectedModel = state.defaultModel;
-    state.recentLimit = parseInt(dom.settingsRecentLimit.value) || 30;
-    state.parallelGeneration = dom.settingsParallel.checked;
-    state.backgroundGeneration = dom.settingsBackground.checked;
-    state.animationsEnabled = dom.settingsAnimations.checked;
-    state.enhanceEnabled = dom.settingsEnhanceToggle.checked;
-    state.enhanceManual = dom.settingsEnhanceManual.checked;
-    state.enhanceWebSearch = dom.settingsEnhanceWeb.checked;
-    state.enhanceModel = enhanceModelSelect ? enhanceModelSelect.getValue() : 'mimo-v2.5-pro';
-    state.nameEnabled = dom.settingsNameToggle.checked;
-    state.nameModel = nameModelSelect ? nameModelSelect.getValue() : 'nova';
-    state.remixModel = remixModelSelect ? remixModelSelect.getValue() : 'mimo-v2.5';
-    state.remixAutoMode = dom.settingsRemixAuto.checked;
-    state.remixWebSearch = dom.settingsRemixWeb.checked;
+    state.recentLimit = dom.settingsRecentLimit ? (parseInt(dom.settingsRecentLimit.value) || 30) : 30;
+    state.parallelGeneration = dom.settingsParallel ? dom.settingsParallel.checked : false;
+    state.backgroundGeneration = dom.settingsBackground ? dom.settingsBackground.checked : false;
+    state.animationsEnabled = dom.settingsAnimations ? dom.settingsAnimations.checked : true;
+    state.enhanceEnabled = dom.settingsEnhanceToggle ? dom.settingsEnhanceToggle.checked : false;
+    state.enhanceManual = dom.settingsEnhanceManual ? dom.settingsEnhanceManual.checked : false;
+    state.enhanceWebSearch = dom.settingsEnhanceWeb ? dom.settingsEnhanceWeb.checked : false;
+    state.enhanceModel = enhanceModelSelect && !enhanceModelSelect._disabled ? enhanceModelSelect.getValue() : 'mimo-v2.5-pro';
+    state.nameEnabled = dom.settingsNameToggle ? dom.settingsNameToggle.checked : false;
+    state.nameModel = nameModelSelect && !nameModelSelect._disabled ? nameModelSelect.getValue() : 'nova';
+    state.remixModel = remixModelSelect && !remixModelSelect._disabled ? remixModelSelect.getValue() : 'mimo-v2.5';
+    state.remixAutoMode = dom.settingsRemixAuto ? dom.settingsRemixAuto.checked : true;
+    state.remixWebSearch = dom.settingsRemixWeb ? dom.settingsRemixWeb.checked : false;
 
     const saves = [
       saveSetting('apiKey', state.apiKey),
@@ -823,78 +914,76 @@ function bindCoreEvents() {
     applyProfileUI();
     applyAnimations(state.animationsEnabled);
     if (typeof renderGallery === 'function') renderGallery();
-
-    // Update model selects in gen panel
     if (typeof updateModelSelect === 'function') updateModelSelect();
 
-    dom.settingsModal.classList.remove('open');
+    if (dom.settingsModal) dom.settingsModal.classList.remove('open');
     toast('success', 'Settings Saved', 'Your preferences have been updated.');
   });
 
   // Model management
-  dom.addCustomModelBtn.addEventListener('click', () => {
-    dom.addModelForm.style.display = dom.addModelForm.style.display === 'none' ? '' : 'none';
+  safeBind('addCustomModelBtn', 'click', () => {
+    if (dom.addModelForm) dom.addModelForm.style.display = dom.addModelForm.style.display === 'none' ? '' : 'none';
   });
 
-  dom.cancelAddModel.addEventListener('click', () => {
-    dom.addModelForm.style.display = 'none';
-    dom.customModelId.value = '';
-    dom.customModelName.value = '';
-    dom.customModelRef.checked = false;
-    dom.customModelPoll.checked = false;
+  safeBind('cancelAddModel', 'click', () => {
+    if (dom.addModelForm) dom.addModelForm.style.display = 'none';
+    if (dom.customModelId) dom.customModelId.value = '';
+    if (dom.customModelName) dom.customModelName.value = '';
+    if (dom.customModelRef) dom.customModelRef.checked = false;
+    if (dom.customModelPoll) dom.customModelPoll.checked = false;
   });
 
-  dom.confirmAddModel.addEventListener('click', () => {
-    const id = dom.customModelId.value.trim();
+  safeBind('confirmAddModel', 'click', () => {
+    const id = dom.customModelId ? dom.customModelId.value.trim() : '';
     if (!id) { toast('error', 'Missing ID', 'Please enter a model ID.'); return; }
     state.customModels.push({
       id,
-      name: dom.customModelName.value.trim() || id,
+      name: dom.customModelName ? (dom.customModelName.value.trim() || id) : id,
       enabled: true,
-      refImages: dom.customModelRef.checked,
-      polling: dom.customModelPoll.checked
+      refImages: dom.customModelRef ? dom.customModelRef.checked : false,
+      polling: dom.customModelPoll ? dom.customModelPoll.checked : false
     });
-    dom.addModelForm.style.display = 'none';
-    dom.customModelId.value = '';
-    dom.customModelName.value = '';
-    dom.customModelRef.checked = false;
-    dom.customModelPoll.checked = false;
+    if (dom.addModelForm) dom.addModelForm.style.display = 'none';
+    if (dom.customModelId) dom.customModelId.value = '';
+    if (dom.customModelName) dom.customModelName.value = '';
+    if (dom.customModelRef) dom.customModelRef.checked = false;
+    if (dom.customModelPoll) dom.customModelPoll.checked = false;
     renderModelList();
     toast('success', 'Model Added', id + ' is now available.');
   });
 
   // PWA install
-  if (dom.installBtn) {
-    dom.installBtn.addEventListener('click', async () => {
-      if (!deferredInstallPrompt) return;
-      deferredInstallPrompt.prompt();
-      const result = await deferredInstallPrompt.userChoice;
-      if (result.outcome === 'accepted') {
-        toast('success', 'Installed!', 'Kinetic has been added to your home screen.');
-        dom.installSection.style.display = 'none';
-      }
-      deferredInstallPrompt = null;
+  safeBind('installBtn', 'click', async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    const result = await deferredInstallPrompt.userChoice;
+    if (result.outcome === 'accepted') {
+      toast('success', 'Installed!', 'Kinetic has been added to your home screen.');
+      if (dom.installSection) dom.installSection.style.display = 'none';
+    }
+    deferredInstallPrompt = null;
+  });
+
+  // Sidebar toggle
+  safeBind('menuToggle', 'click', () => {
+    dom.sidebar && dom.sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+  });
+
+  // Sidebar overlay
+  if (dom.sidebarOverlay) {
+    dom.sidebarOverlay.addEventListener('click', () => {
+      closeSidebar();
+      if (dom.genPanel && dom.genPanel.classList.contains('open')) closeGenPanel();
+      if (dom.remixPanel && dom.remixPanel.classList.contains('open')) closeRemixPanel();
     });
   }
 
-  // Sidebar
-  dom.menuToggle.addEventListener('click', () => {
-    dom.sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
-  });
-
-  dom.sidebarOverlay.addEventListener('click', () => {
-    closeSidebar();
-    if (dom.genPanel.classList.contains('open')) closeGenPanel();
-    if (dom.remixPanel.classList.contains('open')) closeRemixPanel();
-  });
-
-  // Navigation
+  // Navigation items
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
       const view = item.dataset.view;
       if (view === 'settings') {
         openSettings();
-        closeSidebar();
         return;
       }
       showView(view);
@@ -903,18 +992,20 @@ function bindCoreEvents() {
   });
 
   // FAB
-  dom.fabBtn.addEventListener('click', openGenPanel);
-  dom.panelClose.addEventListener('click', closeGenPanel);
-  dom.remixPanelClose.addEventListener('click', closeRemixPanel);
+  safeBind('fabBtn', 'click', openGenPanel);
 
-  // Topbar avatar
-  dom.topbarAvatar.addEventListener('click', openSettings);
+  // Panel close buttons
+  safeBind('panelClose', 'click', closeGenPanel);
+  safeBind('remixPanelClose', 'click', closeRemixPanel);
 
-  // Prompt Settings
-  dom.psResetBtn.addEventListener('click', () => {
-    dom.psEnhancePrompt.value = DEFAULT_PROMPTS.enhance;
-    dom.psNamePrompt.value = DEFAULT_PROMPTS.name;
-    dom.psRemixPrompt.value = DEFAULT_PROMPTS.remix;
+  // Topbar avatar → settings
+  safeBind('topbarAvatar', 'click', openSettings);
+
+  // Prompt settings
+  safeBind('psResetBtn', 'click', () => {
+    if (dom.psEnhancePrompt) dom.psEnhancePrompt.value = DEFAULT_PROMPTS.enhance;
+    if (dom.psNamePrompt) dom.psNamePrompt.value = DEFAULT_PROMPTS.name;
+    if (dom.psRemixPrompt) dom.psRemixPrompt.value = DEFAULT_PROMPTS.remix;
     state.enhancePrompt = DEFAULT_PROMPTS.enhance;
     state.namePrompt = DEFAULT_PROMPTS.name;
     state.remixPrompt = DEFAULT_PROMPTS.remix;
@@ -924,48 +1015,44 @@ function bindCoreEvents() {
     toast('success', 'Reset', 'All prompts restored to defaults.');
   });
 
-  dom.psEnhancePrompt.addEventListener('change', () => {
+  safeBind('psEnhancePrompt', 'change', () => {
     state.enhancePrompt = dom.psEnhancePrompt.value;
     saveSetting('enhancePrompt', state.enhancePrompt);
   });
-  dom.psNamePrompt.addEventListener('change', () => {
+  safeBind('psNamePrompt', 'change', () => {
     state.namePrompt = dom.psNamePrompt.value;
     saveSetting('namePrompt', state.namePrompt);
   });
-  dom.psRemixPrompt.addEventListener('change', () => {
+  safeBind('psRemixPrompt', 'change', () => {
     state.remixPrompt = dom.psRemixPrompt.value;
     saveSetting('remixPrompt', state.remixPrompt);
   });
 
   // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.key === 'n') {
-      e.preventDefault();
-      openGenPanel();
-      setTimeout(() => dom.promptInput.focus(), 100);
-    }
     if (e.key === 'Escape') {
-      if (dom.fullscreenView.classList.contains('open')) {
+      if (dom.fullscreenView && dom.fullscreenView.classList.contains('open')) {
         closeFullscreen();
-      } else if (dom.imageModal.classList.contains('open')) {
+      } else if (dom.imageModal && dom.imageModal.classList.contains('open')) {
         closeViewer();
-      } else if (dom.imagePickerModal.classList.contains('open')) {
+      } else if (dom.imagePickerModal && dom.imagePickerModal.classList.contains('open')) {
         dom.imagePickerModal.classList.remove('open');
-      } else if (dom.settingsModal.classList.contains('open')) {
+      } else if (dom.settingsModal && dom.settingsModal.classList.contains('open')) {
         dom.settingsModal.classList.remove('open');
-      } else if (dom.genPanel.classList.contains('open')) {
+      } else if (dom.genPanel && dom.genPanel.classList.contains('open')) {
         closeGenPanel();
-      } else if (dom.remixPanel.classList.contains('open')) {
+      } else if (dom.remixPanel && dom.remixPanel.classList.contains('open')) {
         closeRemixPanel();
       }
     }
+    if (e.ctrlKey && e.key === 'n') {
+      e.preventDefault();
+      openGenPanel();
+      if (dom.promptInput) setTimeout(() => dom.promptInput.focus(), 100);
+    }
   });
-}
 
-function openSettings() {
-  dom.settingsModal.classList.add('open');
-  closeSidebar();
-  renderModelList();
+  console.log('[Kinetic] Core events bound.');
 }
 
 // ==================== INIT ====================
@@ -973,28 +1060,38 @@ function openSettings() {
 let defaultModelSelect, enhanceModelSelect, nameModelSelect, remixModelSelect;
 
 async function init() {
+  console.log('[Kinetic] Initializing...');
   cacheDom();
-  try { await openDB(); } catch (e) { console.error('DB error:', e); }
+
+  try {
+    await openDB();
+  } catch (e) {
+    console.error('[Kinetic] DB init failed:', e);
+  }
+
   await loadSettings();
 
-  // Initialize custom selects
+  // Initialize custom selects (safe — null wrappers are handled)
   const modelOpts = getEnabledModels().map(m => ({ value: m.id, label: m.name || m.id }));
   defaultModelSelect = new KineticSelect(dom.settingsDefaultModelWrap, modelOpts);
-  defaultModelSelect.setValue(state.defaultModel);
+  if (!defaultModelSelect._disabled) defaultModelSelect.setValue(state.defaultModel);
 
   enhanceModelSelect = new KineticSelect(dom.settingsEnhanceModelWrap, ENHANCEMENT_MODELS);
-  enhanceModelSelect.setValue(state.enhanceModel);
+  if (!enhanceModelSelect._disabled) enhanceModelSelect.setValue(state.enhanceModel);
 
   nameModelSelect = new KineticSelect(dom.settingsNameModelWrap, NAMING_MODELS);
-  nameModelSelect.setValue(state.nameModel);
+  if (!nameModelSelect._disabled) nameModelSelect.setValue(state.nameModel);
 
   remixModelSelect = new KineticSelect(dom.settingsRemixModelWrap, REMIX_MODELS);
-  remixModelSelect.setValue(state.remixModel);
+  if (!remixModelSelect._disabled) remixModelSelect.setValue(state.remixModel);
 
   bindCoreEvents();
   applyProfileUI();
+
+  console.log('[Kinetic] Init complete.');
 }
 
-document.readyState === 'loading'
-  ? document.addEventListener('DOMContentLoaded', init)
-  : init();
+// Defer init to allow other scripts' DOMContentLoaded to register first
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(init, 0);
+});
