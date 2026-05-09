@@ -1,5 +1,5 @@
 /* ============================================================
-   KINETIC — REMIX MODULE
+   KINETIC — REMIX MODULE (FIXED)
    Remix panel, image selection, action buttons, multimodal
    processing, automatic/manual mode, recent remixes
    ============================================================ */
@@ -14,17 +14,14 @@ function initRemixPanel() {
   updateRemixManualHint();
   renderRecentRemixes();
 
-  // Set ratio defaults
-  dom.remixRatioW.value = state.remixCustomRatioW || '';
-  dom.remixRatioH.value = state.remixCustomRatioH || '';
+  if (dom.remixRatioW) dom.remixRatioW.value = state.remixCustomRatioW || '';
+  if (dom.remixRatioH) dom.remixRatioH.value = state.remixCustomRatioH || '';
 
-  // Update ratio button state
   document.querySelectorAll('#remixPanel .ratio-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.ratio === state.remixSelectedRatio);
   });
-  dom.remixCustomRatio.style.display = state.remixSelectedRatio === 'custom' ? '' : 'none';
+  if (dom.remixCustomRatio) dom.remixCustomRatio.style.display = state.remixSelectedRatio === 'custom' ? '' : 'none';
 
-  // Update count buttons
   document.querySelectorAll('#remixPanel .cbtn').forEach(b => {
     b.classList.toggle('active', parseInt(b.dataset.count) === state.remixSelectedCount);
   });
@@ -34,27 +31,27 @@ function initRemixPanel() {
 
 function updateRemixSourceUI() {
   if (state.remixRefSource === 'gallery') {
-    dom.remixGalleryPick.style.display = '';
-    dom.remixUploadPick.style.display = 'none';
+    if (dom.remixGalleryPick) dom.remixGalleryPick.style.display = '';
+    if (dom.remixUploadPick) dom.remixUploadPick.style.display = 'none';
   } else {
-    dom.remixGalleryPick.style.display = 'none';
-    dom.remixUploadPick.style.display = '';
+    if (dom.remixGalleryPick) dom.remixGalleryPick.style.display = 'none';
+    if (dom.remixUploadPick) dom.remixUploadPick.style.display = '';
   }
 
   document.querySelectorAll('.rstab').forEach(t => {
     t.classList.toggle('active', t.dataset.source === state.remixRefSource);
   });
 
-  // Show selected image if one is set
   if (state.remixRefImageData) {
-    dom.remixSelected.style.display = '';
-    dom.remixSelectedImg.src = state.remixRefPreviewUrl || state.remixRefImageData;
+    if (dom.remixSelected) dom.remixSelected.style.display = '';
+    if (dom.remixSelectedImg) dom.remixSelectedImg.src = state.remixRefPreviewUrl || state.remixRefImageData;
   } else {
-    dom.remixSelected.style.display = 'none';
+    if (dom.remixSelected) dom.remixSelected.style.display = 'none';
   }
 }
 
 function renderRemixPickGrid() {
+  if (!dom.remixPickGrid) return;
   const imgs = state.images.slice(0, 50);
   dom.remixPickGrid.innerHTML = imgs.map(img =>
     `<div class="remix-pick-item" data-id="${img.id}"><img src="${esc(img.url)}" alt="" loading="lazy"></div>`
@@ -75,6 +72,7 @@ function renderRemixPickGrid() {
 // ==================== REMIX ACTIONS ====================
 
 function renderRemixActions() {
+  if (!dom.actionGrid) return;
   const allActions = [...REMIX_ACTION_PROMPTS, ...state.customRemixActions];
   dom.actionGrid.innerHTML = allActions.map((a, i) =>
     `<div class="action-card" data-idx="${i}">
@@ -90,13 +88,13 @@ function renderRemixActions() {
       if (!action) return;
 
       if (state.remixAutoMode) {
-        // Auto: set prompt and trigger remix
-        dom.remixPrompt.value = action.prompt;
+        if (dom.remixPrompt) dom.remixPrompt.value = action.prompt;
         triggerRemix(action.prompt);
       } else {
-        // Manual: fill prompt field for editing
-        dom.remixPrompt.value = action.prompt;
-        dom.remixPrompt.focus();
+        if (dom.remixPrompt) {
+          dom.remixPrompt.value = action.prompt;
+          dom.remixPrompt.focus();
+        }
         toast('info', 'Action Loaded', 'Edit the prompt and click Remix when ready.');
       }
     });
@@ -104,13 +102,13 @@ function renderRemixActions() {
 }
 
 function updateRemixManualHint() {
-  dom.remixManualHint.style.display = (!state.remixAutoMode) ? '' : 'none';
+  if (dom.remixManualHint) dom.remixManualHint.style.display = (!state.remixAutoMode) ? '' : 'none';
 }
 
 // ==================== REMIX PROCESSING ====================
 
 async function triggerRemix(overridePrompt) {
-  const prompt = overridePrompt || dom.remixPrompt.value.trim();
+  const prompt = overridePrompt || (dom.remixPrompt ? dom.remixPrompt.value.trim() : '');
   if (!prompt && state.remixAutoMode) {
     toast('error', 'No Prompt', 'Please enter a prompt or select an action.');
     return;
@@ -124,13 +122,12 @@ async function triggerRemix(overridePrompt) {
     return;
   }
 
-  const model = getEnabledModels().find(m => m.id === state.defaultModel) ? state.defaultModel : getEnabledModels()[0]?.id;
+  const model = getEnabledModels().find(m => m.id === state.defaultModel) ? state.defaultModel : (getEnabledModels()[0] ? getEnabledModels()[0].id : null);
   if (!model) { toast('error', 'No Model', 'No enabled image models.'); return; }
 
   state.isGenerating = true;
 
   if (state.remixAutoMode) {
-    // Automatic: show overlay, craft prompt via multimodal model, then generate
     showGenOverlay(prompt, 0, state.remixSelectedCount);
     updateGenStatus('Crafting prompt with AI...');
 
@@ -139,7 +136,7 @@ async function triggerRemix(overridePrompt) {
       craftedPrompt = await craftRemixPrompt(prompt, state.remixRefImageData);
       updateGenStatus('Generating image...');
     } catch (e) {
-      console.warn('Remix prompt crafting failed:', e);
+      console.warn('[Kinetic] Remix prompt crafting failed:', e);
       updateGenStatus('Generating with original prompt...');
     }
 
@@ -150,35 +147,34 @@ async function triggerRemix(overridePrompt) {
     let completed = 0;
 
     if (state.parallelGeneration && count > 1) {
-      // Parallel remix
-      dom.genBoxes.style.display = '';
-      dom.genBoxes.innerHTML = '';
-      for (let i = 0; i < count; i++) {
-        dom.genBoxes.innerHTML += `<div class="gen-box" id="genBox${i}"><div class="gen-box-fill"></div></div>`;
+      if (dom.genBoxes) {
+        dom.genBoxes.style.display = '';
+        dom.genBoxes.innerHTML = '';
+        for (let i = 0; i < count; i++) {
+          dom.genBoxes.innerHTML += `<div class="gen-box" id="genBox${i}"><div class="gen-box-fill"></div></div>`;
+        }
       }
 
       const promises = [];
       for (let i = 0; i < count; i++) {
         promises.push((async (idx) => {
           const box = document.getElementById('genBox' + idx);
-          box.classList.add('processing');
+          if (box) box.classList.add('processing');
           try {
             const url = await callImageAPI(model, craftedPrompt, ratio, hasRef);
             await saveRemixImage(url, prompt, craftedPrompt, model, ratio, batchId, idx);
             completed++;
-            box.classList.remove('processing');
-            box.classList.add('done');
+            if (box) { box.classList.remove('processing'); box.classList.add('done'); }
             updateGenProgress(completed, count);
           } catch (e) {
-            box.style.borderColor = '#ef4444';
+            if (box) box.style.borderColor = '#ef4444';
             toast('error', 'Remix ' + (idx + 1) + ' Failed', e.message);
           }
         })(i));
       }
       await Promise.all(promises);
-      dom.genBoxes.style.display = 'none';
+      if (dom.genBoxes) dom.genBoxes.style.display = 'none';
     } else {
-      // Sequential remix
       for (let i = 0; i < count; i++) {
         updateGenStatus('Generating image ' + (i + 1) + ' of ' + count + '...');
         try {
@@ -199,7 +195,6 @@ async function triggerRemix(overridePrompt) {
     addRecentRemix(batchId);
 
   } else {
-    // Manual mode: crafted prompt is already in the field, user edited it
     const finalPrompt = prompt;
     const ratio = getRemixRatio();
     const count = state.remixSelectedCount;
@@ -213,7 +208,7 @@ async function triggerRemix(overridePrompt) {
     for (let i = 0; i < count; i++) {
       try {
         const url = await callImageAPI(model, finalPrompt, ratio, hasRef);
-        await saveRemixImage(url, dom.remixPrompt.value.trim(), finalPrompt, model, ratio, batchId, i);
+        await saveRemixImage(url, dom.remixPrompt ? dom.remixPrompt.value.trim() : finalPrompt, finalPrompt, model, ratio, batchId, i);
         completed++;
         updateGenProgress(completed, count);
       } catch (e) {
@@ -306,6 +301,7 @@ function addRecentRemix(batchId) {
 }
 
 function renderRecentRemixes() {
+  if (!dom.recentRemixes || !dom.remixResults) return;
   if (state.recentRemixes.length === 0) {
     dom.recentRemixes.style.display = 'none';
     return;
@@ -326,6 +322,8 @@ function renderRecentRemixes() {
 // ==================== BIND REMIX EVENTS ====================
 
 function bindRemixEvents() {
+  console.log('[Kinetic] Binding remix events...');
+
   // Source tabs
   document.querySelectorAll('.rstab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -334,32 +332,38 @@ function bindRemixEvents() {
     });
   });
 
-  // Gallery pick
-  dom.remixPickGrid.addEventListener('click', () => {
-    openImagePicker((img) => {
-      state.remixRefImageData = img.url;
-      state.remixRefPreviewUrl = img.url;
-      state.remixRefSource = 'gallery';
-      updateRemixSourceUI();
+  // Gallery pick → open picker
+  if (dom.remixPickGrid) {
+    dom.remixPickGrid.addEventListener('click', () => {
+      openImagePicker((img) => {
+        state.remixRefImageData = img.url;
+        state.remixRefPreviewUrl = img.url;
+        state.remixRefSource = 'gallery';
+        updateRemixSourceUI();
+      });
     });
-  });
+  }
 
-  // Upload pick
-  dom.remixDrop.addEventListener('click', (e) => {
-    if (e.target === dom.remixPreview) return;
-    dom.remixFileInput.click();
-  });
+  // Upload pick drag & drop
+  if (dom.remixDrop) {
+    dom.remixDrop.addEventListener('click', (e) => {
+      if (e.target === dom.remixPreview) return;
+      if (dom.remixFileInput) dom.remixFileInput.click();
+    });
 
-  dom.remixDrop.addEventListener('dragover', (e) => { e.preventDefault(); dom.remixDrop.classList.add('dragover'); });
-  dom.remixDrop.addEventListener('dragleave', () => dom.remixDrop.classList.remove('dragover'));
-  dom.remixDrop.addEventListener('drop', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dom.remixDrop.classList.remove('dragover');
-    if (e.dataTransfer.files[0]) handleRemixFile(e.dataTransfer.files[0]);
-  });
+    dom.remixDrop.addEventListener('dragover', (e) => { e.preventDefault(); dom.remixDrop.classList.add('dragover'); });
+    dom.remixDrop.addEventListener('dragleave', () => dom.remixDrop.classList.remove('dragover'));
+    dom.remixDrop.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dom.remixDrop.classList.remove('dragover');
+      if (e.dataTransfer.files[0]) handleRemixFile(e.dataTransfer.files[0]);
+    });
+  }
 
-  dom.remixFileInput.addEventListener('change', (e) => { if (e.target.files[0]) handleRemixFile(e.target.files[0]); });
+  if (dom.remixFileInput) {
+    dom.remixFileInput.addEventListener('change', (e) => { if (e.target.files[0]) handleRemixFile(e.target.files[0]); });
+  }
 
   async function handleRemixFile(file) {
     toast('info', 'Processing', 'Compressing image...');
@@ -368,53 +372,61 @@ function bindRemixEvents() {
       state.remixRefImageData = result;
       state.remixRefPreviewUrl = result;
       state.remixRefSource = 'upload';
-      dom.remixPreview.src = result;
-      dom.remixPreview.style.display = 'block';
-      dom.remixDropInner.style.display = 'none';
-      dom.remixDrop.classList.add('has-image');
+      if (dom.remixPreview) { dom.remixPreview.src = result; dom.remixPreview.style.display = 'block'; }
+      if (dom.remixDropInner) dom.remixDropInner.style.display = 'none';
+      if (dom.remixDrop) dom.remixDrop.classList.add('has-image');
       updateRemixSourceUI();
     }
   }
 
   // Clear remix ref
-  dom.clearRemixRef.addEventListener('click', () => {
-    state.remixRefImageData = null;
-    state.remixRefPreviewUrl = null;
-    dom.remixSelected.style.display = 'none';
-    dom.remixPreview.style.display = 'none';
-    dom.remixPreview.src = '';
-    dom.remixDropInner.style.display = '';
-    dom.remixDrop.classList.remove('has-image');
-    dom.remixFileInput.value = '';
-  });
+  if (dom.clearRemixRef) {
+    dom.clearRemixRef.addEventListener('click', () => {
+      state.remixRefImageData = null;
+      state.remixRefPreviewUrl = null;
+      if (dom.remixSelected) dom.remixSelected.style.display = 'none';
+      if (dom.remixPreview) { dom.remixPreview.style.display = 'none'; dom.remixPreview.src = ''; }
+      if (dom.remixDropInner) dom.remixDropInner.style.display = '';
+      if (dom.remixDrop) dom.remixDrop.classList.remove('has-image');
+      if (dom.remixFileInput) dom.remixFileInput.value = '';
+    });
+  }
 
   // Add custom action
-  dom.addRemixAction.addEventListener('click', () => {
-    dom.addActionForm.style.display = dom.addActionForm.style.display === 'none' ? '' : 'none';
-    if (dom.addActionForm.style.display !== 'none') dom.actionName.focus();
-  });
+  if (dom.addRemixAction) {
+    dom.addRemixAction.addEventListener('click', () => {
+      if (dom.addActionForm) {
+        dom.addActionForm.style.display = dom.addActionForm.style.display === 'none' ? '' : 'none';
+        if (dom.addActionForm.style.display !== 'none' && dom.actionName) dom.actionName.focus();
+      }
+    });
+  }
 
-  dom.cancelAddAction.addEventListener('click', () => {
-    dom.addActionForm.style.display = 'none';
-    dom.actionName.value = '';
-    dom.actionPrompt.value = '';
-  });
+  if (dom.cancelAddAction) {
+    dom.cancelAddAction.addEventListener('click', () => {
+      if (dom.addActionForm) dom.addActionForm.style.display = 'none';
+      if (dom.actionName) dom.actionName.value = '';
+      if (dom.actionPrompt) dom.actionPrompt.value = '';
+    });
+  }
 
-  dom.confirmAddAction.addEventListener('click', () => {
-    const name = dom.actionName.value.trim();
-    const prompt = dom.actionPrompt.value.trim();
-    if (!name || !prompt) {
-      toast('error', 'Missing Info', 'Please fill in both name and prompt.');
-      return;
-    }
-    state.customRemixActions.push({ icon: '⚡', name, prompt, builtin: false });
-    saveSetting('customRemixActions', state.customRemixActions);
-    dom.addActionForm.style.display = 'none';
-    dom.actionName.value = '';
-    dom.actionPrompt.value = '';
-    renderRemixActions();
-    toast('success', 'Action Added', '"' + name + '" is ready to use.');
-  });
+  if (dom.confirmAddAction) {
+    dom.confirmAddAction.addEventListener('click', () => {
+      const name = dom.actionName ? dom.actionName.value.trim() : '';
+      const prompt = dom.actionPrompt ? dom.actionPrompt.value.trim() : '';
+      if (!name || !prompt) {
+        toast('error', 'Missing Info', 'Please fill in both name and prompt.');
+        return;
+      }
+      state.customRemixActions.push({ icon: '⚡', name, prompt, builtin: false });
+      saveSetting('customRemixActions', state.customRemixActions);
+      if (dom.addActionForm) dom.addActionForm.style.display = 'none';
+      if (dom.actionName) dom.actionName.value = '';
+      if (dom.actionPrompt) dom.actionPrompt.value = '';
+      renderRemixActions();
+      toast('success', 'Action Added', '"' + name + '" is ready to use.');
+    });
+  }
 
   // Remix ratio buttons
   document.querySelectorAll('#remixPanel .ratio-btn').forEach(btn => {
@@ -422,12 +434,12 @@ function bindRemixEvents() {
       document.querySelectorAll('#remixPanel .ratio-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       state.remixSelectedRatio = btn.dataset.ratio;
-      dom.remixCustomRatio.style.display = btn.dataset.ratio === 'custom' ? '' : 'none';
+      if (dom.remixCustomRatio) dom.remixCustomRatio.style.display = btn.dataset.ratio === 'custom' ? '' : 'none';
     });
   });
 
-  dom.remixRatioW.addEventListener('input', () => { state.remixCustomRatioW = dom.remixRatioW.value; });
-  dom.remixRatioH.addEventListener('input', () => { state.remixCustomRatioH = dom.remixRatioH.value; });
+  if (dom.remixRatioW) dom.remixRatioW.addEventListener('input', () => { state.remixCustomRatioW = dom.remixRatioW.value; });
+  if (dom.remixRatioH) dom.remixRatioH.addEventListener('input', () => { state.remixCustomRatioH = dom.remixRatioH.value; });
 
   // Remix count buttons
   document.querySelectorAll('#remixPanel .cbtn').forEach(btn => {
@@ -439,15 +451,19 @@ function bindRemixEvents() {
   });
 
   // Remix button
-  dom.remixBtn.addEventListener('click', () => {
-    triggerRemix();
-    if (!state.backgroundGeneration) {
-      closeRemixPanel();
-    }
-  });
+  if (dom.remixBtn) {
+    dom.remixBtn.addEventListener('click', () => {
+      triggerRemix();
+      if (!state.backgroundGeneration) {
+        closeRemixPanel();
+      }
+    });
+  }
 
   // Live-update manual hint
-  setInterval(updateRemixManualHint, 500);
+  setInterval(updateRemixManualHint, 1000);
+
+  console.log('[Kinetic] Remix events bound.');
 }
 
 // ==================== INIT ====================
