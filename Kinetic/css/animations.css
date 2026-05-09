@@ -1,0 +1,189 @@
+/* ============================================================
+   KINETIC — ANIMATIONS
+   Keyframes, glow effects, Tesseract, lightning bolt, transitions
+   ============================================================ */
+
+/* --- Fade In --- */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* --- Orb Morphing --- */
+@keyframes orbMorph {
+  0%, 100% { border-radius: 50%; transform: translate(-50%, -50%) scale(1); }
+  25% { border-radius: 42% 58% 60% 40% / 50% 42% 58% 50%; transform: translate(-50%, -50%) scale(1.05); }
+  50% { border-radius: 58% 42% 40% 60% / 58% 50% 42% 50%; transform: translate(-50%, -50%) scale(0.95); }
+  75% { border-radius: 45% 55% 55% 45% / 42% 58% 50% 50%; transform: translate(-50%, -50%) scale(1.03); }
+}
+
+.gen-orb { animation: orbMorph 6s ease-in-out infinite; }
+
+/* --- Ring Rotation --- */
+@keyframes ringRotate1 { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes ringRotate2 { 0% { transform: rotate(0deg); } 100% { transform: rotate(-360deg); } }
+
+.gen-ring.r1 { animation: ringRotate1 8s linear infinite; }
+.gen-ring.r2 { animation: ringRotate2 12s linear infinite; border-style: dashed; }
+.gen-ring.r3 { animation: ringRotate1 16s linear infinite; opacity: 0.15; border-style: dotted; }
+
+/* --- Particles --- */
+.gen-particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+  animation: particleFloat 3s ease-in-out infinite;
+}
+
+@keyframes particleFloat {
+  0% { opacity: 0; transform: translateY(0) scale(0); }
+  20% { opacity: 0.8; transform: translateY(-20px) scale(1); }
+  100% { opacity: 0; transform: translateY(-80px) scale(0); }
+}
+
+/* --- Tesseract Cube Rotation --- */
+@keyframes tesRotate {
+  0% { transform: rotateX(0deg) rotateY(0deg); }
+  100% { transform: rotateX(360deg) rotateY(360deg); }
+}
+
+@keyframes tesPulse {
+  0%, 100% { opacity: 0.4; box-shadow: inset 0 0 8px var(--accent-dim), 0 0 6px var(--accent-dim); }
+  50% { opacity: 0.8; box-shadow: inset 0 0 16px var(--accent-glow), 0 0 12px var(--accent-glow); }
+}
+
+.bg-tesseract { animation: tesRotate 6s linear infinite; }
+
+.tes-front  { transform: translateZ(21px); animation: tesPulse 2s ease-in-out infinite; }
+.tes-back   { transform: rotateY(180deg) translateZ(21px); animation: tesPulse 2s ease-in-out 0.3s infinite; }
+.tes-left   { transform: rotateY(-90deg) translateZ(21px); animation: tesPulse 2s ease-in-out 0.6s infinite; }
+.tes-right  { transform: rotateY(90deg) translateZ(21px); animation: tesPulse 2s ease-in-out 0.9s infinite; }
+.tes-top    { transform: rotateX(90deg) translateZ(21px); animation: tesPulse 2s ease-in-out 1.2s infinite; }
+.tes-bottom { transform: rotateX(-90deg) translateZ(21px); animation: tesPulse 2s ease-in-out 1.5s infinite; }
+
+/* --- Lightning Bolt Glow --- */
+.bolt-path {
+  stroke-dasharray: 80;
+  stroke-dashoffset: 80;
+}
+
+.animated-effects .bolt-path {
+  animation: boltGlow 2.5s ease-in-out infinite;
+}
+
+@keyframes boltGlow {
+  0%, 100% {
+    stroke-dashoffset: 80;
+    filter: drop-shadow(0 0 0px transparent);
+  }
+  40% {
+    stroke-dashoffset: 0;
+    filter: drop-shadow(0 0 6px var(--accent));
+  }
+  60% {
+    stroke-dashoffset: 0;
+    filter: drop-shadow(0 0 10px var(--accent));
+  }
+  80% {
+    stroke-dashoffset: -80;
+    filter: drop-shadow(0 0 4px var(--accent));
+  }
+}
+
+/* --- Button Glow Flow --- */
+.animated-effects .btn-generate-style::before,
+.animated-effects .btn-remix-action::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--accent) 30%, #fff 50%, var(--accent) 70%, transparent 100%);
+  background-size: 300% 100%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: glowFlow 3s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes glowFlow {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* --- Electric Text Shimmer --- */
+.animated-effects .btn-generate-style span,
+.animated-effects .btn-remix-action span {
+  background: linear-gradient(90deg, var(--accent-text) 0%, var(--accent) 35%, #fff 50%, var(--accent) 65%, var(--accent-text) 100%);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: electricText 3s linear infinite;
+}
+
+@keyframes electricText {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* --- Enhance Button Glow --- */
+.animated-effects .btn-enhance:hover .bolt-path {
+  animation: boltGlow 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px var(--accent));
+}
+
+/* --- Box Completion Glow --- */
+@keyframes boxComplete {
+  0% { box-shadow: 0 0 0px var(--accent-glow); }
+  50% { box-shadow: 0 0 20px var(--accent-glow), 0 0 40px var(--accent-dim); }
+  100% { box-shadow: 0 0 12px var(--accent-glow); }
+}
+
+.gen-box.done, .bg-box.done { animation: boxComplete 0.8s ease-out forwards; }
+
+/* --- Spotlight Transition --- */
+@keyframes spotlightShift {
+  0% { transform: scale(0.9); opacity: 0.5; filter: blur(4px); }
+  100% { transform: scale(1); opacity: 1; filter: blur(0); }
+}
+
+.spotlight-center.entering { animation: spotlightShift 0.5s var(--ease) forwards; }
+
+/* --- Remix Button Pulse --- */
+@keyframes remixPulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+  50% { box-shadow: 0 0 0 8px transparent; }
+}
+
+.btn-remix-action { animation: remixPulse 2s ease-in-out infinite; }
+
+/* --- Shimmer Loading --- */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, var(--bg3) 25%, var(--surface) 50%, var(--bg3) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* --- Disable animations when toggled off --- */
+body:not(.animated-effects) .bolt-path { animation: none !important; stroke-dashoffset: 0; }
+body:not(.animated-effects) .btn-generate-style::before,
+body:not(.animated-effects) .btn-remix-action::before { animation: none !important; opacity: 0; }
+body:not(.animated-effects) .btn-generate-style span,
+body:not(.animated-effects) .btn-remix-action span { animation: none !important; -webkit-text-fill-color: var(--accent-text); }
+body:not(.animated-effects) .btn-remix-action { animation: none !important; }
