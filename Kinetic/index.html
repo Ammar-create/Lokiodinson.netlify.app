@@ -1,511 +1,731 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="orange">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>kinetic Studio</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Kinetic — AI Image Studio</title>
+  <meta name="description" content="AI-powered image generation studio">
+  <meta name="theme-color" content="#0a0a0f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/animations.css">
 </head>
 <body>
 
-<!-- Noise Texture -->
-<div class="noise"></div>
+  <!-- ==================== SETUP MODAL ==================== -->
+  <div class="modal" id="setupModal">
+    <div class="setup-card">
+      <div class="setup-header">
+        <div class="setup-logo">
+          <svg viewBox="0 0 32 32" width="40" height="40"><use href="#logoK"/></svg>
+        </div>
+        <h1>Welcome to <span class="accent">Kinetic</span></h1>
+        <p>Set up your workspace to get started</p>
+      </div>
+      <div class="setup-body">
+        <div class="setup-avatar" id="setupAvatarWrap">
+          <img id="setupAvatarPreview" alt="" style="display:none">
+          <svg class="setup-avatar-ph" viewBox="0 0 24 24" width="32" height="32"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 21v-1a8 8 0 0 1 16 0v1" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          <input type="file" id="setupAvatarFile" accept="image/*" hidden>
+        </div>
+        <label class="input-group">
+          <span>Name <span class="muted">(optional)</span></span>
+          <input type="text" id="setupName" placeholder="Your name" autocomplete="name">
+        </label>
+        <label class="input-group">
+          <span>API Key <span class="required">*</span></span>
+          <div class="input-row">
+            <input type="password" id="setupApiKey" placeholder="Enter your AquaDevs API key" autocomplete="off">
+            <button class="eye-toggle" id="setupEyeToggle" type="button">
+              <svg viewBox="0 0 24 24" width="18" height="18"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+          </div>
+        </label>
+      </div>
+      <div class="setup-footer">
+        <button class="btn btn-primary btn-generate-style" id="setupSaveBtn" disabled>
+          <span>Get Started</span>
+        </button>
+        <a href="https://aquadevs.com/" target="_blank" rel="noopener" class="setup-link">Get an API key at aquadevs.com</a>
+      </div>
+    </div>
+  </div>
 
-<!-- =============== FIRST-TIME SETUP MODAL =============== -->
-<div class="modal-overlay" id="setupModal">
-<div class="modal modal-setup">
-<div class="setup-glow"></div>
-<div class="setup-icon">
-<svg viewBox="0 0 48 48" fill="none">
-<rect x="4" y="4" width="40" height="40" rx="10" fill="url(#logoGrad)"/>
-<path d="M24 14L34 20v8l-10 6-10-6v-8l10-6z" stroke="#0d0d0d" stroke-width="2.5" stroke-linejoin="round"/>
-<path d="M24 14v12M34 20l-10 6M14 20l10 6" stroke="#0d0d0d" stroke-width="2" stroke-linejoin="round"/>
-<defs><linearGradient id="logoGrad" x1="4" y1="4" x2="44" y2="44"><stop stop-color="var(--accent)"/><stop offset="1" stop-color="var(--accent-secondary)"/></linearGradient></defs>
-</svg>
-</div>
-<h2 class="setup-title">Welcome to kinetic Studio</h2>
-<p class="setup-sub">Set up your creative workspace to start generating.</p>
+  <!-- ==================== SETTINGS MODAL ==================== -->
+  <div class="modal" id="settingsModal">
+    <div class="modal-card settings-card">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button class="modal-close" id="settingsCloseBtn" type="button">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="modal-body settings-body">
 
-<div class="setup-avatar-row">
-<div class="setup-avatar" id="setupAvatarWrap">
-<svg class="setup-avatar-placeholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-<circle cx="12" cy="7" r="4"/>
-</svg>
-<img id="setupAvatarPreview" alt="" style="display:none">
-<input type="file" id="setupAvatarFile" accept="image/*" style="display:none">
-</div>
-<span class="setup-avatar-label">Upload photo <small>(optional)</small></span>
-</div>
+        <!-- Profile -->
+        <section class="settings-section">
+          <h3>Profile</h3>
+          <div class="settings-row settings-row-center">
+            <div class="settings-avatar" id="settingsAvatarWrap">
+              <img id="settingsAvatarPreview" alt="" style="display:none">
+              <svg class="settings-avatar-ph" viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 21v-1a8 8 0 0 1 16 0v1" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+              <input type="file" id="settingsAvatarFile" accept="image/*" hidden>
+            </div>
+            <label class="input-group flex-1">
+              <span>Name</span>
+              <input type="text" id="settingsName" placeholder="Your name">
+            </label>
+          </div>
+        </section>
 
-<div class="input-group">
-<label>Your Name <small style="opacity:.5">(optional)</small></label>
-<div class="input-wrap">
-<input type="text" id="setupName" placeholder="Enter your name" autocomplete="off">
-</div>
-</div>
+        <!-- API -->
+        <section class="settings-section">
+          <h3>API Key</h3>
+          <div class="input-row">
+            <input type="password" id="settingsApiKey" placeholder="API Key" class="flex-1">
+            <button class="eye-toggle" id="settingsEyeToggle" type="button">
+              <svg viewBox="0 0 24 24" width="18" height="18"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+          </div>
+        </section>
 
-<div class="input-group">
-<label>API Key <span class="required-dot"></span></label>
-<div class="input-wrap">
-<input type="password" id="setupApiKey" placeholder="Paste your AquaDevs API key" autocomplete="off">
-<button class="input-eye" id="setupEyeToggle" type="button">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-</button>
-</div>
-<small class="input-hint">Get your key from <a href="https://api.aquadevs.com" target="_blank" rel="noopener">api.aquadevs.com</a></small>
-</div>
+        <!-- Default Model -->
+        <section class="settings-section">
+          <h3>Default Image Model</h3>
+          <div class="custom-select-wrap" id="settingsDefaultModelWrap" data-value="gptimage-2"></div>
+        </section>
 
-<button class="btn-primary setup-btn" id="setupSaveBtn" disabled>
-<span>Get Started</span>
-</button>
-</div>
-</div>
+        <!-- Recent Limit -->
+        <section class="settings-section">
+          <h3>Recent Images Limit</h3>
+          <div class="recent-limit-row">
+            <button class="rl-btn active" data-limit="20">20</button>
+            <button class="rl-btn" data-limit="30">30</button>
+            <button class="rl-btn" data-limit="50">50</button>
+            <div class="rl-custom">
+              <input type="number" id="settingsRecentLimit" min="5" max="500" placeholder="Custom">
+            </div>
+          </div>
+        </section>
 
-<!-- =============== SETTINGS MODAL =============== -->
-<div class="modal-overlay" id="settingsModal">
-<div class="modal modal-settings">
-<button class="modal-close" id="settingsCloseBtn" type="button">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-</button>
+        <!-- Parallel Generation -->
+        <section class="settings-section">
+          <div class="settings-toggle-row">
+            <div>
+              <h3>Parallel Generation</h3>
+              <p class="muted">Generate all images simultaneously instead of one by one</p>
+            </div>
+            <label class="toggle"><input type="checkbox" id="settingsParallel"><span class="toggle-slider"></span></label>
+          </div>
+        </section>
 
-<div class="settings-header">
-<svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" width="22" height="22">
-<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-</svg>
-<h2>Settings</h2>
-</div>
+        <!-- Background Generation -->
+        <section class="settings-section">
+          <div class="settings-toggle-row">
+            <div>
+              <h3>Background Generation</h3>
+              <p class="muted">Continue browsing while images generate in the background</p>
+            </div>
+            <label class="toggle"><input type="checkbox" id="settingsBackground"><span class="toggle-slider"></span></label>
+          </div>
+        </section>
 
-<div class="settings-body">
-<!-- Profile -->
-<div class="settings-section">
-<h3 class="settings-section-title">Profile</h3>
-<div class="settings-row settings-row-avatar">
-<div class="settings-avatar" id="settingsAvatarWrap">
-<svg class="settings-avatar-ph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-<img id="settingsAvatarPreview" alt="" style="display:none">
-<input type="file" id="settingsAvatarFile" accept="image/*" style="display:none">
-</div>
-<div style="flex:1">
-<div class="input-wrap input-wrap-sm">
-<input type="text" id="settingsName" placeholder="Your name">
-</div>
-</div>
-</div>
-</div>
+        <!-- Animated Effects -->
+        <section class="settings-section">
+          <div class="settings-toggle-row">
+            <div>
+              <h3>Animated Effects</h3>
+              <p class="muted">Glow and electricity effects on main buttons</p>
+            </div>
+            <label class="toggle"><input type="checkbox" id="settingsAnimations" checked><span class="toggle-slider"></span></label>
+          </div>
+        </section>
 
-<!-- API Key -->
-<div class="settings-section">
-<h3 class="settings-section-title">API Key</h3>
-<div class="input-wrap">
-<input type="password" id="settingsApiKey" placeholder="Your AquaDevs API key">
-<button class="input-eye" id="settingsEyeToggle" type="button">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-</button>
-</div>
-</div>
+        <!-- Theme -->
+        <section class="settings-section">
+          <h3>Theme</h3>
+          <div class="theme-row">
+            <button class="theme-btn active" id="themeOrange" data-theme="orange"><span class="theme-swatch orange"></span>Amber</button>
+            <button class="theme-btn" id="themeBlue" data-theme="blue"><span class="theme-swatch blue"></span>Neon Blue</button>
+          </div>
+        </section>
 
-<!-- Image Generation Model -->
-<div class="settings-section">
-<h3 class="settings-section-title">Default Image Model</h3>
-<select class="settings-select" id="settingsDefaultModel">
-<option value="gptimage-2">GPT Image 2 - OpenAI</option>
-<option value="flux-2">Flux 2 - Black Forest Labs</option>
-<option value="gptimage-1.5">GPT Image 1.5 - OpenAI</option>
-<option value="zimage">ZImage - Fast</option>
-<option value="grok-image">Grok Imagine 1.0 - xAI</option>
-<option value="midjourney">Midjourney 7</option>
-<option value="qwen-image">Qwen Image</option>
-<option value="seedream">Seedream 5 Lite</option>
-<option value="imagen4">Imagen 4 - Google (async)</option>
-<option value="nanobanana">NanoBanana - Gemini Flash (async)</option>
-<option value="nanobanana-pro">NanoBanana Pro - Gemini Pro (async)</option>
-</select>
-</div>
+        <!-- Prompt Enhancement -->
+        <section class="settings-section">
+          <h3>Prompt Enhancement</h3>
+          <div class="settings-toggle-row">
+            <span>Enable Enhancement</span>
+            <label class="toggle"><input type="checkbox" id="settingsEnhanceToggle"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="settings-sub" id="enhanceSub" style="display:none">
+            <div class="settings-toggle-row">
+              <span>Manual Mode</span>
+              <label class="toggle"><input type="checkbox" id="settingsEnhanceManual"><span class="toggle-slider"></span></label>
+            </div>
+            <div class="settings-toggle-row">
+              <span>Web Search</span>
+              <label class="toggle"><input type="checkbox" id="settingsEnhanceWeb"><span class="toggle-slider"></span></label>
+            </div>
+            <label class="input-group">
+              <span>Enhancement Model</span>
+              <div class="custom-select-wrap" id="settingsEnhanceModelWrap" data-value="mimo-v2.5-pro"></div>
+            </label>
+          </div>
+        </section>
 
-<!-- AI Enhancement -->
-<div class="settings-section">
-<h3 class="settings-section-title">AI Prompt Enhancement</h3>
-<p class="settings-desc">Use a text model to enhance your prompts before generation.</p>
-<div class="settings-toggle-row">
-<span>Enable prompt enhancement</span>
-<label class="toggle"><input type="checkbox" id="settingsEnhanceToggle"><span class="toggle-slider"></span></label>
-</div>
-<select class="settings-select" id="settingsEnhanceModel">
-<option value="gpt-5.4-mini">GPT 5.4 Mini</option>
-<option value="deepseek-v4-pro">DeepSeek V4 Pro</option>
-<option value="gemini-3">Gemini 3.0 Flash</option>
-<option value="grok-4.2">Grok 4.2 Beta</option>
-<option value="kimi-k2.5">Kimi K2.5</option>
-<option value="qwen-3.5">Qwen 3.5 397B</option>
-<option value="llama-4">Llama 4 Maverick</option>
-<option value="mimo-v2.5-pro">Mimo V2.5 Pro</option>
-</select>
-</div>
+        <!-- Auto-Naming -->
+        <section class="settings-section">
+          <h3>Auto-Naming</h3>
+          <div class="settings-toggle-row">
+            <span>Enable Auto-Naming</span>
+            <label class="toggle"><input type="checkbox" id="settingsNameToggle"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="settings-sub" id="nameSub" style="display:none">
+            <label class="input-group">
+              <span>Naming Model</span>
+              <div class="custom-select-wrap" id="settingsNameModelWrap" data-value="nova"></div>
+            </label>
+          </div>
+        </section>
 
-<!-- Auto-Naming Model -->
-<div class="settings-section">
-<h3 class="settings-section-title">Auto-Naming</h3>
-<p class="settings-desc">Automatically generate a short title for each image.</p>
-<div class="settings-toggle-row">
-<span>Enable auto-naming</span>
-<label class="toggle"><input type="checkbox" id="settingsNameToggle"><span class="toggle-slider"></span></label>
-</div>
-<select class="settings-select" id="settingsNameModel">
-<option value="gpt-5.4-mini">GPT 5.4 Mini</option>
-<option value="deepseek-v4">DeepSeek V4 Flash</option>
-<option value="gemini-2.5">Gemini 2.5 Flash Lite</option>
-<option value="qwen-3.5">Qwen 3.5 397B</option>
-<option value="llama-4">Llama 4 Maverick</option>
-</select>
-</div>
+        <!-- Remix Model -->
+        <section class="settings-section">
+          <h3>Remix</h3>
+          <label class="input-group">
+            <span>Remix Model</span>
+            <div class="custom-select-wrap" id="settingsRemixModelWrap" data-value="mimo-v2.5"></div>
+          </label>
+          <div class="settings-toggle-row">
+            <span>Automatic Mode</span>
+            <label class="toggle"><input type="checkbox" id="settingsRemixAuto" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div class="settings-toggle-row">
+            <span>Web Search</span>
+            <label class="toggle"><input type="checkbox" id="settingsRemixWeb"><span class="toggle-slider"></span></label>
+          </div>
+        </section>
 
-<!-- Theme -->
-<div class="settings-section">
-<h3 class="settings-section-title">Theme</h3>
-<div class="theme-options">
-<button class="theme-opt active" data-theme="orange" id="themeOrange">
-<span class="theme-swatch" style="background:linear-gradient(135deg,#f5a623,#ff6b35)"></span>
-<span class="theme-label">Amber</span>
-</button>
-<button class="theme-opt" data-theme="blue" id="themeBlue">
-<span class="theme-swatch" style="background:linear-gradient(135deg,#3b82f6,#06b6d4)"></span>
-<span class="theme-label">Neon Blue</span>
-</button>
-</div>
-</div>
-</div>
+        <!-- Image Generation Models -->
+        <section class="settings-section">
+          <h3>Image Generation Models</h3>
+          <div class="model-list" id="imageModelList"></div>
+          <button class="btn btn-ghost btn-sm" id="addCustomModelBtn" type="button">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Add Custom Model
+          </button>
+          <div class="add-model-form" id="addModelForm" style="display:none">
+            <label class="input-group"><span>Model ID</span><input type="text" id="customModelId" placeholder="e.g., my-model-v1"></label>
+            <label class="input-group"><span>Display Name</span><input type="text" id="customModelName" placeholder="e.g., My Model"></label>
+            <label class="checkbox-row"><input type="checkbox" id="customModelRef"><span>Supports reference images</span></label>
+            <label class="checkbox-row"><input type="checkbox" id="customModelPoll"><span>Uses polling (async generation)</span></label>
+            <div class="form-actions">
+              <button class="btn btn-primary btn-sm" id="confirmAddModel" type="button">Add Model</button>
+              <button class="btn btn-ghost btn-sm" id="cancelAddModel" type="button">Cancel</button>
+            </div>
+          </div>
+        </section>
 
-<div class="settings-footer">
-<button class="btn-primary" id="settingsSaveBtn">Save Changes</button>
-</div>
-</div>
-</div>
+        <!-- Install App -->
+        <section class="settings-section" id="installSection" style="display:none">
+          <button class="btn btn-primary btn-block" id="installBtn" type="button">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Install Kinetic App
+          </button>
+        </section>
 
-<!-- =============== GENERATION OVERLAY =============== -->
-<div class="gen-overlay" id="genOverlay">
-<div class="gen-bg">
-<div class="gen-particle" style="--x:15%;--delay:0s;--dur:4s"></div>
-<div class="gen-particle" style="--x:30%;--delay:.6s;--dur:3.5s"></div>
-<div class="gen-particle" style="--x:50%;--delay:1.2s;--dur:5s"></div>
-<div class="gen-particle" style="--x:70%;--delay:.3s;--dur:4.2s"></div>
-<div class="gen-particle" style="--x:85%;--delay:1.8s;--dur:3.8s"></div>
-<div class="gen-particle" style="--x:25%;--delay:2s;--dur:4.5s"></div>
-<div class="gen-particle" style="--x:60%;--delay:.9s;--dur:3.2s"></div>
-<div class="gen-particle" style="--x:40%;--delay:1.5s;--dur:4.8s"></div>
-</div>
-<div class="gen-center">
-<div class="gen-orbs">
-<div class="gen-orb"></div>
-<div class="gen-ring gen-ring-1"></div>
-<div class="gen-ring gen-ring-2"></div>
-<div class="gen-ring gen-ring-3"></div>
-</div>
-<div class="gen-prompt-text" id="genPromptText"></div>
-<div class="gen-bar-track">
-<div class="gen-bar-fill" id="genBarFill"></div>
-</div>
-<div class="gen-status">
-<span id="genStatusText">Preparing...</span>
-<span class="gen-count"><span id="genCurrentCount">0</span> / <span id="genTotalCount">1</span></span>
-</div>
-</div>
-</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-block" id="settingsSaveBtn" type="button">Save Changes</button>
+      </div>
+    </div>
+  </div>
 
-<!-- =============== MAIN APP =============== -->
-<div class="app">
+  <!-- ==================== GENERATION OVERLAY ==================== -->
+  <div class="gen-overlay" id="genOverlay">
+    <div class="gen-orb-container">
+      <div class="gen-particles" id="genParticles"></div>
+      <div class="gen-orb" id="genOrb"></div>
+      <div class="gen-ring r1"></div>
+      <div class="gen-ring r2"></div>
+      <div class="gen-ring r3"></div>
+    </div>
+    <!-- Parallel boxes (Tesseract-style) -->
+    <div class="gen-boxes" id="genBoxes" style="display:none"></div>
+    <div class="gen-prompt-display" id="genPromptText"></div>
+    <div class="gen-progress-bar"><div class="gen-bar-fill" id="genBarFill"></div></div>
+    <div class="gen-status" id="genStatusText">Preparing...</div>
+    <div class="gen-counter"><span id="genCurrentCount">0</span> / <span id="genTotalCount">1</span></div>
+  </div>
 
-<!-- Sidebar Overlay (for mobile dismiss) -->
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <!-- ==================== BACKGROUND INDICATOR ==================== -->
+  <div class="bg-indicator" id="bgIndicator" style="display:none">
+    <div class="bg-tesseract">
+      <div class="tes-face tes-front"></div>
+      <div class="tes-face tes-back"></div>
+      <div class="tes-face tes-left"></div>
+      <div class="tes-face tes-right"></div>
+      <div class="tes-face tes-top"></div>
+      <div class="tes-face tes-bottom"></div>
+    </div>
+    <div class="bg-info">
+      <span class="bg-count" id="bgCount">0/0</span>
+      <span class="bg-label">generating</span>
+    </div>
+    <div class="bg-boxes" id="bgBoxes"></div>
+  </div>
 
-<!-- Sidebar -->
-<aside class="sidebar" id="sidebar">
-<div class="sidebar-head">
-<div class="sidebar-logo">
-<svg viewBox="0 0 32 32" fill="none">
-<rect width="32" height="32" rx="8" fill="url(#sLogoG)"/>
-<path d="M16 8L24 13v6l-8 5-8-5v-6l8-5z" stroke="#0d0d0d" stroke-width="2" stroke-linejoin="round"/>
-<path d="M16 8v10M24 13l-8 5M8 13l8 5" stroke="#0d0d0d" stroke-width="1.5" stroke-linejoin="round"/>
-<defs><linearGradient id="sLogoG" x1="0" y1="0" x2="32" y2="32"><stop stop-color="var(--accent)"/><stop offset="1" stop-color="var(--accent-secondary)"/></linearGradient></defs>
-</svg>
-</div>
-<span class="sidebar-brand">kinetic</span>
-</div>
+  <!-- ==================== APP SHELL ==================== -->
+  <div class="app">
 
-<nav class="sidebar-nav">
-<div class="nav-group">
-<div class="nav-label">Main</div>
-<div class="nav-item active" data-view="images">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-<span>Images</span>
-<span class="nav-badge" id="imageCount">0</span>
-</div>
-<div class="nav-item" data-view="favorites">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-<span>Favorites</span>
-</div>
-</div>
-</nav>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <svg viewBox="0 0 32 32" width="28" height="28"><use href="#logoK"/></svg>
+        <span class="sidebar-title">Kinetic</span>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-view="images" type="button">
+          <svg viewBox="0 0 24 24" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span>Images</span>
+        </button>
+        <button class="nav-item" data-view="prompts" type="button">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Prompt Settings</span>
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="nav-item" data-view="settings" type="button">
+          <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span>Settings</span>
+        </button>
+      </div>
+    </aside>
 
-<div class="sidebar-foot">
-<button class="btn-foot" id="sidebarSettingsBtn">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-</svg>
-Settings
-</button>
-</div>
-</aside>
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<!-- Main Content -->
-<main class="main">
-<header class="topbar">
-<button class="menu-btn" id="menuToggle" type="button">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-</button>
-<div class="search-box">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-<input type="text" id="searchInput" placeholder="Search images...">
-</div>
-<div class="topbar-actions">
-<button class="topbar-avatar" id="topbarAvatar" type="button">
-<span id="topbarAvatarLetter">A</span>
-</button>
-</div>
-</header>
+    <!-- Main Content -->
+    <main class="main">
 
-<div class="content-wrap">
-<!-- Gallery Area -->
-<div class="gallery-area" id="galleryArea">
-<div class="gallery-tabs">
-<button class="g-tab active" data-filter="all">All <span id="tabAll"></span></button>
-<button class="g-tab" data-filter="recent">Recent <span id="tabRecent"></span></button>
-<button class="g-tab" data-filter="favorites">Favorites <span id="tabFav"></span></button>
-</div>
-<div class="empty-state" id="emptyState">
-<div class="empty-icon">
-<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
-<rect x="6" y="6" width="36" height="36" rx="4"/>
-<circle cx="17" cy="17" r="3"/>
-<path d="M42 30l-10-10L10 42"/>
-</svg>
-</div>
-<h3>No images yet</h3>
-<p>Hit the create button or press <kbd>Ctrl</kbd>+<kbd>N</kbd> to begin.</p>
-</div>
-<div class="gallery-grid" id="galleryGrid"></div>
-</div>
+      <!-- Topbar -->
+      <header class="topbar">
+        <button class="menu-toggle" id="menuToggle" type="button">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <div class="topbar-center">
+          <svg viewBox="0 0 32 32" width="24" height="24"><use href="#logoK"/></svg>
+          <span class="topbar-title">Kinetic</span>
+        </div>
+        <button class="topbar-avatar" id="topbarAvatar" type="button">
+          <span class="topbar-avatar-letter" id="topbarAvatarLetter">K</span>
+        </button>
+      </header>
 
-<!-- Generation Panel -->
-<div class="panel" id="panel">
-<div class="panel-top">
-<h3>Create Image</h3>
-<button class="btn-x" id="panelClose" type="button">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-</button>
-</div>
-<div class="panel-scroll">
+      <!-- Gallery View -->
+      <div class="view" id="galleryView">
+        <div class="gallery-tabs">
+          <button class="g-tab active" data-filter="all" type="button">All</button>
+          <button class="g-tab" data-filter="recent" type="button">Recent <span id="tabRecentCount"></span></button>
+          <button class="g-tab" data-filter="favorites" type="button">Favorites <span id="tabFavCount"></span></button>
+          <span class="image-count"><span id="imageCount">0</span> images</span>
+        </div>
+        <div class="gallery-search">
+          <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M16 16l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <input type="text" id="searchInput" placeholder="Search prompts, models...">
+        </div>
+        <div class="gallery-area" id="galleryArea">
+          <div class="gallery-grid" id="galleryGrid"></div>
+          <div class="empty-state" id="emptyState">
+                        <svg viewBox="0 0 80 80" width="80" height="80">
+              <circle cx="40" cy="40" r="36" fill="none" stroke="var(--border)" stroke-width="2" stroke-dasharray="6 4"/>
+              <path d="M30 35l6 6 14-14" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h3>No images yet</h3>
+            <p>Click the + button to create your first image</p>
+          </div>
+        </div>
+      </div>
 
-<!-- Prompt -->
-<div class="p-section">
-<div class="p-label">
-<svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" width="15" height="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-Prompt
-<button class="btn-shuffle" id="shuffleBtn" type="button" title="Random prompt">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-</button>
-</div>
-<div class="prompt-box">
-<textarea id="promptInput" placeholder="Describe your image..." maxlength="500"></textarea>
-<span class="char-count"><span id="charCount">0</span>/500</span>
-</div>
-</div>
+      <!-- Prompt Settings View -->
+      <div class="view" id="promptView" style="display:none">
+        <div class="prompt-settings">
+          <h2>Prompt Settings</h2>
+          <p class="muted">Customize the system instructions for AI models. Only the instruction text is editable.</p>
 
-<!-- Reference Image -->
-<div class="p-section" id="refSection" style="display:none">
-<div class="p-label">
-<svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" width="15" height="15"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-Reference Image
-<button class="btn-shuffle" id="clearRefBtn" type="button" title="Remove reference" style="display:none">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-</button>
-</div>
-<div class="ref-drop" id="refDrop">
-<div class="ref-drop-inner" id="refDropInner">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-<span>Drop image here or click to upload</span>
-</div>
-<img id="refPreview" alt="" style="display:none">
-<input type="file" id="refFileInput" accept="image/*" style="display:none">
-</div>
-<div class="ref-url-row">
-<input type="url" id="refUrlInput" placeholder="Or paste image URL...">
-<button class="btn-sm" id="refUrlBtn" type="button">Load</button>
-</div>
-</div>
+          <div class="ps-card">
+            <h3>Prompt Enhancement</h3>
+            <p class="muted">Instruction for the enhancement model when improving your prompts</p>
+            <textarea id="psEnhancePrompt" rows="4"></textarea>
+          </div>
 
-<!-- Model -->
-<div class="p-section">
-<div class="p-label">
-<svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" width="15" height="15"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-Model
-</div>
-<select class="p-select" id="modelSelect">
-<optgroup label="Direct">
-<option value="gptimage-2">GPT Image 2 - OpenAI</option>
-<option value="flux-2">Flux 2 - Black Forest Labs</option>
-<option value="gptimage-1.5">GPT Image 1.5 - OpenAI</option>
-<option value="zimage">ZImage - Fast</option>
-<option value="grok-image">Grok Imagine 1.0 - xAI</option>
-<option value="midjourney">Midjourney 7</option>
-<option value="qwen-image">Qwen Image</option>
-<option value="seedream">Seedream 5 Lite</option>
-</optgroup>
-<optgroup label="Async (polling)">
-<option value="imagen4">Imagen 4 - Google</option>
-<option value="nanobanana">NanoBanana - Gemini Flash</option>
-<option value="nanobanana-pro">NanoBanana Pro - Gemini Pro</option>
-</optgroup>
-</select>
-</div>
+          <div class="ps-card">
+            <h3>Auto-Naming</h3>
+            <p class="muted">Instruction for the naming model when generating image titles</p>
+            <textarea id="psNamePrompt" rows="3"></textarea>
+          </div>
 
-<!-- Aspect Ratio -->
-<div class="p-section">
-<div class="p-label">
-<svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" width="15" height="15"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
-Aspect Ratio
-</div>
-<div class="ratio-row">
-<button class="ratio-btn" data-ratio="square" type="button">
-<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="14" height="14" rx="1"/></svg>
-<span>1:1</span>
-</button>
-<button class="ratio-btn active" data-ratio="landscape" type="button">
-<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="18" height="12" rx="1"/></svg>
-<span>16:9</span>
-</button>
-<button class="ratio-btn" data-ratio="portrait" type="button">
-<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="1" width="12" height="18" rx="1"/></svg>
-<span>9:16</span>
-</button>
-</div>
-</div>
+          <div class="ps-card">
+            <h3>Remix</h3>
+            <p class="muted">Instruction for the remix model when crafting transformation prompts</p>
+            <textarea id="psRemixPrompt" rows="4"></textarea>
+          </div>
 
-<!-- Style -->
-<div class="p-section">
-<div class="p-label">
-<svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" width="15" height="15"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-Style
-</div>
-<div class="style-chips" id="styleChips">
-<button class="schip active" data-style="" type="button">None</button>
-<button class="schip" data-style="cinematic" type="button">Cinematic</button>
-<button class="schip" data-style="anime" type="button">Anime</button>
-<button class="schip" data-style="3d render" type="button">3D Render</button>
-<button class="schip" data-style="oil painting" type="button">Oil Painting</button>
-<button class="schip" data-style="watercolor" type="button">Watercolor</button>
-<button class="schip" data-style="cyberpunk" type="button">Cyberpunk</button>
-<button class="schip" data-style="photorealistic" type="button">Photorealistic</button>
-<button class="schip" data-style="fantasy" type="button">Fantasy</button>
-<button class="schip" data-style="minimalist" type="button">Minimalist</button>
-</div>
-<div class="add-style-row" id="addStyleRow" style="display:none">
-<input type="text" id="customStyleInput" placeholder="Custom style name..." maxlength="30">
-<button class="btn-sm" id="addStyleConfirm" type="button">Add</button>
-</div>
-<button class="btn-add-style" id="addStyleBtn" type="button">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-Add Style
-</button>
-</div>
+          <button class="btn btn-ghost" id="psResetBtn" type="button">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M3 12a9 9 0 1 0 9-9 9.01 9.01 0 0 0-6.36 2.64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3 3v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Reset All to Defaults
+          </button>
+        </div>
+      </div>
 
-<!-- Count -->
-<div class="p-section">
-<div class="p-label">
-<svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" width="15" height="15"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-Number of Images
-</div>
-<div class="count-grid">
-<button class="cbtn active" data-count="1" type="button">1</button>
-<button class="cbtn" data-count="2" type="button">2</button>
-<button class="cbtn" data-count="3" type="button">3</button>
-<button class="cbtn" data-count="4" type="button">4</button>
-</div>
-</div>
+    </main>
 
-<!-- Generate -->
-<button class="btn-generate" id="generateBtn" type="button">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-<span>Generate</span>
-</button>
+    <!-- Generation Panel (right slide-in) -->
+    <aside class="gen-panel" id="genPanel">
+      <div class="gen-panel-header">
+        <h2>Create</h2>
+        <button class="modal-close" id="panelClose" type="button">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="gen-panel-body">
 
-</div>
-</div>
-</div>
-</main>
-</div>
+        <!-- Model -->
+        <label class="input-group">
+          <span>Model</span>
+          <div class="custom-select-wrap" id="modelSelectWrap" data-value="gptimage-2"></div>
+        </label>
 
-<!-- Mobile Bottom Nav -->
-<nav class="mobile-nav" id="mobileNav">
-<div class="mobile-nav-inner">
-<div class="mnav active" data-view="images">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-<span>Images</span>
-</div>
-<div class="mnav" data-view="favorites">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-<span>Favorites</span>
-</div>
-<div class="mnav" data-view="settings">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-<span>Settings</span>
-</div>
-</div>
-</nav>
+        <!-- Prompt -->
+        <label class="input-group">
+          <span>Prompt</span>
+          <div class="prompt-area">
+            <textarea id="promptInput" rows="4" maxlength="2000" placeholder="Describe what you want to create..."></textarea>
+            <div class="prompt-footer">
+              <span class="char-count"><span id="charCount">0</span>/2000</span>
+              <button class="btn-icon shuffle-btn" id="shuffleBtn" type="button" title="Random prompt">
+                <svg viewBox="0 0 24 24" width="16" height="16"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+        </label>
 
-<!-- FAB -->
-<button class="fab" id="fabBtn" type="button">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-</button>
+        <!-- Enhance Button (shown when manual mode is on) -->
+        <button class="btn btn-enhance" id="enhanceBtn" type="button" style="display:none">
+          <svg class="bolt-svg" viewBox="0 0 24 24" width="18" height="18"><path class="bolt-path" d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Enhance Prompt</span>
+        </button>
 
-<!-- =============== IMAGE VIEWER MODAL =============== -->
-<div class="modal-overlay" id="imageModal">
-<div class="modal modal-viewer">
-<div class="viewer-img-wrap">
-<img id="viewerImg" alt="">
-<button class="viewer-close" id="viewerClose" type="button">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-</button>
-</div>
-<div class="viewer-info">
-<p id="viewerPrompt"></p>
-<div class="viewer-meta" id="viewerMeta"></div>
-<div class="viewer-actions">
-<button class="btn-secondary" id="viewerDownload" type="button">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-Download
-</button>
-<button class="btn-secondary" id="viewerCopy" type="button">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-Copy Prompt
-</button>
-<button class="btn-secondary btn-fav-toggle" id="viewerFav" type="button">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-</button>
-<button class="btn-secondary btn-danger" id="viewerDelete" type="button">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-</button>
-</div>
-</div>
-</div>
-</div>
+        <!-- Reference Image -->
+        <div class="ref-section" id="refSection" style="display:none">
+          <label class="input-group"><span>Reference Image</span></label>
+          <div class="ref-drop" id="refDrop">
+            <div class="ref-drop-inner" id="refDropInner">
+              <svg viewBox="0 0 24 24" width="24" height="24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>Drop image or click to upload</span>
+            </div>
+            <img class="ref-preview" id="refPreview" alt="" style="display:none">
+            <input type="file" id="refFileInput" accept="image/*" hidden>
+          </div>
+          <div class="ref-url-row">
+            <input type="text" id="refUrlInput" placeholder="Or paste image URL...">
+            <button class="btn btn-ghost btn-sm" id="refUrlBtn" type="button">Load</button>
+          </div>
+          <button class="btn btn-ghost btn-sm clear-ref-btn" id="clearRefBtn" type="button" style="display:none">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Clear Reference
+          </button>
+        </div>
 
-<!-- =============== TOAST CONTAINER =============== -->
-<div class="toast-wrap" id="toastWrap"></div>
+        <!-- Aspect Ratio -->
+        <label class="input-group"><span>Aspect Ratio</span></label>
+        <div class="ratio-row">
+          <button class="ratio-btn active" data-ratio="landscape" type="button">Landscape</button>
+          <button class="ratio-btn" data-ratio="portrait" type="button">Portrait</button>
+          <button class="ratio-btn" data-ratio="square" type="button">Square</button>
+          <button class="ratio-btn" data-ratio="16:9" type="button">16:9</button>
+          <button class="ratio-btn" data-ratio="9:16" type="button">9:16</button>
+          <button class="ratio-btn" data-ratio="1:1" type="button">1:1</button>
+          <button class="ratio-btn ratio-custom-btn" data-ratio="custom" type="button">Custom</button>
+        </div>
+        <div class="custom-ratio" id="customRatio" style="display:none">
+          <input type="number" id="customRatioW" min="1" max="99" placeholder="16" class="ratio-input">
+          <span class="ratio-sep">:</span>
+          <input type="number" id="customRatioH" min="1" max="99" placeholder="9" class="ratio-input">
+        </div>
 
-<script src="app.js"></script>
+        <!-- Style -->
+        <label class="input-group"><span>Style</span></label>
+        <div class="style-chips" id="styleChips">
+          <button class="schip active" data-style="" type="button">None</button>
+          <button class="schip" data-style="photorealistic" type="button">Photo</button>
+          <button class="schip" data-style="digital art" type="button">Digital</button>
+          <button class="schip" data-style="oil painting" type="button">Oil</button>
+          <button class="schip" data-style="watercolor" type="button">Water</button>
+          <button class="schip" data-style="anime" type="button">Anime</button>
+          <button class="schip" data-style="3d render" type="button">3D</button>
+          <button class="schip" data-style="sketch" type="button">Sketch</button>
+          <button class="schip" data-style="pixel art" type="button">Pixel</button>
+          <button class="add-style-btn" id="addStyleBtn" type="button">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <div class="add-style-row" id="addStyleRow" style="display:none">
+          <input type="text" id="customStyleInput" placeholder="Custom style name">
+          <button class="btn btn-ghost btn-sm" id="addStyleConfirm" type="button">Add</button>
+        </div>
+
+        <!-- Count -->
+        <label class="input-group"><span>Number of Images</span></label>
+        <div class="count-row">
+          <button class="cbtn active" data-count="1" type="button">1</button>
+          <button class="cbtn" data-count="2" type="button">2</button>
+          <button class="cbtn" data-count="3" type="button">3</button>
+          <button class="cbtn" data-count="4" type="button">4</button>
+        </div>
+
+        <!-- Generate -->
+        <button class="btn btn-generate btn-generate-style" id="generateBtn" type="button">
+          <svg class="bolt-svg" viewBox="0 0 24 24" width="20" height="20"><path class="bolt-path" d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Generate</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Remix Panel (right slide-in) -->
+    <aside class="remix-panel" id="remixPanel">
+      <div class="gen-panel-header">
+        <h2>Remix</h2>
+        <button class="modal-close" id="remixPanelClose" type="button">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="gen-panel-body">
+
+        <!-- Reference Source -->
+        <label class="input-group"><span>Source Image</span></label>
+        <div class="remix-source-tabs">
+          <button class="rstab active" data-source="gallery" type="button">
+            <svg viewBox="0 0 24 24" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            Gallery
+          </button>
+          <button class="rstab" data-source="upload" type="button">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Upload
+          </button>
+        </div>
+
+        <!-- Gallery picker -->
+        <div class="remix-gallery-pick" id="remixGalleryPick">
+          <div class="remix-pick-grid" id="remixPickGrid"></div>
+        </div>
+
+        <!-- Upload picker -->
+        <div class="remix-upload-pick" id="remixUploadPick" style="display:none">
+          <div class="ref-drop" id="remixDrop">
+            <div class="ref-drop-inner" id="remixDropInner">
+              <svg viewBox="0 0 24 24" width="24" height="24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>Drop image or click to upload</span>
+            </div>
+            <img class="ref-preview" id="remixPreview" alt="" style="display:none">
+            <input type="file" id="remixFileInput" accept="image/*" hidden>
+          </div>
+        </div>
+
+        <!-- Selected preview -->
+        <div class="remix-selected" id="remixSelected" style="display:none">
+          <img id="remixSelectedImg" alt="">
+          <button class="btn-icon clear-remix-ref" id="clearRemixRef" type="button">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+
+        <!-- Prompt -->
+        <label class="input-group"><span>Remix Prompt</span></label>
+        <textarea id="remixPrompt" rows="3" maxlength="2000" placeholder="Describe the transformation..."></textarea>
+
+        <!-- Built-in Actions -->
+        <label class="input-group"><span>Quick Actions</span></label>
+        <div class="action-grid" id="actionGrid"></div>
+        <button class="btn btn-ghost btn-sm" id="addRemixAction" type="button">
+          <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Add Custom Action
+        </button>
+        <div class="add-action-form" id="addActionForm" style="display:none">
+          <input type="text" id="actionName" placeholder="Action name">
+          <textarea id="actionPrompt" rows="2" placeholder="Short prompt for remix model..."></textarea type="button">button class="ratio-btn" data-ratio="9:16" type="button">9:16</button>
+          <button class="ratio-btn" data-ratio="1:1" type="button">1:1</button>
+          <button class="ratio-btn ratio-custom-btn" data-ratio="custom" type="button">Custom</button>
+        </div>
+        <div class="custom-ratio" id="remixCustomRatio" style="display:none">
+          <input type="number" id="remixRatioW" min="1" max="99" placeholder="16" class="ratio-input">
+          <span class="ratio-sep">:</span>
+          <input type="number" id="remixRatioH" min="1" max="99" placeholder="9" class="ratio-input">
+        </div>
+
+        <!-- Count -->
+        <label class="input-group"><span>Count</span></label>
+        <div class="count-row">
+          <button class="cbtn active" data-count="1" type="button">1</button>
+          <button class="cbtn" data-count="2" type="button">2</button>
+          <button class="cbtn" data-count="3" type="button">3</button>
+          <button class="cbtn" data-count="4" type="button">4</button>
+        </div>
+
+        <!-- Manual process indicator -->
+        <div class="remix-manual-hint" id="remixManualHint" style="display:none">
+          <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span>Manual mode: Write prompt or pick an action, then click Remix</span>
+        </div>
+
+        <!-- Remix Button -->
+        <button class="btn btn-remix btn-generate-style" id="remixBtn" type="button">
+          <svg class="bolt-svg" viewBox="0 0 24 24" width="20" height="20"><path class="bolt-path" d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Remix</span>
+        </button>
+
+        <!-- Recent Remixes -->
+        <div class="recent-remixes" id="recentRemixes" style="display:none">
+          <label class="input-group"><span>Recent Remixes</span></label>
+          <div class="remix-results" id="remixResults"></div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ==================== IMAGE VIEWER MODAL ==================== -->
+  <div class="modal viewer-modal" id="imageModal">
+    <div class="viewer-card">
+
+      <!-- Top bar -->
+      <div class="viewer-topbar">
+        <button class="viewer-fs-btn" id="viewerFullscreen" type="button" title="Fullscreen">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="modal-close viewer-close" id="viewerClose" type="button">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <!-- Spotlight Carousel -->
+      <div class="spotlight" id="spotlight">
+        <div class="spotlight-track" id="spotlightTrack">
+          <div class="spotlight-side spotlight-left" id="spotLeft"></div>
+          <div class="spotlight-center" id="spotCenter"></div>
+          <div class="spotlight-side spotlight-right" id="spotRight"></div>
+        </div>
+      </div>
+
+      <!-- Compare slider (hidden by default) -->
+      <div class="compare-wrap" id="compareWrap" style="display:none">
+        <div class="compare-container" id="compareContainer">
+          <img class="compare-img compare-input" id="compareInput" alt="">
+          <img class="compare-img compare-output" id="compareOutput" alt="">
+          <div class="compare-slider" id="compareSlider">
+            <div class="compare-handle"></div>
+          </div>
+          <span class="compare-label compare-label-left">Input</span>
+          <span class="compare-label compare-label-right">Output</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="compareClose" type="button">Close Compare</button>
+      </div>
+
+      <!-- Image info -->
+      <div class="viewer-info">
+        <div class="viewer-prompt" id="viewerPrompt"></div>
+        <div class="viewer-meta" id="viewerMeta"></div>
+      </div>
+
+      <!-- Actions -->
+      <div class="viewer-actions">
+        <button class="btn btn-remix-action" id="viewerRemix" type="button">
+          <svg class="bolt-svg" viewBox="0 0 24 24" width="20" height="20"><path class="bolt-path" d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Remix
+        </button>
+        <div class="viewer-secondary-actions">
+          <button class="btn-icon" id="viewerDownload" type="button" title="Download">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="btn-icon" id="viewerFav" type="button" title="Favorite">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          </button>
+          <button class="btn-icon" id="viewerCopy" type="button" title="Copy Prompt">
+            <svg viewBox="0 0 24 24" width="18" height="18"><rect x="9" y="9" width="13" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          </button>
+          <button class="btn-icon" id="viewerDelete" type="button" title="Delete">
+            <svg viewBox="0 0 24 24" width="18" height="18"><polyline points="3 6 5 6 21 6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          </button>
+          <button class="btn-icon compare-btn" id="viewerCompare" type="button" title="Compare" style="display:none">
+            <svg viewBox="0 0 24 24" width="18" height="18"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="12" y1="3" x2="12" y2="21" stroke="currentColor" stroke-width="1.5"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== FULLSCREEN VIEW ==================== -->
+  <div class="fullscreen-view" id="fullscreenView">
+    <button class="fullscreen-minimize" id="fullscreenMinimize" type="button">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="fullscreen-img-wrap" id="fullscreenImgWrap">
+      <img id="fullscreenImg" alt="" draggable="false">
+    </div>
+  </div>
+
+  <!-- ==================== IMAGE PICKER MODAL ==================== -->
+  <div class="modal" id="imagePickerModal">
+    <div class="modal-card picker-card">
+      <div class="modal-header">
+        <h2>Select Image</h2>
+        <button class="modal-close" id="pickerClose" type="button">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="picker-search">
+          <input type="text" id="pickerSearch" placeholder="Search images...">
+        </div>
+        <div class="picker-grid" id="pickerGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TOAST ==================== -->
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <!-- ==================== FAB ==================== -->
+  <button class="fab" id="fabBtn" type="button">
+    <svg viewBox="0 0 24 24" width="24" height="24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+  </button>
+
+  <!-- ==================== SVG DEFS ==================== -->
+  <svg style="display:none">
+    <defs>
+      <symbol id="logoK" viewBox="0 0 32 32">
+        <rect width="32" height="32" rx="7" fill="#0a0a0f"/>
+        <path d="M9 5v22" stroke="url(#logoGrad)" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M9 17L21 5" stroke="url(#logoGrad)" stroke-width="3" stroke-linecap="round"/>
+        <path d="M14 17L25 27" stroke="#ff6b35" stroke-width="3" stroke-linecap="round"/>
+        <path d="M23 9l3-1-1 3" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+        <defs>
+          <linearGradient id="logoGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#f5a623"/>
+            <stop offset="100%" stop-color="#ff6b35"/>
+          </linearGradient>
+        </defs>
+      </symbol>
+    </defs>
+  </svg>
+
+  <script src="js/core.js" defer></script>
+  <script src="js/gallery.js" defer></script>
+  <script src="js/generate.js" defer></script>
+  <script src="js/remix.js" defer></script>
 </body>
 </html>
