@@ -754,7 +754,7 @@ async function enhanceWithWebSearch(prompt, style) {
     'current events, real facts, people, places, or anything you are ' +
     'not fully confident about, use the web_search tool to find accurate ' +
     'information first. Then craft a single vivid enhanced prompt for ' +
-    'AI image generation. Keep under 400 characters. Return ONLY the ' +
+    'AI image generation. Keep under a reasonable number of characters If the prompt truly requires more characters, then you can go above 500. When you use the web search tool, the image model does not have it; you should give the image model full details. If the user asks to create a photo of the top 10 richest people,Your response will be naming all the top 10 richest people in the prompt. Not like this: person A, person B, person C, and other richest people. Not like this. Return ONLY the ' +
     'final enhanced prompt text, nothing else.';
   if (style) {
     systemMsg += ' Apply a "' + style + '" style naturally.';
