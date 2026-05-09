@@ -1,5 +1,7 @@
 /* =====================================================
-   AQUADEVS STUDIO — APP LOGIC v3
+   AQUADEVS STUDIO — APP LOGIC v3 (bug-fixed)
+   Fixes: web search tool call parsing, viewer buttons,
+   mobile overlay, generation overlay
    ===================================================== */
 
 // ==================== CONSTANTS ====================
@@ -175,7 +177,9 @@ function openDB() {
         database.createObjectStore('settings', { keyPath: 'key' });
       }
       if (!database.objectStoreNames.contains('gallery')) {
-        var store = database.createObjectStore('gallery', { keyPath: 'id', autoIncrement: true });
+        var store = database.createObjectStore('gallery', {
+          keyPath: 'id', autoIncrement: true
+        });
         store.createIndex('timestamp', 'timestamp', { unique: false });
       }
     };
@@ -440,24 +444,30 @@ function renderGallery() {
         esc(img.name || img.prompt) + '" loading="lazy">' +
         '<div class="gcard-badge">' + esc(img.model) + '</div>' +
         '<div class="gcard-actions">' +
-          '<button class="gcard-dl" data-id="' + img.id + '" title="Download">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
-            '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
-            '<polyline points="7 10 12 15 17 10"/>' +
+          '<button class="gcard-dl" data-id="' + img.id +
+            '" title="Download">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
+            ' stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0' +
+            ' 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/>' +
             '<line x1="12" y1="15" x2="12" y2="3"/></svg></button>' +
           '<button class="gcard-fav' + (img.favorite ? ' active' : '') +
             '" data-id="' + img.id + '" title="Favorite">' +
             '<svg viewBox="0 0 24 24" fill="' +
             (img.favorite ? 'currentColor' : 'none') +
             '" stroke="currentColor" stroke-width="2">' +
-            '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>' +
-          '<button class="gcard-copy" data-id="' + img.id + '" title="Copy Prompt">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
-            '<rect x="9" y="9" width="13" height="13" rx="2"/>' +
-            '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>' +
+            '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06' +
+            '-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78' +
+            '-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>' +
+          '<button class="gcard-copy" data-id="' + img.id +
+            '" title="Copy Prompt">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
+            ' stroke-width="2"><rect x="9" y="9" width="13" height="13"' +
+            ' rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2' +
+            'h9a2 2 0 0 1 2 2v1"/></svg></button>' +
         '</div>' +
         '<div class="gcard-overlay">' +
-          '<div class="gcard-name">' + esc(img.name || img.prompt) + '</div>' +
+          '<div class="gcard-name">' +
+            esc(img.name || img.prompt) + '</div>' +
           '<div class="gcard-meta">' +
             '<span>' + timeAgo(img.timestamp) + '</span>' +
             '<span>' + esc(img.ratio || '1:1') + '</span>' +
@@ -561,7 +571,7 @@ async function uploadToCatbox(fileBlob) {
 
 async function handleRefFile(file) {
   if (!file || !file.type.startsWith('image/')) {
-    toast('error', 'Invalid File', 'Please select an image file (PNG, JPG, WEBP).');
+    toast('error', 'Invalid File', 'Please select an image file.');
     return;
   }
 
@@ -586,7 +596,7 @@ async function handleRefFile(file) {
   try {
     var publicUrl = await uploadToCatbox(compressedBlob);
     state.refImageData = publicUrl;
-    toast('success', 'Reference Ready', 'Image uploaded — public URL acquired');
+    toast('success', 'Reference Ready', 'Image uploaded');
     return;
   } catch (hostErr) {
     console.warn('Catbox upload failed, falling back to base64:', hostErr);
@@ -595,7 +605,7 @@ async function handleRefFile(file) {
   try {
     var dataUrl = await blobToDataURL(compressedBlob);
     state.refImageData = dataUrl;
-    toast('success', 'Reference Ready', 'Image ready (base64 mode)');
+    toast('success', 'Reference Ready', 'Image ready (base64)');
   } catch (e) {
     console.error('Base64 fallback failed:', e);
     toast('error', 'Reference Error', 'Could not process image.');
@@ -624,12 +634,264 @@ function updateRefSection() {
   if (!show) clearRefImage();
 }
 
-// ==================== ENHANCEMENT ====================
+// ==================== ENHANCEMENT (FIXED) ====================
 
-async function enhancePrompt(prompt, style) {
-  var systemMsg = 'You are an expert image prompt engineer. Given a user prompt, rewrite it into a more detailed, vivid, and descriptive version optimized for AI image generation. Keep it under 300 characters. Return ONLY the enhanced prompt, nothing else.';
+/**
+ * Parse raw tool call text that some models return instead of
+ * structured tool_calls. Handles JSON and  formats.
+ */
+function parseRawToolCall(text) {
+  if (!text || typeof text !== 'string') return null;
+  text = text.trim();
+
+  // Extract content between   if present
+  var callContent = text;
+  var toolMatch = text.match(/<\/?tool_call[^>]*>([\s\S]*?)<\/tool_call>/i);
+  if (toolMatch) {
+    callContent = toolMatch[1].trim();
+  }
+
+  // Try to find a JSON object with "name":"web_search" and extract query
+  try {
+    // Walk through string looking for { ... } blocks
+    var depth = 0;
+    var start = -1;
+    for (var i = 0; i < callContent.length; i++) {
+      if (callContent[i] === '{') {
+        if (depth === 0) start = i;
+        depth++;
+      } else if (callContent[i] === '}') {
+        depth--;
+        if (depth === 0 && start !== -1) {
+          var candidate = callContent.substring(start, i + 1);
+          try {
+            var obj = JSON.parse(candidate);
+            if (obj && obj.name === 'web_search') {
+              var params = obj.parameters || obj.arguments || {};
+              if (params.query && typeof params.query === 'string') {
+                return params.query;
+              }
+            }
+          } catch (parseErr) { /* not valid JSON, keep searching */ }
+          start = -1;
+        }
+      }
+    }
+  } catch (e) { /* parsing failed */ }
+
+  // Fallback: regex for "query":"..." near "web_search"
+  var queryMatch = text.match(/"query"\s*:\s*"([^"]+)"/);
+  if (queryMatch && text.indexOf('web_search') !== -1) {
+    return queryMatch[1];
+  }
+
+  return null;
+}
+
+/**
+ * Check if a string looks like a raw tool call rather than
+ * a real enhanced prompt.
+ */
+function isRawToolCall(text) {
+  if (!text) return false;
+  var t = text.trim();
+  // JSON object starting with { containing "web_search" or "tool"
+  if (t.charAt(0) === '{' && t.indexOf('web_search') !== -1) return true;
+  if (t.indexOf('"name"') !== -1 && t.indexOf('"query"') !== -1 &&
+      t.indexOf('"parameters"') !== -1) return true;
+  //  tag
+  if (/<tool_call/i.test(t)) return true;
+  //  HTML-encoded version
+  if (t.indexOf('&lt;tool_call') !== -1) return true;
+  return false;
+}
+
+/**
+ * Execute a web search via AquaDevs /v1/search endpoint.
+ * Returns array of {title, url, content} results.
+ */
+async function webSearch(query) {
+  try {
+    var res = await fetch('https://api.aquadevs.com/v1/search', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + state.apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ query: query, depth: 'basic' })
+    });
+    var data = await res.json();
+    if (data.success && data.result && data.result.results) {
+      return data.result.results;
+    }
+    return [];
+  } catch (e) {
+    console.warn('Web search failed:', e);
+    return [];
+  }
+}
+
+/**
+ * Build a context string from search results for re-prompting.
+ */
+function buildSearchContext(results) {
+  if (!results || results.length === 0) return '';
+  return results.slice(0, 5).map(function(r, i) {
+    return '[' + (i + 1) + '] ' + (r.title || 'Untitled') +
+      '\n' + (r.content || '') +
+      (r.url ? '\nSource: ' + r.url : '');
+  }).join('\n\n');
+}
+
+/**
+ * Enhanced prompt with optional web search via tool calling.
+ * Handles both structured tool_calls from the API and raw text
+ * tool calls that some models return in content.
+ */
+async function enhanceWithWebSearch(prompt, style) {
+  var systemMsg = 'You are an expert image prompt engineer. ' +
+    'You have access to a web_search tool. If the prompt references ' +
+    'current events, real facts, people, places, or anything you are ' +
+    'not fully confident about, use the web_search tool to find accurate ' +
+    'information first. Then craft a single vivid enhanced prompt for ' +
+    'AI image generation. Keep under 400 characters. Return ONLY the ' +
+    'final enhanced prompt text, nothing else.';
   if (style) {
-    systemMsg += ' The user wants this in a "' + style + '" style. Incorporate this style naturally and seamlessly into the enhanced prompt rather than just appending it.';
+    systemMsg += ' Apply a "' + style + '" style naturally.';
+  }
+
+  var messages = [
+    { role: 'system', content: systemMsg },
+    { role: 'user', content: prompt }
+  ];
+
+  var tools = [{
+    type: 'function',
+    function: {
+      name: 'web_search',
+      description: 'Search the web for current factual information to ' +
+        'help create accurate and detailed image prompts.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'The search query to find relevant information'
+          }
+        },
+        required: ['query']
+      }
+    }
+  }];
+
+  // First API call — ask model with tools available
+  var res1 = await fetch('https://api.aquadevs.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + state.apiKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: state.enhanceModel,
+      messages: messages,
+      tools: tools,
+      tool_choice: 'auto',
+      max_tokens: 500,
+      temperature: 0.7
+    })
+  });
+
+  var data1 = await res1.json();
+  var choice = data1.choices ? data1.choices[0] : null;
+  if (!choice || !choice.message) return null;
+
+  var content = choice.message.content || '';
+  var searchQuery = null;
+
+  // --- Check for structured tool_calls first ---
+  if (choice.message.tool_calls && choice.message.tool_calls.length > 0) {
+    for (var t = 0; t < choice.message.tool_calls.length; t++) {
+      var tc = choice.message.tool_calls[t];
+      if (tc.function && tc.function.name === 'web_search') {
+        try {
+          var args = JSON.parse(tc.function.arguments);
+          searchQuery = args.query;
+        } catch (e) {
+          console.warn('Could not parse tool call arguments:', e);
+        }
+      }
+    }
+
+    if (searchQuery) {
+      messages.push(choice.message);
+      var results = await webSearch(searchQuery);
+      var context = buildSearchContext(results);
+      messages.push({
+        role: 'tool',
+        tool_call_id: choice.message.tool_calls[0].id,
+        content: context || 'No results found for: ' + searchQuery
+      });
+    }
+  }
+  // --- Check for raw tool call text in content ---
+  else if (isRawToolCall(content)) {
+    searchQuery = parseRawToolCall(content);
+    if (searchQuery) {
+      // Add the model's "tool call" message
+      messages.push({ role: 'assistant', content: content });
+      var rawResults = await webSearch(searchQuery);
+      var rawContext = buildSearchContext(rawResults);
+      // Feed back as if the tool responded
+      messages.push({
+        role: 'user',
+        content: 'Web search results for "' + searchQuery + '":\n\n' +
+          rawContext + '\n\nNow create the enhanced image prompt based ' +
+          'on this information. Return ONLY the prompt, no explanation.'
+      });
+    }
+  }
+
+  // If we did a search (either way), make a follow-up call
+  if (searchQuery) {
+    var res2 = await fetch('https://api.aquadevs.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + state.apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: state.enhanceModel,
+        messages: messages,
+        max_tokens: 500,
+        temperature: 0.7
+      })
+    });
+
+    var data2 = await res2.json();
+    var choice2 = data2.choices ? data2.choices[0] : null;
+    if (choice2 && choice2.message) {
+      var finalContent = (choice2.message.content || '').trim();
+      // Guard: if follow-up ALSO returns a tool call, just return null
+      if (isRawToolCall(finalContent)) return null;
+      return finalContent;
+    }
+    return null;
+  }
+
+  // No search was needed — model returned a direct enhanced prompt
+  return content.trim() || null;
+}
+
+/**
+ * Simple enhancement without web search.
+ */
+async function enhancePrompt(prompt, style) {
+  var systemMsg = 'You are an expert image prompt engineer. Given a ' +
+    'user prompt, rewrite it into a more detailed, vivid, and descriptive ' +
+    'version optimized for AI image generation. Keep it under 300 ' +
+    'characters. Return ONLY the enhanced prompt, nothing else.';
+  if (style) {
+    systemMsg += ' Apply a "' + style + '" style naturally and seamlessly.';
   }
 
   var res = await fetch('https://api.aquadevs.com/v1/chat/completions', {
@@ -655,115 +917,9 @@ async function enhancePrompt(prompt, style) {
     : null;
 }
 
-async function enhanceWithWebSearch(prompt, style) {
-  var systemMsg = 'You are an expert image prompt engineer with access to a web_search tool. Your job is to enhance prompts for AI image generation. If the prompt references current events, real-world facts, people, or anything you are not fully confident about, use the web_search tool to get accurate information first. Then craft a single, vivid, descriptive enhanced prompt. Keep it under 400 characters. Return ONLY the final enhanced prompt, nothing else.';
-  if (style) {
-    systemMsg += ' The user wants this in a "' + style + '" style. Incorporate this style naturally into the result.';
-  }
-
-  var messages = [
-    { role: 'system', content: systemMsg },
-    { role: 'user', content: prompt }
-  ];
-
-  var tools = [{
-    type: 'function',
-    function: {
-      name: 'web_search',
-      description: 'Search the web for current, factual information to help create accurate and detailed image prompts.',
-      parameters: {
-        type: 'object',
-        properties: {
-          query: {
-            type: 'string',
-            description: 'The search query to find relevant information'
-          }
-        },
-        required: ['query']
-      }
-    }
-  }];
-
-  var res1 = await fetch('https://api.aquadevs.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer ' + state.apiKey,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: state.enhanceModel,
-      messages: messages,
-      tools: tools,
-      tool_choice: 'auto',
-      max_tokens: 400,
-      temperature: 0.7
-    })
-  });
-
-  var data1 = await res1.json();
-  var choice = data1.choices ? data1.choices[0] : null;
-
-  if (choice && choice.finish_reason === 'tool_calls' &&
-      choice.message && choice.message.tool_calls) {
-    messages.push(choice.message);
-
-    for (var t = 0; t < choice.message.tool_calls.length; t++) {
-      var toolCall = choice.message.tool_calls[t];
-      if (toolCall.function && toolCall.function.name === 'web_search') {
-        var args = JSON.parse(toolCall.function.arguments);
-        if (dom.genStatusText) {
-          dom.genStatusText.textContent = 'Searching: "' + args.query + '"...';
-        }
-
-        var searchResult = await webSearch(args.query);
-        messages.push({
-          role: 'tool',
-          tool_call_id: toolCall.id,
-          content: JSON.stringify(searchResult).substring(0, 3000)
-        });
-      }
-    }
-
-    var res2 = await fetch('https://api.aquadevs.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + state.apiKey,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: state.enhanceModel,
-        messages: messages,
-        max_tokens: 400,
-        temperature: 0.7
-      })
-    });
-
-    var data2 = await res2.json();
-    return data2.choices && data2.choices[0] && data2.choices[0].message
-      ? data2.choices[0].message.content.trim()
-      : null;
-  }
-
-  return choice && choice.message ? choice.message.content.trim() : null;
-}
-
-async function webSearch(query) {
-  try {
-    var res = await fetch('https://api.aquadevs.com/v1/search', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + state.apiKey,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ query: query })
-    });
-    return await res.json();
-  } catch (e) {
-    console.warn('Web search failed:', e);
-    return { error: 'Search unavailable', results: [] };
-  }
-}
-
+/**
+ * Manual enhance button handler.
+ */
 async function manualEnhance() {
   var prompt = dom.promptInput.value.trim();
   if (!prompt) {
@@ -776,7 +932,8 @@ async function manualEnhance() {
   }
 
   dom.enhanceBtn.classList.add('enhancing');
-  dom.enhanceBtn.querySelector('span').textContent = 'Enhancing...';
+  dom.enhanceBtn.querySelector('span').textContent =
+    state.enhanceWebSearch ? 'Searching...' : 'Enhancing...';
 
   try {
     var enhanced = null;
@@ -786,12 +943,19 @@ async function manualEnhance() {
       enhanced = await enhancePrompt(prompt, state.selectedStyle);
     }
 
+    // Safety: never set a raw tool call as the prompt
+    if (enhanced && isRawToolCall(enhanced)) {
+      enhanced = null;
+    }
+
     if (enhanced) {
       dom.promptInput.value = enhanced;
       dom.charCount.textContent = enhanced.length;
-      toast('success', 'Prompt Enhanced', 'Review and edit as needed, then generate.');
+      toast('success', 'Prompt Enhanced',
+        'Review and edit as needed, then generate.');
     } else {
-      toast('error', 'Enhancement Failed', 'Could not enhance prompt.');
+      toast('error', 'Enhancement Failed',
+        'Could not enhance prompt. Try without web search or use a different model.');
     }
   } catch (err) {
     console.error('Enhance error:', err);
@@ -823,7 +987,7 @@ async function generateImages() {
   state.isGenerating = true;
   dom.generateBtn.disabled = true;
 
-  // Auto-enhance (only when NOT manual mode)
+  // Auto-enhance when NOT manual mode
   if (state.enhanceEnabled && !state.enhanceManual) {
     try {
       dom.genPromptText.textContent = state.enhanceWebSearch
@@ -835,13 +999,15 @@ async function generateImages() {
       } else {
         enhanced = await enhancePrompt(prompt, state.selectedStyle);
       }
-      if (enhanced) prompt = enhanced;
+      if (enhanced && !isRawToolCall(enhanced)) {
+        prompt = enhanced;
+      }
     } catch (err) {
       console.error('Enhance error:', err);
     }
   }
 
-  // Build full prompt (style already integrated if enhancement was on)
+  // Build full prompt
   var fullPrompt;
   if (state.enhanceEnabled) {
     fullPrompt = prompt;
@@ -886,7 +1052,9 @@ async function generateSequential(fullPrompt, ratioValue) {
         var blob = await fetchAndStoreBlob(imageUrl);
         var name = '';
         if (state.nameEnabled) {
-          try { name = await autoName(dom.promptInput.value.trim()); } catch (e) {}
+          try {
+            name = await autoName(dom.promptInput.value.trim());
+          } catch (e) { /* ignore */ }
         }
         var imgData = {
           url: imageUrl,
@@ -910,14 +1078,16 @@ async function generateSequential(fullPrompt, ratioValue) {
     }
     done++;
     dom.genCurrentCount.textContent = done;
-    dom.genBarFill.style.width = Math.round((done / state.selectedCount) * 100) + '%';
+    dom.genBarFill.style.width =
+      Math.round((done / state.selectedCount) * 100) + '%';
   }
 
   if (results.length) {
     state.images = results.concat(state.images);
     renderGallery();
     toast('success', 'Generation Complete',
-      'Created ' + results.length + ' image' + (results.length > 1 ? 's' : ''));
+      'Created ' + results.length + ' image' +
+      (results.length > 1 ? 's' : ''));
   }
 }
 
@@ -946,7 +1116,9 @@ async function generateParallel(fullPrompt, ratioValue) {
             var blob = await fetchAndStoreBlob(imageUrl);
             var name = '';
             if (state.nameEnabled) {
-              try { name = await autoName(dom.promptInput.value.trim()); } catch (e) {}
+              try {
+                name = await autoName(dom.promptInput.value.trim());
+              } catch (e) { /* ignore */ }
             }
             var imgData = {
               url: imageUrl,
@@ -964,7 +1136,10 @@ async function generateParallel(fullPrompt, ratioValue) {
             imgData.id = id;
             results.push(imgData);
             slotEl.className = 'gen-slot done';
-            slotEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>';
+            slotEl.innerHTML =
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
+              ' stroke-width="3" width="16" height="16"><polyline' +
+              ' points="20 6 9 17 4 12"/></svg>';
           } else {
             slotEl.className = 'gen-slot fail';
             slotEl.textContent = '!';
@@ -988,7 +1163,8 @@ async function generateParallel(fullPrompt, ratioValue) {
     state.images = results.concat(state.images);
     renderGallery();
     toast('success', 'Generation Complete',
-      'Created ' + results.length + ' image' + (results.length > 1 ? 's' : ''));
+      'Created ' + results.length + ' image' +
+      (results.length > 1 ? 's' : ''));
   }
 }
 
@@ -1064,7 +1240,8 @@ async function autoName(prompt) {
       messages: [
         {
           role: 'system',
-          content: 'Generate a short, catchy title (3-6 words) for an image based on the prompt. Return ONLY the title, nothing else. No quotes.'
+          content: 'Generate a short catchy title (3-6 words) for an ' +
+            'image based on the prompt. Return ONLY the title, no quotes.'
         },
         { role: 'user', content: prompt }
       ],
@@ -1078,7 +1255,7 @@ async function autoName(prompt) {
   return result.replace(/^["']|["']$/g, '');
 }
 
-// ---- Gen overlay helpers ----
+// ==================== GEN OVERLAY HELPERS ====================
 
 function showGenOverlay() {
   dom.genOverlay.classList.add('active');
@@ -1162,10 +1339,17 @@ function sanitizeFilename(text) {
 
 function toast(type, title, msg) {
   var icon = type === 'success'
-    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
+      ' stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>' +
+      '<polyline points="22 4 12 14.01 9 11.01"/></svg>'
     : type === 'info'
-    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>'
-    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
+      ' stroke-width="2"><circle cx="12" cy="12" r="10"/>' +
+      '<path d="M12 16v-4"/><path d="M12 8h.01"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
+      ' stroke-width="2"><circle cx="12" cy="12" r="10"/>' +
+      '<line x1="12" y1="8" x2="12" y2="12"/>' +
+      '<line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
 
   var el = document.createElement('div');
   el.className = 'toast';
@@ -1289,7 +1473,9 @@ function bindEvents() {
         state.setupComplete = true;
         await saveSetting('apiKey', key);
         await saveSetting('userName', state.userName);
-        if (state.avatarData) await saveSetting('avatarData', state.avatarData);
+        if (state.avatarData) {
+          await saveSetting('avatarData', state.avatarData);
+        }
         await saveSetting('setupComplete', true);
         applyProfileUI();
         hideSetupModal();
@@ -1360,7 +1546,9 @@ function bindEvents() {
 
     await saveSetting('apiKey', state.apiKey);
     await saveSetting('userName', state.userName);
-    if (state.avatarData) await saveSetting('avatarData', state.avatarData);
+    if (state.avatarData) {
+      await saveSetting('avatarData', state.avatarData);
+    }
     await saveSetting('theme', state.theme);
     await saveSetting('defaultModel', state.defaultModel);
     await saveSetting('enhanceEnabled', state.enhanceEnabled);
@@ -1436,7 +1624,9 @@ function bindEvents() {
     if (dlBtn) {
       e.stopPropagation();
       var img = findImage(Number(dlBtn.dataset.id));
-      if (img) downloadImage(img.url, img.name || img.originalPrompt || img.prompt);
+      if (img) {
+        downloadImage(img.url, img.name || img.originalPrompt || img.prompt);
+      }
       return;
     }
     if (favBtn) {
@@ -1512,7 +1702,8 @@ function bindEvents() {
     var url = dom.refUrlInput.value.trim();
     if (!url) return;
     if (!url.startsWith('http')) {
-      toast('error', 'Invalid URL', 'Enter a valid URL starting with http:// or https://');
+      toast('error', 'Invalid URL',
+        'Enter a valid URL starting with http:// or https://');
       return;
     }
     state.refImageData = url;
@@ -1622,7 +1813,8 @@ function bindEvents() {
   dom.viewerDownload.addEventListener('click', function() {
     if (currentViewerImage) {
       downloadImage(currentViewerImage.url,
-        currentViewerImage.name || currentViewerImage.originalPrompt ||
+        currentViewerImage.name ||
+        currentViewerImage.originalPrompt ||
         currentViewerImage.prompt);
     }
   });
@@ -1641,7 +1833,8 @@ function bindEvents() {
     dom.viewerFav.classList.toggle('active', currentViewerImage.favorite);
     renderGallery();
     toast('success',
-      currentViewerImage.favorite ? 'Added to Favorites' : 'Removed from Favorites');
+      currentViewerImage.favorite
+        ? 'Added to Favorites' : 'Removed from Favorites');
   });
 
   dom.viewerDelete.addEventListener('click', async function() {
@@ -1694,4 +1887,4 @@ async function init() {
   bindEvents();
 }
 
-init();
+init(); 
