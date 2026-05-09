@@ -1,0 +1,22 @@
+{
+  "name": "AquaDevs Studio",
+  "short_name": "AquaDevs",
+  "description": "AI Image Studio — generate, manage, and remix stunning images",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0a0e",
+  "theme_color": "#0e0e12",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%230e0e12'/%3E%3Ccircle cx='96' cy='96' r='70' stroke='%23f5a623' stroke-width='6' fill='none'/%3E%3Cpath d='M66 76l30-30 30 30M66 116l30 30 30-30' stroke='%23f5a623' stroke-width='5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3Ccircle cx='96' cy='96' r='10' fill='%23f5a623'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%230e0e12'/%3E%3Ccircle cx='256' cy='256' r='180' stroke='%23f5a623' stroke-width='12' fill='none'/%3E%3Cpath d='M176 204l80-80 80 80M176 308l80 80 80-80' stroke='%23f5a623' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3Ccircle cx='256' cy='256' r='24' fill='%23f5a623'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
