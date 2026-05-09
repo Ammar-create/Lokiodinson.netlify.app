@@ -497,104 +497,119 @@
     </aside>
 
     <!-- Remix Panel (right slide-in) -->
-    <aside class="remix-panel" id="remixPanel">
-      <div class="gen-panel-header">
-        <h2>Remix</h2>
-        <button class="modal-close" id="remixPanelClose" type="button">
-          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        </button>
+ <!-- Remix Panel (right slide-in) -->
+<aside class="remix-panel" id="remixPanel">
+  <div class="gen-panel-header">
+    <h2>Remix</h2>
+    <button class="modal-close" id="remixPanelClose" type="button">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="gen-panel-body">
+
+    <!-- Reference Source -->
+    <label class="input-group"><span>Source Image</span></label>
+    <div class="remix-source-tabs">
+      <button class="rstab active" data-source="gallery" type="button">
+        <svg viewBox="0 0 24 24" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+        Gallery
+      </button>
+      <button class="rstab" data-source="upload" type="button">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Upload
+      </button>
+    </div>
+
+    <!-- Gallery picker -->
+    <div class="remix-gallery-pick" id="remixGalleryPick">
+      <div class="remix-pick-grid" id="remixPickGrid"></div>
+    </div>
+
+    <!-- Upload picker -->
+    <div class="remix-upload-pick" id="remixUploadPick" style="display:none">
+      <div class="ref-drop" id="remixDrop">
+        <div class="ref-drop-inner" id="remixDropInner">
+          <svg viewBox="0 0 24 24" width="24" height="24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Drop image or click to upload</span>
+        </div>
+        <img class="ref-preview" id="remixPreview" alt="" style="display:none">
+        <input type="file" id="remixFileInput" accept="image/*" hidden>
       </div>
-      <div class="gen-panel-body">
+    </div>
 
-        <!-- Reference Source -->
-        <label class="input-group"><span>Source Image</span></label>
-        <div class="remix-source-tabs">
-          <button class="rstab active" data-source="gallery" type="button">
-            <svg viewBox="0 0 24 24" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
-            Gallery
-          </button>
-          <button class="rstab" data-source="upload" type="button">
-            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Upload
-          </button>
-        </div>
+    <!-- Selected preview -->
+    <div class="remix-selected" id="remixSelected" style="display:none">
+      <img id="remixSelectedImg" alt="">
+      <button class="btn-icon clear-remix-ref" id="clearRemixRef" type="button">
+        <svg viewBox="0 0 24 24" width="14" height="14"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
 
-        <!-- Gallery picker -->
-        <div class="remix-gallery-pick" id="remixGalleryPick">
-          <div class="remix-pick-grid" id="remixPickGrid"></div>
-        </div>
+    <!-- Prompt -->
+    <label class="input-group"><span>Remix Prompt</span></label>
+    <textarea id="remixPrompt" rows="3" maxlength="2000" placeholder="Describe the transformation..."></textarea>
 
-        <!-- Upload picker -->
-        <div class="remix-upload-pick" id="remixUploadPick" style="display:none">
-          <div class="ref-drop" id="remixDrop">
-            <div class="ref-drop-inner" id="remixDropInner">
-              <svg viewBox="0 0 24 24" width="24" height="24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <span>Drop image or click to upload</span>
-            </div>
-            <img class="ref-preview" id="remixPreview" alt="" style="display:none">
-            <input type="file" id="remixFileInput" accept="image/*" hidden>
-          </div>
-        </div>
-
-        <!-- Selected preview -->
-        <div class="remix-selected" id="remixSelected" style="display:none">
-          <img id="remixSelectedImg" alt="">
-          <button class="btn-icon clear-remix-ref" id="clearRemixRef" type="button">
-            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          </button>
-        </div>
-
-        <!-- Prompt -->
-        <label class="input-group"><span>Remix Prompt</span></label>
-        <textarea id="remixPrompt" rows="3" maxlength="2000" placeholder="Describe the transformation..."></textarea>
-
-        <!-- Built-in Actions -->
-        <label class="input-group"><span>Quick Actions</span></label>
-        <div class="action-grid" id="actionGrid"></div>
-        <button class="btn btn-ghost btn-sm" id="addRemixAction" type="button">
-          <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          Add Custom Action
-        </button>
-        <div class="add-action-form" id="addActionForm" style="display:none">
-          <input type="text" id="actionName" placeholder="Action name">
-          <textarea id="actionPrompt" rows="2" placeholder="Short prompt for remix model..."></textarea type="button">button class="ratio-btn" data-ratio="9:16" type="button">9:16</button>
-          <button class="ratio-btn" data-ratio="1:1" type="button">1:1</button>
-          <button class="ratio-btn ratio-custom-btn" data-ratio="custom" type="button">Custom</button>
-        </div>
-        <div class="custom-ratio" id="remixCustomRatio" style="display:none">
-          <input type="number" id="remixRatioW" min="1" max="99" placeholder="16" class="ratio-input">
-          <span class="ratio-sep">:</span>
-          <input type="number" id="remixRatioH" min="1" max="99" placeholder="9" class="ratio-input">
-        </div>
-
-        <!-- Count -->
-        <label class="input-group"><span>Count</span></label>
-        <div class="count-row">
-          <button class="cbtn active" data-count="1" type="button">1</button>
-          <button class="cbtn" data-count="2" type="button">2</button>
-          <button class="cbtn" data-count="3" type="button">3</button>
-          <button class="cbtn" data-count="4" type="button">4</button>
-        </div>
-
-        <!-- Manual process indicator -->
-        <div class="remix-manual-hint" id="remixManualHint" style="display:none">
-          <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <span>Manual mode: Write prompt or pick an action, then click Remix</span>
-        </div>
-
-        <!-- Remix Button -->
-        <button class="btn btn-remix btn-generate-style" id="remixBtn" type="button">
-          <svg class="bolt-svg" viewBox="0 0 24 24" width="20" height="20"><path class="bolt-path" d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span>Remix</span>
-        </button>
-
-        <!-- Recent Remixes -->
-        <div class="recent-remixes" id="recentRemixes" style="display:none">
-          <label class="input-group"><span>Recent Remixes</span></label>
-          <div class="remix-results" id="remixResults"></div>
-        </div>
+    <!-- Built-in Actions -->
+    <label class="input-group"><span>Quick Actions</span></label>
+    <div class="action-grid" id="actionGrid"></div>
+    <button class="btn btn-ghost btn-sm" id="addRemixAction" type="button">
+      <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Add Custom Action
+    </button>
+    <div class="add-action-form" id="addActionForm" style="display:none">
+      <input type="text" id="actionName" placeholder="Action name">
+      <textarea id="actionPrompt" rows="2" placeholder="Short prompt for remix model..."></textarea>
+      <div class="form-actions">
+        <button class="btn btn-primary btn-sm" id="confirmAddAction" type="button">Add Action</button>
+        <button class="btn btn-ghost btn-sm" id="cancelAddAction" type="button">Cancel</button>
       </div>
-    </aside>
+    </div>
+
+    <!-- Aspect Ratio -->
+    <label class="input-group"><span>Aspect Ratio</span></label>
+    <div class="ratio-row">
+      <button class="ratio-btn active" data-ratio="landscape" type="button">Landscape</button>
+      <button class="ratio-btn" data-ratio="portrait" type="button">Portrait</button>
+      <button class="ratio-btn" data-ratio="square" type="button">Square</button>
+      <button class="ratio-btn" data-ratio="16:9" type="button">16:9</button>
+      <button class="ratio-btn" data-ratio="9:16" type="button">9:16</button>
+      <button class="ratio-btn" data-ratio="1:1" type="button">1:1</button>
+      <button class="ratio-btn ratio-custom-btn" data-ratio="custom" type="button">Custom</button>
+    </div>
+    <div class="custom-ratio" id="remixCustomRatio" style="display:none">
+      <input type="number" id="remixRatioW" min="1" max="99" placeholder="16" class="ratio-input">
+      <span class="ratio-sep">:</span>
+      <input type="number" id="remixRatioH" min="1" max="99" placeholder="9" class="ratio-input">
+    </div>
+
+    <!-- Count -->
+    <label class="input-group"><span>Count</span></label>
+    <div class="count-row">
+      <button class="cbtn active" data-count="1" type="button">1</button>
+      <button class="cbtn" data-count="2" type="button">2</button>
+      <button class="cbtn" data-count="3" type="button">3</button>
+      <button class="cbtn" data-count="4" type="button">4</button>
+    </div>
+
+    <!-- Manual process indicator -->
+    <div class="remix-manual-hint" id="remixManualHint" style="display:none">
+      <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span>Manual mode: Write prompt or pick an action, then click Remix</span>
+    </div>
+
+    <!-- Remix Button -->
+    <button class="btn btn-remix btn-generate-style" id="remixBtn" type="button">
+      <svg class="bolt-svg" viewBox="0 0 24 24" width="20" height="20"><path class="bolt-path" d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Remix</span>
+    </button>
+
+    <!-- Recent Remixes -->
+    <div class="recent-remixes" id="recentRemixes" style="display:none">
+      <label class="input-group"><span>Recent Remixes</span></label>
+      <div class="remix-results" id="remixResults"></div>
+    </div>
+  </div>
+</aside>
 
   </div>
 
