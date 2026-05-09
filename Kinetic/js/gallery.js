@@ -1,5 +1,5 @@
 /* ============================================================
-   KINETIC — GALLERY MODULE
+   KINETIC — GALLERY MODULE (FIXED)
    Gallery rendering, viewer, spotlight carousel, fullscreen,
    compare slider, download, search/filter/tabs
    ============================================================ */
@@ -12,22 +12,27 @@ let fullscreenZoom = 1;
 // ==================== LOAD GALLERY ====================
 
 async function loadGallery() {
-  state.images = await dbGetAll('gallery');
-  state.images.sort((a, b) => b.timestamp - a.timestamp);
+  try {
+    state.images = await dbGetAll('gallery');
+    state.images.sort((a, b) => b.timestamp - a.timestamp);
+  } catch (e) {
+    console.warn('[Kinetic] loadGallery failed:', e);
+    state.images = [];
+  }
   renderGallery();
 }
 
 // ==================== RENDER GALLERY ====================
 
 function renderGallery() {
-  const q = dom.searchInput.value.toLowerCase().trim();
+  if (!dom.galleryGrid || !dom.emptyState) return;
+
+  const q = dom.searchInput ? dom.searchInput.value.toLowerCase().trim() : '';
   let imgs = [...state.images];
 
-  // Filter
   if (state.currentFilter === 'favorites') imgs = imgs.filter(i => i.favorite);
   if (state.currentFilter === 'recent') imgs = imgs.slice(0, state.recentLimit);
 
-  // Search
   if (q) {
     imgs = imgs.filter(i =>
       (i.prompt || '').toLowerCase().includes(q) ||
@@ -38,11 +43,10 @@ function renderGallery() {
     );
   }
 
-  // Counts
   const favCount = state.images.filter(i => i.favorite).length;
-  dom.tabRecentCount.textContent = '(' + Math.min(state.images.length, state.recentLimit) + ')';
-  dom.tabFavCount.textContent = '(' + favCount + ')';
-  dom.imageCount.textContent = imgs.length;
+  if (dom.tabRecentCount) dom.tabRecentCount.textContent = '(' + Math.min(state.images.length, state.recentLimit) + ')';
+  if (dom.tabFavCount) dom.tabFavCount.textContent = '(' + favCount + ')';
+  if (dom.imageCount) dom.imageCount.textContent = imgs.length;
 
   // Group by batchId
   const batches = {};
@@ -56,13 +60,11 @@ function renderGallery() {
     }
   });
 
-  // Remove duplicate batches (only add once)
   const batchIds = Object.keys(batches);
   const seenBatches = new Set();
 
   let html = '';
 
-  // Render singles and batches interleaved by timestamp
   const entries = [];
   singles.forEach(img => entries.push({ type: 'single', item: img, ts: img.timestamp }));
   batchIds.forEach(bid => {
@@ -109,7 +111,6 @@ function renderGallery() {
   dom.emptyState.style.display = imgs.length ? 'none' : '';
   dom.galleryGrid.style.display = imgs.length ? '' : 'none';
 
-  // Bind batch headers
   dom.galleryGrid.querySelectorAll('.batch-header').forEach(hdr => {
     hdr.addEventListener('click', () => hdr.classList.toggle('open'));
   });
@@ -134,9 +135,9 @@ function renderCard(img) {
 // ==================== VIEWER ====================
 
 function openViewer(img) {
+  if (!img) return;
   currentViewerImage = img;
 
-  // Find batch images
   const batchImgs = img.batchId
     ? state.images.filter(i => i.batchId === img.batchId).sort((a, b) => (a.batchIndex || 0) - (b.batchIndex || 0))
     : [img];
@@ -146,47 +147,49 @@ function openViewer(img) {
 
   renderSpotlight();
 
-  dom.viewerPrompt.textContent = img.originalPrompt || img.prompt || '';
-  dom.viewerMeta.innerHTML =
-    '<span>' + esc(img.model || '') + '</span>' +
-    '<span>' + esc(img.ratio || '') + '</span>' +
-    (img.style ? '<span>' + esc(img.style) + '</span>' : '') +
-    '<span>' + timeAgo(img.timestamp) + '</span>';
+  if (dom.viewerPrompt) dom.viewerPrompt.textContent = img.originalPrompt || img.prompt || '';
+  if (dom.viewerMeta) {
+    dom.viewerMeta.innerHTML =
+      '<span>' + esc(img.model || '') + '</span>' +
+      '<span>' + esc(img.ratio || '') + '</span>' +
+      (img.style ? '<span>' + esc(img.style) + '</span>' : '') +
+      '<span>' + timeAgo(img.timestamp) + '</span>';
+  }
 
-  // Favorite state
-  dom.viewerFav.classList.toggle('active', !!img.favorite);
-
-  // Compare button (only for remix/ref images)
-  dom.viewerCompare.style.display = (img.referenceImageUrl || img.referenceImageBlob) ? '' : 'none';
-
-  dom.imageModal.classList.add('open');
+  if (dom.viewerFav) dom.viewerFav.classList.toggle('active', !!img.favorite);
+  if (dom.viewerCompare) dom.viewerCompare.style.display = (img.referenceImageUrl || img.referenceImageBlob) ? '' : 'none';
+  if (dom.imageModal) dom.imageModal.classList.add('open');
 }
 
 function closeViewer() {
-  dom.imageModal.classList.remove('open');
+  if (dom.imageModal) dom.imageModal.classList.remove('open');
   currentViewerImage = null;
   viewerBatchImages = [];
   viewerBatchIndex = 0;
-  dom.compareWrap.style.display = 'none';
-  dom.spotlight.style.display = '';
+  if (dom.compareWrap) dom.compareWrap.style.display = 'none';
+  if (dom.spotlight) dom.spotlight.style.display = '';
+  // Remove leftover spotlight-single
+  const single = document.querySelector('#imageModal .spotlight-single');
+  if (single) single.remove();
 }
 
 function renderSpotlight() {
+  if (!dom.spotlight) return;
+
+  // Clean up any existing spotlight-single
+  const existingSingle = dom.spotlight.parentElement.querySelector('.spotlight-single');
+
   if (viewerBatchImages.length <= 1) {
-    dom.spotlight.innerHTML = '';
     dom.spotlight.style.display = 'none';
     const wrap = document.createElement('div');
     wrap.className = 'spotlight-single';
     const img = viewerBatchImages[0] || currentViewerImage;
     wrap.innerHTML = '<img src="' + esc(img.url) + '" alt="">';
     dom.spotlight.parentElement.insertBefore(wrap, dom.spotlight);
-    const existingSingle = dom.spotlight.parentElement.querySelector('.spotlight-single');
     if (existingSingle && existingSingle !== wrap) existingSingle.remove();
     return;
   }
 
-  // Remove single viewer if exists
-  const existingSingle = dom.spotlight.parentElement.querySelector('.spotlight-single');
   if (existingSingle) existingSingle.remove();
   dom.spotlight.style.display = '';
 
@@ -230,29 +233,31 @@ function renderSpotlight() {
 function updateViewerInfo() {
   if (!currentViewerImage) return;
   const img = currentViewerImage;
-  dom.viewerPrompt.textContent = img.originalPrompt || img.prompt || '';
-  dom.viewerMeta.innerHTML =
-    '<span>' + esc(img.model || '') + '</span>' +
-    '<span>' + esc(img.ratio || '') + '</span>' +
-    (img.style ? '<span>' + esc(img.style) + '</span>' : '') +
-    '<span>' + timeAgo(img.timestamp) + '</span>';
-  dom.viewerFav.classList.toggle('active', !!img.favorite);
-  dom.viewerCompare.style.display = (img.referenceImageUrl || img.referenceImageBlob) ? '' : 'none';
+  if (dom.viewerPrompt) dom.viewerPrompt.textContent = img.originalPrompt || img.prompt || '';
+  if (dom.viewerMeta) {
+    dom.viewerMeta.innerHTML =
+      '<span>' + esc(img.model || '') + '</span>' +
+      '<span>' + esc(img.ratio || '') + '</span>' +
+      (img.style ? '<span>' + esc(img.style) + '</span>' : '') +
+      '<span>' + timeAgo(img.timestamp) + '</span>';
+  }
+  if (dom.viewerFav) dom.viewerFav.classList.toggle('active', !!img.favorite);
+  if (dom.viewerCompare) dom.viewerCompare.style.display = (img.referenceImageUrl || img.referenceImageBlob) ? '' : 'none';
 }
 
 // ==================== FULLSCREEN ====================
 
 function openFullscreen() {
-  if (!currentViewerImage) return;
+  if (!currentViewerImage || !dom.fullscreenView) return;
   fullscreenZoom = 1;
-  dom.fullscreenImg.src = currentViewerImage.url;
-  dom.fullscreenImg.style.transform = 'scale(1)';
-  dom.fullscreenImgWrap.classList.remove('zoomed');
+  if (dom.fullscreenImg) dom.fullscreenImg.src = currentViewerImage.url;
+  if (dom.fullscreenImg) dom.fullscreenImg.style.transform = 'scale(1)';
+  if (dom.fullscreenImgWrap) dom.fullscreenImgWrap.classList.remove('zoomed');
   dom.fullscreenView.classList.add('open');
 }
 
 function closeFullscreen() {
-  dom.fullscreenView.classList.remove('open');
+  if (dom.fullscreenView) dom.fullscreenView.classList.remove('open');
   fullscreenZoom = 1;
 }
 
@@ -260,25 +265,26 @@ function closeFullscreen() {
 
 function openCompare() {
   if (!currentViewerImage || !currentViewerImage.referenceImageUrl) return;
-  dom.compareInput.src = currentViewerImage.referenceImageUrl;
-  dom.compareOutput.src = currentViewerImage.url;
-  dom.spotlight.style.display = 'none';
-  const single = dom.spotlight.parentElement.querySelector('.spotlight-single');
+  if (dom.compareInput) dom.compareInput.src = currentViewerImage.referenceImageUrl;
+  if (dom.compareOutput) dom.compareOutput.src = currentViewerImage.url;
+  if (dom.spotlight) dom.spotlight.style.display = 'none';
+  const single = document.querySelector('#imageModal .spotlight-single');
   if (single) single.style.display = 'none';
-  dom.compareWrap.style.display = '';
+  if (dom.compareWrap) dom.compareWrap.style.display = '';
   initCompareSlider();
 }
 
 function closeCompareView() {
-  dom.compareWrap.style.display = 'none';
-  dom.spotlight.style.display = '';
-  const single = dom.spotlight.parentElement.querySelector('.spotlight-single');
+  if (dom.compareWrap) dom.compareWrap.style.display = 'none';
+  if (dom.spotlight) dom.spotlight.style.display = '';
+  const single = document.querySelector('#imageModal .spotlight-single');
   if (single) single.style.display = '';
 }
 
 function initCompareSlider() {
   const container = dom.compareContainer;
   const slider = dom.compareSlider;
+  if (!container || !slider) return;
   let dragging = false;
 
   function move(clientX) {
@@ -286,11 +292,11 @@ function initCompareSlider() {
     let pct = ((clientX - rect.left) / rect.width) * 100;
     pct = Math.max(5, Math.min(95, pct));
     slider.style.left = pct + '%';
-    dom.compareOutput.style.clipPath = 'inset(0 0 0 ' + pct + '%)';
+    if (dom.compareOutput) dom.compareOutput.style.clipPath = 'inset(0 0 0 ' + pct + '%)';
   }
 
   slider.addEventListener('mousedown', (e) => { e.preventDefault(); dragging = true; });
-  slider.addEventListener('touchstart', (e) => { dragging = true; }, { passive: true });
+  slider.addEventListener('touchstart', () => { dragging = true; }, { passive: true });
   container.addEventListener('mousedown', (e) => { dragging = true; move(e.clientX); });
 
   document.addEventListener('mousemove', (e) => { if (dragging) move(e.clientX); });
@@ -319,10 +325,11 @@ let pickerCallback = null;
 function openImagePicker(callback) {
   pickerCallback = callback;
   renderPickerGrid();
-  dom.imagePickerModal.classList.add('open');
+  if (dom.imagePickerModal) dom.imagePickerModal.classList.add('open');
 }
 
 function renderPickerGrid() {
+  if (!dom.pickerGrid || !dom.pickerSearch) return;
   const q = dom.pickerSearch.value.toLowerCase().trim();
   let imgs = state.images.filter(i => !q || (i.prompt || '').toLowerCase().includes(q) || (i.name || '').toLowerCase().includes(q));
   imgs = imgs.slice(0, 100);
@@ -337,7 +344,7 @@ function renderPickerGrid() {
         pickerCallback(img);
         pickerCallback = null;
       }
-      dom.imagePickerModal.classList.remove('open');
+      if (dom.imagePickerModal) dom.imagePickerModal.classList.remove('open');
     });
   });
 }
@@ -345,6 +352,8 @@ function renderPickerGrid() {
 // ==================== BIND GALLERY EVENTS ====================
 
 function bindGalleryEvents() {
+  console.log('[Kinetic] Binding gallery events...');
+
   // Gallery tabs
   document.querySelectorAll('.g-tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -356,104 +365,140 @@ function bindGalleryEvents() {
   });
 
   // Search
-  dom.searchInput.addEventListener('input', renderGallery);
+  if (dom.searchInput) {
+    dom.searchInput.addEventListener('input', renderGallery);
+  }
 
   // Gallery card clicks (delegated)
-  dom.galleryGrid.addEventListener('click', (e) => {
-    const dlBtn = e.target.closest('.gcard-dl');
-    const favBtn = e.target.closest('.gcard-fav');
-    const card = e.target.closest('.gcard');
+  if (dom.galleryGrid) {
+    dom.galleryGrid.addEventListener('click', (e) => {
+      const dlBtn = e.target.closest('.gcard-dl');
+      const favBtn = e.target.closest('.gcard-fav');
+      const card = e.target.closest('.gcard');
 
-    if (dlBtn) {
-      e.stopPropagation();
-      const img = state.images.find(i => i.id === parseInt(dlBtn.dataset.id));
-      if (img) downloadImage(img.url, img.name || img.originalPrompt || img.prompt);
-      return;
-    }
-
-    if (favBtn) {
-      e.stopPropagation();
-      const img = state.images.find(i => i.id === parseInt(favBtn.dataset.id));
-      if (img) {
-        img.favorite = !img.favorite;
-        dbPut('gallery', img).then(renderGallery);
-        toast('success', img.favorite ? 'Added to Favorites' : 'Removed from Favorites');
+      if (dlBtn) {
+        e.stopPropagation();
+        const img = state.images.find(i => i.id === parseInt(dlBtn.dataset.id));
+        if (img) downloadImage(img.url, img.name || img.originalPrompt || img.prompt);
+        return;
       }
-      return;
-    }
 
-    if (card && !e.target.closest('.batch-header')) {
-      const img = state.images.find(i => i.id === parseInt(card.dataset.id));
-      if (img) openViewer(img);
-    }
-  });
+      if (favBtn) {
+        e.stopPropagation();
+        const img = state.images.find(i => i.id === parseInt(favBtn.dataset.id));
+        if (img) {
+          img.favorite = !img.favorite;
+          dbPut('gallery', img).then(renderGallery);
+          toast('success', img.favorite ? 'Added to Favorites' : 'Removed from Favorites');
+        }
+        return;
+      }
 
-  // Viewer actions
-  dom.viewerClose.addEventListener('click', closeViewer);
-  dom.imageModal.addEventListener('click', (e) => { if (e.target === dom.imageModal) closeViewer(); });
+      if (card && !e.target.closest('.batch-header')) {
+        const img = state.images.find(i => i.id === parseInt(card.dataset.id));
+        if (img) openViewer(img);
+      }
+    });
+  }
 
-  dom.viewerFullscreen.addEventListener('click', openFullscreen);
-  dom.fullscreenMinimize.addEventListener('click', closeFullscreen);
+  // Viewer close
+  if (dom.viewerClose) dom.viewerClose.addEventListener('click', closeViewer);
+  if (dom.imageModal) {
+    dom.imageModal.addEventListener('click', (e) => { if (e.target === dom.imageModal) closeViewer(); });
+  }
 
-  dom.viewerDownload.addEventListener('click', () => {
-    if (currentViewerImage) downloadImage(currentViewerImage.url, currentViewerImage.name || currentViewerImage.originalPrompt || currentViewerImage.prompt);
-  });
+  // Viewer fullscreen
+  if (dom.viewerFullscreen) dom.viewerFullscreen.addEventListener('click', openFullscreen);
+  if (dom.fullscreenMinimize) dom.fullscreenMinimize.addEventListener('click', closeFullscreen);
 
-  dom.viewerCopy.addEventListener('click', () => {
-    if (currentViewerImage) {
-      copyText(currentViewerImage.originalPrompt || currentViewerImage.prompt);
-      toast('success', 'Prompt Copied', 'Ready to paste');
-    }
-  });
+  // Viewer download
+  if (dom.viewerDownload) {
+    dom.viewerDownload.addEventListener('click', () => {
+      if (currentViewerImage) downloadImage(currentViewerImage.url, currentViewerImage.name || currentViewerImage.originalPrompt || currentViewerImage.prompt);
+    });
+  }
 
-  dom.viewerFav.addEventListener('click', async () => {
-    if (!currentViewerImage) return;
-    currentViewerImage.favorite = !currentViewerImage.favorite;
-    await dbPut('gallery', currentViewerImage);
-    dom.viewerFav.classList.toggle('active', currentViewerImage.favorite);
-    renderGallery();
-    toast('success', currentViewerImage.favorite ? 'Added to Favorites' : 'Removed from Favorites');
-  });
+  // Viewer copy prompt
+  if (dom.viewerCopy) {
+    dom.viewerCopy.addEventListener('click', () => {
+      if (currentViewerImage) {
+        copyText(currentViewerImage.originalPrompt || currentViewerImage.prompt);
+        toast('success', 'Prompt Copied', 'Ready to paste');
+      }
+    });
+  }
 
-  dom.viewerDelete.addEventListener('click', async () => {
-    if (!currentViewerImage) return;
-    const id = currentViewerImage.id;
-    await dbRemove('gallery', id);
-    await dbRemove('blobs', id);
-    state.images = state.images.filter(i => i.id !== id);
-    renderGallery();
-    closeViewer();
-    toast('success', 'Image Deleted');
-  });
+  // Viewer favorite
+  if (dom.viewerFav) {
+    dom.viewerFav.addEventListener('click', async () => {
+      if (!currentViewerImage) return;
+      currentViewerImage.favorite = !currentViewerImage.favorite;
+      await dbPut('gallery', currentViewerImage);
+      dom.viewerFav.classList.toggle('active', currentViewerImage.favorite);
+      renderGallery();
+      toast('success', currentViewerImage.favorite ? 'Added to Favorites' : 'Removed from Favorites');
+    });
+  }
 
-  dom.viewerRemix.addEventListener('click', () => {
-    if (!currentViewerImage) return;
-    const img = currentViewerImage;
-    closeViewer();
-    openRemixPanel();
-    // Set as remix source
-    state.remixRefImageData = img.url;
-    state.remixRefPreviewUrl = img.url;
-    state.remixRefSource = 'gallery';
-    if (typeof updateRemixSourceUI === 'function') updateRemixSourceUI();
-  });
+  // Viewer delete
+  if (dom.viewerDelete) {
+    dom.viewerDelete.addEventListener('click', async () => {
+      if (!currentViewerImage) return;
+      const id = currentViewerImage.id;
+      try { await dbRemove('gallery', id); } catch (e) { /* ok */ }
+      try { await dbRemove('blobs', id); } catch (e) { /* ok */ }
+      state.images = state.images.filter(i => i.id !== id);
+      renderGallery();
+      closeViewer();
+      toast('success', 'Image Deleted');
+    });
+  }
 
-  dom.viewerCompare.addEventListener('click', openCompare);
-  dom.compareClose.addEventListener('click', closeCompareView);
+  // Viewer remix
+  if (dom.viewerRemix) {
+    dom.viewerRemix.addEventListener('click', () => {
+      if (!currentViewerImage) return;
+      const img = currentViewerImage;
+      closeViewer();
+      openRemixPanel();
+      state.remixRefImageData = img.url;
+      state.remixRefPreviewUrl = img.url;
+      state.remixRefSource = 'gallery';
+      if (typeof updateRemixSourceUI === 'function') updateRemixSourceUI();
+    });
+  }
+
+  // Viewer compare
+  if (dom.viewerCompare) dom.viewerCompare.addEventListener('click', openCompare);
+  if (dom.compareClose) dom.compareClose.addEventListener('click', closeCompareView);
 
   // Fullscreen zoom
-  dom.fullscreenImgWrap.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    fullscreenZoom += e.deltaY > 0 ? -0.15 : 0.15;
-    fullscreenZoom = Math.max(1, Math.min(5, fullscreenZoom));
-    dom.fullscreenImg.style.transform = 'scale(' + fullscreenZoom + ')';
-    dom.fullscreenImgWrap.classList.toggle('zoomed', fullscreenZoom > 1);
-  }, { passive: false });
+  if (dom.fullscreenImgWrap) {
+    dom.fullscreenImgWrap.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      fullscreenZoom += e.deltaY > 0 ? -0.15 : 0.15;
+      fullscreenZoom = Math.max(1, Math.min(5, fullscreenZoom));
+      if (dom.fullscreenImg) dom.fullscreenImg.style.transform = 'scale(' + fullscreenZoom + ')';
+      dom.fullscreenImgWrap.classList.toggle('zoomed', fullscreenZoom > 1);
+    }, { passive: false });
+  }
 
   // Image picker
-  dom.pickerClose.addEventListener('click', () => dom.imagePickerModal.classList.remove('open'));
-  dom.imagePickerModal.addEventListener('click', (e) => { if (e.target === dom.imagePickerModal) dom.imagePickerModal.classList.remove('open'); });
-  dom.pickerSearch.addEventListener('input', renderPickerGrid);
+  if (dom.pickerClose) {
+    dom.pickerClose.addEventListener('click', () => {
+      if (dom.imagePickerModal) dom.imagePickerModal.classList.remove('open');
+    });
+  }
+  if (dom.imagePickerModal) {
+    dom.imagePickerModal.addEventListener('click', (e) => {
+      if (e.target === dom.imagePickerModal) dom.imagePickerModal.classList.remove('open');
+    });
+  }
+  if (dom.pickerSearch) {
+    dom.pickerSearch.addEventListener('input', renderPickerGrid);
+  }
+
+  console.log('[Kinetic] Gallery events bound.');
 }
 
 // ==================== INIT ====================
