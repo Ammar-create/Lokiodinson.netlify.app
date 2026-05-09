@@ -1040,7 +1040,6 @@ function bindEvents(){
 
   // ---- Settings ----
   dom.settingsCloseBtn.addEventListener('click', closeSettings);
-  dom.sidebarSettingsBtn.addEventListener('click', openSettings);
   dom.settingsModal.addEventListener('click', function(e){ if(e.target === dom.settingsModal) closeSettings(); });
   dom.settingsAvatarWrap.addEventListener('click', function(){ dom.settingsAvatarFile.click(); });
   dom.settingsAvatarFile.addEventListener('change', function(e){
@@ -1126,6 +1125,7 @@ function bindEvents(){
   });
 
   // ---- Sidebar ----
+  if(dom.sidebarSettingsBtn) dom.sidebarSettingsBtn.addEventListener('click', openSettings);
   dom.menuToggle.addEventListener('click', function(){
     dom.sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
   });
@@ -1287,9 +1287,10 @@ function bindEvents(){
   document.querySelectorAll('.ratio-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       if(btn.id === 'ratioCustomBtn'){
-        dom.ratioCustomRow.style.display = dom.ratioCustomRow.style.display==='none'?'flex':'none';
-        btn.classList.toggle('active', dom.ratioCustomRow.style.display==='flex');
-        if(dom.ratioCustomRow.style.display==='flex') dom.ratioCustomInput.focus();
+        var show = dom.ratioCustomRow.style.display === 'none';
+        dom.ratioCustomRow.style.display = show ? 'flex' : 'none';
+        btn.classList.toggle('active', show);
+        if(show) dom.ratioCustomInput.focus();
         return;
       }
       document.querySelectorAll('.ratio-btn').forEach(function(b){ b.classList.remove('active'); });
