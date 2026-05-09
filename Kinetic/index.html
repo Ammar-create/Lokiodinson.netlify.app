@@ -2,56 +2,55 @@
 <html lang="en" data-theme="orange">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <title>Kinetic — AI Image Studio</title>
-  <meta name="description" content="AI-powered image generation studio">
-  <meta name="theme-color" content="#0a0a0f">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0c">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Kinetic — AI Image Studio</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/animations.css">
 </head>
-<body>
+<body class="animated-effects">
 
   <!-- ==================== SETUP MODAL ==================== -->
   <div class="modal" id="setupModal">
-    <div class="setup-card">
-      <div class="setup-header">
-        <div class="setup-logo">
-          <svg viewBox="0 0 32 32" width="40" height="40"><use href="#logoK"/></svg>
+    <div class="modal-card setup-card">
+      <div class="modal-header">
+        <div class="modal-logo">
+          <svg viewBox="0 0 40 40" width="32" height="32">
+            <defs><linearGradient id="lgSetup" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:var(--accent)"/><stop offset="100%" style="stop-color:var(--accent-hover)"/></linearGradient></defs>
+            <circle cx="20" cy="20" r="18" fill="none" stroke="url(#lgSetup)" stroke-width="2"/>
+            <path d="M14 28V14h5l4 8 4-8h5v14h-4V19l-4 8-4-8v9z" fill="url(#lgSetup)"/>
+          </svg>
+          <span>Welcome to Kinetic</span>
         </div>
-        <h1>Welcome to <span class="accent">Kinetic</span></h1>
-        <p>Set up your workspace to get started</p>
       </div>
-      <div class="setup-body">
+      <div class="modal-body">
+        <label class="input-group"><span>Profile Picture</span></label>
         <div class="setup-avatar" id="setupAvatarWrap">
-          <img id="setupAvatarPreview" alt="" style="display:none">
-          <svg class="setup-avatar-ph" viewBox="0 0 24 24" width="32" height="32"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 21v-1a8 8 0 0 1 16 0v1" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          <div class="setup-avatar-ph">
+            <svg viewBox="0 0 24 24" width="32" height="32"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          </div>
+          <img class="setup-avatar-img" id="setupAvatarPreview" alt="" style="display:none">
           <input type="file" id="setupAvatarFile" accept="image/*" hidden>
         </div>
-        <label class="input-group">
-          <span>Name <span class="muted">(optional)</span></span>
-          <input type="text" id="setupName" placeholder="Your name" autocomplete="name">
-        </label>
-        <label class="input-group">
-          <span>API Key <span class="required">*</span></span>
-          <div class="input-row">
-            <input type="password" id="setupApiKey" placeholder="Enter your AquaDevs API key" autocomplete="off">
-            <button class="eye-toggle" id="setupEyeToggle" type="button">
-              <svg viewBox="0 0 24 24" width="18" height="18"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
-            </button>
-          </div>
-        </label>
-      </div>
-      <div class="setup-footer">
-        <button class="btn btn-primary btn-generate-style" id="setupSaveBtn" disabled>
+        <label class="input-group"><span>Name</span></label>
+        <input type="text" id="setupName" placeholder="Your name" class="setup-input">
+        <label class="input-group"><span>API Key</span></label>
+        <div class="setup-key-row">
+          <input type="password" id="setupApiKey" placeholder="Enter your AquaDevs API key" class="setup-input" autocomplete="off">
+          <button class="eye-toggle" id="setupEyeToggle" type="button" aria-label="Toggle key visibility">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          </button>
+        </div>
+        <button class="btn btn-primary btn-generate-style" id="setupSaveBtn" disabled type="button">
           <span>Get Started</span>
         </button>
-        <a href="https://aquadevs.com/" target="_blank" rel="noopener" class="setup-link">Get an API key at aquadevs.com</a>
       </div>
     </div>
   </div>
@@ -65,682 +64,568 @@
           <svg viewBox="0 0 24 24" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         </button>
       </div>
-      <div class="modal-body settings-body">
+      <div class="modal-body">
 
         <!-- Profile -->
-        <section class="settings-section">
-          <h3>Profile</h3>
-          <div class="settings-row settings-row-center">
-            <div class="settings-avatar" id="settingsAvatarWrap">
-              <img id="settingsAvatarPreview" alt="" style="display:none">
-              <svg class="settings-avatar-ph" viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 21v-1a8 8 0 0 1 16 0v1" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
-              <input type="file" id="settingsAvatarFile" accept="image/*" hidden>
+        <div class="settings-section">
+          <h3 class="settings-section-title">Profile</h3>
+          <label class="input-group"><span>Avatar</span></label>
+          <div class="settings-avatar" id="settingsAvatarWrap">
+            <div class="settings-avatar-ph">
+              <svg viewBox="0 0 24 24" width="24" height="24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
             </div>
-            <label class="input-group flex-1">
-              <span>Name</span>
-              <input type="text" id="settingsName" placeholder="Your name">
-            </label>
+            <img class="settings-avatar-img" id="settingsAvatarPreview" alt="" style="display:none">
+            <input type="file" id="settingsAvatarFile" accept="image/*" hidden>
           </div>
-        </section>
-
-        <!-- API -->
-        <section class="settings-section">
-          <h3>API Key</h3>
-          <div class="input-row">
-            <input type="password" id="settingsApiKey" placeholder="API Key" class="flex-1">
-            <button class="eye-toggle" id="settingsEyeToggle" type="button">
-              <svg viewBox="0 0 24 24" width="18" height="18"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          <label class="input-group"><span>Name</span></label>
+          <input type="text" id="settingsName" placeholder="Your name">
+          <label class="input-group"><span>API Key</span></label>
+          <div class="setup-key-row">
+            <input type="password" id="settingsApiKey" placeholder="API key" autocomplete="off">
+            <button class="eye-toggle" id="settingsEyeToggle" type="button" aria-label="Toggle key visibility">
+              <svg viewBox="0 0 24 24" width="18" height="18"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
             </button>
           </div>
-        </section>
+        </div>
 
-        <!-- Default Model -->
-        <section class="settings-section">
-          <h3>Default Image Model</h3>
-          <div class="custom-select-wrap" id="settingsDefaultModelWrap" data-value="gptimage-2"></div>
-        </section>
-
-        <!-- Recent Limit -->
-        <section class="settings-section">
-          <h3>Recent Images Limit</h3>
-          <div class="recent-limit-row">
-            <button class="rl-btn active" data-limit="20">20</button>
-            <button class="rl-btn" data-limit="30">30</button>
-            <button class="rl-btn" data-limit="50">50</button>
-            <div class="rl-custom">
-              <input type="number" id="settingsRecentLimit" min="5" max="500" placeholder="Custom">
-            </div>
+        <!-- Generation -->
+        <div class="settings-section">
+          <h3 class="settings-section-title">Generation</h3>
+          <label class="input-group"><span>Default Model</span></label>
+          <div class="custom-select-wrap" id="settingsDefaultModelWrap"></div>
+          <label class="input-group"><span>Recent Limit</span></label>
+          <div class="rl-row">
+            <button class="rl-btn" data-limit="20" type="button">20</button>
+            <button class="rl-btn active" data-limit="30" type="button">30</button>
+            <button class="rl-btn" data-limit="50" type="button">50</button>
+            <button class="rl-btn" data-limit="100" type="button">100</button>
           </div>
-        </section>
-
-        <!-- Parallel Generation -->
-        <section class="settings-section">
-          <div class="settings-toggle-row">
-            <div>
-              <h3>Parallel Generation</h3>
-              <p class="muted">Generate all images simultaneously instead of one by one</p>
-            </div>
-            <label class="toggle"><input type="checkbox" id="settingsParallel"><span class="toggle-slider"></span></label>
-          </div>
-        </section>
-
-        <!-- Background Generation -->
-        <section class="settings-section">
-          <div class="settings-toggle-row">
-            <div>
-              <h3>Background Generation</h3>
-              <p class="muted">Continue browsing while images generate in the background</p>
-            </div>
-            <label class="toggle"><input type="checkbox" id="settingsBackground"><span class="toggle-slider"></span></label>
-          </div>
-        </section>
-
-        <!-- Animated Effects -->
-        <section class="settings-section">
-          <div class="settings-toggle-row">
-            <div>
-              <h3>Animated Effects</h3>
-              <p class="muted">Glow and electricity effects on main buttons</p>
-            </div>
-            <label class="toggle"><input type="checkbox" id="settingsAnimations" checked><span class="toggle-slider"></span></label>
-          </div>
-        </section>
+          <input type="number" id="settingsRecentLimit" value="30" min="5" max="200">
+          <label class="toggle-row">
+            <input type="checkbox" id="settingsParallel">
+            <span>Parallel Generation</span>
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" id="settingsBackground">
+            <span>Background Generation</span>
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" id="settingsAnimations" checked>
+            <span>Animations</span>
+          </label>
+        </div>
 
         <!-- Theme -->
-        <section class="settings-section">
-          <h3>Theme</h3>
+        <div class="settings-section">
+          <h3 class="settings-section-title">Theme</h3>
           <div class="theme-row">
-            <button class="theme-btn active" id="themeOrange" data-theme="orange"><span class="theme-swatch orange"></span>Amber</button>
-            <button class="theme-btn" id="themeBlue" data-theme="blue"><span class="theme-swatch blue"></span>Neon Blue</button>
+            <button class="theme-btn active" id="themeOrange" type="button"><span class="theme-swatch" style="background:linear-gradient(135deg,#f59e0b,#ea580c)"></span> Orange</button>
+            <button class="theme-btn" id="themeBlue" type="button"><span class="theme-swatch" style="background:linear-gradient(135deg,#60a5fa,#2563eb)"></span> Blue</button>
           </div>
-        </section>
+        </div>
 
-        <!-- Prompt Enhancement -->
-        <section class="settings-section">
-          <h3>Prompt Enhancement</h3>
-          <div class="settings-toggle-row">
+        <!-- Enhancement -->
+        <div class="settings-section">
+          <h3 class="settings-section-title">Prompt Enhancement</h3>
+          <label class="toggle-row">
+            <input type="checkbox" id="settingsEnhanceToggle">
             <span>Enable Enhancement</span>
-            <label class="toggle"><input type="checkbox" id="settingsEnhanceToggle"><span class="toggle-slider"></span></label>
-          </div>
-          <div class="settings-sub" id="enhanceSub" style="display:none">
-            <div class="settings-toggle-row">
-              <span>Manual Mode</span>
-              <label class="toggle"><input type="checkbox" id="settingsEnhanceManual"><span class="toggle-slider"></span></label>
-            </div>
-            <div class="settings-toggle-row">
-              <span>Web Search</span>
-              <label class="toggle"><input type="checkbox" id="settingsEnhanceWeb"><span class="toggle-slider"></span></label>
-            </div>
-            <label class="input-group">
-              <span>Enhancement Model</span>
-              <div class="custom-select-wrap" id="settingsEnhanceModelWrap" data-value="mimo-v2.5-pro"></div>
+          </label>
+          <div class="sub-settings" id="enhanceSub" style="display:none">
+            <label class="toggle-row">
+              <input type="checkbox" id="settingsEnhanceManual">
+              <span>Manual Only</span>
             </label>
+            <label class="toggle-row">
+              <input type="checkbox" id="settingsEnhanceWeb">
+              <span>Web Search</span>
+            </label>
+            <label class="input-group"><span>Model</span></label>
+            <div class="custom-select-wrap" id="settingsEnhanceModelWrap"></div>
           </div>
-        </section>
+        </div>
 
         <!-- Auto-Naming -->
-        <section class="settings-section">
-          <h3>Auto-Naming</h3>
-          <div class="settings-toggle-row">
+        <div class="settings-section">
+          <h3 class="settings-section-title">Auto-Naming</h3>
+          <label class="toggle-row">
+            <input type="checkbox" id="settingsNameToggle">
             <span>Enable Auto-Naming</span>
-            <label class="toggle"><input type="checkbox" id="settingsNameToggle"><span class="toggle-slider"></span></label>
-          </div>
-          <div class="settings-sub" id="nameSub" style="display:none">
-            <label class="input-group">
-              <span>Naming Model</span>
-              <div class="custom-select-wrap" id="settingsNameModelWrap" data-value="nova"></div>
-            </label>
-          </div>
-        </section>
-
-        <!-- Remix Model -->
-        <section class="settings-section">
-          <h3>Remix</h3>
-          <label class="input-group">
-            <span>Remix Model</span>
-            <div class="custom-select-wrap" id="settingsRemixModelWrap" data-value="mimo-v2.5"></div>
           </label>
-          <div class="settings-toggle-row">
-            <span>Automatic Mode</span>
-            <label class="toggle"><input type="checkbox" id="settingsRemixAuto" checked><span class="toggle-slider"></span></label>
+          <div class="sub-settings" id="nameSub" style="display:none">
+            <label class="input-group"><span>Model</span></label>
+            <div class="custom-select-wrap" id="settingsNameModelWrap"></div>
           </div>
-          <div class="settings-toggle-row">
-            <span>Web Search</span>
-            <label class="toggle"><input type="checkbox" id="settingsRemixWeb"><span class="toggle-slider"></span></label>
-          </div>
-        </section>
+        </div>
 
-        <!-- Image Generation Models -->
-        <section class="settings-section">
-          <h3>Image Generation Models</h3>
+        <!-- Remix -->
+        <div class="settings-section">
+          <h3 class="settings-section-title">Remix</h3>
+          <label class="input-group"><span>Remix Model</span></label>
+          <div class="custom-select-wrap" id="settingsRemixModelWrap"></div>
+          <label class="toggle-row">
+            <input type="checkbox" id="settingsRemixAuto" checked>
+            <span>Auto-Enhance Remix Prompts</span>
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" id="settingsRemixWeb">
+            <span>Web Search for Remix</span>
+          </label>
+        </div>
+
+        <!-- Image Models -->
+        <div class="settings-section">
+          <h3 class="settings-section-title">Image Models</h3>
           <div class="model-list" id="imageModelList"></div>
           <button class="btn btn-ghost btn-sm" id="addCustomModelBtn" type="button">
-            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
             Add Custom Model
           </button>
           <div class="add-model-form" id="addModelForm" style="display:none">
-            <label class="input-group"><span>Model ID</span><input type="text" id="customModelId" placeholder="e.g., my-model-v1"></label>
-            <label class="input-group"><span>Display Name</span><input type="text" id="customModelName" placeholder="e.g., My Model"></label>
-            <label class="checkbox-row"><input type="checkbox" id="customModelRef"><span>Supports reference images</span></label>
-            <label class="checkbox-row"><input type="checkbox" id="customModelPoll"><span>Uses polling (async generation)</span></label>
+            <input type="text" id="customModelId" placeholder="Model ID">
+            <input type="text" id="customModelName" placeholder="Display Name (optional)">
+            <label class="toggle-row"><input type="checkbox" id="customModelRef"><span>Supports Reference Images</span></label>
+            <label class="toggle-row"><input type="checkbox" id="customModelPoll"><span>Uses Polling (async)</span></label>
             <div class="form-actions">
-              <button class="btn btn-primary btn-sm" id="confirmAddModel" type="button">Add Model</button>
+              <button class="btn btn-primary btn-sm" id="confirmAddModel" type="button">Add</button>
               <button class="btn btn-ghost btn-sm" id="cancelAddModel" type="button">Cancel</button>
             </div>
           </div>
-        </section>
+        </div>
 
-        <!-- Install App -->
-        <section class="settings-section" id="installSection" style="display:none">
-          <button class="btn btn-primary btn-block" id="installBtn" type="button">
+        <!-- Install PWA -->
+        <div class="settings-section" id="installSection" style="display:none">
+          <h3 class="settings-section-title">Install App</h3>
+          <button class="btn btn-primary btn-sm" id="installBtn" type="button">
             <svg viewBox="0 0 24 24" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Install Kinetic App
+            Install Kinetic
           </button>
-        </section>
+        </div>
 
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary btn-block" id="settingsSaveBtn" type="button">Save Changes</button>
+        <button class="btn btn-primary btn-generate-style" id="settingsSaveBtn" type="button">
+          <span>Save Settings</span>
+        </button>
       </div>
     </div>
   </div>
 
   <!-- ==================== GENERATION OVERLAY ==================== -->
   <div class="gen-overlay" id="genOverlay">
-    <div class="gen-orb-container">
-      <div class="gen-particles" id="genParticles"></div>
-      <div class="gen-orb" id="genOrb"></div>
-      <div class="gen-ring r1"></div>
-      <div class="gen-ring r2"></div>
-      <div class="gen-ring r3"></div>
+    <div class="gen-particles" id="genParticles"></div>
+    <div class="gen-orb" id="genOrb"></div>
+    <div class="gen-content">
+      <div class="gen-prompt-display">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <p id="genPromptText"></p>
+      </div>
+      <div class="gen-progress">
+        <div class="gen-bar"><div class="gen-bar-fill" id="genBarFill"></div></div>
+        <div class="gen-count"><span id="genStatusText">Generating...</span> <span><span id="genCurrentCount">0</span>/<span id="genTotalCount">1</span></span></div>
+      </div>
+      <div class="gen-boxes" id="genBoxes"></div>
     </div>
-    <!-- Parallel boxes (Tesseract-style) -->
-    <div class="gen-boxes" id="genBoxes" style="display:none"></div>
-    <div class="gen-prompt-display" id="genPromptText"></div>
-    <div class="gen-progress-bar"><div class="gen-bar-fill" id="genBarFill"></div></div>
-    <div class="gen-status" id="genStatusText">Preparing...</div>
-    <div class="gen-counter"><span id="genCurrentCount">0</span> / <span id="genTotalCount">1</span></div>
   </div>
 
   <!-- ==================== BACKGROUND INDICATOR ==================== -->
   <div class="bg-indicator" id="bgIndicator" style="display:none">
-    <div class="bg-tesseract">
-      <div class="tes-face tes-front"></div>
-      <div class="tes-face tes-back"></div>
-      <div class="tes-face tes-left"></div>
-      <div class="tes-face tes-right"></div>
-      <div class="tes-face tes-top"></div>
-      <div class="tes-face tes-bottom"></div>
-    </div>
-    <div class="bg-info">
-      <span class="bg-count" id="bgCount">0/0</span>
-      <span class="bg-label">generating</span>
-    </div>
+    <div class="bg-indicator-orb"></div>
+    <span id="bgCount"></span>
     <div class="bg-boxes" id="bgBoxes"></div>
   </div>
 
-  <!-- ==================== APP SHELL ==================== -->
-  <div class="app">
-
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <svg viewBox="0 0 32 32" width="28" height="28"><use href="#logoK"/></svg>
-        <span class="sidebar-title">Kinetic</span>
+  <!-- ==================== SIDEBAR ==================== -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <svg viewBox="0 0 40 40" width="28" height="28">
+          <circle cx="20" cy="20" r="18" fill="none" stroke="var(--accent)" stroke-width="2"/>
+          <path d="M14 28V14h5l4 8 4-8h5v14h-4V19l-4 8-4-8v9z" fill="var(--accent)"/>
+        </svg>
+        <span>Kinetic</span>
       </div>
-      <nav class="sidebar-nav">
-        <button class="nav-item active" data-view="images" type="button">
-          <svg viewBox="0 0 24 24" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
-          <span>Images</span>
-        </button>
-        <button class="nav-item" data-view="prompts" type="button">
-          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span>Prompt Settings</span>
-        </button>
-      </nav>
-      <div class="sidebar-footer">
-        <button class="nav-item" data-view="settings" type="button">
-          <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
-          <span>Settings</span>
-        </button>
+    </div>
+    <div class="sidebar-nav">
+      <button class="nav-item active" data-view="images" type="button">
+        <svg viewBox="0 0 24 24" width="18" height="18"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+        <span>Images</span>
+      </button>
+      <button class="nav-item" data-view="prompts" type="button">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" stroke-width="1.5"/><polyline points="14 2 14 8 20 8" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="1.5"/><line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="1.5"/></svg>
+        <span>Prompt Settings</span>
+      </button>
+      <button class="nav-item" data-view="settings" type="button">
+        <svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+        <span>Settings</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ==================== MAIN CONTENT ==================== -->
+  <main class="main-content">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <button class="topbar-btn" id="menuToggle" type="button" aria-label="Menu">
+        <svg viewBox="0 0 24 24" width="22" height="22"><line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="18" x2="21" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="topbar-logo">
+        <svg viewBox="0 0 40 40" width="24" height="24">
+          <circle cx="20" cy="20" r="18" fill="none" stroke="var(--accent)" stroke-width="2"/>
+          <path d="M14 28V14h5l4 8 4-8h5v14h-4V19l-4 8-4-8v9z" fill="var(--accent)"/>
+        </svg>
       </div>
-    </aside>
+      <button class="topbar-avatar" id="topbarAvatar" type="button" aria-label="Profile">
+        <span class="topbar-avatar-ph" id="topbarAvatarLetter">K</span>
+      </button>
+    </header>
 
-    <!-- Sidebar Overlay -->
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-    <!-- Main Content -->
-    <main class="main">
-
-      <!-- Topbar -->
-      <header class="topbar">
-        <button class="menu-toggle" id="menuToggle" type="button">
-          <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        </button>
-        <div class="topbar-center">
-          <svg viewBox="0 0 32 32" width="24" height="24"><use href="#logoK"/></svg>
-          <span class="topbar-title">Kinetic</span>
-        </div>
-        <button class="topbar-avatar" id="topbarAvatar" type="button">
-          <span class="topbar-avatar-letter" id="topbarAvatarLetter">K</span>
-        </button>
-      </header>
-
-      <!-- Gallery View -->
-      <div class="view" id="galleryView">
-        <div class="gallery-tabs">
-          <button class="g-tab active" data-filter="all" type="button">All</button>
-          <button class="g-tab" data-filter="recent" type="button">Recent <span id="tabRecentCount"></span></button>
-          <button class="g-tab" data-filter="favorites" type="button">Favorites <span id="tabFavCount"></span></button>
-          <span class="image-count"><span id="imageCount">0</span> images</span>
-        </div>
-        <div class="gallery-search">
-          <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M16 16l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          <input type="text" id="searchInput" placeholder="Search prompts, models...">
-        </div>
-        <div class="gallery-area" id="galleryArea">
-          <div class="gallery-grid" id="galleryGrid"></div>
-          <div class="empty-state" id="emptyState">
+    <!-- ==================== GALLERY VIEW ==================== -->
+    <div class="view gallery-view" id="galleryView">
+      <div class="gallery-tabs">
+        <button class="g-tab active" data-filter="all" type="button">All <span id="imageCount"></span></button>
+        <button class="g-tab" data-filter="recent" type="button">Recent <span id="tabRecentCount"></span></button>
+        <button class="g-tab" data-filter="favorites" type="button">Favorites <span id="tabFavCount"></span></button>
+      </div>
+      <div class="gallery-search">
+        <svg viewBox="0 0 24 24" width="18" height="18"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <input type="text" id="searchInput" placeholder="Search prompts, models...">
+      </div>
+      <div class="gallery-area" id="galleryArea">
+        <div class="gallery-grid" id="galleryGrid"></div>
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">
             <svg viewBox="0 0 80 80" width="80" height="80">
-              <circle cx="40" cy="40" r="36" fill="none" stroke="var(--border)" stroke-width="2" stroke-dasharray="6 4"/>
-              <path d="M30 35l6 6 14-14" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="40" cy="40" r="36" fill="none" stroke="var(--text-tertiary)" stroke-width="2" stroke-dasharray="8 6"/>
+              <path d="M30 50l8-12 6 8 8-16" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="52" cy="28" r="5" fill="none" stroke="var(--accent)" stroke-width="2"/>
             </svg>
-            <h3>No images yet</h3>
-            <p>Click the + button to create your first image</p>
           </div>
+          <h3>No images yet</h3>
+          <p>Click the + button to create your first image</p>
         </div>
       </div>
+    </div>
 
-      <!-- Prompt Settings View -->
-      <div class="view" id="promptView" style="display:none">
-        <div class="prompt-settings">
-          <h2>Prompt Settings</h2>
-          <p class="muted">Customize the system instructions for AI models. Only the instruction text is editable.</p>
+    <!-- ==================== PROMPT SETTINGS VIEW ==================== -->
+    <div class="view prompt-view" id="promptView" style="display:none">
+      <div class="prompt-settings">
+        <h3>Prompt Settings</h3>
+        <p class="prompt-settings-desc">Customize the system prompts used for AI features. These control how the AI enhances, names, and remixes your prompts.</p>
+        <label class="input-group"><span>Enhancement Prompt</span></label>
+        <textarea id="psEnhancePrompt" rows="4" placeholder="System prompt for prompt enhancement..."></textarea>
+        <label class="input-group"><span>Auto-Name Prompt</span></label>
+        <textarea id="psNamePrompt" rows="3" placeholder="System prompt for auto-naming images..."></textarea>
+        <label class="input-group"><span>Remix Prompt</span></label>
+        <textarea id="psRemixPrompt" rows="4" placeholder="System prompt for remix transformations..."></textarea>
+        <button class="btn btn-ghost" id="psResetBtn" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M1 4v6h6M23 20v-6h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Reset to Defaults
+        </button>
+      </div>
+    </div>
+  </main>
 
-          <div class="ps-card">
-            <h3>Prompt Enhancement</h3>
-            <p class="muted">Instruction for the enhancement model when improving your prompts</p>
-            <textarea id="psEnhancePrompt" rows="4"></textarea>
-          </div>
+  <!-- ==================== GENERATE PANEL (right slide-in) ==================== -->
+  <aside class="gen-panel" id="genPanel">
+    <div class="gen-panel-header">
+      <h2>Create</h2>
+      <button class="modal-close" id="panelClose" type="button">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="gen-panel-body">
 
-          <div class="ps-card">
-            <h3>Auto-Naming</h3>
-            <p class="muted">Instruction for the naming model when generating image titles</p>
-            <textarea id="psNamePrompt" rows="3"></textarea>
-          </div>
+      <!-- Model -->
+      <label class="input-group">
+        <span>Model</span>
+        <div class="custom-select-wrap" id="modelSelectWrap"></div>
+      </label>
 
-          <div class="ps-card">
-            <h3>Remix</h3>
-            <p class="muted">Instruction for the remix model when crafting transformation prompts</p>
-            <textarea id="psRemixPrompt" rows="4"></textarea>
-          </div>
-
-          <button class="btn btn-ghost" id="psResetBtn" type="button">
-            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M3 12a9 9 0 1 0 9-9 9.01 9.01 0 0 0-6.36 2.64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3 3v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Reset All to Defaults
+      <!-- Prompt -->
+      <label class="input-group">
+        <span>Prompt</span>
+        <div class="prompt-tools">
+          <button class="tool-btn" id="enhanceBtn" type="button" title="Enhance prompt">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="tool-btn" id="shuffleBtn" type="button" title="Random prompt">
+            <svg viewBox="0 0 24 24" width="16" height="16"><polyline points="16 3 21 3 21 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="4" y1="20" x2="21" y2="3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><polyline points="21 16 21 21 16 21" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="15" y1="15" x2="21" y2="21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="4" y1="4" x2="9" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           </button>
         </div>
+      </label>
+      <div class="prompt-input-wrap">
+        <textarea id="promptInput" rows="4" maxlength="2000" placeholder="Describe what you want to create..."></textarea>
+        <div class="char-count"><span id="charCount">0</span>/2000</div>
       </div>
 
-    </main>
-
-    <!-- Generation Panel (right slide-in) -->
-    <aside class="gen-panel" id="genPanel">
-      <div class="gen-panel-header">
-        <h2>Create</h2>
-        <button class="modal-close" id="panelClose" type="button">
-          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        </button>
-      </div>
-      <div class="gen-panel-body">
-
-        <!-- Model -->
+      <!-- Reference Image -->
+      <div class="ref-section" id="refSection" style="display:none">
         <label class="input-group">
-          <span>Model</span>
-          <div class="custom-select-wrap" id="modelSelectWrap" data-value="gptimage-2"></div>
+          <span>Reference Image</span>
         </label>
-
-        <!-- Prompt -->
-        <label class="input-group">
-          <span>Prompt</span>
-          <div class="prompt-area">
-            <textarea id="promptInput" rows="4" maxlength="2000" placeholder="Describe what you want to create..."></textarea>
-            <div class="prompt-footer">
-              <span class="char-count"><span id="charCount">0</span>/2000</span>
-              <button class="btn-icon shuffle-btn" id="shuffleBtn" type="button" title="Random prompt">
-                <svg viewBox="0 0 24 24" width="16" height="16"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </button>
-            </div>
+        <div class="ref-drop" id="refDrop">
+          <div class="ref-drop-inner" id="refDropInner">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Drop image or click to upload</span>
           </div>
-        </label>
-
-        <!-- Enhance Button (shown when manual mode is on) -->
-        <button class="btn btn-enhance" id="enhanceBtn" type="button" style="display:none">
-          <svg class="bolt-svg" viewBox="0 0 24 24" width="18" height="18"><path class="bolt-path" d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span>Enhance Prompt</span>
-        </button>
-
-        <!-- Reference Image -->
-        <div class="ref-section" id="refSection" style="display:none">
-          <label class="input-group"><span>Reference Image</span></label>
-          <div class="ref-drop" id="refDrop">
-            <div class="ref-drop-inner" id="refDropInner">
-              <svg viewBox="0 0 24 24" width="24" height="24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <span>Drop image or click to upload</span>
-            </div>
-            <img class="ref-preview" id="refPreview" alt="" style="display:none">
-            <input type="file" id="refFileInput" accept="image/*" hidden>
-          </div>
-          <div class="ref-url-row">
-            <input type="text" id="refUrlInput" placeholder="Or paste image URL...">
-            <button class="btn btn-ghost btn-sm" id="refUrlBtn" type="button">Load</button>
-          </div>
-          <button class="btn btn-ghost btn-sm clear-ref-btn" id="clearRefBtn" type="button" style="display:none">
+          <img class="ref-preview" id="refPreview" alt="" style="display:none">
+          <input type="file" id="refFileInput" accept="image/*" hidden>
+          <button class="btn-icon clear-ref" id="clearRefBtn" style="display:none" type="button">
             <svg viewBox="0 0 24 24" width="14" height="14"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            Clear Reference
           </button>
         </div>
+        <div class="ref-url-row">
+          <input type="text" id="refUrlInput" placeholder="Or paste image URL...">
+          <button class="btn btn-ghost btn-sm" id="refUrlBtn" type="button">Load</button>
+        </div>
+      </div>
 
-        <!-- Aspect Ratio -->
-        <label class="input-group"><span>Aspect Ratio</span></label>
-        <div class="ratio-row">
-          <button class="ratio-btn active" data-ratio="landscape" type="button">Landscape</button>
-          <button class="ratio-btn" data-ratio="portrait" type="button">Portrait</button>
-          <button class="ratio-btn" data-ratio="square" type="button">Square</button>
-          <button class="ratio-btn" data-ratio="16:9" type="button">16:9</button>
-          <button class="ratio-btn" data-ratio="9:16" type="button">9:16</button>
-          <button class="ratio-btn" data-ratio="1:1" type="button">1:1</button>
-          <button class="ratio-btn ratio-custom-btn" data-ratio="custom" type="button">Custom</button>
-        </div>
-        <div class="custom-ratio" id="customRatio" style="display:none">
-          <input type="number" id="customRatioW" min="1" max="99" placeholder="16" class="ratio-input">
-          <span class="ratio-sep">:</span>
-          <input type="number" id="customRatioH" min="1" max="99" placeholder="9" class="ratio-input">
-        </div>
+      <!-- Aspect Ratio -->
+      <label class="input-group"><span>Aspect Ratio</span></label>
+      <div class="ratio-row">
+        <button class="ratio-btn active" data-ratio="landscape" type="button">Landscape</button>
+        <button class="ratio-btn" data-ratio="portrait" type="button">Portrait</button>
+        <button class="ratio-btn" data-ratio="square" type="button">Square</button>
+        <button class="ratio-btn" data-ratio="16:9" type="button">16:9</button>
+        <button class="ratio-btn" data-ratio="9:16" type="button">9:16</button>
+        <button class="ratio-btn" data-ratio="1:1" type="button">1:1</button>
+        <button class="ratio-btn ratio-custom-btn" data-ratio="custom" type="button">Custom</button>
+      </div>
+      <div class="custom-ratio" id="customRatio" style="display:none">
+        <input type="number" id="customRatioW" min="1" max="99" placeholder="16" class="ratio-input">
+        <span class="ratio-sep">:</span>
+        <input type="number" id="customRatioH" min="1" max="99" placeholder="9" class="ratio-input">
+      </div>
 
-        <!-- Style -->
-        <label class="input-group"><span>Style</span></label>
-        <div class="style-chips" id="styleChips">
-          <button class="schip active" data-style="" type="button">None</button>
-          <button class="schip" data-style="photorealistic" type="button">Photo</button>
-          <button class="schip" data-style="digital art" type="button">Digital</button>
-          <button class="schip" data-style="oil painting" type="button">Oil</button>
-          <button class="schip" data-style="watercolor" type="button">Water</button>
-          <button class="schip" data-style="anime" type="button">Anime</button>
-          <button class="schip" data-style="3d render" type="button">3D</button>
-          <button class="schip" data-style="sketch" type="button">Sketch</button>
-          <button class="schip" data-style="pixel art" type="button">Pixel</button>
-          <button class="add-style-btn" id="addStyleBtn" type="button">
-            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          </button>
-        </div>
-        <div class="add-style-row" id="addStyleRow" style="display:none">
-          <input type="text" id="customStyleInput" placeholder="Custom style name">
-          <button class="btn btn-ghost btn-sm" id="addStyleConfirm" type="button">Add</button>
-        </div>
-
-        <!-- Count -->
-        <label class="input-group"><span>Number of Images</span></label>
-        <div class="count-row">
-          <button class="cbtn active" data-count="1" type="button">1</button>
-          <button class="cbtn" data-count="2" type="button">2</button>
-          <button class="cbtn" data-count="3" type="button">3</button>
-          <button class="cbtn" data-count="4" type="button">4</button>
-        </div>
-
-        <!-- Generate -->
-        <button class="btn btn-generate btn-generate-style" id="generateBtn" type="button">
-          <svg class="bolt-svg" viewBox="0 0 24 24" width="20" height="20"><path class="bolt-path" d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span>Generate</span>
+      <!-- Style -->
+      <label class="input-group"><span>Style</span></label>
+      <div class="style-chips" id="styleChips">
+        <button class="schip active" data-style="" type="button">None</button>
+        <button class="schip" data-style="photographic" type="button">Photo</button>
+        <button class="schip" data-style="digital art" type="button">Digital</button>
+        <button class="schip" data-style="oil painting" type="button">Oil</button>
+        <button class="schip" data-style="watercolor" type="button">Water</button>
+        <button class="schip" data-style="anime" type="button">Anime</button>
+        <button class="schip" data-style="3d render" type="button">3D</button>
+        <button class="schip" data-style="sketch" type="button">Sketch</button>
+        <button class="schip" data-style="pixel art" type="button">Pixel</button>
+        <button class="btn-icon add-style-btn" id="addStyleBtn" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         </button>
       </div>
-    </aside>
+      <div class="add-style-row" id="addStyleRow" style="display:none">
+        <input type="text" id="customStyleInput" placeholder="Custom style...">
+        <button class="btn btn-ghost btn-sm" id="addStyleConfirm" type="button">Add</button>
+      </div>
 
-    <!-- Remix Panel (right slide-in) -->
- <!-- Remix Panel (right slide-in) -->
-<aside class="remix-panel" id="remixPanel">
-  <div class="gen-panel-header">
-    <h2>Remix</h2>
-    <button class="modal-close" id="remixPanelClose" type="button">
-      <svg viewBox="0 0 24 24" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-    </button>
-  </div>
-  <div class="gen-panel-body">
+      <!-- Count -->
+      <label class="input-group"><span>Number of Images</span></label>
+      <div class="count-row">
+        <button class="cbtn active" data-count="1" type="button">1</button>
+        <button class="cbtn" data-count="2" type="button">2</button>
+        <button class="cbtn" data-count="3" type="button">3</button>
+        <button class="cbtn" data-count="4" type="button">4</button>
+      </div>
 
-    <!-- Reference Source -->
-    <label class="input-group"><span>Source Image</span></label>
-    <div class="remix-source-tabs">
-      <button class="rstab active" data-source="gallery" type="button">
-        <svg viewBox="0 0 24 24" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
-        Gallery
-      </button>
-      <button class="rstab" data-source="upload" type="button">
-        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Upload
+      <!-- Generate Button -->
+      <button class="btn btn-generate btn-generate-style" id="generateBtn" type="button">
+        <svg class="bolt-svg" viewBox="0 0 24 24" width="20" height="20"><path class="bolt-path" d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Generate</span>
       </button>
     </div>
+  </aside>
 
-    <!-- Gallery picker -->
-    <div class="remix-gallery-pick" id="remixGalleryPick">
-      <div class="remix-pick-grid" id="remixPickGrid"></div>
+  <!-- ==================== REMIX PANEL (right slide-in) ==================== -->
+  <aside class="remix-panel" id="remixPanel">
+    <div class="gen-panel-header">
+      <h2>Remix</h2>
+      <button class="modal-close" id="remixPanelClose" type="button">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
     </div>
+    <div class="gen-panel-body">
 
-    <!-- Upload picker -->
-    <div class="remix-upload-pick" id="remixUploadPick" style="display:none">
-      <div class="ref-drop" id="remixDrop">
-        <div class="ref-drop-inner" id="remixDropInner">
-          <svg viewBox="0 0 24 24" width="24" height="24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span>Drop image or click to upload</span>
+      <!-- Reference Source -->
+      <label class="input-group"><span>Source Image</span></label>
+      <div class="remix-source-tabs">
+        <button class="rstab active" data-source="gallery" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          Gallery
+        </button>
+        <button class="rstab" data-source="upload" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Upload
+        </button>
+      </div>
+
+      <!-- Gallery picker -->
+      <div class="remix-gallery-pick" id="remixGalleryPick">
+        <div class="remix-pick-grid" id="remixPickGrid"></div>
+      </div>
+
+      <!-- Upload picker -->
+      <div class="remix-upload-pick" id="remixUploadPick" style="display:none">
+        <div class="ref-drop" id="remixDrop">
+          <div class="ref-drop-inner" id="remixDropInner">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Drop image or click to upload</span>
+          </div>
+          <img class="ref-preview" id="remixPreview" alt="" style="display:none">
+          <input type="file" id="remixFileInput" accept="image/*" hidden>
         </div>
-        <img class="ref-preview" id="remixPreview" alt="" style="display:none">
-        <input type="file" id="remixFileInput" accept="image/*" hidden>
       </div>
-    </div>
 
-    <!-- Selected preview -->
-    <div class="remix-selected" id="remixSelected" style="display:none">
-      <img id="remixSelectedImg" alt="">
-      <button class="btn-icon clear-remix-ref" id="clearRemixRef" type="button">
-        <svg viewBox="0 0 24 24" width="14" height="14"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <!-- Selected preview -->
+      <div class="remix-selected" id="remixSelected" style="display:none">
+        <img id="remixSelectedImg" alt="">
+        <button class="btn-icon clear-remix-ref" id="clearRemixRef" type="button">
+          <svg viewBox="0 0 24 24" width="14" height="14"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <!-- Prompt -->
+      <label class="input-group"><span>Remix Prompt</span></label>
+      <textarea id="remixPrompt" rows="3" maxlength="2000" placeholder="Describe the transformation..."></textarea>
+
+      <!-- Built-in Actions -->
+      <label class="input-group"><span>Quick Actions</span></label>
+      <div class="action-grid" id="actionGrid"></div>
+      <button class="btn btn-ghost btn-sm" id="addRemixAction" type="button">
+        <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Add Custom Action
       </button>
-    </div>
+      <div class="add-action-form" id="-btn" data-r">1</button>
+        <button class="cbtn" data-count="2" type="button">2</button>
+        <button class="cbtn" data-count="3" type="button">3</button>
+        <button class="cbtn" data-count="4" type="button">4</button>
+      </div>
 
-    <!-- Prompt -->
-    <label class="input-group"><span>Remix Prompt</span></label>
-    <textarea id="remixPrompt" rows="3" maxlength="2000" placeholder="Describe the transformation..."></textarea>
+      <!-- Manual process indicator -->
+      <div class="remix-manual-hint" id="remixManualHint" style="display:none">
+        <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Manual mode: Write prompt or pick an action, then click Remix</span>
+      </div>
 
-    <!-- Built-in Actions -->
-    <label class="input-group"><span>Quick Actions</span></label>
-    <div class="action-grid" id="actionGrid"></div>
-    <button class="btn btn-ghost btn-sm" id="addRemixAction" type="button">
-      <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Add Custom Action
-    </button>
-    <div class="add-action-form" id="addActionForm" style="display:none">
-      <input type="text" id="actionName" placeholder="Action name">
-      <textarea id="actionPrompt" rows="2" placeholder="Short prompt for remix model..."></textarea>
-      <div class="form-actions">
-        <button class="btn btn-primary btn-sm" id="confirmAddAction" type="button">Add Action</button>
-        <button class="btn btn-ghost btn-sm" id="cancelAddAction" type="button">Cancel</button>
+      <!-- Remix Button -->
+      <button class="btn btn-remix btn-generate-style" id="remixBtn" type="button">
+        <svg class="bolt-svg" viewBox="0 0 24 24" width="20" height="20"><path class="bolt-path" d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Remix</span>
+      </button>
+
+      <!-- Recent Remixes -->
+      <div class="recent-remixes" id="recentRemixes" style="display:none">
+        <label class="input-group"><span>Recent Remixes</span></label>
+        <div class="remix-results" id="remixResults"></div>
       </div>
     </div>
-
-    <!-- Aspect Ratio -->
-    <label class="input-group"><span>Aspect Ratio</span></label>
-    <div class="ratio-row">
-      <button class="ratio-btn active" data-ratio="landscape" type="button">Landscape</button>
-      <button class="ratio-btn" data-ratio="portrait" type="button">Portrait</button>
-      <button class="ratio-btn" data-ratio="square" type="button">Square</button>
-      <button class="ratio-btn" data-ratio="16:9" type="button">16:9</button>
-      <button class="ratio-btn" data-ratio="9:16" type="button">9:16</button>
-      <button class="ratio-btn" data-ratio="1:1" type="button">1:1</button>
-      <button class="ratio-btn ratio-custom-btn" data-ratio="custom" type="button">Custom</button>
-    </div>
-    <div class="custom-ratio" id="remixCustomRatio" style="display:none">
-      <input type="number" id="remixRatioW" min="1" max="99" placeholder="16" class="ratio-input">
-      <span class="ratio-sep">:</span>
-      <input type="number" id="remixRatioH" min="1" max="99" placeholder="9" class="ratio-input">
-    </div>
-
-    <!-- Count -->
-    <label class="input-group"><span>Count</span></label>
-    <div class="count-row">
-      <button class="cbtn active" data-count="1" type="button">1</button>
-      <button class="cbtn" data-count="2" type="button">2</button>
-      <button class="cbtn" data-count="3" type="button">3</button>
-      <button class="cbtn" data-count="4" type="button">4</button>
-    </div>
-
-    <!-- Manual process indicator -->
-    <div class="remix-manual-hint" id="remixManualHint" style="display:none">
-      <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <span>Manual mode: Write prompt or pick an action, then click Remix</span>
-    </div>
-
-    <!-- Remix Button -->
-    <button class="btn btn-remix btn-generate-style" id="remixBtn" type="button">
-      <svg class="bolt-svg" viewBox="0 0 24 24" width="20" height="20"><path class="bolt-path" d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span>Remix</span>
-    </button>
-
-    <!-- Recent Remixes -->
-    <div class="recent-remixes" id="recentRemixes" style="display:none">
-      <label class="input-group"><span>Recent Remixes</span></label>
-      <div class="remix-results" id="remixResults"></div>
-    </div>
-  </div>
-</aside>
-
-  </div>
+  </aside>
 
   <!-- ==================== IMAGE VIEWER MODAL ==================== -->
-  <div class="modal viewer-modal" id="imageModal">
-    <div class="viewer-card">
-
-      <!-- Top bar -->
-      <div class="viewer-topbar">
-        <button class="viewer-fs-btn" id="viewerFullscreen" type="button" title="Fullscreen">
-          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="modal image-modal" id="imageModal">
+    <div class="image-modal-content">
+      <div class="viewer-header">
+        <button class="viewer-btn" id="viewerFullscreen" type="button" title="Fullscreen">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <button class="modal-close viewer-close" id="viewerClose" type="button">
+        <button class="viewer-btn" id="viewerClose" type="button" title="Close">
           <svg viewBox="0 0 24 24" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         </button>
       </div>
 
-      <!-- Spotlight Carousel -->
       <div class="spotlight" id="spotlight">
-        <div class="spotlight-track" id="spotlightTrack">
-          <div class="spotlight-side spotlight-left" id="spotLeft"></div>
-          <div class="spotlight-center" id="spotCenter"></div>
-          <div class="spotlight-side spotlight-right" id="spotRight"></div>
-        </div>
+        <div class="spot spot-left" id="spotLeft"></div>
+        <div class="spot spot-center" id="spotCenter"></div>
+        <div class="spot spot-right" id="spotRight"></div>
       </div>
 
-      <!-- Compare slider (hidden by default) -->
-      <div class="compare-wrap" id="compareWrap" style="display:none">
-        <div class="compare-container" id="compareContainer">
-          <img class="compare-img compare-input" id="compareInput" alt="">
-          <img class="compare-img compare-output" id="compareOutput" alt="">
-          <div class="compare-slider" id="compareSlider">
-            <div class="compare-handle"></div>
-          </div>
-          <span class="compare-label compare-label-left">Input</span>
-          <span class="compare-label compare-label-right">Output</span>
-        </div>
-        <button class="btn btn-ghost btn-sm" id="compareClose" type="button">Close Compare</button>
-      </div>
-
-      <!-- Image info -->
       <div class="viewer-info">
-        <div class="viewer-prompt" id="viewerPrompt"></div>
-        <div class="viewer-meta" id="viewerMeta"></div>
+        <p class="viewer-prompt" id="viewerPrompt"></p>
+        <p class="viewer-meta" id="viewerMeta"></p>
       </div>
 
-      <!-- Actions -->
       <div class="viewer-actions">
-        <button class="btn btn-remix-action" id="viewerRemix" type="button">
-          <svg class="bolt-svg" viewBox="0 0 24 24" width="20" height="20"><path class="bolt-path" d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Remix
+        <button class="viewer-action-btn" id="viewerRemix" type="button" title="Remix">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M1 4v6h6M23 20v-6h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Remix</span>
         </button>
-        <div class="viewer-secondary-actions">
-          <button class="btn-icon" id="viewerDownload" type="button" title="Download">
-            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-          <button class="btn-icon" id="viewerFav" type="button" title="Favorite">
-            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-          </button>
-          <button class="btn-icon" id="viewerCopy" type="button" title="Copy Prompt">
-            <svg viewBox="0 0 24 24" width="18" height="18"><rect x="9" y="9" width="13" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-          </button>
-          <button class="btn-icon" id="viewerDelete" type="button" title="Delete">
-            <svg viewBox="0 0 24 24" width="18" height="18"><polyline points="3 6 5 6 21 6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-          </button>
-          <button class="btn-icon compare-btn" id="viewerCompare" type="button" title="Compare" style="display:none">
-            <svg viewBox="0 0 24 24" width="18" height="18"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="12" y1="3" x2="12" y2="21" stroke="currentColor" stroke-width="1.5"/></svg>
-          </button>
-        </div>
+        <button class="viewer-action-btn" id="viewerDownload" type="button" title="Download">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Download</span>
+        </button>
+        <button class="viewer-action-btn" id="viewerFav" type="button" title="Favorite">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          <span>Favorite</span>
+        </button>
+        <button class="viewer-action-btn" id="viewerCopy" type="button" title="Copy Prompt">
+          <svg viewBox="0 0 24 24" width="20" height="20"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span>Copy</span>
+        </button>
+        <button class="viewer-action-btn" id="viewerDelete" type="button" title="Delete">
+          <svg viewBox="0 0 24 24" width="20" height="20"><polyline points="3 6 5 6 21 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span>Delete</span>
+        </button>
+        <button class="viewer-action-btn" id="viewerCompare" type="button" title="Compare" style="display:none">
+          <svg viewBox="0 0 24 24" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="12" y1="3" x2="12" y2="21" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span>Compare</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== COMPARE VIEW ==================== -->
+  <div class="compare-wrap" id="compareWrap" style="display:none">
+    <div class="compare-header">
+      <span>Before / After</span>
+      <button class="modal-close" id="compareClose" type="button">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="compare-container" id="compareContainer">
+      <img class="compare-img compare-input" id="compareInput" alt="">
+      <img class="compare-img compare-output" id="compareOutput" alt="">
+      <div class="compare-slider" id="compareSlider">
+        <div class="compare-handle"></div>
       </div>
     </div>
   </div>
 
   <!-- ==================== FULLSCREEN VIEW ==================== -->
   <div class="fullscreen-view" id="fullscreenView">
-    <button class="fullscreen-minimize" id="fullscreenMinimize" type="button">
-      <svg viewBox="0 0 24 24" width="20" height="20"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <button class="fullscreen-close" id="fullscreenMinimize" type="button">
+      <svg viewBox="0 0 24 24" width="24" height="24"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
     <div class="fullscreen-img-wrap" id="fullscreenImgWrap">
-      <img id="fullscreenImg" alt="" draggable="false">
+      <img class="fullscreen-img" id="fullscreenImg" alt="">
     </div>
   </div>
 
   <!-- ==================== IMAGE PICKER MODAL ==================== -->
-  <div class="modal" id="imagePickerModal">
-    <div class="modal-card picker-card">
-      <div class="modal-header">
-        <h2>Select Image</h2>
+  <div class="modal image-picker-modal" id="imagePickerModal">
+    <div class="picker-card-wrap">
+      <div class="picker-header">
+        <h3>Select Image</h3>
         <button class="modal-close" id="pickerClose" type="button">
           <svg viewBox="0 0 24 24" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         </button>
       </div>
-      <div class="modal-body">
-        <div class="picker-search">
-          <input type="text" id="pickerSearch" placeholder="Search images...">
-        </div>
-        <div class="picker-grid" id="pickerGrid"></div>
+      <div class="picker-search">
+        <svg viewBox="0 0 24 24" width="18" height="18"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <input type="text" id="pickerSearch" placeholder="Search...">
       </div>
+      <div class="picker-grid" id="pickerGrid"></div>
     </div>
   </div>
 
-  <!-- ==================== TOAST ==================== -->
+  <!-- ==================== TOAST CONTAINER ==================== -->
   <div class="toast-wrap" id="toastWrap"></div>
 
-  <!-- ==================== FAB ==================== -->
-  <button class="fab" id="fabBtn" type="button">
-    <svg viewBox="0 0 24 24" width="24" height="24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+  <!-- ==================== FAB BUTTON ==================== -->
+  <button class="fab" id="fabBtn" type="button" aria-label="Create new image">
+    <svg viewBox="0 0 24 24" width="28" height="28"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
   </button>
 
-  <!-- ==================== SVG DEFS ==================== -->
-  <svg style="display:none">
-    <defs>
-      <symbol id="logoK" viewBox="0 0 32 32">
-        <rect width="32" height="32" rx="7" fill="#0a0a0f"/>
-        <path d="M9 5v22" stroke="url(#logoGrad)" stroke-width="3.5" stroke-linecap="round"/>
-        <path d="M9 17L21 5" stroke="url(#logoGrad)" stroke-width="3" stroke-linecap="round"/>
-        <path d="M14 17L25 27" stroke="#ff6b35" stroke-width="3" stroke-linecap="round"/>
-        <path d="M23 9l3-1-1 3" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
-        <defs>
-          <linearGradient id="logoGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#f5a623"/>
-            <stop offset="100%" stop-color="#ff6b35"/>
-          </linearGradient>
-        </defs>
-      </symbol>
-    </defs>
-  </svg>
-
-  <script src="js/core.js" defer></script>
-  <script src="js/gallery.js" defer></script>
-  <script src="js/generate.js" defer></script>
-  <script src="js/remix.js" defer></script>
+  <!-- Scripts -->
+  <script src="js/core.js"></script>
 </body>
 </html>
