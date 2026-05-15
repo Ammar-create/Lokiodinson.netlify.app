@@ -1,7 +1,5 @@
 /* =====================================================
-   AQUADEVS STUDIO — APP LOGIC v3 (bug-fixed)
-   Fixes: web search tool call parsing, viewer buttons,
-   mobile overlay, generation overlay
+   AQUADEVS STUDIO — APP LOGIC v4 (Queue Support)
    ===================================================== */
 
 // ==================== CONSTANTS ====================
@@ -58,13 +56,15 @@ var state = {
   selectedCount: 1,
   refImageData: null,
   refPreviewUrl: null,
-  isGenerating: false,
+  isGenerating: false, // Legacy flag, kept for compatibility
   genMinimized: false,
   genStartTime: 0,
-  genElapsedTimer: null
+  genElapsedTimer: null,
+  generationQueue: [] // New: Array of {id, status, prompt, ...}
 };
 
 var blobUrlCache = {};
+var activeGenerations = 0; // Track concurrent generations
 
 // ==================== DOM REFS ====================
 
@@ -104,7 +104,8 @@ var dom = {
   genStatusText: $('genStatusText'),
   genCurrentCount: $('genCurrentCount'),
   genTotalCount: $('genTotalCount'),
-  genSlots: $('genSlots'),
+  genSlots: $('genSlots'), // Kept for legacy, but unused in queue mode
+  genQueueList: $('genQueueList'), // New
   genMinimizeBtn: $('genMinimizeBtn'),
   genMini: $('genMini'),
   genMiniText: $('genMiniText'),
@@ -636,24 +637,15 @@ function updateRefSection() {
 
 // ==================== ENHANCEMENT (FIXED) ====================
 
-/**
- * Parse raw tool call text that some models return instead of
- * structured tool_calls. Handles JSON and  formats.
- */
 function parseRawToolCall(text) {
   if (!text || typeof text !== 'string') return null;
   text = text.trim();
-
-  // Extract content between   if present
   var callContent = text;
   var toolMatch = text.match(/<\/?tool_call[^>]*>([\s\S]*?)<\/tool_call>/i);
   if (toolMatch) {
     callContent = toolMatch[1].trim();
   }
-
-  // Try to find a JSON object with "name":"web_search" and extract query
   try {
-    // Walk through string looking for { ... } blocks
     var depth = 0;
     var start = -1;
     for (var i = 0; i < callContent.length; i++) {
@@ -678,38 +670,24 @@ function parseRawToolCall(text) {
       }
     }
   } catch (e) { /* parsing failed */ }
-
-  // Fallback: regex for "query":"..." near "web_search"
   var queryMatch = text.match(/"query"\s*:\s*"([^"]+)"/);
   if (queryMatch && text.indexOf('web_search') !== -1) {
     return queryMatch[1];
   }
-
   return null;
 }
 
-/**
- * Check if a string looks like a raw tool call rather than
- * a real enhanced prompt.
- */
 function isRawToolCall(text) {
   if (!text) return false;
   var t = text.trim();
-  // JSON object starting with { containing "web_search" or "tool"
   if (t.charAt(0) === '{' && t.indexOf('web_search') !== -1) return true;
   if (t.indexOf('"name"') !== -1 && t.indexOf('"query"') !== -1 &&
       t.indexOf('"parameters"') !== -1) return true;
-  //  tag
   if (/<tool_call/i.test(t)) return true;
-  //  HTML-encoded version
   if (t.indexOf('&lt;tool_call') !== -1) return true;
   return false;
 }
 
-/**
- * Execute a web search via AquaDevs /v1/search endpoint.
- * Returns array of {title, url, content} results.
- */
 async function webSearch(query) {
   try {
     var res = await fetch('https://api.aquadevs.com/v1/search', {
@@ -731,9 +709,6 @@ async function webSearch(query) {
   }
 }
 
-/**
- * Build a context string from search results for re-prompting.
- */
 function buildSearchContext(results) {
   if (!results || results.length === 0) return '';
   return results.slice(0, 5).map(function(r, i) {
@@ -743,18 +718,13 @@ function buildSearchContext(results) {
   }).join('\n\n');
 }
 
-/**
- * Enhanced prompt with optional web search via tool calling.
- * Handles both structured tool_calls from the API and raw text
- * tool calls that some models return in content.
- */
 async function enhanceWithWebSearch(prompt, style) {
   var systemMsg = 'You are an expert image prompt engineer. ' +
     'You have access to a web_search tool. If the prompt references ' +
     'current events, real facts, people, places, or anything you are ' +
     'not fully confident about, use the web_search tool to find accurate ' +
     'information first. Then craft a single vivid enhanced prompt for ' +
-    'AI image generation. Keep under a reasonable number of characters If the prompt truly requires more characters, then you can go above 500. When you use the web search tool, the image model does not have it; you should give the image model full details. If the user asks to create a photo of the top 10 richest people,Your response will be naming all the top 10 richest people in the prompt. Not like this: person A, person B, person C, and other richest people. Not like this. Return ONLY the ' +
+    'AI image generation. Keep under 2800 characters. Return ONLY the ' +
     'final enhanced prompt text, nothing else.';
   if (style) {
     systemMsg += ' Apply a "' + style + '" style naturally.';
@@ -784,7 +754,6 @@ async function enhanceWithWebSearch(prompt, style) {
     }
   }];
 
-  // First API call — ask model with tools available
   var res1 = await fetch('https://api.aquadevs.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -796,7 +765,7 @@ async function enhanceWithWebSearch(prompt, style) {
       messages: messages,
       tools: tools,
       tool_choice: 'auto',
-      max_tokens: 500,
+      max_tokens: 1500,
       temperature: 0.7
     })
   });
@@ -808,7 +777,6 @@ async function enhanceWithWebSearch(prompt, style) {
   var content = choice.message.content || '';
   var searchQuery = null;
 
-  // --- Check for structured tool_calls first ---
   if (choice.message.tool_calls && choice.message.tool_calls.length > 0) {
     for (var t = 0; t < choice.message.tool_calls.length; t++) {
       var tc = choice.message.tool_calls[t];
@@ -832,16 +800,12 @@ async function enhanceWithWebSearch(prompt, style) {
         content: context || 'No results found for: ' + searchQuery
       });
     }
-  }
-  // --- Check for raw tool call text in content ---
-  else if (isRawToolCall(content)) {
+  } else if (isRawToolCall(content)) {
     searchQuery = parseRawToolCall(content);
     if (searchQuery) {
-      // Add the model's "tool call" message
       messages.push({ role: 'assistant', content: content });
       var rawResults = await webSearch(searchQuery);
       var rawContext = buildSearchContext(rawResults);
-      // Feed back as if the tool responded
       messages.push({
         role: 'user',
         content: 'Web search results for "' + searchQuery + '":\n\n' +
@@ -851,7 +815,6 @@ async function enhanceWithWebSearch(prompt, style) {
     }
   }
 
-  // If we did a search (either way), make a follow-up call
   if (searchQuery) {
     var res2 = await fetch('https://api.aquadevs.com/v1/chat/completions', {
       method: 'POST',
@@ -862,7 +825,7 @@ async function enhanceWithWebSearch(prompt, style) {
       body: JSON.stringify({
         model: state.enhanceModel,
         messages: messages,
-        max_tokens: 500,
+        max_tokens: 1500,
         temperature: 0.7
       })
     });
@@ -871,24 +834,19 @@ async function enhanceWithWebSearch(prompt, style) {
     var choice2 = data2.choices ? data2.choices[0] : null;
     if (choice2 && choice2.message) {
       var finalContent = (choice2.message.content || '').trim();
-      // Guard: if follow-up ALSO returns a tool call, just return null
       if (isRawToolCall(finalContent)) return null;
       return finalContent;
     }
     return null;
   }
 
-  // No search was needed — model returned a direct enhanced prompt
   return content.trim() || null;
 }
 
-/**
- * Simple enhancement without web search.
- */
 async function enhancePrompt(prompt, style) {
   var systemMsg = 'You are an expert image prompt engineer. Given a ' +
     'user prompt, rewrite it into a more detailed, vivid, and descriptive ' +
-    'version optimized for AI image generation. Keep it under 300 ' +
+    'version optimized for AI image generation. Keep it under 2800 ' +
     'characters. Return ONLY the enhanced prompt, nothing else.';
   if (style) {
     systemMsg += ' Apply a "' + style + '" style naturally and seamlessly.';
@@ -906,7 +864,7 @@ async function enhancePrompt(prompt, style) {
         { role: 'system', content: systemMsg },
         { role: 'user', content: prompt }
       ],
-      max_tokens: 300,
+      max_tokens: 1500,
       temperature: 0.7
     })
   });
@@ -917,9 +875,6 @@ async function enhancePrompt(prompt, style) {
     : null;
 }
 
-/**
- * Manual enhance button handler.
- */
 async function manualEnhance() {
   var prompt = dom.promptInput.value.trim();
   if (!prompt) {
@@ -943,14 +898,13 @@ async function manualEnhance() {
       enhanced = await enhancePrompt(prompt, state.selectedStyle);
     }
 
-    // Safety: never set a raw tool call as the prompt
     if (enhanced && isRawToolCall(enhanced)) {
       enhanced = null;
     }
 
     if (enhanced) {
       dom.promptInput.value = enhanced;
-      dom.charCount.textContent = enhanced.length;
+      dom.charCount.textContent = enhanced.length + ' / 3000';
       toast('success', 'Prompt Enhanced',
         'Review and edit as needed, then generate.');
     } else {
@@ -966,11 +920,175 @@ async function manualEnhance() {
   dom.enhanceBtn.querySelector('span').textContent = 'Enhance Prompt';
 }
 
-// ==================== GENERATION ====================
+// ==================== GENERATION QUEUE LOGIC ====================
+
+function addToQueue(prompt, ratio, count, style, model, refImage) {
+  var baseId = Date.now();
+  var tasks = [];
+  for (var i = 0; i < count; i++) {
+    tasks.push({
+      id: baseId + i,
+      status: 'waiting', // waiting, active, done, fail
+      prompt: prompt,
+      ratio: ratio,
+      style: style,
+      model: model,
+      refImage: refImage,
+      startTime: 0,
+      endTime: 0,
+      imageUrl: null,
+      errorMsg: null
+    });
+  }
+  state.generationQueue = state.generationQueue.concat(tasks);
+  updateQueueUI();
+  processQueue();
+}
+
+function updateQueueUI() {
+  var list = dom.genQueueList;
+  list.innerHTML = '';
+  
+  var activeCount = state.generationQueue.filter(function(t) { return t.status === 'active'; }).length;
+  var waitingCount = state.generationQueue.filter(function(t) { return t.status === 'waiting'; }).length;
+  var totalCount = state.generationQueue.length;
+
+  dom.genTotalCount.textContent = totalCount;
+  dom.genCurrentCount.textContent = (totalCount - waitingCount - activeCount);
+  
+  if (totalCount === 0) {
+    dom.genStatusText.textContent = 'Queue Empty';
+    return;
+  }
+
+  dom.genStatusText.textContent = activeCount > 0 
+    ? 'Generating ' + activeCount + ' image(s)...' 
+    : 'Waiting in queue...';
+
+  state.generationQueue.forEach(function(task) {
+    var item = document.createElement('div');
+    item.className = 'gen-queue-item ' + task.status;
+    
+    var statusIcon = '';
+    if (task.status === 'waiting') statusIcon = '<div class="gq-status waiting"></div>';
+    else if (task.status === 'active') statusIcon = '<div class="gq-status active"></div>';
+    else if (task.status === 'done') statusIcon = '<div class="gq-status done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg></div>';
+    else if (task.status === 'fail') statusIcon = '<div class="gq-status fail">!</div>';
+
+    var progressHtml = '';
+    if (task.status === 'active') {
+       // Simple indeterminate progress for active tasks
+       progressHtml = '<div class="gq-progress"><div class="gq-progress-fill" style="width: 50%; animation: spinFast 1s linear infinite;"></div></div>';
+    } else if (task.status === 'done') {
+       progressHtml = '<div class="gq-progress"><div class="gq-progress-fill" style="width: 100%;"></div></div>';
+    }
+
+    item.innerHTML = 
+      statusIcon +
+      '<div class="gq-info">' +
+        '<div class="gq-prompt">' + esc(task.prompt.substring(0, 60)) + (task.prompt.length > 60 ? '...' : '') + '</div>' +
+        '<div class="gq-meta">' + esc(task.model) + ' • ' + esc(task.ratio) + '</div>' +
+        progressHtml +
+      '</div>';
+    
+    list.appendChild(item);
+  });
+}
+
+async function processQueue() {
+  // Determine max concurrency based on settings
+  var maxConcurrent = state.parallelGeneration ? 4 : 1;
+  
+  // Find waiting tasks
+  var waitingTasks = state.generationQueue.filter(function(t) { return t.status === 'waiting'; });
+  
+  // If we have capacity and waiting tasks, start them
+  if (activeGenerations < maxConcurrent && waitingTasks.length > 0) {
+    var tasksToStart = waitingTasks.slice(0, maxConcurrent - activeGenerations);
+    
+    tasksToStart.forEach(function(task) {
+      task.status = 'active';
+      task.startTime = Date.now();
+      activeGenerations++;
+      executeTask(task);
+    });
+    
+    updateQueueUI();
+  }
+}
+
+async function executeTask(task) {
+  try {
+    var fullPrompt = task.prompt;
+    if (task.style) {
+      fullPrompt += ', ' + task.style + ' style';
+    }
+
+    var imageUrl = await callImageAPI(fullPrompt, task.ratio, task.model, task.refImage);
+    
+    if (imageUrl) {
+      var blob = await fetchAndStoreBlob(imageUrl);
+      var name = '';
+      if (state.nameEnabled) {
+        try { name = await autoName(task.prompt); } catch (e) {}
+      }
+      
+      var imgData = {
+        url: imageUrl,
+        blob: blob,
+        prompt: fullPrompt,
+        originalPrompt: task.prompt,
+        name: name || '',
+        model: task.model,
+        ratio: task.ratio,
+        style: task.style,
+        timestamp: Date.now(),
+        favorite: false
+      };
+      
+      var id = await dbPut('gallery', imgData);
+      imgData.id = id;
+      
+      // Add to state images immediately so it appears in gallery
+      state.images.unshift(imgData);
+      renderGallery();
+      
+      task.status = 'done';
+      task.imageUrl = imageUrl;
+    } else {
+      task.status = 'fail';
+      task.errorMsg = 'No image URL returned';
+    }
+  } catch (err) {
+    console.error('Task execution error:', err);
+    task.status = 'fail';
+    task.errorMsg = err.message;
+    toast('error', 'Generation Failed', err.message);
+  } finally {
+    activeGenerations--;
+    task.endTime = Date.now();
+    updateQueueUI();
+    
+    // Check if queue is empty
+    var remaining = state.generationQueue.filter(function(t) { return t.status === 'waiting' || t.status === 'active'; });
+    if (remaining.length === 0) {
+      // All done
+      setTimeout(function() {
+        hideGenOverlay();
+        stopGenTimer();
+        state.generationQueue = []; // Clear queue
+        toast('success', 'Queue Complete', 'All images generated.');
+      }, 1000);
+    } else {
+      // Process next in queue
+      processQueue();
+    }
+  }
+}
+
+// ==================== LEGACY GENERATION WRAPPER ====================
 
 async function generateImages() {
-  if (state.isGenerating) return;
-
   if (!state.apiKey) {
     openSettings();
     toast('error', 'No API Key', 'Please set your API key in settings.');
@@ -984,15 +1102,11 @@ async function generateImages() {
     return;
   }
 
-  state.isGenerating = true;
-  dom.generateBtn.disabled = true;
-
-  // Auto-enhance when NOT manual mode
+  // Auto-enhance if enabled and NOT manual
   if (state.enhanceEnabled && !state.enhanceManual) {
     try {
-      dom.genPromptText.textContent = state.enhanceWebSearch
-        ? 'Searching & enhancing...' : 'Enhancing your prompt...';
       showGenOverlay();
+      dom.genStatusText.textContent = state.enhanceWebSearch ? 'Searching & enhancing...' : 'Enhancing prompt...';
       var enhanced;
       if (state.enhanceWebSearch) {
         enhanced = await enhanceWithWebSearch(prompt, state.selectedStyle);
@@ -1007,177 +1121,31 @@ async function generateImages() {
     }
   }
 
-  // Build full prompt
-  var fullPrompt;
-  if (state.enhanceEnabled) {
-    fullPrompt = prompt;
-  } else {
-    fullPrompt = state.selectedStyle
-      ? prompt + ', ' + state.selectedStyle + ' style'
-      : prompt;
-  }
-
-  var ratioValue = state.selectedRatio;
+  // Add to queue
+  addToQueue(
+    prompt,
+    state.selectedRatio,
+    state.selectedCount,
+    state.selectedStyle,
+    state.selectedModel,
+    state.refImageData
+  );
 
   showGenOverlay();
   startGenTimer();
-  dom.genPromptText.textContent = fullPrompt;
-  dom.genTotalCount.textContent = state.selectedCount;
-  dom.genCurrentCount.textContent = '0';
-  dom.genBarFill.style.width = '0%';
-  dom.genStatusText.textContent = 'Generating...';
-
-  if (state.parallelGeneration && state.selectedCount > 1) {
-    await generateParallel(fullPrompt, ratioValue);
-  } else {
-    await generateSequential(fullPrompt, ratioValue);
-  }
-
-  hideGenOverlay();
-  stopGenTimer();
-  state.isGenerating = false;
-  dom.generateBtn.disabled = false;
 }
 
-async function generateSequential(fullPrompt, ratioValue) {
-  var results = [];
-  var done = 0;
+// ==================== API CALLS ====================
 
-  for (var i = 0; i < state.selectedCount; i++) {
-    try {
-      dom.genStatusText.textContent = 'Generating image ' + (i + 1) +
-        ' of ' + state.selectedCount + '...';
-      var imageUrl = await callImageAPI(fullPrompt, ratioValue);
-      if (imageUrl) {
-        var blob = await fetchAndStoreBlob(imageUrl);
-        var name = '';
-        if (state.nameEnabled) {
-          try {
-            name = await autoName(dom.promptInput.value.trim());
-          } catch (e) { /* ignore */ }
-        }
-        var imgData = {
-          url: imageUrl,
-          blob: blob,
-          prompt: fullPrompt,
-          originalPrompt: dom.promptInput.value.trim(),
-          name: name || '',
-          model: state.selectedModel,
-          ratio: ratioValue,
-          style: state.selectedStyle,
-          timestamp: Date.now(),
-          favorite: false
-        };
-        var id = await dbPut('gallery', imgData);
-        imgData.id = id;
-        results.push(imgData);
-      }
-    } catch (err) {
-      console.error('Generation ' + (i + 1) + ' error:', err);
-      toast('error', 'Generation Failed', err.message);
-    }
-    done++;
-    dom.genCurrentCount.textContent = done;
-    dom.genBarFill.style.width =
-      Math.round((done / state.selectedCount) * 100) + '%';
-  }
-
-  if (results.length) {
-    state.images = results.concat(state.images);
-    renderGallery();
-    toast('success', 'Generation Complete',
-      'Created ' + results.length + ' image' +
-      (results.length > 1 ? 's' : ''));
-  }
-}
-
-async function generateParallel(fullPrompt, ratioValue) {
-  dom.genSlots.innerHTML = '';
-  for (var s = 0; s < state.selectedCount; s++) {
-    dom.genSlots.innerHTML += '<div class="gen-slot waiting" data-slot="' +
-      s + '">' + (s + 1) + '</div>';
-  }
-
-  var completed = 0;
-  var results = [];
-
-  var promises = [];
-  for (var i = 0; i < state.selectedCount; i++) {
-    promises.push(
-      (async function(index) {
-        var slotEl = dom.genSlots.querySelector('[data-slot="' + index + '"]');
-        try {
-          slotEl.className = 'gen-slot active';
-          dom.genStatusText.textContent = 'Processing ' +
-            state.selectedCount + ' images...';
-
-          var imageUrl = await callImageAPI(fullPrompt, ratioValue);
-          if (imageUrl) {
-            var blob = await fetchAndStoreBlob(imageUrl);
-            var name = '';
-            if (state.nameEnabled) {
-              try {
-                name = await autoName(dom.promptInput.value.trim());
-              } catch (e) { /* ignore */ }
-            }
-            var imgData = {
-              url: imageUrl,
-              blob: blob,
-              prompt: fullPrompt,
-              originalPrompt: dom.promptInput.value.trim(),
-              name: name || '',
-              model: state.selectedModel,
-              ratio: ratioValue,
-              style: state.selectedStyle,
-              timestamp: Date.now(),
-              favorite: false
-            };
-            var id = await dbPut('gallery', imgData);
-            imgData.id = id;
-            results.push(imgData);
-            slotEl.className = 'gen-slot done';
-            slotEl.innerHTML =
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
-              ' stroke-width="3" width="16" height="16"><polyline' +
-              ' points="20 6 9 17 4 12"/></svg>';
-          } else {
-            slotEl.className = 'gen-slot fail';
-            slotEl.textContent = '!';
-          }
-        } catch (err) {
-          console.error('Parallel gen ' + index + ' error:', err);
-          slotEl.className = 'gen-slot fail';
-          slotEl.textContent = '!';
-        }
-        completed++;
-        dom.genCurrentCount.textContent = completed;
-        dom.genBarFill.style.width =
-          Math.round((completed / state.selectedCount) * 100) + '%';
-      })(i)
-    );
-  }
-
-  await Promise.allSettled(promises);
-
-  if (results.length) {
-    state.images = results.concat(state.images);
-    renderGallery();
-    toast('success', 'Generation Complete',
-      'Created ' + results.length + ' image' +
-      (results.length > 1 ? 's' : ''));
-  }
-}
-
-async function callImageAPI(fullPrompt, ratioValue) {
+async function callImageAPI(fullPrompt, ratioValue, model, refImage) {
   var body = {
-    model: state.selectedModel,
+    model: model,
     prompt: fullPrompt,
     ratio: ratioValue
   };
 
-  if (state.refImageData &&
-      REF_IMAGE_MODELS.indexOf(state.selectedModel) !== -1) {
-    body.image = state.refImageData;
+  if (refImage && REF_IMAGE_MODELS.indexOf(model) !== -1) {
+    body.image = refImage;
   }
 
   var res = await fetch('https://api.aquadevs.com/v1/images/generations', {
@@ -1192,10 +1160,8 @@ async function callImageAPI(fullPrompt, ratioValue) {
   var data = await res.json();
   if (!data.success) throw new Error(data.error || 'Generation failed');
 
-  if (POLLING_MODELS.indexOf(state.selectedModel) !== -1 &&
-      (data.task_id || data.url)) {
-    var pollUrl = data.url ||
-      ('https://api.aquadevs.com/v1/images/tasks/' + data.task_id);
+  if (POLLING_MODELS.indexOf(model) !== -1 && (data.task_id || data.url)) {
+    var pollUrl = data.url || ('https://api.aquadevs.com/v1/images/tasks/' + data.task_id);
     return await pollForImage(pollUrl);
   }
 
@@ -1220,9 +1186,8 @@ async function pollForImage(url, maxTime) {
     if (data.status === 'failed') throw new Error('Async generation failed');
 
     var elapsed = Math.round((Date.now() - start) / 1000);
-    dom.genStatusText.textContent =
-      'Processing... (' + elapsed + 's elapsed)';
-    dom.genBarFill.style.width = Math.min(85, elapsed * 3) + '%';
+    // Note: In queue mode, we don't update the global status text per poll, 
+    // but we could update the specific task UI if we wanted more granularity.
   }
 
   throw new Error('Generation timed out');
@@ -1260,9 +1225,9 @@ async function autoName(prompt) {
 function showGenOverlay() {
   dom.genOverlay.classList.add('active');
   dom.genBarFill.style.width = '0%';
-  dom.genSlots.innerHTML = '';
   state.genMinimized = false;
   dom.genMini.classList.remove('visible');
+  updateQueueUI();
 }
 
 function hideGenOverlay() {
@@ -1661,13 +1626,21 @@ function bindEvents() {
 
   // ---- Prompt ----
   dom.promptInput.addEventListener('input', function() {
-    dom.charCount.textContent = dom.promptInput.value.length;
+    var len = dom.promptInput.value.length;
+    dom.charCount.textContent = len + ' / 3000';
+    if (len > 2700) {
+      dom.charCount.style.color = 'var(--error)';
+    } else if (len > 2400) {
+      dom.charCount.style.color = 'var(--accent)';
+    } else {
+      dom.charCount.style.color = '';
+    }
   });
 
   dom.shuffleBtn.addEventListener('click', function() {
     var p = RANDOM_PROMPTS[Math.floor(Math.random() * RANDOM_PROMPTS.length)];
     dom.promptInput.value = p;
-    dom.charCount.textContent = p.length;
+    dom.charCount.textContent = p.length + ' / 3000';
     dom.promptInput.focus();
   });
 
@@ -1887,4 +1860,4 @@ async function init() {
   bindEvents();
 }
 
-init(); 
+init();
