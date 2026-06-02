@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Reader</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..12,300;0,6..12,400;0,6..12,500;0,6..12,600;0,6..12,700;1,6..12,300;1,6..12,400;1,6..12,500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            parchment: { 50: '#FDFCF9', 100: '#FAF7F2', 200: '#F3EDE1', 300: '#E8DECE', 400: '#D4C5AD' },
+            ink: { 50: '#F5F5F5', 100: '#E5E5E5', 200: '#A3A3A3', 300: '#737373', 400: '#404040', 500: '#2C2C2C', 600: '#1A1A1A', 700: '#111111', 800: '#0A0A0A', 900: '#050505' },
+            gold: { 400: '#D4A853', 500: '#B8860B', 600: '#996F0A' },
+            sepia: { 50: '#FDF8EF', 100: '#F9EDDA', 200: '#F0D9B5', 300: '#D4B896' },
+          },
+          fontFamily: {
+            serif: ['"Newsreader"', 'Georgia', 'serif'],
+            sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.018;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 200px 200px;
+    }
+    .dark body::before { opacity: 0.03; }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(184,134,11,0.18); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(184,134,11,0.35); }
+
+    .prose-chat p { margin-bottom: 0.75rem; line-height: 1.7; }
+    .prose-chat p:last-child { margin-bottom: 0; }
+    .prose-chat h1 { font-size: 1.2rem; font-weight: 700; margin: 1rem 0 0.4rem; }
+    .prose-chat h2 { font-size: 1.1rem; font-weight: 700; margin: 0.8rem 0 0.3rem; }
+    .prose-chat h3 { font-size: 1rem; font-weight: 600; margin: 0.6rem 0 0.25rem; }
+    .prose-chat ul { list-style: disc; padding-left: 1.2rem; margin-bottom: 0.75rem; }
+    .prose-chat ol { list-style: decimal; padding-left: 1.2rem; margin-bottom: 0.75rem; }
+    .prose-chat li { margin-bottom: 0.2rem; line-height: 1.65; }
+    .prose-chat code { font-family: 'JetBrains Mono', monospace; font-size: 0.82em; padding: 0.1rem 0.3rem; border-radius: 3px; background: rgba(0,0,0,0.06); }
+    .dark .prose-chat code { background: rgba(255,255,255,0.08); }
+    .prose-chat pre { background: #1a1a1a !important; border: 1px solid rgba(255,255,255,0.06); padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 0.6rem 0; }
+    .prose-chat pre code { background: transparent !important; padding: 0; color: #e0e0e0 !important; font-size: 0.82rem; }
+    .prose-chat blockquote { border-left: 3px solid #B8860B; padding-left: 0.8rem; color: rgba(0,0,0,0.45); font-style: italic; margin-bottom: 0.75rem; }
+    .dark .prose-chat blockquote { color: rgba(255,255,255,0.4); }
+    .prose-chat table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.9em; }
+    .prose-chat th, .prose-chat td { border: 1px solid rgba(0,0,0,0.1); padding: 0.4rem 0.6rem; text-align: left; }
+    .dark .prose-chat th, .dark .prose-chat td { border-color: rgba(255,255,255,0.08); }
+    .prose-chat th { font-weight: 600; background: rgba(0,0,0,0.03); }
+    .dark .prose-chat th { background: rgba(255,255,255,0.04); }
+    .prose-chat a { color: #B8860B; text-decoration: underline; text-underline-offset: 2px; }
+    .prose-chat a:hover { color: #996F0A; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .animate-fade-up { animation: fadeUp 0.5s ease-out both; }
+    .animate-fade-in { animation: fadeIn 0.4s ease-out both; }
+    .delay-1 { animation-delay: 0.06s; }
+    .delay-2 { animation-delay: 0.12s; }
+    .delay-3 { animation-delay: 0.18s; }
+    .delay-4 { animation-delay: 0.24s; }
+
+    .reasoning-body { overflow: hidden; transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease; }
+    .reasoning-body.collapsed { max-height: 0 !important; opacity: 0; }
+    .reasoning-body.expanded { opacity: 1; }
+
+    .gold-line { height: 1px; background: linear-gradient(90deg, transparent, rgba(184,134,11,0.25), transparent); }
+    .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .hover-lift:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+  </style>
+</head>
+<body class="h-full bg-parchment-100 dark:bg-ink-900 text-ink-600 dark:text-ink-50 font-sans overflow-hidden transition-colors duration-300">
+  <div id="root" class="h-full"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+
+    function parseChat(text) {
+      if (!text) return null;
+      const lines = text.split('\n');
+      let title = 'Untitled Conversation', date = '';
+      const tLine = lines.find(l => l.trim().startsWith('# '));
+      if (tLine) title = tLine.replace(/^#\s*/, '').trim();
+      const dLine = lines.slice(0, 20).find(l => { const t = l.trim(); return (t.startsWith('*') && t.endsWith('*')) || (t.startsWith('_') && t.endsWith('_')); });
+      if (dLine) date = dLine.replace(/^[*_]+|[*_]+$/g, '').trim();
+
+      const rawBlocks = text.split(/\n\s*---\s*\n/);
+      const messages = [];
+      let id = 0;
+      for (const block of rawBlocks) {
+        const trimmed = block.trim();
+        if (!trimmed) continue;
+        let role = null, content = trimmed;
+        if (trimmed.startsWith('**User**:')) { role = 'user'; content = trimmed.slice(9).trim(); }
+        else if (trimmed.startsWith('**Assistant**:')) { role = 'assistant'; content = trimmed.slice(14).trim(); }
+        else {
+          const u = trimmed.indexOf('**User**:'), a = trimmed.indexOf('**Assistant**:');
+          if (u !== -1 && (a === -1 || u < a)) { role = 'user'; content = trimmed.slice(u + 9).trim(); }
+          else if (a !== -1) { role = 'assistant'; content = trimmed.slice(a + 14).trim(); }
+        }
+        if (!role) continue;
+        let reasoning = null;
+        if (role === 'assistant') {
+          const mLines = content.split('\n');
+          const rLines = [], bodyLines = [];
+          let inR = true;
+          for (const l of mLines) {
+            const tl = l.trim();
+            if (inR && (tl.startsWith('>') || (tl === '' && rLines.length > 0))) {
+              rLines.push(tl.startsWith('>') ? tl.slice(1).replace(/^\s/, '') : tl);
+            } else { inR = false; bodyLines.push(l); }
+          }
+          if (rLines.some(l => l.trim())) { reasoning = rLines.join('\n').trim(); content = bodyLines.join('\n').trim(); }
+        }
+        messages.push({ id: id++, role, content, reasoning });
+      }
+      return { title, date, messages };
+    }
+
+    const escapeReg = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    function highlightMatches(html, term) {
+      if (!term.trim()) return html;
+      const re = new RegExp(`(${escapeReg(term.trim())})`, 'gi');
+      return html.replace(/<(?:"[^"]*"['"]*|'[^']*'['"]*|[^'">])+>|([^<<]+)/g, (match, text) => {
+        if (text) return text.replace(re, '<mark class="bg-gold-400/25 dark:bg-gold-400/20 text-inherit px-0.5 rounded-sm ring-1 ring-gold-400/40">$1</mark>');
+        return match;
+      });
+    }
+
+    const SAMPLE = `# Architecture for Scalable AI Systems
+*Exported on November 12, 2024 — Personal Archive*
+
+**User**:
+I need to design a production-grade API layer for integrating LLMs into our platform. We're expecting around 25,000 concurrent users.Assistant**:
+> Thinking process:
+> 1. Analyze the scale — 25K concurrent implies we need async, non-blocking I/O
+> 2. Key layers: edge proxy, API gateway, orchestration, semantic cache, fallback
+> 3. Caching strategies: semantic similarity cache using vector embeddings
+> 4. Resilience: circuit breakers for provider failures, model fallback chains
+
+To handle this scale gracefully, you need a **reactive, decoupled architecture** — not synchronous request-response chains that tie up server resources.
+
+### Proposed Topology
+
+\`\`\`
+[ Clients ]
+    │
+    ▼
+[ Edge Proxy ]  ← TLS, DDoS, Rate Limiting
+    │
+    ▼
+[ API Gateway ]  ← Auth, Routing
+    │
+    ├──────────────────┐
+    ▼                  ▼
+[ Semantic Cache ]  [ Orchestrator ]
+[ Redis + Vectors ]      │
+    │               ┌────┴────┐
+    │               ▼         ▼
+    │          [ Queue ]  [ Vector DB ]
+    │               │
+    ▼               ▼
+[ LLM Providers ] ◄──────┘
+\`\`\`
+
+### Key Strategies
+
+| Strategy | Mechanism | Impact |
+|:---|:---|:---|
+| **Semantic Cache** | Embed prompts, match ≥96% similarity | -40% token cost, ~30ms latency |
+| **Circuit Breaker** | Fallback to secondary model on 5xx | 99.9% availability |
+| **SSE Streaming** | Stream tokens via Server-Sent Events | TTFT from 5s → 120ms |
+
+### Semantic Cache Implementation
+
+\`\`\`python
+class SemanticCache:
+    def __init__(self, threshold=0.96):
+        self.redis = redis.Redis()
+        self.threshold = threshold
+
+    def lookup(self, prompt: str):
+        embedding = embed(prompt)
+        results = self.redis.ft("idx").search(
+            f"*=>[KNN 1 @vec $v AS score]",
+            query_params={"v": embedding}
+        )
+        if results and results.docs[0].score >= self.threshold:
+            return results.docs[0].response
+        return None
+\`\`\`
+
+---
+
+**User**:
+How do we stream responses back to the frontend while preventing connection pool exhaustion?
+
+---
+
+**Assistant**:
+> Thinking:
+> SSE is lighter than WebSockets for unidirectional streams
+> Need to close connections immediately on completion
+> Set explicit timeouts to prevent zombie connections
+> Use backpressure-aware piping
+
+Use **Server-Sent Events** with explicit lifecycle management. Here's a clean Node implementation:
+
+\`\`\`javascript
+app.get('/stream', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  const stream = createLLMStream(req.body.prompt);
+
+  stream.on('data', (chunk) => {
+    res.write(\`data: \${JSON.stringify({ text: chunk })}\\n\\n\`);
+  });
+
+  stream.on('end', () => {
+    res.write('data: [DONE]\\n\\n');
+    res.end();
+  });
+
+  req.on('close', () => stream.destroy());
+});
+\`\`\`
+
+The critical pattern: **destroy the upstream stream when the client disconnects**. Without this, you leak connections on every abandoned tab.
+`;
+
+    const I = {
+      search: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
+      sun: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>,
+      moon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
+      chevDown: (r) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{transition:'transform 0.2s', transform: r ? 'rotate(-90deg)' : 'rotate(0)' }}><path d="m6 9 6 6 6-6"/></svg>,
+      copy: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
+      check: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6 9 17l-5-5"/></svg>,
+      upload: <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>,
+      menu: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>,
+      x: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12"/></svg>,
+      arrowUp: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 19V5m-7 7 7-7 7 7"/></svg>,
+      book: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>,
+      trash: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+      brain: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><path d="M9 22h6M10 17v5M14 17v5"/></svg>,
+    };
+
+    function App() {
+      const [conv, setConv] = useState(null);
+      const [search, setSearch] = useState('');
+      const [searchIdx, setSearchIdx] = useState(0);
+      const [collapsedReasoning, setCollapsedReasoning] = useState({});
+      const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
+      const [dark, setDark] = useState(() => localStorage.getItem('cr-theme') === 'dark' || (!localStorage.getItem('cr-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches));
+      const [progress, setProgress] = useState(0);
+      const [drag, setDrag] = useState(false);
+      const [toast, setToast] = useState(null);
+      const [copiedId, setCopiedId] = useState(null);
+      const scrollRef = useRef(null);
+
+      useEffect(() => {
+        document.documentElement.classList.toggle('dark', dark);
+        localStorage.setItem('cr-theme', dark ? 'dark' : 'light');
+      }, [dark]);
+
+      useEffect(() => {
+        if (conv && typeof Prism !== 'undefined') setTimeout(() => Prism.highlightAll(), 80);
+      }, [conv, search, collapsedReasoning]);
+
+      useEffect(() => {
+        const handle = () => { if (window.innerWidth < 1024) setSidebarOpen(false); };
+        window.addEventListener('resize', handle);
+        return () => window.removeEventListener('resize', handle);
+      }, []);
+
+      const onScroll = () => {
+        const c = scrollRef.current;
+        if (!c) return;
+        const h = c.scrollHeight - c.clientHeight;
+        setProgress(h > 0 ? (c.scrollTop / h) * 100 : 0);
+      };
+
+      const loadFile = (file) => {
+        const r = new FileReader();
+        r.onload = e => {
+          const p = parseChat(e.target.result);
+          if (p && p.messages.length) { setConv(p); showToast('Conversation loaded'); }
+          else showToast('Could not parse this file', true);
+        };
+        r.readAsText(file);
+      };
+
+      const loadDemo = () => { setConv(parseChat(SAMPLE)); showToast('Demo conversation loaded'); };
+
+      const clear = () => { setConv(null); setSearch(''); setSearchIdx(0); setCollapsedReasoning({}); setProgress(0); };
+
+      const showToast = (msg, err) => { setToast({ msg, err }); setTimeout(() => setToast(null), 2500); };
+
+      const stats = useMemo(() => {
+        if (!conv) return null;
+        const m = conv.messages;
+        const wc = m.reduce((a, x) => a + x.content.split(/\s+/).length + (x.reasoning ? x.reasoning.split(/\s+/).length : 0), 0);
+        return { total: m.length, user: m.filter(x => x.role === 'user').length, assistant: m.filter(x => x.role === 'assistant').length, words: wc, readMin: Math.ceil(wc / 230) };
+      }, [conv]);
+
+      const sections = useMemo(() => {
+        if (!conv) return [];
+        const sz = 8, res = [];
+        for (let i = 0; i < conv.messages.length; i += sz)
+          res.push({ i: res.length, start: i + 1, end: Math.min(i + sz, conv.messages.length), msgs: conv.messages.slice(i, i + sz) });
+        return res;
+      }, [conv]);
+
+      const matches = useMemo(() => {
+        if (!conv || !search.trim()) return [];
+        const q = search.toLowerCase();
+        return conv.messages.filter(m => m.content.toLowerCase().includes(q) || (m.reasoning && m.reasoning.toLowerCase().includes(q))).map(m => m.id);
+      }, [conv, search]);
+
+      const navSearch = (dir) => {
+        if (!matches.length) return;
+        const ni = dir === 'next' ? (searchIdx + 1) % matches.length : (searchIdx - 1 + matches.length) % matches.length;
+        setSearchIdx(ni);
+        setTimeout(() => {
+          const el = document.getElementById('msg-' + matches[ni]);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 50);
+      };
+
+      const scrollToSec = (i) => {
+        const el = document.getElementById('sec-' + i);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+
+      const copyMsg = (text, id) => {
+        navigator.clipboard.writeText(text);
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 1500);
+      };
+
+      const copyAll = () => {
+        if (!conv) return;
+        const md = conv.messages.map(m => {
+          const sp = m.role === 'user' ? '**User**:' : '**Assistant**:';
+          const r = m.reasoning ? m.reasoning.split('\n').map(l => '> ' + l).join('\n') + '\n' : '';
+          return sp + '\n' + r + m.content;
+        }).join('\n\n---\n\n');
+        navigator.clipboard.writeText('# ' + conv.title + '\n*' + conv.date + '*\n\n' + md);
+        showToast('Full conversation copied');
+      };
+
+      const toggleReasoning = (id) => setCollapsedReasoning(p => ({ ...p, [id]: !p[id] }));
+
+      const handleDrag = (e) => { e.preventDefault(); e.stopPropagation(); setDrag(e.type === 'dragover' || e.type === 'dragenter'); };
+      const handleDrop = (e) => { e.preventDefault(); e.stopPropagation(); setDrag(false); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); };
+
+      return (
+        <div className="h-full flex relative">
+
+          {toast && (
+            <div className={`fixed top-5 right-5 z-50 px-4 py-2.5 rounded-lg text-sm font-medium shadow-lg animate-fade-in backdrop-blur-md border ${
+              toast.err ? 'bg-red-50/90 dark:bg-red-950/90 border-red-200 dark:border-red-900 text-red-700 dark:text-red-300'
+                        : 'bg-white/90 dark:bg-ink-800/90 border-parchment-300 dark:border-ink-700 text-ink-600 dark:text-ink-100'
+            }`}>{toast.msg}</div>
+          )}
+
+          {/* Sidebar */}
+          <aside className={`fixed lg:static inset-y-0 left-0 z-40 w-72 shrink-0 transform transition-transform duration-300 ease-out lg:translate-x-0 ${
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          } bg-parchment-50/80 dark:bg-ink-800/80 backdrop-blur-xl border-r border-parchment-300/50 dark:border-ink-700/40 flex flex-col`}>
+
+            <div className="h-14 flex items-center justify-between px-5 border-b border-parchment-300/40 dark:border-ink-700/30">
+              <div className="flex items-center gap-2.5">
+                {I.book}
+                <span className="font-serif font-semibold text-base text-ink-600 dark:text-ink-100">Chat Reader</span>
+              </div>
+              <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 rounded hover:bg-parchment-200 dark:hover:bg-ink-700 text-ink-300 dark:text-ink-400">{I.x}</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-5">
+              {conv && (
+                <>
+                  <div className="p-3.5 rounded-xl bg-parchment-100/60 dark:bg-ink-700/30 border border-parchment-300/30 dark:border-ink-700/30 space-y-2 animate-fade-in">
+                    <p className="font-serif font-semibold text-sm leading-snug line-clamp-2">{conv.title}</p>
+                    <p className="text-[11px] text-ink-300 dark:text-ink-400 italic">{conv.date}</p>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 animate-fade-up delay-1">
+                    {[[stats.total, 'msgs'], [stats.user, 'user'], [stats.assistant, 'asst']].map(([n, l], i) => (
+                      <div key={i} className="text-center p-2.5 rounded-lg bg-parchment-100/40 dark:bg-ink-700/20 border border-parchment-200/30 dark:border-ink-700/20">
+                        <div className="font-serif font-bold text-lg text-gold-500">{n}</div>
+                        <div className="text-[10px] uppercase tracking-widest text-ink-300 dark:text-ink-500 font-medium">{l}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs text-ink-300 dark:text-ink-500 animate-fade-up delay-2">
+                    <span>{stats.words.toLocaleString()} words</span>
+                    <span className="text-parchment-300 dark:text-ink-700">·</span>
+                    <span>~{stats.readMin} min read</span>
+                  </div>
+
+                  <div className="gold-line" />
+
+                  <div className="space-y-2 animate-fade-up delay-2">
+                    <label className="text-[10px] uppercase tracking-widest font-medium text-ink-300 dark:text-ink-500">Search</label>
+                    <div className="relative">
+                      <div className="absolute left-2.5 top-2 text-ink-300 dark:text-ink-500">{I.search}</div>
+                      <input
+                        type="text" placeholder="Find in conversation…"
+                        value={search} onChange={e => { setSearch(e.target.value); setSearchIdx(0); }}
+                        className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-parchment-300/50 dark:border-ink-700/40 bg-white/50 dark:bg-ink-800/50 text-sm placeholder:text-ink-200 dark:placeholder:text-ink-600 focus:outline-none focus:ring-1 focus:ring-gold-500/50 focus:border-gold-500/40 transition-shadow"
+                      />
+                    </div>
+                    {search.trim() && (
+                      <div className="flex items-center justify-between text-[11px] px-0.5">
+                        <span className="text-ink-300 dark:text-ink-500">{matches.length} result{matches.length !== 1 ? 's' : ''}</span>
+                        {matches.length > 0 && (
+                          <div className="flex items-center gap-1.5">
+                            <button onClick={() => navSearch('prev')} className="px-1.5 py-0.5 rounded border border-parchment-300/50 dark:border-ink-700/40 bg-white dark:bg-ink-800 hover:bg-parchment-200 dark:hover:bg-ink-700 text-ink-400 dark:text-ink-300 transition-colors">←</button>
+                            <span className="font-mono text-ink-400 dark:text-ink-400">{searchIdx + 1}/{matches.length}</span>
+                            <button onClick={() => navSearch('next')} className="px-1.5 py-0.5 rounded border border-parchment-300/50 dark:border-ink-700/40 bg-white dark:bg-ink-800 hover:bg-parchment-200 dark:hover:bg-ink-700 text-ink-400 dark:text-ink-300 transition-colors">→</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="gold-line" />
+
+                  <div className="space-y-1.5 animate-fade-up delay-3">
+                    <label className="text-[10px] uppercase tracking-widest font-medium text-ink-300 dark:text-ink-500">Sections</label>
+                    <div className="space-y-0.5 max-h-48 overflow-y-auto pr-1">
+                      {sections.map((s, i) => (
+                        <button key={i} onClick={() => scrollToSec(i)}
+                          className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-left text-[12px] text-ink-400 dark:text-ink-400 hover:text-ink-600 dark:hover:text-ink-200 hover:bg-parchment-200/50 dark:hover:bg-ink-700/30 transition-colors">
+                          <span className="font-serif">Section {i + 1}</span>
+                          <span className="font-mono text-[10px] text-ink-200 dark:text-ink-600">{s.start}–{s.end}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-2 animate-fade-up delay-4">
+                    <button onClick={clear}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-red-200/50 dark:border-red-900/30 text-red-500 dark:text-red-400 text-xs font-medium hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors">
+                      {I.trash} <span>Close</span>
+                    </button>
+                  </div>
+                </>
+              )}
+              {!conv && (
+                <div className="flex flex-col items-center justify-center h-full text-ink-300 dark:text-ink-600 space-y-2">
+                  {I.book}
+                  <p className="text-xs">Import a file to begin</p>
+                </div>
+              )}
+            </div>
+
+            <div className="h-12 flex items-center justify-between px-5 border-t border-parchment-300/40 dark:border-ink-700/30 shrink-0">
+              <span className="text-[10px] uppercase tracking-widest font-medium text-ink-300 dark:text-ink-500">Theme</span>
+              <button onClick={() => setDark(!dark)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-parchment-300/40 dark:border-ink-700/30 text-[11px] font-medium text-ink-400 dark:text-ink-400 hover:bg-parchment-200/40 dark:hover:bg-ink-700/30 transition-colors">
+                {dark ? I.sun : I.moon}
+                <span>{dark ? 'Light' : 'Dark'}</span>
+              </button>
+            </div>
+          </aside>
+
+          {sidebarOpen && <div className="fixed inset-0 bg-black/20 dark:bg-black/40 z-30 lg:hidden animate-fade-in" onClick={() => setSidebarOpen(false)} />}
+
+          {/* Main */}
+          <main className="flex-1 flex flex-col min-w-0 h-full">
+
+            <header className="h-14 flex items-center justify-between px-4 md:px-8 border-b border-parchment-300/40 dark:border-ink-700/30 bg-parchment-50/80 dark:bg-ink-900/80 backdrop-blur-xl shrink-0 z-20">
+              <div className="flex items-center gap-3 min-w-0">
+                <button onClick={() => setSidebarOpen(true)} className="p-1.5 rounded-lg border border-parchment-300/40 dark:border-ink-700/30 hover:bg-parchment-200/40 dark:hover:bg-ink-700/30 transition-colors text-ink-400 dark:text-ink-400 lg:hidden">{I.menu}</button>
+                {conv ? (
+                  <h1 className="font-serif font-medium text-sm md:text-base truncate text-ink-600 dark:text-ink-100">{conv.title}</h1>
+                ) : (
+                  <span className="font-serif text-sm text-ink-300 dark:text-ink-500 italic">No file loaded</span>
+                )}
+              </div>
+              {conv && (
+                <div className="flex items-center gap-2">
+                  <button onClick={copyAll}
+                    className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-parchment-300/40 dark:border-ink-700/30 text-[11px] font-medium text-ink-400 dark:text-ink-400 hover:bg-parchment-200/40 dark:hover:bg-ink-700/30 hover-lift transition-all">
+                    {I.copy} <span>Copy All</span>
+                  </button>
+                  <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold-500 text-white text-[11px] font-semibold cursor-pointer hover:bg-gold-600 transition-colors hover-lift">
+                    Upload
+                    <input type="file" accept=".md" className="hidden" onChange={e => e.target.files[0] && loadFile(e.target.files[0])} />
+                  </label>
+                </div>
+              )}
+            </header>
+
+            {conv && <div className="h-[2px] bg-parchment-200/30 dark:bg-ink-700/20 shrink-0"><div className="h-full bg-gradient-to-r from-gold-500 to-gold-400 transition-all duration-100" style={{ width: progress + '%' }} /></div>}
+
+            {!conv ? (
+              <div
+                className={`flex-1 flex items-center justify-center p-6 transition-colors duration-300 ${drag ? 'bg-gold-400/5' : ''}`}
+                onDragOver={handleDrag} onDragEnter={handleDrag} onDragLeave={handleDrag} onDrop={handleDrop}
+              >
+                <div className="max-w-lg w-full text-center space-y-8">
+                  <div className="space-y-4 animate-fade-up">
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-parchment-200/40 dark:bg-ink-700/30 text-gold-500">
+                      {I.upload}
+                    </div>
+                    <h2 className="font-serif text-2xl md:text-3xl font-semibold text-ink-600 dark:text-ink-100 leading-tight">Read your conversations beautifully</h2>
+                    <p className="text-sm text-ink-300 dark:text-ink-500 leading-relaxed max-w-sm mx-auto">
+                      Drop a Markdown chat export and it transforms into a refined reading experience.
+                    </p>
+                  </div>
+
+                  <div className={`p-10 rounded-2xl border-2 border-dashed transition-all duration-200 ${
+                    drag ? 'border-gold-500 bg-gold-400/5 scale-[1.01]' : 'border-parchment-300/60 dark:border-ink-700/40'
+                  }`}>
+                    <p className="text-sm font-medium text-ink-400 dark:text-ink-400 mb-5">Drag a <code className="font-mono text-gold-500 text-xs">.md</code> file here</p>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                      <label className="px-5 py-2.5 bg-ink-600 dark:bg-ink-100 text-white dark:text-ink-800 rounded-xl text-sm font-semibold cursor-pointer hover:opacity-90 transition-opacity hover-lift">
+                        Browse Files
+                        <input type="file" accept=".md" className="hidden" onChange={e => e.target.files[0] && loadFile(e.target.files[0])} />
+                      </label>
+                      <span className="text-[11px] text-ink-300 dark:text-ink-600">or</span>
+                      <button onClick={loadDemo} className="px-5 py-2.5 rounded-xl border border-parchment-300/50 dark:border-ink-700/40 text-sm font-medium text-ink-500 dark:text-ink-300 hover:bg-parchment-200/40 dark:hover:bg-ink-700/30 transition-colors hover-lift">
+                        Try Demo
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="text-[11px] text-ink-200 dark:text-ink-600 space-y-1 animate-fade-up delay-3">
+                    <p>Supports <code className="font-mono text-[10px] text-gold-500">**User**:</code> and <code className="font-mono text-[10px] text-gold-500">**Assistant**:</code> roles</p>
+                    <p>Separated by <code className="font-mono text-[10px] text-gold-500">---</code> with <code className="font-mono text-[10px] text-gold-500">&gt;</code> reasoning blocks</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto">
+                <div className="max-w-3xl mx-auto px-4 md:px-8 py-10 md:py-16">
+                  <div className="text-center mb-16 animate-fade-up">
+                    <div className="gold-line mb-8" />
+                    <h2 className="font-serif text-3xl md:text-4xl font-bold text-ink-600 dark:text-ink-50 leading-tight mb-3">{conv.title}</h2>
+                    <p className="text-xs text-ink-300 dark:text-ink-500 italic font-serif">{conv.date}</p>
+                    <div className="flex items-center justify-center gap-4 mt-4 text-[11px] text-ink-300 dark:text-ink-500">
+                      <span>{stats.total} messages</span>
+                      <span className="text-parchment-300 dark:text-ink-700">·</span>
+                      <span>~{stats.readMin} min read</span>
+                    </div>
+                    <div className="gold-line mt-8" />
+                  </div>
+
+                  <div className="space-y-8">
+                    {conv.messages.map((msg, mi) => {
+                      const isUser = msg.role === 'user';
+                      const isMatch = matches.includes(msg.id);
+                      const isCurrentMatch = matches[searchIdx] === msg.id;
+                      const reasoningOpen = collapsedReasoning[msg.id] === true;
+                      const contentHtml = highlightMatches(marked.parse(msg.content), search);
+                      const reasoningHtml = msg.reasoning ? highlightMatches(marked.parse(msg.reasoning), search) : '';
+
+                      return (
+                        <div key={msg.id} id={'msg-' + msg.id}
+                          className={`group animate-fade-up ${isCurrentMatch ? 'ring-2 ring-gold-400/40 rounded-xl' : ''}`}
+                          style={{ animationDelay: `${Math.min(mi * 0.03, 0.5)}s` }}>
+
+                          <div className="flex items-center gap-2 mb-2.5">
+                            <div className={`w-1.5 h-1.5 rounded-full ${isUser ? 'bg-ink-300 dark:bg-ink-500' : 'bg-gold-500'}`} />
+                            <span className={`text-[11px] uppercase tracking-widest font-medium ${isUser ? 'text-ink-300 dark:text-ink-500' : 'text-gold-500'}`}>
+                              {isUser ? 'User' : 'Assistant'}
+                            </span>
+                          </div>
+
+                          <div className={`relative rounded-xl px-5 py-4 md:px-7 md:py-5 ${
+                            isUser
+                              ? 'bg-ink-600 dark:bg-ink-100 text-white dark:text-ink-800 ml-8 md:ml-16'
+                              : 'bg-parchment-200/30 dark:bg-ink-700/20 border border-parchment-300/30 dark:border-ink-700/20 mr-8 md:mr-16'
+                          } ${isMatch && !isCurrentMatch ? 'ring-1 ring-gold-400/20' : ''} transition-shadow duration-300`}>
+
+                            {!isUser && msg.reasoning && (
+                              <div className="mb-4 rounded-lg border border-gold-500/15 dark:border-gold-500/10 bg-sepia-50/40 dark:bg-gold-500/5 overflow-hidden">
+                                <button onClick={() => toggleReasoning(msg.id)}
+                                  className="w-full flex items-center justify-between px-4 py-2.5 text-[12px] font-medium text-gold-600 dark:text-gold-400 hover:bg-sepia-100/30 dark:hover:bg-gold-500/10 transition-colors">
+                                  <span className="flex items-center gap-2">{I.brain} Reasoning</span>
+                                  <span className="flex items-center gap-1.5">
+                                    <span className="text-[10px] text-gold-500/60">{reasoningOpen ? 'show' : 'hidden'}</span>
+                                    {I.chevDown(reasoningOpen)}
+                                  </span>
+                                </button>
+                                <div className={`reasoning-body ${reasoningOpen ? 'collapsed' : 'expanded'}`}
+                                  style={!reasoningOpen ? { maxHeight: '600px' } : { maxHeight: '0px' }}>
+                                  <div className="px-4 py-3 text-[13px] leading-relaxed text-sepia-300 dark:text-gold-300/60 prose-chat border-t border-gold-500/10">
+                                    <div dangerouslySetInnerHTML={{ __html: reasoningHtml }} />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            <div className={`prose-chat text-[14-[ ${User '-in :SetHtml onClickMsg msg className={`absolute top-3 right-3 p-1.5 rounded-md text-ink-200 dark:text-ink-500 hover:text-gold-500 dark:hover:text-gold-400 hover:bg-parchment-200/40 dark:hover:bg-ink-700/40 opacity-0 group-hover:opacity-100 transition-all`}
+                              title="Copy message">
+                              {copiedId === msg.id ? I.check : I.copy}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="text-center mt-20 mb-10">
+                    <div className="gold-line mb-6" />
+                    <p className="font-serif text-xs text-ink-200 dark:text-ink-600 italic">End of conversation</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {conv && progress > 15 && (
+              <button onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="fixed bottom-6 right-6 z-20 p-3 rounded-full bg-parchment-50/90 dark:bg-ink-800/90 border border-parchment-300/40 dark:border-ink-700/30 shadow-lg text-ink-400 dark:text-ink-400 hover:text-gold-500 dark:hover:text-gold-400 hover-lift transition-all animate-fade-in backdrop-blur-md">
+                {I.arrowUp}
+              </button>
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
