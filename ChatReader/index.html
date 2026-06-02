@@ -45,6 +45,7 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
+    /* Subtle paper grain texture */
     body::before {
       content: '';
       position: fixed;
@@ -58,11 +59,13 @@
     }
     .dark body::before { opacity: 0.03; }
 
+    /* Custom scrollbar */
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(184,134,11,0.18); border-radius: 99px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(184,134,11,0.35); }
 
+    /* Prose inside messages */
     .prose-chat p { margin-bottom: 0.75rem; line-height: 1.7; }
     .prose-chat p:last-child { margin-bottom: 0; }
     .prose-chat h1 { font-size: 1.2rem; font-weight: 700; margin: 1rem 0 0.4rem; }
@@ -85,20 +88,29 @@
     .prose-chat a { color: #B8860B; text-decoration: underline; text-underline-offset: 2px; }
     .prose-chat a:hover { color: #996F0A; }
 
+    /* Animations */
     @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
     .animate-fade-up { animation: fadeUp 0.5s ease-out both; }
     .animate-fade-in { animation: fadeIn 0.4s ease-out both; }
+    .animate-slide-in { animation: slideIn 0.3s ease-out both; }
+
+    /* Stagger delays */
     .delay-1 { animation-delay: 0.06s; }
     .delay-2 { animation-delay: 0.12s; }
     .delay-3 { animation-delay: 0.18s; }
     .delay-4 { animation-delay: 0.24s; }
 
+    /* Collapse animation helper */
     .reasoning-body { overflow: hidden; transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease; }
     .reasoning-body.collapsed { max-height: 0 !important; opacity: 0; }
     .reasoning-body.expanded { opacity: 1; }
 
+    /* Gold accent line */
     .gold-line { height: 1px; background: linear-gradient(90deg, transparent, rgba(184,134,11,0.25), transparent); }
+
+    /* Hover lift */
     .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
     .hover-lift:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
   </style>
@@ -107,23 +119,28 @@
   <div id="root" class="h-full"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useMemo, useRef } = React;
+    const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
+    // ─── PARSER ───────────────────────────────────────────────
     function parseChat(text) {
       if (!text) return null;
       const lines = text.split('\n');
       let title = 'Untitled Conversation', date = '';
+
       const tLine = lines.find(l => l.trim().startsWith('# '));
       if (tLine) title = tLine.replace(/^#\s*/, '').trim();
+
       const dLine = lines.slice(0, 20).find(l => { const t = l.trim(); return (t.startsWith('*') && t.endsWith('*')) || (t.startsWith('_') && t.endsWith('_')); });
       if (dLine) date = dLine.replace(/^[*_]+|[*_]+$/g, '').trim();
 
       const rawBlocks = text.split(/\n\s*---\s*\n/);
       const messages = [];
       let id = 0;
+
       for (const block of rawBlocks) {
         const trimmed = block.trim();
         if (!trimmed) continue;
+
         let role = null, content = trimmed;
         if (trimmed.startsWith('**User**:')) { role = 'user'; content = trimmed.slice(9).trim(); }
         else if (trimmed.startsWith('**Assistant**:')) { role = 'assistant'; content = trimmed.slice(14).trim(); }
@@ -133,6 +150,7 @@
           else if (a !== -1) { role = 'assistant'; content = trimmed.slice(a + 14).trim(); }
         }
         if (!role) continue;
+
         let reasoning = null;
         if (role === 'assistant') {
           const mLines = content.split('\n');
@@ -144,8 +162,12 @@
               rLines.push(tl.startsWith('>') ? tl.slice(1).replace(/^\s/, '') : tl);
             } else { inR = false; bodyLines.push(l); }
           }
-          if (rLines.some(l => l.trim())) { reasoning = rLines.join('\n').trim(); content = bodyLines.join('\n').trim(); }
+          if (rLines.some(l => l.trim())) {
+            reasoning = rLines.join('\n').trim();
+            content = bodyLines.join('\n').trim();
+          }
         }
+
         messages.push({ id: id++, role, content, reasoning });
       }
       return { title, date, messages };
@@ -161,11 +183,16 @@
       });
     }
 
+    // ─── SAMPLE DATA ──────────────────────────────────────────
     const SAMPLE = `# Architecture for Scalable AI Systems
 *Exported on November 12, 2024 — Personal Archive*
 
 **User**:
-I need to design a production-grade API layer for integrating LLMs into our platform. We're expecting around 25,000 concurrent users.Assistant**:
+I need to design a production-grade API layer for integrating LLMs into our platform. We're expecting around 25,000 concurrent users. What architecture patterns and caching strategies would you recommend?
+
+---
+
+**Assistant**:
 > Thinking process:
 > 1. Analyze the scale — 25K concurrent implies we need async, non-blocking I/O
 > 2. Key layers: edge proxy, API gateway, orchestration, semantic cache, fallback
@@ -264,6 +291,7 @@ app.get('/stream', (req, res) => {
 The critical pattern: **destroy the upstream stream when the client disconnects**. Without this, you leak connections on every abandoned tab.
 `;
 
+    // ─── ICONS (minimal, inline SVGs) ────────────────────────
     const I = {
       search: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
       sun: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>,
@@ -280,6 +308,7 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
       brain: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><path d="M9 22h6M10 17v5M14 17v5"/></svg>,
     };
 
+    // ─── APP ──────────────────────────────────────────────────
     function App() {
       const [conv, setConv] = useState(null);
       const [search, setSearch] = useState('');
@@ -302,6 +331,7 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
         if (conv && typeof Prism !== 'undefined') setTimeout(() => Prism.highlightAll(), 80);
       }, [conv, search, collapsedReasoning]);
 
+      // Responsive sidebar
       useEffect(() => {
         const handle = () => { if (window.innerWidth < 1024) setSidebarOpen(false); };
         window.addEventListener('resize', handle);
@@ -325,11 +355,18 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
         r.readAsText(file);
       };
 
-      const loadDemo = () => { setConv(parseChat(SAMPLE)); showToast('Demo conversation loaded'); };
+      const loadDemo = () => {
+        const p = parseChat(SAMPLE);
+        setConv(p);
+        showToast('Demo conversation loaded');
+      };
 
       const clear = () => { setConv(null); setSearch(''); setSearchIdx(0); setCollapsedReasoning({}); setProgress(0); };
 
-      const showToast = (msg, err) => { setToast({ msg, err }); setTimeout(() => setToast(null), 2500); };
+      const showToast = (msg, err) => {
+        setToast({ msg, err });
+        setTimeout(() => setToast(null), 2500);
+      };
 
       const stats = useMemo(() => {
         if (!conv) return null;
@@ -392,6 +429,7 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
       return (
         <div className="h-full flex relative">
 
+          {/* ─── TOAST ─── */}
           {toast && (
             <div className={`fixed top-5 right-5 z-50 px-4 py-2.5 rounded-lg text-sm font-medium shadow-lg animate-fade-in backdrop-blur-md border ${
               toast.err ? 'bg-red-50/90 dark:bg-red-950/90 border-red-200 dark:border-red-900 text-red-700 dark:text-red-300'
@@ -399,11 +437,12 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
             }`}>{toast.msg}</div>
           )}
 
-          {/* Sidebar */}
+          {/* ─── SIDEBAR ─── */}
           <aside className={`fixed lg:static inset-y-0 left-0 z-40 w-72 shrink-0 transform transition-transform duration-300 ease-out lg:translate-x-0 ${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full'
           } bg-parchment-50/80 dark:bg-ink-800/80 backdrop-blur-xl border-r border-parchment-300/50 dark:border-ink-700/40 flex flex-col`}>
 
+            {/* Sidebar header */}
             <div className="h-14 flex items-center justify-between px-5 border-b border-parchment-300/40 dark:border-ink-700/30">
               <div className="flex items-center gap-2.5">
                 {I.book}
@@ -412,16 +451,24 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
               <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 rounded hover:bg-parchment-200 dark:hover:bg-ink-700 text-ink-300 dark:text-ink-400">{I.x}</button>
             </div>
 
+            {/* Sidebar body */}
             <div className="flex-1 overflow-y-auto p-4 space-y-5">
+
               {conv && (
                 <>
+                  {/* Meta card */}
                   <div className="p-3.5 rounded-xl bg-parchment-100/60 dark:bg-ink-700/30 border border-parchment-300/30 dark:border-ink-700/30 space-y-2 animate-fade-in">
                     <p className="font-serif font-semibold text-sm leading-snug line-clamp-2">{conv.title}</p>
                     <p className="text-[11px] text-ink-300 dark:text-ink-400 italic">{conv.date}</p>
                   </div>
 
+                  {/* Stats */}
                   <div className="grid grid-cols-3 gap-2 animate-fade-up delay-1">
-                    {[[stats.total, 'msgs'], [stats.user, 'user'], [stats.assistant, 'asst']].map(([n, l], i) => (
+                    {[
+                      [stats.total, 'msgs'],
+                      [stats.user, 'user'],
+                      [stats.assistant, 'asst'],
+                    ].map(([n, l], i) => (
                       <div key={i} className="text-center p-2.5 rounded-lg bg-parchment-100/40 dark:bg-ink-700/20 border border-parchment-200/30 dark:border-ink-700/20">
                         <div className="font-serif font-bold text-lg text-gold-500">{n}</div>
                         <div className="text-[10px] uppercase tracking-widest text-ink-300 dark:text-ink-500 font-medium">{l}</div>
@@ -437,6 +484,7 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
 
                   <div className="gold-line" />
 
+                  {/* Search */}
                   <div className="space-y-2 animate-fade-up delay-2">
                     <label className="text-[10px] uppercase tracking-widest font-medium text-ink-300 dark:text-ink-500">Search</label>
                     <div className="relative">
@@ -463,6 +511,7 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
 
                   <div className="gold-line" />
 
+                  {/* Sections */}
                   <div className="space-y-1.5 animate-fade-up delay-3">
                     <label className="text-[10px] uppercase tracking-widest font-medium text-ink-300 dark:text-ink-500">Sections</label>
                     <div className="space-y-0.5 max-h-48 overflow-y-auto pr-1">
@@ -476,6 +525,7 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
                     </div>
                   </div>
 
+                  {/* Clear */}
                   <div className="pt-2 animate-fade-up delay-4">
                     <button onClick={clear}
                       className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-red-200/50 dark:border-red-900/30 text-red-500 dark:text-red-400 text-xs font-medium hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors">
@@ -484,6 +534,7 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
                   </div>
                 </>
               )}
+
               {!conv && (
                 <div className="flex flex-col items-center justify-center h-full text-ink-300 dark:text-ink-600 space-y-2">
                   {I.book}
@@ -492,6 +543,7 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
               )}
             </div>
 
+            {/* Sidebar footer — theme */}
             <div className="h-12 flex items-center justify-between px-5 border-t border-parchment-300/40 dark:border-ink-700/30 shrink-0">
               <span className="text-[10px] uppercase tracking-widest font-medium text-ink-300 dark:text-ink-500">Theme</span>
               <button onClick={() => setDark(!dark)}
@@ -502,11 +554,15 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
             </div>
           </aside>
 
-          {sidebarOpen && <div className="fixed inset-0 bg-black/20 dark:bg-black/40 z-30 lg:hidden animate-fade-in" onClick={() => setSidebarOpen(false)} />}
+          {/* Sidebar overlay (mobile) */}
+          {sidebarOpen && (
+            <div className="fixed inset-0 bg-black/20 dark:bg-black/40 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} className="animate-fade-in" />
+          )}
 
-          {/* Main */}
+          {/* ─── MAIN ─── */}
           <main className="flex-1 flex flex-col min-w-0 h-full">
 
+            {/* Sticky header */}
             <header className="h-14 flex items-center justify-between px-4 md:px-8 border-b border-parchment-300/40 dark:border-ink-700/30 bg-parchment-50/80 dark:bg-ink-900/80 backdrop-blur-xl shrink-0 z-20">
               <div className="flex items-center gap-3 min-w-0">
                 <button onClick={() => setSidebarOpen(true)} className="p-1.5 rounded-lg border border-parchment-300/40 dark:border-ink-700/30 hover:bg-parchment-200/40 dark:hover:bg-ink-700/30 transition-colors text-ink-400 dark:text-ink-400 lg:hidden">{I.menu}</button>
@@ -530,8 +586,10 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
               )}
             </header>
 
+            {/* Progress */}
             {conv && <div className="h-[2px] bg-parchment-200/30 dark:bg-ink-700/20 shrink-0"><div className="h-full bg-gradient-to-r from-gold-500 to-gold-400 transition-all duration-100" style={{ width: progress + '%' }} /></div>}
 
+            {/* Content */}
             {!conv ? (
               <div
                 className={`flex-1 flex items-center justify-center p-6 transition-colors duration-300 ${drag ? 'bg-gold-400/5' : ''}`}
@@ -566,13 +624,15 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
 
                   <div className="text-[11px] text-ink-200 dark:text-ink-600 space-y-1 animate-fade-up delay-3">
                     <p>Supports <code className="font-mono text-[10px] text-gold-500">**User**:</code> and <code className="font-mono text-[10px] text-gold-500">**Assistant**:</code> roles</p>
-                    <p>Separated by <code className="font-mono text-[10px] text-gold-500">---</code> with <code className="font-mono text-[10px] text-gold-500">&gt;</code> reasoning blocks</p>
+                    <p>Separated by <code className="font-mono text-[10px] text-gold-500">---</code> with <code className="font-mono text-[10px] text-gold-500">></code> reasoning blocks</p>
                   </div>
                 </div>
               </div>
             ) : (
               <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto">
                 <div className="max-w-3xl mx-auto px-4 md:px-8 py-10 md:py-16">
+
+                  {/* Conversation title page */}
                   <div className="text-center mb-16 animate-fade-up">
                     <div className="gold-line mb-8" />
                     <h2 className="font-serif text-3xl md:text-4xl font-bold text-ink-600 dark:text-ink-50 leading-tight mb-3">{conv.title}</h2>
@@ -585,6 +645,7 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
                     <div className="gold-line mt-8" />
                   </div>
 
+                  {/* Messages */}
                   <div className="space-y-8">
                     {conv.messages.map((msg, mi) => {
                       const isUser = msg.role === 'user';
@@ -596,9 +657,12 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
 
                       return (
                         <div key={msg.id} id={'msg-' + msg.id}
-                          className={`group animate-fade-up ${isCurrentMatch ? 'ring-2 ring-gold-400/40 rounded-xl' : ''}`}
+                          className={`group animate-fade-up ${
+                            isCurrentMatch ? 'ring-2 ring-gold-400/40 rounded-xl' : ''
+                          }`}
                           style={{ animationDelay: `${Math.min(mi * 0.03, 0.5)}s` }}>
 
+                          {/* Speaker label */}
                           <div className="flex items-center gap-2 mb-2.5">
                             <div className={`w-1.5 h-1.5 rounded-full ${isUser ? 'bg-ink-300 dark:bg-ink-500' : 'bg-gold-500'}`} />
                             <span className={`text-[11px] uppercase tracking-widest font-medium ${isUser ? 'text-ink-300 dark:text-ink-500' : 'text-gold-500'}`}>
@@ -606,12 +670,14 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
                             </span>
                           </div>
 
+                          {/* Message body */}
                           <div className={`relative rounded-xl px-5 py-4 md:px-7 md:py-5 ${
                             isUser
                               ? 'bg-ink-600 dark:bg-ink-100 text-white dark:text-ink-800 ml-8 md:ml-16'
                               : 'bg-parchment-200/30 dark:bg-ink-700/20 border border-parchment-300/30 dark:border-ink-700/20 mr-8 md:mr-16'
                           } ${isMatch && !isCurrentMatch ? 'ring-1 ring-gold-400/20' : ''} transition-shadow duration-300`}>
 
+                            {/* Reasoning */}
                             {!isUser && msg.reasoning && (
                               <div className="mb-4 rounded-lg border border-gold-500/15 dark:border-gold-500/10 bg-sepia-50/40 dark:bg-gold-500/5 overflow-hidden">
                                 <button onClick={() => toggleReasoning(msg.id)}
@@ -631,7 +697,12 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
                               </div>
                             )}
 
-                            <div className={`prose-chat text-[14-[ ${User '-in :SetHtml onClickMsg msg className={`absolute top-3 right-3 p-1.5 rounded-md text-ink-200 dark:text-ink-500 hover:text-gold-500 dark:hover:text-gold-400 hover:bg-parchment-200/40 dark:hover:bg-ink-700/40 opacity-0 group-hover:opacity-100 transition-all`}
+                            {/* Content */}
+                            <div className={`prose-chat text-[14px] md:text-[15px] ${isUser ? 'text-inherit' : ''}`} dangerouslySetInnerHTML={{ __html: contentHtml }} />
+
+                            {/* Copy button */}
+                            <button onClick={() => copyMsg(msg.content, msg.id)}
+                              className={`absolute top-3 right-3 p-1.5 rounded-md text-ink-200 dark:text-ink-500 hover:text-gold-500 dark:hover:text-gold-400 hover:bg-parchment-200/40 dark:hover:bg-ink-700/40 opacity-0 group-hover:opacity-100 transition-all`}
                               title="Copy message">
                               {copiedId === msg.id ? I.check : I.copy}
                             </button>
@@ -641,6 +712,7 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
                     })}
                   </div>
 
+                  {/* End marker */}
                   <div className="text-center mt-20 mb-10">
                     <div className="gold-line mb-6" />
                     <p className="font-serif text-xs text-ink-200 dark:text-ink-600 italic">End of conversation</p>
@@ -649,6 +721,7 @@ The critical pattern: **destroy the upstream stream when the client disconnects*
               </div>
             )}
 
+            {/* Back to top */}
             {conv && progress > 15 && (
               <button onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
                 className="fixed bottom-6 right-6 z-20 p-3 rounded-full bg-parchment-50/90 dark:bg-ink-800/90 border border-parchment-300/40 dark:border-ink-700/30 shadow-lg text-ink-400 dark:text-ink-400 hover:text-gold-500 dark:hover:text-gold-400 hover-lift transition-all animate-fade-in backdrop-blur-md">
