@@ -3,30 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Libertas 🕊️ - Personal Bio</title>
-  <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+  <title>Libertas — Personal Bio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     /* ===== DESIGN TOKENS ===== */
     :root {
-      --primary: #7c5cbf;
-      --primary-glow: rgba(124, 92, 191, 0.35);
-      --accent: #e8456b;
-      --accent-glow: rgba(232, 69, 107, 0.25);
-      --bg-deep: #08081a;
-      --bg-mid: #0e0e26;
-      --card-bg: rgba(22, 22, 52, 0.65);
-      --card-border: rgba(124, 92, 191, 0.18);
-      --text: #f0eff4;
-      --text-muted: #9896b0;
-      --text-dim: #6b6980;
-      --section-bg: rgba(30, 30, 64, 0.45);
-      --section-border: rgba(124, 92, 191, 0.25);
-      --quote-bg: rgba(35, 25, 60, 0.5);
+      --primary: #a78bfa;
+      --primary-deep: #7c3aed;
+      --primary-glow: rgba(167, 139, 250, 0.3);
+      --accent: #f43f5e;
+      --accent-soft: #fb7185;
+      --accent-glow: rgba(244, 63, 94, 0.2);
+      --cyan: #22d3ee;
+      --cyan-glow: rgba(34, 211, 238, 0.15);
+      --bg-deep: #050510;
+      --bg-mid: #0a0a1f;
+      --bg-card: rgba(15, 15, 40, 0.55);
+      --card-border: rgba(167, 139, 250, 0.12);
+      --text: #f1f0f7;
+      --text-soft: #c4c1d8;
+      --text-muted: #8b87a8;
+      --text-dim: #5e5a78;
+      --section-bg: rgba(20, 18, 48, 0.5);
+      --section-border: rgba(167, 139, 250, 0.2);
+      --quote-bg: rgba(124, 58, 237, 0.08);
       --radius-sm: 10px;
       --radius-md: 16px;
-      --radius-lg: 24px;
-      --font-heading: 'Orbitron', sans-serif;
-      --font-body: 'Titillium Web', sans-serif;
+      --radius-lg: 28px;
+      --radius-xl: 36px;
+      --font-heading: 'Space Grotesk', sans-serif;
+      --font-body: 'Outfit', sans-serif;
     }
 
     /* ===== RESET & BASE ===== */
@@ -45,7 +51,7 @@
       background: var(--bg-deep);
       color: var(--text);
       min-height: 100dvh;
-      padding: clamp(16px, 4vw, 40px);
+      padding: clamp(16px, 4vw, 48px);
       display: flex;
       justify-content: center;
       align-items: flex-start;
@@ -53,54 +59,104 @@
       overflow-x: hidden;
     }
 
-    /* ===== AMBIENT BACKGROUND ===== */
-    body::before {
-      content: '';
+    /* ===== ANIMATED PARTICLE CANVAS ===== */
+    #particles {
       position: fixed;
       inset: 0;
-      background:
-        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(124, 92, 191, 0.1) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 50% at 80% 90%, rgba(232, 69, 107, 0.07) 0%, transparent 50%);
-      pointer-events: none;
       z-index: 0;
+      pointer-events: none;
     }
 
-    /* Grain texture overlay */
+    /* ===== AMBIENT ORB BACKGROUND ===== */
+    .ambient-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(100px);
+      pointer-events: none;
+      z-index: 0;
+      will-change: transform;
+    }
+
+    .ambient-orb.orb-1 {
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.18) 0%, transparent 70%);
+      top: -10%;
+      left: -8%;
+      animation: orbFloat1 18s ease-in-out infinite;
+    }
+
+    .ambient-orb.orb-2 {
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(244, 63, 94, 0.1) 0%, transparent 70%);
+      bottom: -5%;
+      right: -5%;
+      animation: orbFloat2 22s ease-in-out infinite;
+    }
+
+    .ambient-orb.orb-3 {
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(34, 211, 238, 0.08) 0%, transparent 70%);
+      top: 50%;
+      left: 60%;
+      animation: orbFloat3 16s ease-in-out infinite;
+    }
+
+    @keyframes orbFloat1 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(60px, 40px) scale(1.1); }
+      66% { transform: translate(-30px, 70px) scale(0.95); }
+    }
+
+    @keyframes orbFloat2 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(-50px, -30px) scale(1.05); }
+      66% { transform: translate(40px, -60px) scale(0.9); }
+    }
+
+    @keyframes orbFloat3 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(-70px, 30px) scale(1.15); }
+    }
+
+    /* ===== NOISE TEXTURE ===== */
     body::after {
       content: '';
       position: fixed;
       inset: 0;
-      opacity: 0.035;
+      opacity: 0.03;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
       background-size: 128px 128px;
       pointer-events: none;
       z-index: 0;
     }
 
-    /* ===== MAIN CONTAINER (GLASSMORPHISM) ===== */
+    /* ===== MAIN CONTAINER ===== */
     .container {
       position: relative;
       z-index: 1;
-      max-width: 860px;
+      max-width: 900px;
       width: 100%;
       margin: 0 auto;
-      background: var(--card-bg);
-      backdrop-filter: blur(24px) saturate(1.3);
-      -webkit-backdrop-filter: blur(24px) saturate(1.3);
+      background: var(--bg-card);
+      backdrop-filter: blur(40px) saturate(1.4);
+      -webkit-backdrop-filter: blur(40px) saturate(1.4);
       border: 1px solid var(--card-border);
-      border-radius: var(--radius-lg);
-      padding: clamp(28px, 5vw, 52px);
+      border-radius: var(--radius-xl);
+      padding: clamp(28px, 5vw, 56px);
       box-shadow:
-        0 2px 0 0 rgba(255, 255, 255, 0.03) inset,
-        0 32px 80px -16px rgba(0, 0, 0, 0.5),
+        0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
+        0 40px 100px -20px rgba(0, 0, 0, 0.6),
         0 0 0 1px rgba(255, 255, 255, 0.02) inset;
-      animation: containerReveal 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation: containerReveal 1s cubic-bezier(0.16, 1, 0.3, 1) both;
     }
 
     @keyframes containerReveal {
       from {
         opacity: 0;
-        transform: translateY(28px) scale(0.985);
+        transform: translateY(40px) scale(0.97);
       }
       to {
         opacity: 1;
@@ -109,178 +165,333 @@
     }
 
     /* ===== HEADER ===== */
+    .hero {
+      text-align: center;
+      margin-bottom: 8px;
+      padding-bottom: 32px;
+      position: relative;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--primary), transparent);
+      opacity: 0.5;
+    }
+
+    .dove-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(244, 63, 94, 0.1));
+      border: 1px solid rgba(167, 139, 250, 0.2);
+      margin-bottom: 18px;
+      font-size: 1.6rem;
+      animation: iconFloat 4s ease-in-out infinite;
+      box-shadow: 0 0 30px rgba(124, 58, 237, 0.15);
+    }
+
+    @keyframes iconFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
     h1 {
       font-family: var(--font-heading);
       font-weight: 700;
-      font-size: clamp(1.8rem, 5vw, 2.6rem);
-      letter-spacing: 0.06em;
+      font-size: clamp(2.2rem, 6vw, 3.4rem);
+      letter-spacing: -0.02em;
       line-height: 1.1;
-      margin-bottom: 6px;
-      background: linear-gradient(135deg, var(--accent), var(--primary));
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, var(--accent-soft) 0%, var(--primary) 50%, var(--cyan) 100%);
+      background-size: 200% 200%;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      text-shadow: none;
-      position: relative;
-      animation: headingReveal 0.7s 0.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation: gradientShift 6s ease-in-out infinite, headingReveal 0.8s 0.15s cubic-bezier(0.16, 1, 0.3, 1) both;
     }
 
-    h1::after {
-      content: '';
-      display: block;
-      width: 64px;
-      height: 3px;
-      margin-top: 10px;
-      border-radius: 2px;
-      background: linear-gradient(90deg, var(--accent), var(--primary));
-      opacity: 0.7;
-      animation: lineExpand 0.6s 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .hero-subtitle {
+      font-size: clamp(0.85rem, 1.6vw, 0.95rem);
+      color: var(--text-muted);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 500;
+      animation: headingReveal 0.8s 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
     }
 
     @keyframes headingReveal {
       from {
         opacity: 0;
-        transform: translateY(14px);
-        letter-spacing: 0.15em;
+        transform: translateY(16px);
       }
       to {
         opacity: 1;
         transform: translateY(0);
-        letter-spacing: 0.06em;
-      }
-    }
-
-    @keyframes lineExpand {
-      from {
-        width: 0;
-        opacity: 0;
-      }
-      to {
-        width: 64px;
-        opacity: 0.7;
       }
     }
 
     /* ===== SECTION HEADINGS ===== */
     h2 {
       font-family: var(--font-heading);
-      font-weight: 500;
-      font-size: clamp(1.05rem, 2.8vw, 1.35rem);
-      color: var(--primary);
-      margin-bottom: 14px;
-      letter-spacing: 0.04em;
+      font-weight: 600;
+      font-size: clamp(1.1rem, 3vw, 1.4rem);
+      margin-bottom: 16px;
+      letter-spacing: -0.01em;
       line-height: 1.3;
-      border-left: none;
-      padding-left: 0;
+      color: var(--text);
       position: relative;
-      padding-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
-    h2::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      bottom: 0;
-      width: 40px;
-      height: 2px;
-      border-radius: 1px;
-      background: var(--section-border);
-      transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-    .section:hover h2::after {
-      width: 72px;
+    h2 .section-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(244, 63, 94, 0.08));
+      border: 1px solid rgba(167, 139, 250, 0.15);
+      font-size: 1rem;
+      flex-shrink: 0;
     }
 
     /* ===== BODY TEXT ===== */
     p, li {
-      font-size: clamp(0.92rem, 1.8vw, 1.02rem);
+      font-size: clamp(0.93rem, 1.8vw, 1.03rem);
       line-height: 1.75;
-      color: #d8d6e4;
-      max-width: 65ch;
+      color: var(--text-soft);
+      max-width: 68ch;
+    }
+
+    /* ===== DETAIL ROWS ===== */
+    .detail-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .detail-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 16px;
+      background: rgba(167, 139, 250, 0.04);
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(167, 139, 250, 0.06);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .detail-row:hover {
+      background: rgba(167, 139, 250, 0.08);
+      border-color: rgba(167, 139, 250, 0.15);
+      transform: translateX(4px);
+    }
+
+    .detail-row .icon {
+      font-size: 1.15rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .detail-row .label {
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .detail-row .value {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    /* ===== GOAL CARDS ===== */
+    .goal-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .goal-card {
+      padding: 16px 20px;
+      background: rgba(124, 58, 237, 0.06);
+      border: 1px solid rgba(124, 58, 237, 0.1);
+      border-radius: var(--radius-md);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .goal-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      border-radius: 0 3px 3px 0;
+    }
+
+    .goal-card.goal::before { background: var(--primary); }
+    .goal-card.purpose::before { background: var(--accent); }
+    .goal-card.dream::before { background: var(--cyan); }
+
+    .goal-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(167, 139, 250, 0.2);
+      box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.3);
+    }
+
+    .goal-card .goal-label {
+      font-family: var(--font-heading);
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .goal-card.goal .goal-label { color: var(--primary); }
+    .goal-card.purpose .goal-label { color: var(--accent); }
+    .goal-card.dream .goal-label { color: var(--cyan); }
+
+    .goal-card .goal-text {
+      color: var(--text-soft);
+      line-height: 1.6;
     }
 
     /* ===== LIST ===== */
     ul {
-      padding-left: 20px;
+      padding-left: 0;
       list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
 
     li {
       position: relative;
-      padding-left: 6px;
-      margin-bottom: 10px;
-      transition: color 0.25s ease;
+      padding-left: 24px;
+      margin-bottom: 0;
+      transition: all 0.25s ease;
     }
 
-    li::marker {
-      color: var(--primary);
-      font-size: 0.8em;
+    li::before {
+      content: '';
+      position: absolute;
+      left: 2px;
+      top: 10px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--primary);
+      opacity: 0.5;
+      transition: all 0.25s ease;
     }
 
     li:hover {
       color: var(--text);
+      transform: translateX(3px);
+    }
+
+    li:hover::before {
+      opacity: 1;
+      box-shadow: 0 0 8px var(--primary-glow);
     }
 
     /* ===== BLOCKQUOTE ===== */
+    .quotes-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
     blockquote {
       font-style: italic;
-      font-size: clamp(1rem, 2vw, 1.1rem);
+      font-size: clamp(0.98rem, 2vw, 1.08rem);
       line-height: 1.7;
-      color: #b8b5d0;
-      border-left: 3px solid var(--primary);
-      padding: 14px 18px;
-      margin: 16px 0 10px;
+      color: var(--text-soft);
+      border: none;
+      padding: 20px 24px;
+      margin: 0;
       background: var(--quote-bg);
-      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      border-radius: var(--radius-md);
       position: relative;
       overflow: hidden;
+      border: 1px solid rgba(124, 58, 237, 0.1);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    blockquote:hover {
+      border-color: rgba(124, 58, 237, 0.25);
+      box-shadow: 0 4px 20px -4px rgba(124, 58, 237, 0.15);
+      transform: translateY(-2px);
     }
 
     blockquote::before {
-      content: '"';
+      content: '\201C';
       position: absolute;
-      top: -6px;
-      left: 10px;
-      font-size: 3.5rem;
+      top: 4px;
+      left: 14px;
+      font-size: 4rem;
       font-family: Georgia, serif;
-      color: var(--primary);
-      opacity: 0.15;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      opacity: 0.2;
       line-height: 1;
       pointer-events: none;
+    }
+
+    .quote-attribution {
+      display: block;
+      text-align: right;
+      font-style: normal;
+      font-weight: 600;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 10px;
+      letter-spacing: 0.02em;
     }
 
     /* ===== SECTION CARDS ===== */
     .section {
       margin-bottom: 20px;
-      padding: clamp(18px, 3vw, 26px);
+      padding: clamp(20px, 3vw, 28px);
       background: var(--section-bg);
-      border-radius: var(--radius-md);
-      border: 1px solid rgba(124, 92, 191, 0.08);
-      border-left: 3px solid var(--section-border);
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(167, 139, 250, 0.06);
       position: relative;
       overflow: hidden;
       transition:
-        transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-        border-color 0.35s ease,
-        box-shadow 0.35s ease;
-      animation: sectionReveal 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
-    }
-
-    .section:nth-child(1) { animation-delay: 0.2s; }
-    .section:nth-child(2) { animation-delay: 0.35s; }
-    .section:nth-child(3) { animation-delay: 0.5s; }
-    .section:nth-child(4) { animation-delay: 0.65s; }
-
-    @keyframes sectionReveal {
-      from {
-        opacity: 0;
-        transform: translateY(18px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+        transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+        border-color 0.4s ease,
+        box-shadow 0.4s ease;
     }
 
     .section::before {
@@ -289,7 +500,7 @@
       inset: 0;
       background: radial-gradient(
         ellipse 120% 100% at 0% 0%,
-        rgba(124, 92, 191, 0.06) 0%,
+        rgba(124, 58, 237, 0.05) 0%,
         transparent 70%
       );
       opacity: 0;
@@ -299,14 +510,61 @@
 
     .section:hover {
       transform: translateY(-3px);
-      border-color: rgba(124, 92, 191, 0.2);
+      border-color: rgba(167, 139, 250, 0.15);
       box-shadow:
-        0 8px 32px -8px rgba(0, 0, 0, 0.3),
-        0 0 0 1px rgba(124, 92, 191, 0.08);
+        0 12px 40px -8px rgba(0, 0, 0, 0.35),
+        0 0 0 1px rgba(167, 139, 250, 0.06);
     }
 
     .section:hover::before {
       opacity: 1;
+    }
+
+    /* Scroll reveal animation */
+    .section {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+
+    .section.revealed {
+      animation: sectionReveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes sectionReveal {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ===== MOTTO ===== */
+    .motto {
+      text-align: center;
+      padding: 20px 24px;
+      margin-bottom: 8px;
+      position: relative;
+    }
+
+    .motto p {
+      font-size: clamp(1rem, 2.2vw, 1.15rem);
+      font-style: italic;
+      color: var(--text-soft);
+      line-height: 1.6;
+      max-width: 50ch;
+      margin: 0 auto;
+    }
+
+    .motto .highlight {
+      background: linear-gradient(135deg, var(--accent-soft), var(--primary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-style: normal;
+      font-weight: 600;
     }
 
     /* ===== COLLAPSIBLE ARTISTS ===== */
@@ -315,16 +573,19 @@
       justify-content: space-between;
       align-items: center;
       cursor: pointer;
-      padding: 12px 16px;
-      background: rgba(124, 92, 191, 0.08);
+      padding: 14px 18px;
+      background: rgba(124, 58, 237, 0.06);
       border-radius: var(--radius-sm);
       margin-bottom: 12px;
-      transition: background 0.3s ease;
+      margin-top: 8px;
+      border: 1px solid rgba(124, 58, 237, 0.08);
+      transition: all 0.3s ease;
       user-select: none;
     }
 
     .collapsible-header:hover {
-      background: rgba(124, 92, 191, 0.15);
+      background: rgba(124, 58, 237, 0.12);
+      border-color: rgba(124, 58, 237, 0.18);
     }
 
     .collapsible-header h3 {
@@ -333,23 +594,34 @@
       font-size: clamp(0.95rem, 2vw, 1.1rem);
       color: var(--primary);
       margin: 0;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .collapsible-icon {
-      font-size: 1.2rem;
-      transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-      color: var(--text-muted);
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background: rgba(167, 139, 250, 0.1);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      color: var(--primary);
+      font-size: 0.7rem;
     }
 
     .collapsible-header.active .collapsible-icon {
       transform: rotate(180deg);
+      background: rgba(167, 139, 250, 0.2);
     }
 
     .collapsible-content {
       max-height: 0;
       overflow: hidden;
-      transition: max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+      transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
       opacity: 0;
     }
 
@@ -359,43 +631,134 @@
     }
 
     .collapsible-content ul {
-      padding: 8px 0 0 20px;
+      padding: 8px 0 0 0;
     }
 
     .collapsible-content li {
-      padding: 6px 0;
-      border-bottom: 1px solid rgba(124, 92, 191, 0.06);
+      padding: 8px 0 8px 24px;
+      border-bottom: 1px solid rgba(124, 58, 237, 0.05);
     }
 
     .collapsible-content li:last-child {
       border-bottom: none;
     }
 
-    /* ===== QUOTE ATTRIBUTION ===== */
-    blockquote p:last-child,
-    blockquote br + * {
-      text-align: right;
-      font-style: normal;
-      font-weight: 600;
+    /* ===== ARTIST CHIPS ===== */
+    .artist-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 4px 0;
+    }
+
+    .artist-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: rgba(124, 58, 237, 0.08);
+      border: 1px solid rgba(124, 58, 237, 0.12);
+      border-radius: 100px;
       font-size: 0.88rem;
+      color: var(--text-soft);
+      transition: all 0.25s ease;
+      cursor: default;
+    }
+
+    .artist-chip:hover {
+      background: rgba(124, 58, 237, 0.16);
+      border-color: rgba(124, 58, 237, 0.25);
+      color: var(--text);
+      transform: translateY(-1px);
+    }
+
+    /* ===== INTEREST LIST UPGRADE ===== */
+    .interest-list {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .interest-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 14px;
+      background: rgba(167, 139, 250, 0.03);
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(167, 139, 250, 0.04);
+      transition: all 0.25s ease;
+    }
+
+    .interest-item:hover {
+      background: rgba(167, 139, 250, 0.07);
+      border-color: rgba(167, 139, 250, 0.12);
+      transform: translateX(3px);
+    }
+
+    .interest-item .ii-icon {
+      font-size: 1.1rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .interest-item .ii-label {
       color: var(--text-muted);
-      margin-top: 8px;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .interest-item .ii-value {
+      color: var(--text-soft);
+      font-size: 0.95rem;
+    }
+
+    /* ===== FOOTER FADE ===== */
+    .footer-fade {
+      text-align: center;
+      margin-top: 16px;
+      padding-top: 20px;
+      position: relative;
+    }
+
+    .footer-fade::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--primary), transparent);
+      opacity: 0.3;
+    }
+
+    .footer-fade span {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
     }
 
     /* ===== RESPONSIVE ===== */
     @media (max-width: 600px) {
       body {
-        padding: 12px;
+        padding: 10px;
         align-items: flex-start;
       }
 
       .container {
         padding: 22px;
-        border-radius: var(--radius-md);
+        border-radius: var(--radius-lg);
       }
 
       h1 {
-        font-size: 1.65rem;
+        font-size: 2rem;
       }
 
       h2 {
@@ -404,16 +767,29 @@
 
       .section {
         padding: 16px;
-        border-radius: 12px;
+        border-radius: var(--radius-md);
       }
 
-      blockquote {
-        padding: 12px 14px;
+      .goal-card {
+        padding: 12px 16px;
       }
 
-      ul {
-        padding-left: 16px;
+      .detail-row {
+        padding: 10px 12px;
       }
+
+      .artist-chips {
+        gap: 6px;
+      }
+
+      .artist-chip {
+        padding: 5px 10px;
+        font-size: 0.82rem;
+      }
+
+      .ambient-orb.orb-1 { width: 250px; height: 250px; }
+      .ambient-orb.orb-2 { width: 200px; height: 200px; }
+      .ambient-orb.orb-3 { width: 150px; height: 150px; }
     }
 
     @media (min-width: 601px) and (max-width: 900px) {
@@ -453,88 +829,342 @@
         animation-delay: 0ms !important;
         transition-duration: 0.01ms !important;
       }
+      .section {
+        opacity: 1;
+        transform: none;
+      }
     }
   </style>
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to content</a>
+
+  <!-- Ambient orbs -->
+  <div class="ambient-orb orb-1"></div>
+  <div class="ambient-orb orb-2"></div>
+  <div class="ambient-orb orb-3"></div>
+
+  <!-- Particle canvas -->
+  <canvas id="particles"></canvas>
+
   <div class="container" id="main-content">
-    <h1>Libertas 🕊️</h1>
-    
-    <div class="section">
-      <p><strong>📍 Location:</strong> Shahkot, Pakistan</p>
-      <p><strong>🌐 Languages:</strong> English, Urdu</p>
-      <p><strong>🧠 Personality:</strong> Extrovert · Talkative · Overthinker · High & Dark Humor</p>
-      <p><strong>🎓 Education:</strong> Pre‑engineering</p>
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="dove-icon">🕊️</div>
+      <h1>Libertas</h1>
+      <div class="hero-subtitle">Personal Bio</div>
     </div>
 
+    <!-- About Section -->
     <div class="section">
-      <h2>🎯 Big Dreams. Bold Heart.</h2>
-      <p>"I am not afraid to die. I'm afraid of not living fulfilling my purpose."</p>
-      <p><strong>Goal:</strong> Become the one at the top, but always beneath God.</p>
-      <p><strong>Purpose:</strong> Use the power given by Allah to do good for society and ultimately be martyred in that path.</p>
-      <p><strong>Dream:</strong> To travel the world and sail across the seven seas.</p>
+      <div class="detail-grid">
+        <div class="detail-row">
+          <span class="icon">📍</span>
+          <div>
+            <span class="label">Location</span>
+            <span class="value">Shahkot, Pakistan</span>
+          </div>
+        </div>
+        <div class="detail-row">
+          <span class="icon">🌐</span>
+          <div>
+            <span class="label">Languages</span>
+            <span class="value">English, Urdu</span>
+          </div>
+        </div>
+        <div class="detail-row">
+          <span class="icon">🧠</span>
+          <div>
+            <span class="label">Personality</span>
+            <span class="value">Extrovert · Talkative · Overthinker · High & Dark Humor</span>
+          </div>
+        </div>
+        <div class="detail-row">
+          <span class="icon">🎓</span>
+          <div>
+            <span class="label">Education</span>
+            <span class="value">Pre-engineering</span>
+          </div>
+        </div>
+      </div>
     </div>
 
+    <!-- Dreams Section -->
     <div class="section">
-      <h2>🧠 Interests & Identity</h2>
-      
+      <h2>
+        <span class="section-icon">🎯</span>
+        Big Dreams. Bold Heart.
+      </h2>
+      <div class="motto">
+        <p>"I am not afraid to die. I'm afraid of <span class="highlight">not living fulfilling my purpose</span>."</p>
+      </div>
+      <div class="goal-stack">
+        <div class="goal-card goal">
+          <div class="goal-label">★ Goal</div>
+          <div class="goal-text">Become the one at the top, but always beneath God.</div>
+        </div>
+        <div class="goal-card purpose">
+          <div class="goal-label">◆ Purpose</div>
+          <div class="goal-text">Use the power given by Allah to do good for society and ultimately be martyred in that path.</div>
+        </div>
+        <div class="goal-card dream">
+          <div class="goal-label">✦ Dream</div>
+          <div class="goal-text">To travel the world and sail across the seven seas.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interests Section -->
+    <div class="section">
+      <h2>
+        <span class="section-icon">🧠</span>
+        Interests & Identity
+      </h2>
+
       <!-- Collapsible Artists Section -->
-      <div class="collapsible-header" onclick="toggleArtists(this)">
+      <div class="collapsible-header" onclick="toggleArtists(this)" role="button" tabindex="0" aria-expanded="false" aria-controls="artistsList">
         <h3>🎧 Favorite Artists</h3>
         <span class="collapsible-icon">▼</span>
       </div>
       <div class="collapsible-content" id="artistsList">
-        <ul>
-          <li>Eminem</li>
-          <li>Ed Sheeran</li>
-          <li>Shubh</li>
-          <li>2Pac</li>
-          <li>Sidhu Moose Wala</li>
-          <li>Dua Lipa</li>
-          <li>Lana Del Rey</li>
-        </ul>
+        <div class="artist-chips">
+          <span class="artist-chip">Eminem</span>
+          <span class="artist-chip">Ed Sheeran</span>
+          <span class="artist-chip">Shubh</span>
+          <span class="artist-chip">2Pac</span>
+          <span class="artist-chip">Sidhu Moose Wala</span>
+          <span class="artist-chip">Dua Lipa</span>
+          <span class="artist-chip">Lana Del Rey</span>
+        </div>
       </div>
 
-      <ul style="margin-top: 16px;">
-        <li><strong>📺 Cinema:</strong> One Piece, Dark, The Dreamers</li>
-        <li><strong>💭 Relatable Characters:</strong> Luffy (Big Dreamer), Berlin (Mindset), Batman (Duality)</li>
-        <li><strong>⚙️ Skills:</strong> Tech wizardry, Social engineering, OSINT</li>
-        <li><strong>🌍 Curious About:</strong> Geopolitics, History, Real stories that shaped the world</li>
-      </ul>
+      <div class="interest-list">
+        <div class="interest-item">
+          <span class="ii-icon">📺</span>
+          <div>
+            <span class="ii-label">Cinema</span>
+            <span class="ii-value">One Piece, Dark, The Dreamers</span>
+          </div>
+        </div>
+        <div class="interest-item">
+          <span class="ii-icon">💭</span>
+          <div>
+            <span class="ii-label">Relatable Characters</span>
+            <span class="ii-value">Luffy (Big Dreamer), Berlin (Mindset), Batman (Duality)</span>
+          </div>
+        </div>
+        <div class="interest-item">
+          <span class="ii-icon">⚙️</span>
+          <div>
+            <span class="ii-label">Skills</span>
+            <span class="ii-value">Tech wizardry, Social engineering, OSINT</span>
+          </div>
+        </div>
+        <div class="interest-item">
+          <span class="ii-icon">🌍</span>
+          <div>
+            <span class="ii-label">Curious About</span>
+            <span class="ii-value">Geopolitics, History, Real stories that shaped the world</span>
+          </div>
+        </div>
+      </div>
     </div>
 
+    <!-- Quotes Section -->
     <div class="section">
-      <h2>✍️ Quotes I Live By</h2>
-      <blockquote>
-        "Blood makes you related, but loyalty makes your family."
-      </blockquote>
-      <blockquote>
-        "There is only one way to live a life, and that's without regrets."<br>
-        — Portgas D. Ace
-      </blockquote>
+      <h2>
+        <span class="section-icon">✍️</span>
+        Quotes I Live By
+      </h2>
+      <div class="quotes-grid">
+        <blockquote>
+          "Blood makes you related, but loyalty makes your family."
+        </blockquote>
+        <blockquote>
+          "There is only one way to live a life, and that's without regrets."
+          <span class="quote-attribution">— Portgas D. Ace</span>
+        </blockquote>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer-fade">
+      <span>Libertas 🕊️</span>
     </div>
   </div>
 
   <script>
+    /* ===== COLLAPSIBLE ARTISTS ===== */
     function toggleArtists(header) {
-      const content = header.nextElementSibling;
-      const isOpen = content.classList.contains('open');
-      
-      // Close all other collapsibles (if any future ones are added)
-      document.querySelectorAll('.collapsible-content').forEach(el => {
+      var content = header.nextElementSibling;
+      var isOpen = content.classList.contains('open');
+
+      document.querySelectorAll('.collapsible-content').forEach(function(el) {
         el.classList.remove('open');
       });
-      document.querySelectorAll('.collapsible-header').forEach(el => {
+      document.querySelectorAll('.collapsible-header').forEach(function(el) {
         el.classList.remove('active');
+        el.setAttribute('aria-expanded', 'false');
       });
-      
-      // Toggle current
+
       if (!isOpen) {
         content.classList.add('open');
         header.classList.add('active');
+        header.setAttribute('aria-expanded', 'true');
       }
     }
+
+    /* Keyboard support for collapsible */
+    document.querySelectorAll('.collapsible-header').forEach(function(header) {
+      header.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleArtists(header);
+        }
+      });
+    });
+
+    /* ===== SCROLL REVEAL ===== */
+    (function() {
+      var sections = document.querySelectorAll('.section');
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            var el = entry.target;
+            var idx = Array.prototype.indexOf.call(sections, el);
+            el.style.animationDelay = (idx * 0.1) + 's';
+            el.classList.add('revealed');
+            observer.unobserve(el);
+          }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+      sections.forEach(function(section) {
+        observer.observe(section);
+      });
+    })();
+
+    /* ===== PARTICLE SYSTEM ===== */
+    (function() {
+      var canvas = document.getElementById('particles');
+      var ctx = canvas.getContext('2d');
+      var particles = [];
+      var particleCount = 55;
+      var mouse = { x: -1000, y: -1000 };
+
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+
+      resize();
+      window.addEventListener('resize', resize);
+
+      document.addEventListener('mousemove', function(e) {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+      });
+
+      function Particle() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 0.3;
+        this.vy = (Math.random() - 0.5) * 0.3;
+        this.radius = Math.random() * 1.5 + 0.5;
+        this.opacity = Math.random() * 0.4 + 0.1;
+        this.baseOpacity = this.opacity;
+
+        var colors = [
+          '167, 139, 250',
+          '124, 58, 237',
+          '244, 63, 94',
+          '34, 211, 238',
+          '251, 113, 133'
+        ];
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+      }
+
+      Particle.prototype.update = function() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        var dx = mouse.x - this.x;
+        var dy = mouse.y - this.y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < 150) {
+          this.opacity = this.baseOpacity + (1 - dist / 150) * 0.3;
+          var force = (150 - dist) / 150 * 0.02;
+          this.vx += dx * force * 0.01;
+          this.vy += dy * force * 0.01;
+        } else {
+          this.opacity += (this.baseOpacity - this.opacity) * 0.02;
+        }
+
+        this.vx *= 0.99;
+        this.vy *= 0.99;
+
+        if (this.x < 0) this.x = canvas.width;
+        if (this.x > canvas.width) this.x = 0;
+        if (this.y < 0) this.y = canvas.height;
+        if (this.y > canvas.height) this.y = 0;
+      };
+
+      Particle.prototype.draw = function() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(' + this.color + ',' + this.opacity + ')';
+        ctx.fill();
+      };
+
+      for (var i = 0; i < particleCount; i++) {
+        particles.push(new Particle());
+      }
+
+      function drawLines() {
+        for (var i = 0; i < particles.length; i++) {
+          for (var j = i + 1; j < particles.length; j++) {
+            var dx = particles[i].x - particles[j].x;
+            var dy = particles[i].y - particles[j].y;
+            var dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < 120) {
+              var opacity = (1 - dist / 120) * 0.08;
+              ctx.beginPath();
+              ctx.moveTo(particles[i].x, particles[i].y);
+              ctx.lineTo(particles[j].x, particles[j].y);
+              ctx.strokeStyle = 'rgba(167, 139, 250, ' + opacity + ')';
+              ctx.lineWidth = 0.5;
+              ctx.stroke();
+            }
+          }
+        }
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (var i = 0; i < particles.length; i++) {
+          particles[i].update();
+          particles[i].draw();
+        }
+
+        drawLines();
+        requestAnimationFrame(animate);
+      }
+
+      /* Respect reduced motion */
+      var motionOk = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (motionOk) {
+        animate();
+      } else {
+        for (var i = 0; i < particles.length; i++) {
+          particles[i].draw();
+        }
+        drawLines();
+      }
+    })();
   </script>
 </body>
 </html>
