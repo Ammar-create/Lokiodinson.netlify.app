@@ -1003,6 +1003,10 @@
       DOM.generateBtn.disabled = true;
       DOM.loadingOverlay.classList.add('active');
       
+      // Move overlay outside .previewPaper so html2pdf doesn't capture it
+      const origParent = DOM.loadingOverlay.parentNode;
+      DOM.previewPaper.parentNode.appendChild(DOM.loadingOverlay);
+      
       let progress = 0;
       const progressInterval = setInterval(() => {
         progress += 5;
@@ -1041,6 +1045,9 @@
           Forge.state.isGenerating = false;
           DOM.progressBar.style.width = '0%';
           
+          // Restore overlay to its original position inside .previewPaper
+          origParent.appendChild(DOM.loadingOverlay);
+          
           showToast('PDF Generated!', `Saved as "${opt.filename}"`, '✅');
         }, 500);
       } catch (err) {
@@ -1049,6 +1056,9 @@
         DOM.generateBtn.disabled = false;
         Forge.state.isGenerating = false;
         DOM.progressBar.style.width = '0%';
+        
+        // Restore overlay to its original position
+        origParent.appendChild(DOM.loadingOverlay);
         
         showToast('Generation Failed', err.message, '❌');
       }
