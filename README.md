@@ -1,9 +1,9 @@
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:6C63FF,100:00D4FF&height=200&section=header&text=Libertas%20🕊️&fontSize=60&fontColor=ffffff&fontAlignY=38&desc=Building%20the%20web%2C%20one%20tool%20at%20a%20time&descAlignY=58&descSize=18&animation=fadeIn" width="100%"/>
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:6C63FF,100:00D4FF&height=200&section=header&text=LokiOdinson&fontSize=60&fontColor=ffffff&fontAlignY=38&desc=A%20digital%20universe%20of%20AI%20tools%2C%20creative%20utilities%2C%20and%20adventures&descAlignY=58&descSize=18&animation=fadeIn" width="100%"/>
 </p>
 
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=soft&color=0:0D1117,100:1a1a2e&height=85&text=🤖%20AI%20Builder%20%20·%20%20🏴‍☠️%20One%20Piece%20Fan%20%20·%20%20⚡%20Web%20Craftsman%20%20·%20%20🧠%20OSINT%20Explorer&fontSize=17&fontColor=a78bfa&animation=blinking" width="90%"/>
+  <img src="https://capsule-render.vercel.app/api?type=soft&color=0:0D1117,100:1a1a2e&height=85&text=🤖%20AI%20Builder%20%20·%20%20🏴‍☠️%20One%20Piece%20Fan%20%20·%20%20⚡%20Web%20Craftsman&fontSize=17&fontColor=a78bfa&animation=blinking" width="90%"/>
 </p>
 
 <p align="center">
@@ -20,9 +20,11 @@
 
 ## 🧬 About This Repository
 
-> A centralized hub of personal projects, AI-powered tools, and web utilities — all crafted with a **single-file, no-framework** philosophy. Everything is fast, self-contained, and deployed live.
+> A digital universe of AI tools, creative utilities, and adventures — all crafted with a **single-file, no-framework** philosophy. Everything is fast, self-contained, and deployed live.
 
 This repository powers **[lokiodinson.netlify.app](https://lokiodinson.netlify.app)** — my personal launchpad for tools I build and actually use.
+
+The main hub features a deep-space glassmorphism design with animated starfields, interactive card effects, and a navigation orbit that links every project.
 
 ---
 
@@ -31,13 +33,14 @@ This repository powers **[lokiodinson.netlify.app](https://lokiodinson.netlify.a
 ```
 lokiodinson.netlify.app/
 │
-├── 📁 Ai/                    →  AI Tools Hub (Pollinations.ai powered)
+├── 📁 Ai/                    →  AI Command Center (Pollinations.ai powered)
 │   ├── index.html            →  Central AI tools directory
 │   ├── Text2Audio.html       →  Voice Studio
 │   ├── text2image.html       →  Image Studio
 │   └── translator.html       →  Document Translator
 │
-├── 📁 Chatbot/               →  Interactive chat interface
+├── 📁 Chatbot/               →  AI Image Studio (AquaDevs API)
+│   └── index.html            →  11-model image generator
 │
 ├── 📁 Diary Generator/       →  Digital school diary creator
 │
@@ -47,58 +50,50 @@ lokiodinson.netlify.app/
 │
 ├── 📁 Watchlist/             →  Media tracking app (TV / Movies)
 │
-├── 📁 personal/              →  Creative personal projects
-│   └── story/
-│       └── Ali&Ayesha.html   →  Multi-language literary story
+├── 📁 story/                 →  Creative literary projects
+│   └── Ali&Ayesha.html       →  Multi-language literary story
 │
-├── index.html                →  Main hub page (Firebase auth)
-└── Profile.html              →  Personal bio page
+├── Profile.html              →  Personal bio page
+├── Main Page.html            →  Legacy hub page
+└── index.html                →  Main universe hub
 ```
 
 ---
 
-## 🛠️ Tools & Projects
-
-### 🤖 AI Tools Suite — [`/Ai`](https://lokiodinson.netlify.app/ai)
+## 🤖 AI Tools Suite
 
 <p align="left">
   <img src="https://img.shields.io/badge/Pollinations.ai-Powered-FF6B6B?style=flat-square&logo=openai&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Gemini%202.5%20Flash-Lite-4285F4?style=flat-square&logo=google&logoColor=white"/>
-  <img src="https://img.shields.io/badge/ElevenLabs-Voice-black?style=flat-square&logoColor=white"/>
+  <img src="https://img.shields.io/badge/AquaDevs-API-00C7B7?style=flat-square"/>
   <img src="https://img.shields.io/badge/No%20Signup-Required-00C853?style=flat-square"/>
 </p>
 
-A collection of zero-signup AI tools, all powered by the [Pollinations.ai](https://pollinations.ai) infrastructure.
+### 🧠 AI Command Center — [`/Ai`](https://lokiodinson.netlify.app/ai)
 
-| Tool | Description | Model |
-|------|-------------|-------|
-| 🎙️ **Voice Studio** | Text-to-speech with OpenAI & ElevenLabs voices | OpenAI TTS |
-| 🎨 **Image Studio** | Generate images from text prompts | zimage |
-| 🌍 **Document Translator** | Translate any text into multiple languages | Gemini 2.5 Flash-Lite |
+Your central hub for all AI-powered tools. Generate images, synthesize voice, translate documents — all powered by cutting-edge models with zero barriers to entry.
 
----
+| Tool | Description | Path |
+|------|-------------|------|
+| 🎨 **Image Studio** | Generate images from text prompts | [`Ai/text2image.html`](https://lokiodinson.netlify.app/ai/text2image.html) |
+| 🎙️ **Voice Studio** | Text-to-speech with natural voices | [`Ai/Text2Audio.html`](https://lokiodinson.netlify.app/ai/Text2Audio.html) |
+| 🌍 **Translator** | Translate any text into multiple languages | [`Ai/translator.html`](https://lokiodinson.netlify.app/ai/translator.html) |
 
-### 💬 Chatbot — [`/Chatbot`](https://lokiodinson.netlify.app/chatbot)
-
-<p align="left">
-  <img src="https://img.shields.io/badge/Netlify-Functions-00C7B7?style=flat-square&logo=netlify&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Real--Time-Chat-6C63FF?style=flat-square"/>
-</p>
-
-A clean, real-time chat interface powered by a Netlify serverless backend function. Responsive and minimal.
-
----
-
-### 📓 Diary Generator — [`/Diary Generator`](https://lokiodinson.netlify.app/Diary%20Generator)
+### 🖼️ AI Image Studio — [`/Chatbot`](https://lokiodinson.netlify.app/chatbot)
 
 <p align="left">
-  <img src="https://img.shields.io/badge/PNG-Export-FF9800?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Handwriting-Fonts-9C27B0?style=flat-square"/>
+  <img src="https://img.shields.io/badge/11%20Models-Available-6C63FF?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Async-Polling-00C7B7?style=flat-square"/>
 </p>
 
-Create digital school diaries with handwriting fonts, background templates, and per-subject homework tracking — all exported as downloadable PNG images.
+Generate stunning images with **11 powerful models** including Flux 2, GPT Image, Midjourney, Grok, and more. Features aspect ratios, style presets, reference images, and async polling support — all powered by the **AquaDevs API**.
+
+> Models: `flux-2`, `gptimage-1.5`, `gptimage-2`, `zimage`, `grok-image`, `midjourney`, `qwen-image`, `imagen4`, `nanobanana`, `nanobanana-pro`, `seedream`
 
 ---
+
+## 🎨 Creative Projects
+
+> *Where imagination meets code*
 
 ### 🏴‍☠️ One Piece Wiki — [`/OnePieceWiki`](https://lokiodinson.netlify.app/OnePieceWiki)
 
@@ -108,11 +103,44 @@ Create digital school diaries with handwriting fonts, background templates, and 
   <img src="https://img.shields.io/badge/Characters-Database-1976D2?style=flat-square"/>
 </p>
 
-An interactive wiki for One Piece characters and devil fruits, complete with a **Three.js-powered animated 3D background**, detailed character profiles, and responsive navigation.
+An immersive 3D wiki experience for One Piece fans. Explore devil fruits and character profiles with a stunning **Three.js animated universe**.
 
 > 🏴‍☠️ *"I'm going to be the King of the Pirates!"*
 
+### 📓 Diary Generator — [`/Diary Generator`](https://lokiodinson.netlify.app/Diary%20Generator)
+
+<p align="left">
+  <img src="https://img.shields.io/badge/PNG-Export-FF9800?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Handwriting-Fonts-9C27B0?style=flat-square"/>
+</p>
+
+Create beautiful digital school diaries with handwriting fonts, background templates, and per-subject homework tracking. Export as PNG images instantly.
+
 ---
+
+## 📖 Stories
+
+> *Tales crafted with words and imagination*
+
+### ✍️ Ali & Ayesha — [`/story/Ali&Ayesha.html`](https://lokiodinson.netlify.app/story/Ali&Ayesha.html)
+
+Our first story — an elegantly styled literary narrative with support for **English**, **Urdu**, and **Arabic**. Features decorative typography and printable PDF generation.
+
+---
+
+## 🛠️ Utilities & Tools
+
+> *Practical tools for everyday tasks*
+
+### 🎬 Media Watchlist — [`/Watchlist`](https://lokiodinson.netlify.app/Watchlist)
+
+<p align="left">
+  <img src="https://img.shields.io/badge/Tailwind%20CSS-Styled-38BDF8?style=flat-square&logo=tailwindcss&logoColor=white"/>
+  <img src="https://img.shields.io/badge/localStorage-Persistent-FF9800?style=flat-square"/>
+  <img src="https://img.shields.io/badge/DC%20%7C%20Marvel%20%7C%20Arrowverse-Tracked-E53935?style=flat-square"/>
+</p>
+
+Full-featured media tracker for TV shows and movies. Track Arrowverse, DCAU, Marvel, and your personal watchlists with progress stats and completion dashboard.
 
 ### 📄 PDF Generator — [`/PdfGenerator`](https://lokiodinson.netlify.app/PdfGenerator)
 
@@ -122,27 +150,11 @@ An interactive wiki for One Piece characters and devil fruits, complete with a *
   <img src="https://img.shields.io/badge/Live-Preview-4CAF50?style=flat-square"/>
 </p>
 
-Convert HTML/Markdown to styled PDF documents with live preview, custom page sizes, and quality scaling — all in-browser.
+Convert HTML and Markdown to beautifully styled PDF documents. Features live preview, custom page sizes (A4/Letter), and quality scaling — all in your browser.
 
----
+### 🕰️ Legacy Hub — [`/Main Page.html`](https://lokiodinson.netlify.app/Main%20Page.html)
 
-### 🎬 Watchlist — [`/Watchlist`](https://lokiodinson.netlify.app/Watchlist)
-
-<p align="left">
-  <img src="https://img.shields.io/badge/Tailwind%20CSS-Styled-38BDF8?style=flat-square&logo=tailwindcss&logoColor=white"/>
-  <img src="https://img.shields.io/badge/localStorage-Persistent-FF9800?style=flat-square"/>
-  <img src="https://img.shields.io/badge/DC%20%7C%20Marvel%20%7C%20Arrowverse-Tracked-E53935?style=flat-square"/>
-</p>
-
-A full-featured media tracker for TV shows and movies. Includes categories for **Arrowverse**, **DCAU**, and general watchlists, with progress stats, a completion dashboard, and full CRUD functionality.
-
----
-
-### ✍️ Personal — `/personal`
-
-Creative literary projects. Currently featuring:
-
-- [**Ali & Ayesha**](https://lokiodinson.netlify.app/personal/story/Ali&ayesha) — An elegantly styled literary story with support for **English**, **Urdu**, and **Arabic**, with printable PDF generation and decorative typography.
+The original main page — preserved for nostalgia and reference. See how far we've come!
 
 ---
 
@@ -157,9 +169,9 @@ Creative literary projects. Currently featuring:
   <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white"/>
   <img src="https://img.shields.io/badge/Three.js-000000?style=for-the-badge&logo=threedotjs&logoColor=white"/>
   <img src="https://img.shields.io/badge/Pollinations.ai-FF6B6B?style=for-the-badge&logo=openai&logoColor=white"/>
+  <img src="https://img.shields.io/badge/AquaDevs-API-00C7B7?style=for-the-badge"/>
   <img src="https://img.shields.io/badge/Tailwind%20CSS-38BDF8?style=for-the-badge&logo=tailwindcss&logoColor=white"/>
   <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Pillow-3776AB?style=for-the-badge&logo=python&logoColor=white"/>
 </p>
 
 ---
