@@ -3,235 +3,232 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GRAND LINE ARCHIVE — One Piece Wiki (Pre-Ep 110)</title>
+<title>Grand Line Archive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Spectral:ital,wght@0,300;0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-/* ============ TOKENS ============ */
 :root{
-  --abyss:#020a18;
-  --deep:#04122b;
-  --mid:#0a2342;
-  --shelf:#0e3a6b;
-  --surf:#1c6fd1;
-  --foam:#5ec8f2;
-  --glow:#8fe3ff;
-  --ink:#dceefc;
-  --ink-dim:#7fa3c4;
-  --gold:#f2c14e;
-  --rose:#ff5e7a;
-  --card:#071a36;
-  --line:rgba(94,200,242,.18);
-  --font-display:'Pirata One', cursive;
-  --font-body:'Spectral', serif;
-  --font-mono:'IBM Plex Mono', monospace;
+  --abyss:#020a18;--deep:#04122b;--mid:#0a2342;--shelf:#0e3a6b;--surf:#1c6fd1;
+  --foam:#5ec8f2;--glow:#8fe3ff;--ink:#dceefc;--ink-dim:#7fa3c4;--gold:#f2c14e;
+  --card:#071a36;--line:rgba(94,200,242,.18);
+  --font-display:'Pirata One',cursive;--font-body:'Spectral',serif;--font-mono:'IBM Plex Mono',monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{
-  font-family:var(--font-body);
-  background:var(--abyss);
-  color:var(--ink);
-  line-height:1.65;
-  overflow-x:hidden;
-  min-height:100vh;
-}
+body{font-family:var(--font-body);background:var(--abyss);color:var(--ink);line-height:1.65;overflow-x:hidden;min-height:100vh}
 ::selection{background:var(--surf);color:#fff}
 ::-webkit-scrollbar{width:10px}
 ::-webkit-scrollbar-track{background:var(--abyss)}
 ::-webkit-scrollbar-thumb{background:var(--shelf);border-radius:5px}
-::-webkit-scrollbar-thumb:hover{background:var(--surf)}
+button{font-family:inherit}
 
-/* ============ OCEAN ATMOSPHERE ============ */
+/* ====== OCEAN ATMOSPHERE ====== */
 #ocean{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
-  background:
-    radial-gradient(ellipse 120% 60% at 50% -10%, #0d3b66 0%, transparent 55%),
-    radial-gradient(ellipse 80% 50% at 80% 100%, #06204a 0%, transparent 60%),
-    linear-gradient(180deg,#04122b 0%, #020a18 60%, #01060f 100%);
-}
-#ocean::after{ /* grain */
-  content:'';position:absolute;inset:0;opacity:.05;mix-blend-mode:overlay;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-.ray{position:absolute;top:-12%;width:18vw;height:75vh;
-  background:linear-gradient(180deg,rgba(143,227,255,.10),transparent 80%);
-  transform:skewX(-12deg);filter:blur(14px);
-  animation:rayDrift 11s ease-in-out infinite alternate;
-}
-.ray:nth-child(1){left:8%}
-.ray:nth-child(2){left:34%;animation-delay:-4s;width:10vw;opacity:.7}
+  background:radial-gradient(ellipse 120% 60% at 50% -10%,#0d3b66 0%,transparent 55%),
+  radial-gradient(ellipse 80% 50% at 80% 100%,#06204a 0%,transparent 60%),
+  linear-gradient(180deg,#04122b 0%,#020a18 60%,#01060f 100%)}
+#ocean::after{content:'';position:absolute;inset:0;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.ray{position:absolute;top:-12%;width:18vw;height:75vh;background:linear-gradient(180deg,rgba(143,227,255,.10),transparent 80%);
+  transform:skewX(-12deg);filter:blur(14px);animation:rayDrift 11s ease-in-out infinite alternate}
+.ray:nth-child(1){left:8%}.ray:nth-child(2){left:34%;animation-delay:-4s;width:10vw;opacity:.7}
 .ray:nth-child(3){left:62%;animation-delay:-7s;width:24vw;opacity:.5}
 @keyframes rayDrift{from{transform:skewX(-12deg) translateX(-3vw);opacity:.45}to{transform:skewX(-9deg) translateX(3vw);opacity:.9}}
 .bubble{position:absolute;bottom:-60px;border-radius:50%;
-  background:radial-gradient(circle at 32% 30%, rgba(255,255,255,.5), rgba(143,227,255,.12) 45%, transparent 70%);
-  border:1px solid rgba(143,227,255,.25);
-  animation:rise linear infinite;
-}
-@keyframes rise{
-  0%{transform:translateY(0) translateX(0) scale(1);opacity:0}
-  8%{opacity:.85}
-  50%{transform:translateY(-55vh) translateX(3vw) scale(1.08)}
-  100%{transform:translateY(-112vh) translateX(-2vw) scale(.8);opacity:0}
-}
+  background:radial-gradient(circle at 32% 30%,rgba(255,255,255,.5),rgba(143,227,255,.12) 45%,transparent 70%);
+  border:1px solid rgba(143,227,255,.25);animation:rise linear infinite}
+@keyframes rise{0%{transform:translateY(0) scale(1);opacity:0}8%{opacity:.85}
+  50%{transform:translateY(-55vh) translateX(3vw) scale(1.08)}100%{transform:translateY(-112vh) translateX(-2vw) scale(.8);opacity:0}}
 
-/* ============ HERO ============ */
-header{position:relative;z-index:2;text-align:center;padding:5.5rem 1rem 0}
-.log-pose{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.55em;
-  text-transform:uppercase;color:var(--foam);opacity:0;
-  animation:fadeDown .9s .2s ease forwards;
-}
-h1{
-  font-family:var(--font-display);font-weight:400;
-  font-size:clamp(3.2rem, 9.5vw, 7.5rem);
-  line-height:1;margin:1rem 0 .4rem;letter-spacing:.04em;
-  background:linear-gradient(180deg,#fff 8%, var(--glow) 38%, var(--surf) 75%, #0d4f9e 100%);
+/* ====== HERO ====== */
+header{position:relative;z-index:2;text-align:center;padding:4.6rem 1rem 0}
+.log-pose{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.55em;text-transform:uppercase;color:var(--foam);opacity:0;animation:fadeDown .9s .2s ease forwards}
+h1{font-family:var(--font-display);font-weight:400;font-size:clamp(3rem,9vw,7rem);line-height:1;margin:1rem 0 .4rem;letter-spacing:.04em;
+  background:linear-gradient(180deg,#fff 8%,var(--glow) 38%,var(--surf) 75%,#0d4f9e 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-  filter:drop-shadow(0 0 28px rgba(94,200,242,.35));
-}
-h1 span{display:inline-block;opacity:0;transform:translateY(34px) rotate(4deg);
-  animation:letterIn .7s cubic-bezier(.2,.9,.3,1.2) forwards;
-}
+  filter:drop-shadow(0 0 28px rgba(94,200,242,.35))}
+h1 span{display:inline-block;opacity:0;transform:translateY(34px) rotate(4deg);animation:letterIn .7s cubic-bezier(.2,.9,.3,1.2) forwards}
 @keyframes letterIn{to{opacity:1;transform:translateY(0) rotate(0)}}
-.sub{color:var(--ink-dim);font-style:italic;font-size:1.05rem;opacity:0;animation:fadeDown .9s .9s ease forwards}
-.sub b{color:var(--gold);font-style:normal;font-family:var(--font-mono);font-size:.85em}
+.sub{color:var(--ink-dim);font-style:italic;font-size:1.02rem;opacity:0;animation:fadeDown .9s .9s ease forwards}
 @keyframes fadeDown{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
-
-/* compass divider */
-.compass-row{display:flex;align-items:center;justify-content:center;gap:1.2rem;margin:2rem auto 0;max-width:560px;
-  opacity:0;animation:fadeDown 1s 1.2s ease forwards}
+.compass-row{display:flex;align-items:center;justify-content:center;gap:1.2rem;margin:1.6rem auto 0;max-width:560px;opacity:0;animation:fadeDown 1s 1.2s ease forwards}
 .compass-row .lin{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--foam))}
 .compass-row .lin:last-child{background:linear-gradient(90deg,var(--foam),transparent)}
-.compass{width:44px;height:44px;border:1px solid var(--line);border-radius:50%;position:relative;flex-shrink:0}
-.compass::before{content:'';position:absolute;inset:6px;border:1px dashed rgba(94,200,242,.4);border-radius:50%;
-  animation:spin 14s linear infinite}
-.compass::after{content:'✦';position:absolute;inset:0;display:grid;place-items:center;color:var(--gold);font-size:.9rem;
-  animation:pulse 2.4s ease-in-out infinite}
+#compass-svg{width:54px;height:54px;flex-shrink:0;overflow:visible}
+#compass-svg .dial{animation:spin 30s linear infinite;transform-origin:27px 27px}
+#compass-svg .needle{animation:needleWobble 4s ease-in-out infinite;transform-origin:27px 27px}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes pulse{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.25);opacity:1}}
+@keyframes needleWobble{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(16deg)}}
 
-/* ============ NAV TABS ============ */
-nav{position:sticky;top:1rem;z-index:50;display:flex;justify-content:center;margin:2.4rem 0 0;padding:0 1rem;
-  opacity:0;animation:fadeDown .8s 1.4s ease forwards}
-.tabs{display:flex;gap:.4rem;padding:.4rem;border-radius:100px;
-  background:rgba(4,18,43,.72);backdrop-filter:blur(14px);
-  border:1px solid var(--line);
-  box-shadow:0 12px 40px rgba(0,0,0,.5), inset 0 1px 0 rgba(143,227,255,.12);
-}
-.tab{
-  font-family:var(--font-mono);font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;
-  color:var(--ink-dim);background:none;border:none;cursor:pointer;
-  padding:.7rem 1.6rem;border-radius:100px;position:relative;
-  transition:color .3s ease, transform .2s ease;
-}
+/* ====== SVG SEA BAND (waves + ship) ====== */
+.sea-band{position:relative;z-index:2;height:96px;margin-top:1.6rem;overflow:hidden}
+.sea-band svg.waves{position:absolute;bottom:0;left:0;width:100%;height:100%}
+.sea-band .w1{animation:waveScroll 16s linear infinite}
+.sea-band .w2{animation:waveScroll2 23s linear infinite}
+@keyframes waveScroll{from{transform:translateX(0)}to{transform:translateX(-1440px)}}
+@keyframes waveScroll2{from{transform:translate(-1440px,10px)}to{transform:translate(0,10px)}}
+#ship{position:absolute;bottom:26px;left:0;width:92px;height:auto;animation:sail 42s linear infinite;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5))}
+#ship g{animation:bob 4s ease-in-out infinite;transform-origin:50% 90%}
+@keyframes sail{from{transform:translateX(-15vw)}to{transform:translateX(112vw)}}
+@keyframes bob{0%,100%{transform:rotate(-2.5deg) translateY(0)}50%{transform:rotate(2.5deg) translateY(-4px)}}
+
+/* ====== NAV + COMMAND BAR ====== */
+nav{position:sticky;top:.8rem;z-index:50;display:flex;justify-content:center;padding:0 1rem}
+.tabs{display:flex;gap:.4rem;padding:.4rem;border-radius:100px;background:rgba(4,18,43,.78);backdrop-filter:blur(14px);
+  border:1px solid var(--line);box-shadow:0 12px 40px rgba(0,0,0,.5),inset 0 1px 0 rgba(143,227,255,.12)}
+.tab{font-family:var(--font-mono);font-size:.76rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim);
+  background:none;border:none;cursor:pointer;padding:.65rem 1.5rem;border-radius:100px;transition:color .3s,transform .2s}
 .tab:hover{color:var(--glow);transform:translateY(-1px)}
-.tab.active{color:#031021;
-  background:linear-gradient(135deg,var(--glow),var(--surf));
-  box-shadow:0 0 22px rgba(94,200,242,.45);
-  font-weight:600;
-}
+.tab.active{color:#031021;background:linear-gradient(135deg,var(--glow),var(--surf));box-shadow:0 0 22px rgba(94,200,242,.45);font-weight:600}
+#command-bar{position:relative;z-index:3;max-width:1240px;margin:1.6rem auto 0;padding:0 1.4rem;display:flex;gap:.8rem;flex-wrap:wrap;align-items:center;
+  opacity:0;animation:fadeDown .8s 1.5s ease forwards}
+#command-bar.hide{display:none}
+.search-wrap{position:relative;flex:1;min-width:220px}
+.search-wrap svg{position:absolute;left:1rem;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--ink-dim);pointer-events:none}
+#search{width:100%;padding:.8rem 1rem .8rem 2.7rem;border-radius:100px;border:1px solid var(--line);
+  background:rgba(7,26,54,.8);color:var(--ink);font-family:var(--font-mono);font-size:.82rem;letter-spacing:.04em;outline:none;transition:border-color .3s,box-shadow .3s}
+#search::placeholder{color:var(--ink-dim);opacity:.7}
+#search:focus{border-color:var(--foam);box-shadow:0 0 18px rgba(94,200,242,.25)}
+#chips{display:flex;gap:.45rem;flex-wrap:wrap}
+.chip{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;
+  padding:.55rem 1rem;border-radius:100px;border:1px solid var(--line);background:rgba(7,26,54,.7);color:var(--ink-dim);transition:all .25s}
+.chip:hover{color:var(--glow);border-color:var(--foam)}
+.chip.on{color:#031021;background:var(--foam);border-color:var(--foam);font-weight:600;box-shadow:0 0 14px rgba(94,200,242,.4)}
+#sort{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.08em;padding:.6rem .9rem;border-radius:100px;
+  border:1px solid var(--line);background:rgba(7,26,54,.85);color:var(--foam);cursor:pointer;outline:none}
+#sort.hide{display:none}
 
-/* ============ MAIN ============ */
-main{position:relative;z-index:2;max-width:1240px;margin:3.2rem auto 5rem;padding:0 1.4rem}
+/* ====== MAIN / VIEWS ====== */
+main{position:relative;z-index:2;max-width:1240px;margin:2.2rem auto 5rem;padding:0 1.4rem}
 .view{display:none}
 .view.on{display:block;animation:viewIn .55s cubic-bezier(.2,.8,.3,1) both}
 @keyframes viewIn{from{opacity:0;transform:translateY(26px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
-.section-head{display:flex;align-items:baseline;gap:1rem;margin-bottom:2rem;flex-wrap:wrap}
-.section-head h2{font-family:var(--font-display);font-weight:400;font-size:clamp(1.8rem,4vw,2.6rem);color:var(--glow);letter-spacing:.05em}
-.section-head .count{font-family:var(--font-mono);font-size:.75rem;color:var(--gold);letter-spacing:.2em;text-transform:uppercase}
 
-/* ============ CHARACTER GRID ============ */
-#char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1.4rem}
-.char-card{
-  position:relative;cursor:pointer;border-radius:18px;padding:1.8rem 1.4rem 1.5rem;text-align:center;
-  background:linear-gradient(165deg, rgba(28,111,209,.12), rgba(7,26,54,.92) 45%), var(--card);
-  border:1px solid var(--line);overflow:hidden;
-  opacity:0;transform:translateY(36px);
-  transition:transform .4s cubic-bezier(.2,.8,.3,1.3), border-color .35s, box-shadow .35s;
-}
+/* group sections */
+.char-group{margin-bottom:3.2rem}
+.group-head{display:flex;align-items:center;gap:1rem;margin-bottom:1.6rem;flex-wrap:wrap}
+.group-head h2{font-family:var(--font-display);font-weight:400;font-size:clamp(1.7rem,3.6vw,2.4rem);color:var(--glow);letter-spacing:.05em}
+.group-head .g-tag{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold)}
+.group-head .g-count{font-family:var(--font-mono);font-size:.62rem;color:var(--ink-dim);margin-left:auto;letter-spacing:.2em}
+.squig{width:64px;height:14px;flex-shrink:0}
+.squig path{fill:none;stroke:var(--foam);stroke-width:2;stroke-linecap:round;stroke-dasharray:90;stroke-dashoffset:90;animation:draw 1.6s .3s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+
+/* ====== FLIP CARDS ====== */
+.char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1.4rem}
+.char-card{position:relative;perspective:1400px;min-height:330px;cursor:pointer;opacity:0;transform:translateY(36px)}
 .char-card.in{animation:cardIn .6s cubic-bezier(.2,.85,.3,1.15) forwards}
 @keyframes cardIn{to{opacity:1;transform:translateY(0)}}
-.char-card:hover{transform:translateY(-9px) !important;border-color:rgba(94,200,242,.55);
-  box-shadow:0 24px 50px rgba(2,10,24,.8), 0 0 34px rgba(94,200,242,.18)}
-.char-card::before{ /* sweep shine */
-  content:'';position:absolute;top:0;left:-80%;width:55%;height:100%;
-  background:linear-gradient(105deg,transparent,rgba(143,227,255,.14),transparent);
-  transform:skewX(-18deg);transition:left .7s ease;
-}
-.char-card:hover::before{left:130%}
-.char-card .tagline{position:absolute;top:.85rem;left:0;right:0;
-  font-family:var(--font-mono);font-size:.58rem;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-dim);opacity:.75}
+.card-inner{position:relative;width:100%;height:100%;min-height:330px;transform-style:preserve-3d;transition:transform .8s cubic-bezier(.3,.7,.25,1)}
+@media(hover:hover){.char-card:hover .card-inner{transform:rotateY(180deg)}}
+.char-card.flipped .card-inner{transform:rotateY(180deg)}
+.card-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:18px;overflow:hidden}
+.card-front{padding:1.8rem 1.2rem 1.4rem;text-align:center;border:1px solid var(--line);
+  background:linear-gradient(165deg,rgba(28,111,209,.12),rgba(7,26,54,.92) 45%),var(--card);
+  display:flex;flex-direction:column;align-items:center;justify-content:center}
+.card-front::before{content:'';position:absolute;top:0;left:-80%;width:55%;height:100%;
+  background:linear-gradient(105deg,transparent,rgba(143,227,255,.12),transparent);transform:skewX(-18deg);transition:left .7s ease}
+.char-card:hover .card-front::before{left:130%}
+.tagline{position:absolute;top:.85rem;left:0;right:0;font-family:var(--font-mono);font-size:.58rem;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-dim);opacity:.75}
+.icon-btn{position:absolute;z-index:5;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);cursor:pointer;
+  background:rgba(4,18,43,.8);color:var(--foam);font-size:.9rem;display:grid;place-items:center;transition:all .25s}
+.icon-btn:hover{border-color:var(--foam);box-shadow:0 0 12px rgba(94,200,242,.4);transform:scale(1.12)}
+.icon-flip{top:.7rem;right:.7rem}
+.icon-duel{top:.7rem;left:.7rem}
+.crest{width:104px;height:104px;margin:.9rem auto;position:relative;border-radius:50%}
+.crest .ring{position:absolute;inset:0;border-radius:50%;border:2px dashed hsla(var(--h),85%,68%,.55);animation:spin 24s linear infinite}
+.crest .ring2{position:absolute;inset:7px;border-radius:50%;border:1px solid hsla(var(--h),85%,72%,.35);animation:spin 17s linear infinite reverse}
+.crest .core{position:absolute;inset:13px;border-radius:50%;display:grid;place-items:center;font-family:var(--font-display);font-size:2rem;color:#fff;
+  background:radial-gradient(circle at 32% 28%,hsla(var(--h),90%,75%,.9),hsla(var(--h),85%,45%,.95) 48%,hsla(var(--h),90%,22%,1) 100%);
+  box-shadow:0 0 26px hsla(var(--h),90%,60%,.45),inset 0 -8px 18px rgba(0,0,0,.45),inset 0 4px 10px rgba(255,255,255,.3);
+  text-shadow:0 2px 8px rgba(0,0,0,.6)}
+.card-front h3{font-family:var(--font-display);font-weight:400;font-size:1.3rem;letter-spacing:.04em;color:var(--ink)}
+.epithet{font-style:italic;font-size:.85rem;color:hsla(var(--h),80%,72%,.95);margin-top:.1rem}
+.df-chip{display:inline-block;margin-top:.7rem;font-family:var(--font-mono);font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;
+  padding:.3rem .8rem;border-radius:100px;border:1px solid var(--line);color:var(--foam);background:rgba(28,111,209,.1)}
+.df-chip.none{color:var(--ink-dim);opacity:.65}
 
-/* medallion crest */
-.crest{width:104px;height:104px;margin:1.1rem auto .9rem;position:relative;border-radius:50%}
-.crest .ring{position:absolute;inset:0;border-radius:50%;
-  border:2px dashed hsla(var(--h),85%,68%,.55);
-  animation:spin 24s linear infinite;
-}
-.crest .ring2{position:absolute;inset:7px;border-radius:50%;
-  border:1px solid hsla(var(--h),85%,72%,.35);
-  animation:spin 17s linear infinite reverse;
-}
-.crest .core{position:absolute;inset:13px;border-radius:50%;display:grid;place-items:center;
-  font-family:var(--font-display);font-size:2.1rem;color:#fff;
-  background:
-    radial-gradient(circle at 32% 28%, hsla(var(--h),90%,75%,.9), hsla(var(--h),85%,45%,.95) 48%, hsla(var(--h),90%,22%,1) 100%);
-  box-shadow:0 0 26px hsla(var(--h),90%,60%,.45), inset 0 -8px 18px rgba(0,0,0,.45), inset 0 4px 10px rgba(255,255,255,.3);
-  text-shadow:0 2px 8px rgba(0,0,0,.6);
-  transition:transform .45s cubic-bezier(.2,.8,.3,1.4);
-}
-.char-card:hover .core{transform:scale(1.12) rotate(-5deg)}
-.char-card h3{font-family:var(--font-display);font-weight:400;font-size:1.35rem;letter-spacing:.04em;color:var(--ink)}
-.char-card .epithet{font-style:italic;font-size:.85rem;color:hsla(var(--h),80%,72%,.95);margin-top:.15rem}
-.char-card .df-chip{display:inline-block;margin-top:.8rem;font-family:var(--font-mono);font-size:.6rem;
-  letter-spacing:.14em;text-transform:uppercase;padding:.3rem .8rem;border-radius:100px;
-  border:1px solid var(--line);color:var(--foam);background:rgba(28,111,209,.1)}
-.char-card .df-chip.none{color:var(--ink-dim);opacity:.65}
+/* wanted poster (back) */
+.card-back{transform:rotateY(180deg);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  padding:1.4rem 1rem;color:#3c2a14;border:2px solid #8a6a3b;
+  background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.25),transparent 50%),linear-gradient(160deg,#ecd9ab,#d8bd85 60%,#c8a96d);
+  box-shadow:inset 0 0 50px rgba(90,60,20,.35)}
+.card-back::before{content:'';position:absolute;inset:7px;border:1px dashed rgba(90,60,20,.5);border-radius:10px;pointer-events:none}
+.poster-wanted{font-family:var(--font-display);font-size:2.1rem;letter-spacing:.12em;line-height:1;color:#4a3014;text-shadow:1px 1px 0 rgba(255,255,255,.3)}
+.poster-sub{font-family:var(--font-mono);font-size:.55rem;letter-spacing:.42em;text-transform:uppercase;color:#6b4a22;margin-top:.15rem}
+.poster-crest{width:74px;height:74px;margin:.7rem auto .5rem;border-radius:50%;display:grid;place-items:center;
+  font-family:var(--font-display);font-size:1.7rem;color:#f5e7c4;border:3px double #6b4a22;
+  background:radial-gradient(circle at 35% 30%,hsla(var(--h),60%,50%,.95),hsla(var(--h),70%,25%,1));
+  box-shadow:inset 0 -6px 12px rgba(0,0,0,.4)}
+.poster-name{font-family:var(--font-display);font-size:1.25rem;color:#33220e;letter-spacing:.05em}
+.poster-bounty{font-family:var(--font-mono);font-weight:600;font-size:.95rem;color:#5a3a14;margin-top:.35rem;letter-spacing:.06em}
+.poster-bounty small{display:block;font-size:.52rem;letter-spacing:.3em;color:#7d5a2c;font-weight:400}
+.stamp{position:absolute;bottom:2.6rem;left:50%;transform:translateX(-50%) rotate(-9deg);
+  font-family:var(--font-mono);font-weight:600;font-size:.6rem;letter-spacing:.26em;padding:.3rem .8rem;border:2px solid;border-radius:4px;opacity:.85}
+.st-wanted{color:#a31621;border-color:#a31621}
+.st-marine{color:#14467d;border-color:#14467d}
+.st-royal{color:#8a6a10;border-color:#8a6a10}
+.st-warlord{color:#7a1f8f;border-color:#7a1f8f}
+.st-rogue{color:#555;border-color:#555}
+.poster-duel{margin-top:1.7rem;font-family:var(--font-mono);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;
+  padding:.5rem 1.1rem;border-radius:100px;border:1.5px solid #6b4a22;background:rgba(255,250,235,.4);color:#4a3014;transition:all .25s}
+.poster-duel:hover{background:#4a3014;color:#ecd9ab}
 
-/* ============ DETAILS ============ */
+/* no results */
+#no-results{display:none;text-align:center;padding:4rem 1rem}
+#no-results.show{display:block;animation:viewIn .4s ease both}
+#no-results svg{width:110px;height:110px;margin-bottom:1rem}
+#no-results .skull-grp{animation:bob 3.5s ease-in-out infinite;transform-origin:center}
+#no-results p{font-family:var(--font-mono);font-size:.75rem;letter-spacing:.25em;text-transform:uppercase;color:var(--ink-dim)}
+
+/* ====== DETAIL ====== */
 #detail-panel{border-radius:22px;overflow:hidden;border:1px solid var(--line);
-  background:linear-gradient(180deg, rgba(14,58,107,.32), rgba(7,26,54,.95) 30%), var(--card);
-  box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  background:linear-gradient(180deg,rgba(14,58,107,.32),rgba(7,26,54,.95) 30%),var(--card);box-shadow:0 30px 80px rgba(0,0,0,.6)}
 .detail-hero{position:relative;padding:3rem 2.5rem 2.2rem;display:flex;gap:2.2rem;align-items:center;flex-wrap:wrap;
-  background:
-    radial-gradient(ellipse 60% 100% at 18% 0%, hsla(var(--h),80%,45%,.28), transparent 60%),
-    linear-gradient(180deg, rgba(28,111,209,.14), transparent);
+  background:radial-gradient(ellipse 60% 100% at 18% 0%,hsla(var(--h),80%,45%,.28),transparent 60%),linear-gradient(180deg,rgba(28,111,209,.14),transparent);
   border-bottom:1px solid var(--line)}
 .detail-hero .crest{width:148px;height:148px;margin:0;flex-shrink:0;animation:crestFloat 5s ease-in-out infinite}
 .detail-hero .crest .core{font-size:3rem}
 @keyframes crestFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-.detail-id h2{font-family:var(--font-display);font-weight:400;font-size:clamp(2.2rem,5vw,3.4rem);line-height:1.05;
-  color:#fff;text-shadow:0 0 30px hsla(var(--h),85%,60%,.5)}
+.detail-id h2{font-family:var(--font-display);font-weight:400;font-size:clamp(2.2rem,5vw,3.4rem);line-height:1.05;color:#fff;text-shadow:0 0 30px hsla(var(--h),85%,60%,.5)}
 .detail-id .ep{font-style:italic;color:hsla(var(--h),82%,74%,1);font-size:1.15rem}
-.detail-id .aff{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;
-  color:var(--ink-dim);margin-top:.7rem}
-.detail-id .fruit-line{display:inline-block;margin-top:.9rem;padding:.45rem 1.1rem;border-radius:100px;
-  font-family:var(--font-mono);font-size:.72rem;letter-spacing:.1em;
-  border:1px solid hsla(var(--h),80%,65%,.4);color:var(--glow);background:hsla(var(--h),80%,40%,.12)}
-.detail-body{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.detail-id .aff{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim);margin-top:.7rem}
+.detail-id .fruit-line{display:inline-block;margin-top:.9rem;margin-right:.6rem;padding:.45rem 1.1rem;border-radius:100px;
+  font-family:var(--font-mono);font-size:.72rem;letter-spacing:.1em;border:1px solid hsla(var(--h),80%,65%,.4);color:var(--glow);background:hsla(var(--h),80%,40%,.12)}
+.hero-duel{display:inline-block;margin-top:.9rem;padding:.45rem 1.1rem;border-radius:100px;cursor:pointer;
+  font-family:var(--font-mono);font-size:.72rem;letter-spacing:.1em;border:1px solid var(--gold);color:var(--gold);background:rgba(242,193,78,.08);transition:all .25s}
+.hero-duel:hover{background:var(--gold);color:#031021;box-shadow:0 0 18px rgba(242,193,78,.4)}
+.detail-body{display:grid;grid-template-columns:1fr 1fr}
 .detail-col{padding:2.2rem 2.5rem}
 .detail-col + .detail-col{border-left:1px solid var(--line)}
-.detail-col h3{font-family:var(--font-display);font-weight:400;font-size:1.45rem;color:var(--foam);
-  letter-spacing:.05em;margin-bottom:1.1rem;display:flex;align-items:center;gap:.6rem}
+.detail-col h3,.stats-block h3{font-family:var(--font-display);font-weight:400;font-size:1.45rem;color:var(--foam);letter-spacing:.05em;margin-bottom:1.1rem;display:flex;align-items:center;gap:.6rem}
 .detail-col h3::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
 .detail-col ul{list-style:none}
-.detail-col li{padding:.5rem 0 .5rem 1.6rem;position:relative;font-size:.95rem;color:var(--ink);
-  border-bottom:1px dashed rgba(94,200,242,.1);opacity:0;transform:translateX(-14px);animation:liIn .5s ease forwards}
+.detail-col li{padding:.5rem 0 .5rem 1.6rem;position:relative;font-size:.95rem;border-bottom:1px dashed rgba(94,200,242,.1);
+  opacity:0;transform:translateX(-14px);animation:liIn .5s ease forwards}
 .detail-col li:last-child{border-bottom:none}
 @keyframes liIn{to{opacity:1;transform:translateX(0)}}
 .detail-col li::before{content:'⚓';position:absolute;left:0;top:.55rem;font-size:.75rem;color:hsla(var(--h),80%,65%,.9)}
 
-/* stats */
+/* stats: radar + gauges */
 .stats-block{padding:2.2rem 2.5rem;border-top:1px solid var(--line)}
-.stats-block h3{font-family:var(--font-display);font-weight:400;font-size:1.45rem;color:var(--foam);margin-bottom:1.4rem;letter-spacing:.05em}
-.stat-row{display:grid;grid-template-columns:150px 1fr 52px;align-items:center;gap:1.1rem;margin-bottom:1rem}
-.stat-row .lbl{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim)}
-.gauge{height:12px;border-radius:8px;background:rgba(2,10,24,.8);border:1px solid var(--line);overflow:hidden;position:relative}
-.gauge .fill{height:100%;width:0;border-radius:8px;position:relative;
-  transition:width 1.1s cubic-bezier(.25,.9,.3,1)}
-.gauge .fill::after{content:'';position:absolute;inset:0;
-  background:linear-gradient(90deg,transparent 30%,rgba(255,255,255,.4) 50%,transparent 70%);
-  background-size:200% 100%;animation:shimmer 2.2s linear infinite}
+.stats-flex{display:grid;grid-template-columns:300px 1fr;gap:2.4rem;align-items:center}
+#radar{width:100%;max-width:300px;overflow:visible}
+#radar .grid-line{fill:none;stroke:rgba(94,200,242,.15);stroke-width:1}
+#radar .axis{stroke:rgba(94,200,242,.12);stroke-width:1}
+#radar .axis-lbl{font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;fill:var(--ink-dim);text-transform:uppercase}
+#radar .stat-poly{fill:hsla(var(--h),85%,55%,0);stroke:hsla(var(--h),85%,65%,1);stroke-width:2;stroke-linejoin:round;
+  stroke-dasharray:1200;stroke-dashoffset:1200;transition:stroke-dashoffset 1.4s ease,fill .9s 1s ease}
+#radar.go .stat-poly{stroke-dashoffset:0;fill:hsla(var(--h),85%,55%,.3)}
+#radar .vtx{fill:hsla(var(--h),90%,70%,1);opacity:0;transition:opacity .4s 1.2s}
+#radar.go .vtx{opacity:1;animation:vtxPulse 2.2s 1.4s ease-in-out infinite}
+@keyframes vtxPulse{0%,100%{r:3.5}50%{r:6}}
+.stat-row{display:grid;grid-template-columns:140px 1fr 50px;align-items:center;gap:1rem;margin-bottom:1rem}
+.stat-row .lbl{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim)}
+.gauge{height:12px;border-radius:8px;background:rgba(2,10,24,.8);border:1px solid var(--line);overflow:hidden}
+.gauge .fill{height:100%;width:0;border-radius:8px;position:relative;transition:width 1.1s cubic-bezier(.25,.9,.3,1)}
+.gauge .fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 30%,rgba(255,255,255,.4) 50%,transparent 70%);background-size:200% 100%;animation:shimmer 2.2s linear infinite}
 @keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
 .f-strength{background:linear-gradient(90deg,#ff5e7a,#ff8a5c)}
 .f-speed{background:linear-gradient(90deg,#5ec8f2,#2a7fe0)}
@@ -240,96 +237,163 @@ main{position:relative;z-index:2;max-width:1240px;margin:3.2rem auto 5rem;paddin
 .f-intelligence{background:linear-gradient(90deg,#f2c14e,#e09a2a)}
 .stat-row .val{font-family:var(--font-mono);font-size:.8rem;color:var(--glow);text-align:right}
 
-/* ============ DEVIL FRUITS ============ */
+/* ====== FRUITS ====== */
 #fruit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:1.4rem}
 .fruit-card{position:relative;border-radius:18px;padding:1.6rem;display:flex;gap:1.3rem;align-items:flex-start;
-  background:linear-gradient(160deg, rgba(28,111,209,.1), rgba(7,26,54,.94) 50%), var(--card);
-  border:1px solid var(--line);overflow:hidden;
-  opacity:0;transform:translateY(30px);
-  transition:transform .35s cubic-bezier(.2,.8,.3,1.2), border-color .3s, box-shadow .3s}
+  background:linear-gradient(160deg,rgba(28,111,209,.1),rgba(7,26,54,.94) 50%),var(--card);border:1px solid var(--line);overflow:hidden;
+  opacity:0;transform:translateY(30px);transition:transform .35s cubic-bezier(.2,.8,.3,1.2),border-color .3s,box-shadow .3s}
 .fruit-card.in{animation:cardIn .6s cubic-bezier(.2,.85,.3,1.15) forwards}
-.fruit-card:hover{transform:translateY(-6px) !important;border-color:rgba(94,200,242,.5);
-  box-shadow:0 18px 44px rgba(2,10,24,.75)}
+.fruit-card:hover{transform:translateY(-6px)!important;border-color:rgba(94,200,242,.5);box-shadow:0 18px 44px rgba(2,10,24,.75)}
 .fruit-orb{width:72px;height:72px;flex-shrink:0;border-radius:50%;position:relative;
-  background:
-    radial-gradient(circle at 30% 26%, hsla(var(--fh),85%,72%,.95), hsla(var(--fh),80%,42%,1) 55%, hsla(var(--fh),85%,20%,1));
-  box-shadow:0 0 22px hsla(var(--fh),90%,55%,.4), inset 0 -6px 14px rgba(0,0,0,.5), inset 0 4px 8px rgba(255,255,255,.35);
+  background:radial-gradient(circle at 30% 26%,hsla(var(--fh),85%,72%,.95),hsla(var(--fh),80%,42%,1) 55%,hsla(var(--fh),85%,20%,1));
+  box-shadow:0 0 22px hsla(var(--fh),90%,55%,.4),inset 0 -6px 14px rgba(0,0,0,.5),inset 0 4px 8px rgba(255,255,255,.35);
   animation:orbBob 4.5s ease-in-out infinite}
 .fruit-card:nth-child(even) .fruit-orb{animation-delay:-2.2s}
 @keyframes orbBob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-7px) rotate(3deg)}}
-.fruit-orb::before{ /* swirl pattern */
-  content:'';position:absolute;inset:10px;border-radius:50%;
-  border:2px solid transparent;
-  border-top-color:rgba(255,255,255,.5);border-right-color:rgba(255,255,255,.18);
-  animation:spin 6s linear infinite}
-.fruit-orb::after{ /* stem */
-  content:'';position:absolute;top:-9px;left:50%;width:4px;height:13px;border-radius:3px;
+.fruit-orb::before{content:'';position:absolute;inset:10px;border-radius:50%;border:2px solid transparent;
+  border-top-color:rgba(255,255,255,.5);border-right-color:rgba(255,255,255,.18);animation:spin 6s linear infinite}
+.fruit-orb::after{content:'';position:absolute;top:-9px;left:50%;width:4px;height:13px;border-radius:3px;
   background:linear-gradient(180deg,#6fae4e,#3d6e2a);transform:translateX(-50%) rotate(8deg)}
-.fruit-info h4{font-family:var(--font-display);font-weight:400;font-size:1.3rem;letter-spacing:.04em;color:var(--ink)}
+.fruit-info h4{font-family:var(--font-display);font-weight:400;font-size:1.3rem;letter-spacing:.04em}
 .fruit-info .meta{display:flex;gap:.5rem;flex-wrap:wrap;margin:.45rem 0 .6rem}
-.badge{font-family:var(--font-mono);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;
-  padding:.25rem .7rem;border-radius:100px;border:1px solid}
+.badge{font-family:var(--font-mono);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;padding:.25rem .7rem;border-radius:100px;border:1px solid}
 .badge.paramecia{color:#b78aff;border-color:rgba(183,138,255,.4);background:rgba(183,138,255,.08)}
 .badge.logia{color:#ff8a5c;border-color:rgba(255,138,92,.4);background:rgba(255,138,92,.08)}
 .badge.zoan{color:#7ddc8e;border-color:rgba(125,220,142,.4);background:rgba(125,220,142,.08)}
 .badge.user{color:var(--foam);border-color:var(--line);background:rgba(28,111,209,.1)}
 .fruit-info p{font-size:.9rem;color:var(--ink-dim)}
 
-/* ============ BUTTONS ============ */
+/* ====== VS / DUEL ====== */
+#vs-panel{border-radius:22px;border:1px solid var(--line);overflow:hidden;
+  background:linear-gradient(180deg,rgba(14,58,107,.3),rgba(7,26,54,.96) 35%),var(--card);box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.vs-hero{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:1rem;padding:2.6rem 2rem;border-bottom:1px solid var(--line);text-align:center}
+.vs-fighter .crest{margin:0 auto .8rem;animation:crestFloat 5s ease-in-out infinite}
+.vs-fighter:last-child .crest{animation-delay:-2.5s}
+.vs-fighter h3{font-family:var(--font-display);font-weight:400;font-size:clamp(1.2rem,3vw,1.9rem);color:#fff}
+.vs-fighter .ep{font-style:italic;font-size:.85rem;color:var(--ink-dim)}
+.vs-bolt{font-family:var(--font-display);font-size:clamp(2rem,6vw,3.6rem);color:var(--gold);
+  text-shadow:0 0 26px rgba(242,193,78,.6);animation:vsPulse 1.6s ease-in-out infinite}
+@keyframes vsPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+.vs-stats{padding:2.2rem 2rem}
+.vs-row{display:grid;grid-template-columns:1fr 150px 1fr;align-items:center;gap:.9rem;margin-bottom:1.1rem}
+.vs-row .mid{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);text-align:center}
+.vs-side{display:flex;align-items:center;gap:.7rem}
+.vs-side.left{justify-content:flex-end}
+.vs-side .num{font-family:var(--font-mono);font-size:.82rem;color:var(--glow);min-width:30px}
+.vs-side.left .num{text-align:right}
+.vs-track{flex:1;max-width:280px;height:12px;border-radius:8px;background:rgba(2,10,24,.8);border:1px solid var(--line);overflow:hidden;display:flex}
+.vs-side.left .vs-track{justify-content:flex-end}
+.vs-fill{height:100%;width:0;transition:width 1s cubic-bezier(.25,.9,.3,1);border-radius:8px}
+.vs-row .win .num{color:var(--gold);font-weight:600;text-shadow:0 0 10px rgba(242,193,78,.6)}
+.vs-row .win .vs-track{border-color:var(--gold);box-shadow:0 0 12px rgba(242,193,78,.35)}
+.vs-verdict{text-align:center;padding:0 2rem 2.4rem}
+.vs-verdict .v-line{font-family:var(--font-display);font-size:clamp(1.4rem,4vw,2.2rem);color:var(--gold);text-shadow:0 0 24px rgba(242,193,78,.45);
+  opacity:0;animation:fadeDown .8s 1.3s ease forwards}
+.vs-verdict .v-sub{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim);margin-top:.4rem;
+  opacity:0;animation:fadeDown .8s 1.6s ease forwards}
+
+/* duel tray */
+#duel-tray{position:fixed;bottom:1.2rem;left:50%;transform:translate(-50%,140%);z-index:60;
+  display:flex;align-items:center;gap:.8rem;padding:.7rem 1rem;border-radius:100px;
+  background:rgba(4,18,43,.92);backdrop-filter:blur(14px);border:1px solid var(--gold);
+  box-shadow:0 16px 50px rgba(0,0,0,.7),0 0 24px rgba(242,193,78,.18);transition:transform .5s cubic-bezier(.2,.8,.3,1.2)}
+#duel-tray.show{transform:translate(-50%,0)}
+.tray-slot{display:flex;align-items:center;gap:.5rem;font-family:var(--font-mono);font-size:.66rem;letter-spacing:.08em;color:var(--ink)}
+.tray-slot .mini{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--font-display);font-size:.85rem;color:#fff;
+  background:radial-gradient(circle at 32% 28%,hsla(var(--h),90%,70%,.9),hsla(var(--h),85%,35%,1));box-shadow:0 0 10px hsla(var(--h),90%,60%,.5)}
+.tray-slot .rm{cursor:pointer;color:var(--ink-dim);border:none;background:none;font-size:.85rem;padding:0 .15rem}
+.tray-slot .rm:hover{color:#ff5e7a}
+.tray-empty{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.14em;color:var(--ink-dim);text-transform:uppercase}
+#duel-go{font-family:var(--font-mono);font-size:.68rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;
+  padding:.6rem 1.2rem;border-radius:100px;border:none;background:linear-gradient(135deg,var(--gold),#e09a2a);color:#031021;
+  box-shadow:0 0 18px rgba(242,193,78,.4);transition:transform .2s}
+#duel-go:hover{transform:scale(1.06)}
+#duel-go:disabled{opacity:.35;cursor:not-allowed;transform:none}
+
+/* misc */
 .btn-back{display:inline-flex;align-items:center;gap:.6rem;cursor:pointer;margin-bottom:1.6rem;
-  font-family:var(--font-mono);font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;
-  color:var(--foam);background:rgba(28,111,209,.1);border:1px solid var(--line);
-  padding:.75rem 1.5rem;border-radius:100px;
-  transition:all .3s ease}
-.btn-back:hover{background:rgba(28,111,209,.28);border-color:var(--foam);transform:translateX(-4px);
-  box-shadow:0 0 20px rgba(94,200,242,.25)}
-.btn-back .arr{transition:transform .3s ease;display:inline-block}
-.btn-back:hover .arr{transform:translateX(-4px)}
+  font-family:var(--font-mono);font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--foam);
+  background:rgba(28,111,209,.1);border:1px solid var(--line);padding:.75rem 1.5rem;border-radius:100px;transition:all .3s}
+.btn-back:hover{background:rgba(28,111,209,.28);border-color:var(--foam);transform:translateX(-4px);box-shadow:0 0 20px rgba(94,200,242,.25)}
+.section-head{display:flex;align-items:baseline;gap:1rem;margin-bottom:2rem;flex-wrap:wrap}
+.section-head h2{font-family:var(--font-display);font-weight:400;font-size:clamp(1.8rem,4vw,2.6rem);color:var(--glow);letter-spacing:.05em}
+.section-head .count{font-family:var(--font-mono);font-size:.75rem;color:var(--gold);letter-spacing:.2em;text-transform:uppercase}
+footer{position:relative;z-index:2;text-align:center;padding:3rem 1rem 2.4rem;border-top:1px solid var(--line);
+  background:linear-gradient(180deg,transparent,rgba(2,10,24,.9))}
+footer .skull{font-size:1.6rem;display:inline-block;animation:vsPulse 3s ease-in-out infinite;filter:drop-shadow(0 0 10px rgba(94,200,242,.5))}
+footer p{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;color:var(--ink-dim);margin-top:.7rem}
 
-/* ============ FOOTER ============ */
-footer{position:relative;z-index:2;text-align:center;padding:3rem 1rem 2.4rem;
-  border-top:1px solid var(--line);background:linear-gradient(180deg,transparent,rgba(2,10,24,.9))}
-footer .skull{font-size:1.6rem;display:inline-block;animation:pulse 3s ease-in-out infinite;
-  filter:drop-shadow(0 0 10px rgba(94,200,242,.5))}
-footer p{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;
-  color:var(--ink-dim);margin-top:.7rem}
-footer p b{color:var(--gold)}
-
-/* ============ RESPONSIVE ============ */
-@media (max-width:860px){
+/* ====== RESPONSIVE ====== */
+@media(max-width:860px){
   .detail-body{grid-template-columns:1fr}
   .detail-col + .detail-col{border-left:none;border-top:1px solid var(--line)}
   .detail-hero{padding:2.2rem 1.4rem;justify-content:center;text-align:center}
-  .detail-id .fruit-line{font-size:.62rem}
   .detail-col,.stats-block{padding:1.6rem 1.4rem}
-  .stat-row{grid-template-columns:104px 1fr 44px;gap:.7rem}
+  .stats-flex{grid-template-columns:1fr;justify-items:center}
+  .stat-row{grid-template-columns:100px 1fr 42px;gap:.7rem;width:100%}
+  .vs-row{grid-template-columns:1fr;gap:.4rem}
+  .vs-row .mid{order:-1}
+  .vs-side.left{justify-content:flex-start;flex-direction:row-reverse}
 }
-@media (max-width:520px){
-  #char-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.9rem}
-  .char-card{padding:1.4rem .8rem 1.1rem}
-  .crest{width:80px;height:80px}
-  .crest .core{font-size:1.6rem}
-  .char-card h3{font-size:1.05rem}
+@media(max-width:520px){
+  .char-grid{grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:.9rem}
+  .char-card,.card-inner{min-height:300px}
+  .crest{width:80px;height:80px}.crest .core{font-size:1.6rem}
+  .card-front h3{font-size:1.05rem}
   .tab{padding:.6rem 1rem;font-size:.66rem}
   #fruit-grid{grid-template-columns:1fr}
+  .poster-wanted{font-size:1.7rem}
+  #duel-tray{max-width:94vw;flex-wrap:wrap;justify-content:center;border-radius:20px}
 }
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 </style>
 </head>
 <body>
 
-<div id="ocean">
-  <div class="ray"></div><div class="ray"></div><div class="ray"></div>
-</div>
+<div id="ocean"><div class="ray"></div><div class="ray"></div><div class="ray"></div></div>
 
 <header>
-  <div class="log-pose">⊹ LOG POSE SET · EAST BLUE → ALABASTA ⊹</div>
-  <h1 id="title">GRAND LINE ARCHIVE</h1>
-  <p class="sub">Records of pirates, marines &amp; cursed fruits — <b>chronicled to Episode 109</b></p>
-  <div class="compass-row"><div class="lin"></div><div class="compass"></div><div class="lin"></div></div>
+  <div class="log-pose" id="site-badge"></div>
+  <h1 id="title"></h1>
+  <p class="sub" id="site-tagline"></p>
+  <div class="compass-row">
+    <div class="lin"></div>
+    <svg id="compass-svg" viewBox="0 0 54 54">
+      <circle cx="27" cy="27" r="25" fill="none" stroke="rgba(94,200,242,.35)" stroke-width="1.5"/>
+      <g class="dial" stroke="rgba(94,200,242,.5)" stroke-width="1">
+        <line x1="27" y1="3" x2="27" y2="9"/><line x1="27" y1="45" x2="27" y2="51"/>
+        <line x1="3" y1="27" x2="9" y2="27"/><line x1="45" y1="27" x2="51" y2="27"/>
+        <line x1="10" y1="10" x2="14" y2="14"/><line x1="44" y1="10" x2="40" y2="14"/>
+        <line x1="10" y1="44" x2="14" y2="40"/><line x1="44" y1="44" x2="40" y2="40"/>
+      </g>
+      <g class="needle">
+        <path d="M27 9 L31 27 L27 45 L23 27 Z" fill="#f2c14e" opacity=".9"/>
+        <path d="M27 9 L31 27 L27 27 Z" fill="#fff" opacity=".55"/>
+      </g>
+      <circle cx="27" cy="27" r="3" fill="#8fe3ff"/>
+    </svg>
+    <div class="lin"></div>
+  </div>
 </header>
+
+<div class="sea-band">
+  <svg id="ship" viewBox="0 0 120 100">
+    <g>
+      <path d="M10 72 Q60 92 110 72 L100 88 Q60 100 20 88 Z" fill="#0a1f3a" stroke="#5ec8f2" stroke-width="1.5"/>
+      <line x1="60" y1="14" x2="60" y2="72" stroke="#8a6a3b" stroke-width="3"/>
+      <path d="M60 18 Q88 32 60 48 Z" fill="#dceefc" opacity=".92"/>
+      <path d="M60 26 Q38 38 60 54 Z" fill="#b9dff5" opacity=".85"/>
+      <path d="M60 14 L78 18 L60 23 Z" fill="#a31621"/>
+      <circle cx="69" cy="20" r="1.6" fill="#fff"/>
+    </g>
+  </svg>
+  <svg class="waves" viewBox="0 0 1440 90" preserveAspectRatio="none">
+    <path class="w1" fill="rgba(28,111,209,.20)" d="M0 55 q90 -30 180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 V90 H0 Z"/>
+    <path class="w2" fill="rgba(94,200,242,.12)" d="M0 55 q90 -30 180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 V90 H0 Z"/>
+  </svg>
+</div>
 
 <nav>
   <div class="tabs">
@@ -338,209 +402,304 @@ footer p b{color:var(--gold)}
   </div>
 </nav>
 
+<div id="command-bar">
+  <div class="search-wrap">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+    <input id="search" type="text" placeholder="Search the archive..." autocomplete="off">
+  </div>
+  <div id="chips"></div>
+  <select id="sort">
+    <option value="default">Sort: Archive Order</option>
+    <option value="bounty">Sort: Bounty ↓</option>
+    <option value="name">Sort: Name A→Z</option>
+    <option value="power">Sort: Power ↓</option>
+  </select>
+</div>
+
 <main>
   <section class="view on" id="view-chars">
-    <div class="section-head"><h2>Souls of the Sea</h2><span class="count" id="char-count"></span></div>
-    <div id="char-grid"></div>
+    <div id="groups-host"></div>
+    <div id="no-results">
+      <svg viewBox="0 0 110 110">
+        <g class="skull-grp">
+          <circle cx="55" cy="48" r="26" fill="none" stroke="#5ec8f2" stroke-width="2.5"/>
+          <circle cx="46" cy="44" r="4.5" fill="#5ec8f2"/>
+          <circle cx="64" cy="44" r="4.5" fill="#5ec8f2"/>
+          <path d="M50 58 q5 4 10 0" fill="none" stroke="#5ec8f2" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="26" y1="84" x2="84" y2="96" stroke="#5ec8f2" stroke-width="4" stroke-linecap="round"/>
+          <line x1="84" y1="84" x2="26" y2="96" stroke="#5ec8f2" stroke-width="4" stroke-linecap="round"/>
+        </g>
+      </svg>
+      <p>No records found in this sea</p>
+    </div>
   </section>
 
   <section class="view" id="view-detail">
-    <button class="btn-back" id="btn-detail-back"><span class="arr">←</span> Return to Archive</button>
+    <button class="btn-back" id="btn-detail-back">← Return to Archive</button>
     <div id="detail-panel"></div>
   </section>
 
   <section class="view" id="view-fruits">
-    <button class="btn-back" id="btn-fruit-back"><span class="arr">←</span> Return to Archive</button>
     <div class="section-head"><h2>Cursed Fruits of the Sea Devil</h2><span class="count" id="fruit-count"></span></div>
     <div id="fruit-grid"></div>
+    <div id="no-results-f" style="display:none;text-align:center;padding:3rem 1rem">
+      <p style="font-family:var(--font-mono);font-size:.75rem;letter-spacing:.25em;text-transform:uppercase;color:var(--ink-dim)">No fruit matches that search</p>
+    </div>
+  </section>
+
+  <section class="view" id="view-vs">
+    <button class="btn-back" id="btn-vs-back">← Return to Archive</button>
+    <div id="vs-panel"></div>
   </section>
 </main>
 
+<div id="duel-tray">
+  <div id="tray-slots"><span class="tray-empty">⚔ Recruit 2 fighters</span></div>
+  <button id="duel-go" disabled>⚔ Duel</button>
+</div>
+
 <footer>
   <span class="skull">☠</span>
-  <p>Grand Line Archive · © <b>Libertas 🕊️</b> · All rights reserved</p>
+  <p id="site-footer"></p>
 </footer>
 
+<script src="data.js"></script>
 <script>
-/* ================= DATA ================= */
-const characters=[
- {id:'luffy',name:'Monkey D. Luffy',hue:355,initials:'L',role:'CAPTAIN',epithet:'Straw Hat Luffy',affiliation:'Straw Hat Pirates (Captain)',devil_fruit:'Gomu Gomu no Mi (Rubber Human)',abilities:['Body made of rubber: Immune to blunt attacks (bullets, punches), electricity (mostly).','Can stretch limbs for attacks like Gomu Gomu no Pistol, Bazooka, Gatling, Rocket.','High tolerance for pain and immense willpower.'],feats:['Defeated Alvida, Captain Morgan, Buggy the Clown, Captain Kuro, Don Krieg, Arlong.','Defeated Wapol on Drum Island.','Infiltrated Whiskey Peak.','Survived encounter with Mr. 3 on Little Garden.','Declared war on Crocodile & began fight (around ep 110).'],stats:{Strength:80,Speed:65,Durability:90,Skill:60,Intelligence:30}},
- {id:'zoro',name:'Roronoa Zoro',hue:140,initials:'Z',role:'SWORDSMAN',epithet:'Pirate Hunter Zoro',affiliation:'Straw Hat Pirates (Swordsman)',devil_fruit:'None',abilities:['Master of Santoryu (Three Sword Style).','Incredible strength, endurance, and tolerance for pain.','Known techniques: Oni Giri, Tora Gari, Santoryu Ogi: Sanzen Sekai (briefly shown vs Mihawk).','Poor sense of direction.'],feats:['Defeated Captain Morgan, Cabaji, Nyaban Brothers (Siam & Buchi), Hatchan.','Survived a devastating blow from Dracule Mihawk.','Defeated Mr. 5 (Baroque Works Officer).','Defeated numerous Baroque Works Millions/Billions.','Learned to cut steel (vs Mr. 1 Daz Bonez around ep 118, but foundations laid earlier).'],stats:{Strength:85,Speed:70,Durability:85,Skill:90,Intelligence:40}},
- {id:'nami',name:'Nami',hue:28,initials:'N',role:'NAVIGATOR',epithet:'Cat Burglar Nami',affiliation:'Straw Hat Pirates (Navigator)',devil_fruit:'None',abilities:['Exceptional Navigator and Cartographer, can sense weather changes.','Skilled thief and pickpocket.','Uses a three-section Bo Staff for self-defense.','Acquired early version of Clima-Tact from Usopp (Alabasta arc, around ep 100+).','High intelligence and cunning.'],feats:['Stole treasure from Buggy.','Tricked and robbed various pirates.','Created maps of areas visited.','Successfully navigated the Straw Hats through treacherous waters.','Fought Miss Valentine alongside Vivi (Whiskey Peak).','Started learning to use the Clima-Tact (vs Miss Doublefinger happens later).'],stats:{Strength:30,Speed:50,Durability:40,Skill:60,Intelligence:95}},
- {id:'usopp',name:'Usopp',hue:48,initials:'U',role:'SNIPER',epithet:'"God" Usopp (Self-proclaimed)',affiliation:'Straw Hat Pirates (Sniper)',devil_fruit:'None',abilities:['Incredibly skilled Sniper/Marksman, uses a slingshot (Kabuto) with various ammo (lead stars, rotten eggs, smoke stars, explosive stars - Kayaku Boshi).','Compulsive liar, tells tall tales.','Inventive, creates gadgets and weapons (like Clima-Tact for Nami).','Surprisingly fast runner when scared.'],feats:['Defended Kaya and Syrup Village (defeated Jango partially, Chu).','Helped Nami defeat Miss Valentine.','Fought Mr. 5 & Miss Valentine team with Karoo (Little Garden).',"Key shot against Mr. 3's wax structure (Little Garden).","Created Nami's Clima-Tact."],stats:{Strength:35,Speed:60,Durability:45,Skill:85,Intelligence:70}},
- {id:'sanji',name:'Sanji',hue:210,initials:'S',role:'COOK',epithet:'Black Leg Sanji',affiliation:'Straw Hat Pirates (Cook)',devil_fruit:'None',abilities:['Master of the "Black Leg Style", fighting only with powerful kicks.','Superb Chef, knowledgeable about ingredients.','Keen intellect, often perceptive and strategic.','Strong sense of chivalry, refuses to harm women.','Known techniques: Collier, Épaule, Côtelette, Selle, Poitrine, Gigot, Mouton Shot.'],feats:['Defeated Pearl and fought Don Krieg at the Baratie.','Defeated Kuroobi of the Arlong Pirates.','Dealt with Baroque Works agents at Whiskey Peak.','Adopted "Mr. Prince" alias, outsmarted Crocodile temporarily at Rainbase (around ep 110).'],stats:{Strength:75,Speed:80,Durability:70,Skill:80,Intelligence:75}},
- {id:'chopper',name:'Tony Tony Chopper',hue:330,initials:'C',role:'DOCTOR',epithet:'Cotton Candy Lover Chopper',affiliation:'Straw Hat Pirates (Doctor)',devil_fruit:'Hito Hito no Mi (Human-Human Fruit)',abilities:['Zoan Devil Fruit user; reindeer who ate the Human-Human fruit.','Can transform between Walk Point (reindeer), Brain Point (small hybrid), Heavy Point (humanoid).','Developed Rumble Ball drug to access additional transformations (Jumping, Arm, Guard, Horn Points - usage started, mastery developed later).','Skilled Doctor.','Can understand and talk to animals.'],feats:['Assisted in defeating Wapol and his subordinates.',"Treated Nami's illness on Drum Island.",'Joined the Straw Hat Pirates.','Began using Rumble Ball transformations in Alabasta.'],stats:{Strength:70,Speed:60,Durability:65,Skill:80,Intelligence:85}},
- {id:'buggy',name:'Buggy',hue:0,initials:'B',role:'PIRATE CAPTAIN',epithet:'Buggy the Clown',affiliation:'Buggy Pirates (Captain)',devil_fruit:'Bara Bara no Mi (Chop-Chop Fruit)',abilities:['Paramecia; can split his body into pieces and control them levitating (feet must stay grounded or nearby).','Immune to slashing/cutting attacks.','Uses knives and "Buggy Balls" (powerful cannonballs).'],feats:['Terrorized Orange Town.','Fought Luffy (lost).',"Escaped capture in Loguetown (with Alvida's help).",'Briefly encountered Ace in Alabasta (searching for Luffy).'],stats:{Strength:40,Speed:30,Durability:30,Skill:50,Intelligence:45}},
- {id:'alvida',name:'Alvida',hue:300,initials:'A',role:'PIRATE',epithet:'"Iron Mace" Alvida',affiliation:'Alvida Pirates (former Captain), Buggy and Alvida Alliance',devil_fruit:'Sube Sube no Mi (Slip-Slip Fruit)',abilities:['Paramecia; makes her body extremely slippery.','Attacks and objects slide off her skin.','Transformed her appearance.','Can "skate" on surfaces.','Carries iron mace.'],feats:['First antagonist Luffy defeated (pre-fruit).','Tracked Luffy to Loguetown.','Allied with Buggy.','Helped Buggy escape Smoker in Loguetown.'],stats:{Strength:35,Speed:60,Durability:75,Skill:30,Intelligence:40}},
- {id:'smoker',name:'Smoker',hue:200,initials:'SM',role:'MARINE',epithet:'"White Chase" Smoker',affiliation:'Marines (Captain, Loguetown Base → pursuing Straw Hats)',devil_fruit:'Moku Moku no Mi (Plume-Plume Fruit)',abilities:['Logia; can create, control, and turn into smoke.','Intangible against most non-elemental/Sea Prism Stone attacks.','Can capture opponents with smoke (White Out).','Uses a large Jitte tipped with Sea Prism Stone (Kairoseki).'],feats:['Easily captured Buggy and Alvida (temporarily).','Cornered and almost captured Luffy multiple times in Loguetown.','Followed the Straw Hats into the Grand Line.','Fought Portgas D. Ace briefly in Nanohana, Alabasta.'],stats:{Strength:75,Speed:70,Durability:80,Skill:80,Intelligence:70}},
- {id:'ace',name:'Portgas D. Ace',hue:18,initials:'A',role:'COMMANDER',epithet:'"Fire Fist" Ace',affiliation:'Whitebeard Pirates (2nd Division Commander)',devil_fruit:'Mera Mera no Mi (Flame-Flame Fruit)',abilities:['Logia; can create, control, and turn into fire.','Intangible against most physical attacks.','Extremely powerful fire attacks (Hiken - Fire Fist, Higan - Fire Gun).','Physically strong.'],feats:['Introduced searching for Blackbeard.','Briefly clashed with Smoker, cancelling his smoke with fire.','Showed brotherly connection to Luffy.','Destroyed several Baroque Works ships easily.',"Offered Luffy a place on Whitebeard's crew (declined)."],stats:{Strength:85,Speed:85,Durability:85,Skill:90,Intelligence:75}},
- {id:'wapol',name:'Wapol',hue:265,initials:'W',role:'TYRANT',epithet:'Tin-Plate Wapol',affiliation:'Former King of Drum Kingdom',devil_fruit:'Baku Baku no Mi (Munch-Munch Fruit)',abilities:['Paramecia; can eat anything (wood, metal, cannons, people).','Can merge consumed objects into his body or create new things (Wapol House, Baku Baku Factory).','Wide, metal-reinforced jaw.'],feats:['Tyrannical ruler of Drum Island.','Ate his subordinates Chess and Kuromarimo to combine into Chessmarimo.','Fought Luffy and Chopper (lost).'],stats:{Strength:55,Speed:20,Durability:60,Skill:40,Intelligence:35}},
- {id:'dalton',name:'Dalton',hue:90,initials:'D',role:'GUARDIAN',epithet:'None prominent',affiliation:'Former Royal Guard of Drum, Leader of Sakura Kingdom (post-Wapol)',devil_fruit:'Ushi Ushi no Mi, Model: Bison',abilities:['Zoan; can transform into a full bison or a bison-human hybrid.','Increased strength, speed, and durability in transformations.','Uses a large spade-like blade.','Strong sense of justice.'],feats:['Protected Dr. Kureha from Wapol.',"Fought against Wapol's forces.",'Became the respected leader of the renamed Sakura Kingdom.'],stats:{Strength:70,Speed:65,Durability:70,Skill:60,Intelligence:60}},
- {id:'mr5',name:'Mr. 5',hue:35,initials:'5',role:'AGENT',epithet:'None prominent',affiliation:'Baroque Works (Officer Agent)',devil_fruit:'Bomu Bomu no Mi (Bomb-Bomb Fruit)',abilities:['Paramecia; makes his entire body and its excretions explosive.','Can flick explosive boogers (Nose Fancy Cannon).','His breath is explosive (Breeze Breath Bomb).','Immune to explosions.','Uses a flintlock revolver.'],feats:['Tasked with eliminating Princess Vivi.','Fought Luffy and Zoro at Whiskey Peak and Little Garden (lost).'],stats:{Strength:50,Speed:40,Durability:65,Skill:45,Intelligence:40}},
- {id:'missvalentine',name:'Miss Valentine',hue:55,initials:'V',role:'AGENT',epithet:'None prominent',affiliation:'Baroque Works (Officer Agent)',devil_fruit:'Kilo Kilo no Mi (Kilo-Kilo Fruit)',abilities:['Paramecia; can freely change her body weight from 1 kilogram to 10,000 kilograms.','Uses low weight to float with her umbrella, then drastically increases weight to crush opponents (10,000 Kilo Press).'],feats:['Partnered with Mr. 5.','Fought Nami and Vivi at Whiskey Peak, later Usopp and Nami at Little Garden (lost).'],stats:{Strength:25,Speed:30,Durability:35,Skill:55,Intelligence:45}},
- {id:'mr3',name:'Mr. 3 (Galdino)',hue:170,initials:'3',role:'AGENT',epithet:'The Strategist (Self-proclaimed)',affiliation:'Baroque Works (Officer Agent)',devil_fruit:'Doru Doru no Mi (Wax-Wax Fruit)',abilities:['Paramecia; can produce and manipulate candle wax from his body.','Wax hardens quickly into steel-like strength.','Can create wax clones (Candle Champion), restraints, keys, structures (Giant Wax Service Set).','Wax can be ignited.','Wax is vulnerable to heat/fire.'],feats:['Received orders directly from Crocodile.','Captured Zoro, Nami, Vivi, and Brogy the giant in a wax structure.','Fought Luffy, Usopp, and Karoo (lost).','Encountered Straw Hats again in Alabasta.'],stats:{Strength:30,Speed:30,Durability:40,Skill:75,Intelligence:70}},
- {id:'robin',name:'Miss All Sunday (Nico Robin)',hue:280,initials:'R',role:'VICE PRESIDENT',epithet:'Miss All Sunday',affiliation:'Baroque Works (Vice President)',devil_fruit:'Hana Hana no Mi (Flower-Flower Fruit)',abilities:['Paramecia; can replicate and sprout parts of her body (especially arms, hands, eyes) from any surface, including other people.','Can use sprouted limbs to restrain (Clutch), attack (Slap), or observe (sprouting eyes/ears).','Highly intelligent, reads Poneglyphs (secretly).','Calm and enigmatic demeanor.'],feats:['Appeared before the Straw Hats after Whiskey Peak.','Gave the Straw Hats an Eternal Pose to a safer island (destroyed by Luffy).','Met the Straw Hats again in Alabasta (Rainbase).','Saved Luffy from drowning in quicksand near Rainbase (around ep 110).','Interacted with Crocodile, showing complex relationship.'],stats:{Strength:40,Speed:50,Durability:50,Skill:90,Intelligence:98}},
- {id:'crocodile',name:'Sir Crocodile',hue:42,initials:'☠',role:'WARLORD',epithet:'Mr. 0',affiliation:'One of the Seven Warlords of the Sea (Shichibukai), Baroque Works (President)',devil_fruit:'Suna Suna no Mi (Sand-Sand Fruit)',abilities:['Logia; can create, control, and turn into sand.','Intangible against most attacks unless moisture/liquid is involved.','Can absorb moisture from anything with his right hand (Desert Spada).','Can create sandstorms (Sables), quicksand pits.','Large golden hook on his left hand (poisonous - revealed later).','Highly intelligent and manipulative strategist.'],feats:['Secretly orchestrated the Alabasta civil war.','Leader of the powerful Baroque Works organization.','Recognized as one of the Shichibukai.','Defeated Luffy easily in their first encounter by dehydrating him (around ep 110).'],stats:{Strength:80,Speed:75,Durability:90,Skill:95,Intelligence:95}},
- {id:'vivi',name:'Nefertari Vivi',hue:190,initials:'V',role:'PRINCESS',epithet:'Miss Wednesday (former)',affiliation:'Princess of Alabasta Kingdom, Straw Hat Pirates (temporary)',devil_fruit:'None',abilities:['Uses Peacock Slashers (Kujakki Slashers) - small blades attached to strings on her fingers.','Highly dedicated to her country and people.','Brave and determined.','Rides Karoo, her Super Spot-Billed Duck companion.'],feats:['Infiltrated Baroque Works as Miss Wednesday.','Traveled with the Straw Hats towards Alabasta.','Attempted to stop the civil war.','Fought alongside Straw Hats against Baroque Works agents.'],stats:{Strength:25,Speed:40,Durability:35,Skill:50,Intelligence:70}}
-];
-
-const devilFruits=[
- {name:'Gomu Gomu no Mi',type:'Paramecia',user:'Monkey D. Luffy',hue:355,description:"Grants the user's body the properties of rubber, allowing stretching and immunity to blunt force and electricity."},
- {name:'Bara Bara no Mi',type:'Paramecia',user:'Buggy',hue:0,description:'Allows the user to split their body into pieces and control them independently (except feet). Grants immunity to cutting/slashing attacks.'},
- {name:'Sube Sube no Mi',type:'Paramecia',user:'Alvida',hue:300,description:"Makes the user's body extremely slippery, causing attacks and objects to slide off. Also caused a significant change in the user's appearance."},
- {name:'Moku Moku no Mi',type:'Logia',user:'Smoker',hue:200,description:'Allows the user to create, control, and transform into smoke, granting intangibility against most non-Sea Prism Stone attacks.'},
- {name:'Mera Mera no Mi',type:'Logia',user:'Portgas D. Ace',hue:18,description:'Allows the user to create, control, and transform into fire, granting intangibility and powerful pyrokinetic attacks.'},
- {name:'Baku Baku no Mi',type:'Paramecia',user:'Wapol',hue:265,description:'Allows the user to eat virtually anything and incorporate it into their body or merge eaten things.'},
- {name:'Hito Hito no Mi',type:'Zoan',user:'Tony Tony Chopper',hue:330,description:'Allows an animal who eats it to gain human intelligence and the ability to transform into a human or human-hybrid form.'},
- {name:'Ushi Ushi no Mi, Model: Bison',type:'Zoan',user:'Dalton',hue:90,description:'Allows the user to transform into a full bison or a bison-human hybrid, gaining enhanced strength and durability.'},
- {name:'Bomu Bomu no Mi',type:'Paramecia',user:'Mr. 5',hue:35,description:"Makes the user's entire body and bodily fluids explosive, granting immunity to explosions."},
- {name:'Kilo Kilo no Mi',type:'Paramecia',user:'Miss Valentine',hue:55,description:'Allows the user to change their body weight between 1 and 10,000 kilograms without changing size.'},
- {name:'Doru Doru no Mi',type:'Paramecia',user:'Mr. 3',hue:170,description:'Allows the user to produce and manipulate candle wax, which can harden to steel-like strength but is weak to fire/heat.'},
- {name:'Hana Hana no Mi',type:'Paramecia',user:'Miss All Sunday (Nico Robin)',hue:280,description:'Allows the user to replicate and sprout parts of their body (like arms, eyes) from any surface.'},
- {name:'Suna Suna no Mi',type:'Logia',user:'Sir Crocodile',hue:42,description:'Allows the user to create, control, and transform into sand. Can absorb moisture. Weakness to liquids known by ep 110.'}
-];
-
-/* ================= SETUP ================= */
+(function(){
+'use strict';
+const D=window.WIKI_DATA;
 const $=id=>document.getElementById(id);
-const views={chars:$('view-chars'),detail:$('view-detail'),fruits:$('view-fruits')};
+
+/* ---- guard: data.js missing ---- */
+if(!D||!D.groups){
+  document.querySelector('main').innerHTML='<p style="text-align:center;font-family:var(--font-mono);color:#ff5e7a;padding:4rem 1rem;letter-spacing:.15em">⚠ DATA.JS NOT FOUND — place data.js next to index.html</p>';
+  return;
+}
+
+/* ---- site text from data ---- */
+$('site-badge').textContent=D.site.badge||'';
+$('site-tagline').textContent=D.site.tagline||'';
+$('site-footer').textContent=D.site.footer||'';
+(function(){const t=$('title');[...(D.site.title||'ARCHIVE')].forEach((ch,i)=>{
+  const s=document.createElement('span');s.textContent=ch;
+  if(ch===' ')s.style.width='.35em';
+  s.style.animationDelay=(.25+i*.045)+'s';t.appendChild(s);});})();
+
+/* ---- bubbles ---- */
+(function(){const o=$('ocean');for(let i=0;i<26;i++){const b=document.createElement('div');b.className='bubble';
+  const s=4+Math.random()*16;b.style.width=b.style.height=s+'px';b.style.left=Math.random()*100+'vw';
+  b.style.animationDuration=(9+Math.random()*16)+'s';b.style.animationDelay=(-Math.random()*20)+'s';o.appendChild(b);}})();
+
+/* ---- state ---- */
+const ALL=D.groups.flatMap(g=>g.characters);
+const state={tab:'chars',q:'',chip:'all',sort:'default'};
+let duel=[];
+const STATUS={
+  wanted:{label:'DEAD OR ALIVE',cls:'st-wanted'},
+  marine:{label:'MARINE · JUSTICE',cls:'st-marine'},
+  royal:{label:'ROYALTY',cls:'st-royal'},
+  warlord:{label:'SHICHIBUKAI',cls:'st-warlord'},
+  rogue:{label:'DEPOSED',cls:'st-rogue'}
+};
+const fmtBounty=n=>n?'\u0E3F'+n.toLocaleString('en-US'):'UNDISCLOSED';
+const power=c=>Object.values(c.stats).reduce((a,b)=>a+b,0);
+const views={chars:$('view-chars'),detail:$('view-detail'),fruits:$('view-fruits'),vs:$('view-vs')};
 const tabs={chars:$('tab-chars'),fruits:$('tab-fruits')};
 
 function showView(key){
   Object.values(views).forEach(v=>v.classList.remove('on'));
-  views[key].classList.remove('on'); // restart animation
   void views[key].offsetWidth;
   views[key].classList.add('on');
-  tabs.chars.classList.toggle('active',key==='chars'||key==='detail');
+  tabs.chars.classList.toggle('active',key!=='fruits');
   tabs.fruits.classList.toggle('active',key==='fruits');
+  $('command-bar').classList.toggle('hide',key==='detail'||key==='vs');
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-/* split hero title into animated letters */
-(function(){
-  const t=$('title'),text=t.textContent;t.textContent='';
-  [...text].forEach((ch,i)=>{
-    const s=document.createElement('span');
-    s.textContent=ch;
-    if(ch===' ')s.style.width='.35em';
-    s.style.animationDelay=(0.25+i*0.045)+'s';
-    t.appendChild(s);
-  });
-})();
+/* ---- command bar ---- */
+const CHIPS={
+  chars:[['all','All Souls'],['fruit','Fruit Users'],['nofruit','No Fruit']],
+  fruits:[['all','All'],['paramecia','Paramecia'],['logia','Logia'],['zoan','Zoan']]
+};
+function renderChips(){
+  $('chips').innerHTML=CHIPS[state.tab].map(([v,l])=>
+    `<button class="chip${state.chip===v?' on':''}" data-chip="${v}">${l}</button>`).join('');
+  $('sort').classList.toggle('hide',state.tab!=='chars');
+  $('search').placeholder=state.tab==='chars'?'Search souls, epithets, fruits...':'Search devil fruits...';
+}
+$('chips').addEventListener('click',e=>{
+  const c=e.target.closest('.chip');if(!c)return;
+  state.chip=c.dataset.chip;renderChips();
+  state.tab==='chars'?renderGroups():renderFruits();
+});
+$('search').addEventListener('input',e=>{
+  state.q=e.target.value.trim().toLowerCase();
+  state.tab==='chars'?renderGroups():renderFruits();
+});
+$('sort').addEventListener('change',e=>{state.sort=e.target.value;renderGroups();});
 
-/* ambient bubbles */
-(function(){
-  const ocean=$('ocean');
-  for(let i=0;i<26;i++){
-    const b=document.createElement('div');
-    b.className='bubble';
-    const size=4+Math.random()*16;
-    b.style.width=b.style.height=size+'px';
-    b.style.left=Math.random()*100+'vw';
-    b.style.animationDuration=(9+Math.random()*16)+'s';
-    b.style.animationDelay=(-Math.random()*20)+'s';
-    ocean.appendChild(b);
-  }
-})();
-
-/* ================= CHARACTER GRID ================= */
-function renderGrid(){
-  const grid=$('char-grid');
-  grid.innerHTML='';
-  $('char-count').textContent=characters.length+' RECORDS LOGGED';
-  characters.forEach((c,i)=>{
-    const card=document.createElement('div');
-    card.className='char-card';
-    card.style.setProperty('--h',c.hue);
-    card.style.animationDelay=(i*0.055)+'s';
-    card.classList.add('in');
-    const hasFruit=c.devil_fruit&&c.devil_fruit!=='None';
-    card.innerHTML=`
-      <div class="tagline">— ${c.role} —</div>
-      <div class="crest">
-        <div class="ring"></div><div class="ring2"></div>
-        <div class="core">${c.initials}</div>
-      </div>
-      <h3>${c.name}</h3>
-      <div class="epithet">${c.epithet}</div>
-      <span class="df-chip ${hasFruit?'':'none'}">${hasFruit?'◉ Fruit User':'No Fruit'}</span>`;
-    card.addEventListener('click',()=>showDetail(c.id));
-    grid.appendChild(card);
-  });
+/* ---- character filtering/sorting ---- */
+function matchesChar(c){
+  if(state.chip==='fruit'&&(!c.devil_fruit||c.devil_fruit==='None'))return false;
+  if(state.chip==='nofruit'&&c.devil_fruit&&c.devil_fruit!=='None')return false;
+  if(!state.q)return true;
+  return (c.name+' '+c.epithet+' '+c.affiliation+' '+(c.devil_fruit||'')).toLowerCase().includes(state.q);
+}
+function sortChars(arr){
+  const a=[...arr];
+  if(state.sort==='bounty')a.sort((x,y)=>(y.bounty||0)-(x.bounty||0));
+  else if(state.sort==='name')a.sort((x,y)=>x.name.localeCompare(y.name));
+  else if(state.sort==='power')a.sort((x,y)=>power(y)-power(x));
+  return a;
 }
 
-/* ================= DETAIL ================= */
-function statRow(label,value,cls){
-  const v=typeof value==='number'&&!isNaN(value)?Math.max(0,Math.min(100,value)):0;
-  return `<div class="stat-row">
-    <span class="lbl">${label}</span>
-    <div class="gauge"><div class="fill f-${cls}" data-w="${v}"></div></div>
-    <span class="val" data-target="${v}">0</span>
+/* ---- card HTML ---- */
+function crestHTML(c){
+  return `<div class="crest"><div class="ring"></div><div class="ring2"></div><div class="core">${c.initials}</div></div>`;
+}
+function cardHTML(c,i){
+  const hasFruit=c.devil_fruit&&c.devil_fruit!=='None';
+  const st=STATUS[c.status]||STATUS.wanted;
+  return `<div class="char-card in" data-id="${c.id}" style="--h:${c.hue};animation-delay:${i*.055}s">
+    <div class="card-inner">
+      <div class="card-face card-front">
+        <div class="tagline">— ${c.role} —</div>
+        <button class="icon-btn icon-duel" title="Recruit for duel" aria-label="Recruit for duel">⚔</button>
+        <button class="icon-btn icon-flip" title="Flip poster" aria-label="Flip card">↻</button>
+        ${crestHTML(c)}
+        <h3>${c.name}</h3>
+        <div class="epithet">${c.epithet}</div>
+        <span class="df-chip ${hasFruit?'':'none'}">${hasFruit?'◉ Fruit User':'No Fruit'}</span>
+      </div>
+      <div class="card-face card-back">
+        <div class="poster-wanted">WANTED</div>
+        <div class="poster-sub">BY THE WORLD GOVERNMENT</div>
+        <div class="poster-crest" style="--h:${c.hue}">${c.initials}</div>
+        <div class="poster-name">${c.name}</div>
+        <div class="poster-bounty">${fmtBounty(c.bounty)}<small>BOUNTY</small></div>
+        <span class="stamp ${st.cls}">${st.label}</span>
+        <button class="poster-duel">⚔ Challenge</button>
+      </div>
+    </div>
   </div>`;
 }
 
+/* ---- render grouped sections ---- */
+function renderGroups(){
+  const host=$('groups-host');
+  let total=0,html='';
+  D.groups.forEach(g=>{
+    const list=sortChars(g.characters.filter(matchesChar));
+    if(!list.length)return;
+    total+=list.length;
+    html+=`<section class="char-group">
+      <div class="group-head">
+        <svg class="squig" viewBox="0 0 60 12"><path d="M1 6 q7 -8 15 0 t15 0 t15 0 t15 0"/></svg>
+        <h2>${g.title}</h2>
+        <span class="g-tag">${g.tagline||''}</span>
+        <span class="g-count">${list.length} RECORD${list.length>1?'S':''}</span>
+      </div>
+      <div class="char-grid">${list.map(cardHTML).join('')}</div>
+    </section>`;
+  });
+  host.innerHTML=html;
+  $('no-results').classList.toggle('show',total===0);
+}
+
+/* ---- card interactions (delegation) ---- */
+$('groups-host').addEventListener('click',e=>{
+  const card=e.target.closest('.char-card');if(!card)return;
+  const id=card.dataset.id;
+  if(e.target.closest('.icon-flip')){card.classList.toggle('flipped');return;}
+  if(e.target.closest('.icon-duel')||e.target.closest('.poster-duel')){addDuel(id);return;}
+  showDetail(id);
+});
+
+/* ---- radar SVG ---- */
+function buildRadar(c){
+  const keys=['Strength','Speed','Durability','Skill','Intelligence'];
+  const cx=140,cy=140,R=100;
+  const pt=(i,r)=>{const a=(-90+i*72)*Math.PI/180;return[(cx+r*Math.cos(a)).toFixed(1),(cy+r*Math.sin(a)).toFixed(1)];};
+  let rings='';
+  [25,50,75,100].forEach(p=>{
+    rings+=`<polygon class="grid-line" points="${keys.map((_,i)=>pt(i,R*p/100).join(',')).join(' ')}"/>`;
+  });
+  let axes='',labels='';
+  keys.forEach((k,i)=>{
+    const[ex,ey]=pt(i,R);axes+=`<line class="axis" x1="${cx}" y1="${cy}" x2="${ex}" y2="${ey}"/>`;
+    const[lx,ly]=pt(i,R+20);
+    labels+=`<text class="axis-lbl" x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle">${k.slice(0,5)}</text>`;
+  });
+  const statPts=keys.map((k,i)=>pt(i,R*Math.max(0,Math.min(100,c.stats[k]||0))/100));
+  const poly=`<polygon class="stat-poly" points="${statPts.map(p=>p.join(',')).join(' ')}"/>`;
+  const vtx=statPts.map(p=>`<circle class="vtx" cx="${p[0]}" cy="${p[1]}" r="3.5"/>`).join('');
+  return `<svg id="radar" viewBox="0 0 280 280">${rings}${axes}${labels}${poly}${vtx}</svg>`;
+}
+
+/* ---- detail view ---- */
+function statRow(label,value,cls){
+  const v=typeof value==='number'&&!isNaN(value)?Math.max(0,Math.min(100,value)):0;
+  return `<div class="stat-row"><span class="lbl">${label}</span>
+    <div class="gauge"><div class="fill f-${cls}" data-w="${v}"></div></div>
+    <span class="val" data-target="${v}">0</span></div>`;
+}
 function showDetail(id){
-  const c=characters.find(x=>x.id===id);
-  if(!c)return;
+  const c=ALL.find(x=>x.id===id);if(!c)return;
   const p=$('detail-panel');
   p.style.setProperty('--h',c.hue);
-  const li=(arr,base)=>arr.map((t,i)=>`<li style="animation-delay:${base+i*0.08}s">${t}</li>`).join('');
+  const li=(arr,base)=>arr.map((t,i)=>`<li style="animation-delay:${base+i*.08}s">${t}</li>`).join('');
   p.innerHTML=`
-    <div class="detail-hero">
-      <div class="crest">
-        <div class="ring"></div><div class="ring2"></div>
-        <div class="core">${c.initials}</div>
-      </div>
+    <div class="detail-hero" style="--h:${c.hue}">
+      ${crestHTML(c)}
       <div class="detail-id">
         <h2>${c.name}</h2>
         <div class="ep">“${c.epithet}”</div>
-        <div class="aff">⚓ ${c.affiliation}</div>
+        <div class="aff">⚓ ${c.affiliation} · BOUNTY ${fmtBounty(c.bounty)}</div>
         <span class="fruit-line">◉ ${c.devil_fruit||'None'}</span>
+        <button class="hero-duel" data-id="${c.id}">⚔ Add to Duel</button>
       </div>
     </div>
     <div class="detail-body">
-      <div class="detail-col">
-        <h3>Abilities &amp; Powers</h3>
-        <ul>${li(c.abilities||[],0.15)}</ul>
-      </div>
-      <div class="detail-col">
-        <h3>Notable Feats <small style="font-family:var(--font-mono);font-size:.55em;color:var(--ink-dim)">PRE-EP 110</small></h3>
-        <ul>${li(c.feats||[],0.25)}</ul>
-      </div>
+      <div class="detail-col"><h3>Abilities &amp; Powers</h3><ul>${li(c.abilities||[],.15)}</ul></div>
+      <div class="detail-col"><h3>Notable Feats</h3><ul>${li(c.feats||[],.25)}</ul></div>
     </div>
     <div class="stats-block">
       <h3>Combat Assessment</h3>
-      ${statRow('Strength',c.stats.Strength,'strength')}
-      ${statRow('Speed',c.stats.Speed,'speed')}
-      ${statRow('Durability',c.stats.Durability,'durability')}
-      ${statRow('Skill / Technique',c.stats.Skill,'skill')}
-      ${statRow('Intelligence',c.stats.Intelligence,'intelligence')}
+      <div class="stats-flex">
+        <div>${buildRadar(c)}</div>
+        <div>
+          ${statRow('Strength',c.stats.Strength,'strength')}
+          ${statRow('Speed',c.stats.Speed,'speed')}
+          ${statRow('Durability',c.stats.Durability,'durability')}
+          ${statRow('Skill / Technique',c.stats.Skill,'skill')}
+          ${statRow('Intelligence',c.stats.Intelligence,'intelligence')}
+        </div>
+      </div>
     </div>`;
+  p.querySelector('.hero-duel').addEventListener('click',()=>addDuel(c.id));
   showView('detail');
-  /* animate gauges + counters after paint */
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    p.querySelector('#radar').classList.add('go');
     p.querySelectorAll('.fill').forEach(f=>{f.style.width=f.dataset.w+'%';});
     p.querySelectorAll('.val').forEach(el=>{
-      const target=+el.dataset.target;const start=performance.now();
-      (function tick(now){
-        const t=Math.min(1,(now-start)/1100);
+      const target=+el.dataset.target,start=performance.now();
+      (function tick(now){const t=Math.min(1,(now-start)/1100);
         el.textContent=Math.round(target*(1-Math.pow(1-t,3)));
-        if(t<1)requestAnimationFrame(tick);
-      })(start);
+        if(t<1)requestAnimationFrame(tick);})(start);
     });
   }));
 }
 
-/* ================= FRUITS ================= */
+/* ---- fruits ---- */
 function renderFruits(){
   const grid=$('fruit-grid');
-  grid.innerHTML='';
-  $('fruit-count').textContent=devilFruits.length+' FRUITS IDENTIFIED';
-  [...devilFruits].sort((a,b)=>a.name.localeCompare(b.name)).forEach((f,i)=>{
-    const card=document.createElement('div');
-    card.className='fruit-card in';
-    card.style.setProperty('--fh',f.hue);
-    card.style.animationDelay=(i*0.06)+'s';
-    card.innerHTML=`
+  let list=[...D.fruits].sort((a,b)=>a.name.localeCompare(b.name));
+  if(state.chip!=='all')list=list.filter(f=>f.type.toLowerCase()===state.chip);
+  if(state.q)list=list.filter(f=>(f.name+' '+f.user+' '+f.type+' '+f.description).toLowerCase().includes(state.q));
+  $('fruit-count').textContent=list.length+' FRUITS IDENTIFIED';
+  $('no-results-f').style.display=list.length?'none':'block';
+  grid.innerHTML=list.map((f,i)=>`
+    <div class="fruit-card in" style="--fh:${f.hue};animation-delay:${i*.06}s">
       <div class="fruit-orb"></div>
       <div class="fruit-info">
         <h4>${f.name}</h4>
@@ -549,20 +708,80 @@ function renderFruits(){
           <span class="badge user">☠ ${f.user||'Unknown'}</span>
         </div>
         <p>${f.description}</p>
-      </div>`;
-    grid.appendChild(card);
-  });
-  showView('fruits');
+      </div>
+    </div>`).join('');
 }
 
-/* ================= EVENTS ================= */
-tabs.chars.addEventListener('click',()=>{renderGrid();showView('chars');});
-tabs.fruits.addEventListener('click',renderFruits);
-$('btn-detail-back').addEventListener('click',()=>{renderGrid();showView('chars');});
-$('btn-fruit-back').addEventListener('click',()=>{renderGrid();showView('chars');});
+/* ---- duel system ---- */
+function addDuel(id){
+  if(duel.includes(id))return;
+  if(duel.length>=2)duel.shift();
+  duel.push(id);
+  renderTray();
+}
+function renderTray(){
+  const tray=$('duel-tray'),slots=$('tray-slots');
+  if(!duel.length){tray.classList.remove('show');slots.innerHTML='<span class="tray-empty">⚔ Recruit 2 fighters</span>';$('duel-go').disabled=true;return;}
+  tray.classList.add('show');
+  slots.innerHTML=duel.map(id=>{
+    const c=ALL.find(x=>x.id===id);
+    return `<span class="tray-slot" style="--h:${c.hue}"><span class="mini">${c.initials}</span>${c.name.split(' ')[0]}<button class="rm" data-rm="${id}" aria-label="Remove">✕</button></span>`;
+  }).join('')+(duel.length<2?'<span class="tray-empty">+1 more</span>':'');
+  $('duel-go').disabled=duel.length!==2;
+}
+$('tray-slots').addEventListener('click',e=>{
+  const rm=e.target.closest('.rm');if(!rm)return;
+  duel=duel.filter(x=>x!==rm.dataset.rm);renderTray();
+});
+$('duel-go').addEventListener('click',()=>{if(duel.length===2)showVs();});
 
-/* ================= INIT ================= */
-renderGrid();
+function showVs(){
+  const A=ALL.find(x=>x.id===duel[0]),B=ALL.find(x=>x.id===duel[1]);
+  const keys=[['Strength','strength'],['Speed','speed'],['Durability','durability'],['Skill','skill'],['Intelligence','intelligence']];
+  let winsA=0,winsB=0;
+  const rows=keys.map(([k,cls])=>{
+    const a=A.stats[k]||0,b=B.stats[k]||0;
+    if(a>b)winsA++;else if(b>a)winsB++;
+    return `<div class="vs-row">
+      <div class="vs-side left ${a>b?'win':''}">
+        <span class="num">${a}</span>
+        <div class="vs-track"><div class="vs-fill f-${cls}" data-w="${a}"></div></div>
+      </div>
+      <div class="mid">${k}</div>
+      <div class="vs-side ${b>a?'win':''}">
+        <div class="vs-track"><div class="vs-fill f-${cls}" data-w="${b}"></div></div>
+        <span class="num">${b}</span>
+      </div>
+    </div>`;
+  }).join('');
+  let verdict,sub;
+  if(winsA>winsB){verdict=`${A.name} TAKES THE SEA`;sub=`${winsA} categories to ${winsB} · total power ${power(A)} vs ${power(B)}`;}
+  else if(winsB>winsA){verdict=`${B.name} TAKES THE SEA`;sub=`${winsB} categories to ${winsA} · total power ${power(B)} vs ${power(A)}`;}
+  else{verdict='A DEAD-EVEN CLASH';sub=`${winsA} categories each · the Grand Line decides`;}
+  $('vs-panel').innerHTML=`
+    <div class="vs-hero">
+      <div class="vs-fighter" style="--h:${A.hue}">${crestHTML(A)}<h3>${A.name}</h3><div class="ep">${A.epithet}</div></div>
+      <div class="vs-bolt">VS</div>
+      <div class="vs-fighter" style="--h:${B.hue}">${crestHTML(B)}<h3>${B.name}</h3><div class="ep">${B.epithet}</div></div>
+    </div>
+    <div class="vs-stats">${rows}</div>
+    <div class="vs-verdict"><div class="v-line">☠ ${verdict}</div><div class="v-sub">${sub}</div></div>`;
+  showView('vs');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    document.querySelectorAll('#vs-panel .vs-fill').forEach(f=>{f.style.width=f.dataset.w+'%';});
+  }));
+}
+
+/* ---- tabs & back buttons ---- */
+tabs.chars.addEventListener('click',()=>{state.tab='chars';state.chip='all';state.q='';$('search').value='';renderChips();renderGroups();showView('chars');});
+tabs.fruits.addEventListener('click',()=>{state.tab='fruits';state.chip='all';state.q='';$('search').value='';renderChips();renderFruits();showView('fruits');});
+$('btn-detail-back').addEventListener('click',()=>{renderGroups();showView('chars');});
+$('btn-vs-back').addEventListener('click',()=>{renderGroups();showView('chars');});
+
+/* ---- init ---- */
+renderChips();
+renderGroups();
+})();
 </script>
 </body>
 </html>
