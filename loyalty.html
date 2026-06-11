@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loyalty.</title>
+    <meta name="theme-color" content="#040404">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%23C9A84C'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        /* ===================== VARIABLES ===================== */
+        :root {
+            --void: #040404;
+            --charcoal: #0c0c0c;
+            --gold: #C9A84C;
+            --gold-light: #E8D5A3;
+            --gold-dim: #8B7230;
+            --gold-glow: rgba(201, 168, 76, 0.35);
+            --bone: #F0EBE0;
+            --wine: #2a0a0a;
+        }
+
+        /* ===================== RESET ===================== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: var(--gold-dim) var(--void);
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--void); }
+        ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 3px; }
+
+        body {
+            background: linear-gradient(180deg, var(--void) 0%, #080604 50%, #0a0604 100%);
+            color: var(--bone);
+            font-family: 'Crimson Text', serif;
+            overflow-x: hidden;
+        }
+
+        ::selection {
+            background: var(--gold);
+            color: var(--void);
+        }
+
+        /* ===================== COMPANION DOT ===================== */
+        .companion {
+            position: fixed;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--gold-light), var(--gold) 50%, transparent 72%);
+            pointer-events: none;
+            z-index: 10000;
+            mix-blend-mode: screen;
+            opacity: 0;
+            transition: opacity 1.2s ease;
+            will-change: left, top;
+        }
+        .companion.active { opacity: 1; }
+
+        @media (hover: none) {
+            .companion { display: none; }
+            body { cursor: auto !important; }
+        }
+
+        /* ===================== OVERLAYS ===================== */
+        .grain {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0.04;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 200px 200px;
+        }
+
+        .vignette {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9997;
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.5) 100%);
+        }
+
+        /* ===================== STREET LINES ===================== */
+        .street-line {
+            position: fixed;
+            top: 0;
+            width: 1px;
+            height: 100%;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 2s ease;
+            pointer-events: none;
+        }
+        .street-line.left {
+            left: 40px;
+            background: linear-gradient(to bottom, transparent 5%, var(--gold-dim) 30%, var(--gold-dim) 70%, transparent 95%);
+        }
+        .street-line.right {
+            right: 40px;
+            background: linear-gradient(to bottom, transparent 5%, var(--gold-dim) 30%, var(--gold-dim) 70%, transparent 95%);
+        }
+        .street-line.visible { opacity: 0.25; }
+
+        @media (max-width: 768px) {
+            .street-line.left { left: 12px; }
+            .street-line.right { right: 12px; }
+        }
+
+        /* ===================== HERO ===================== */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-glow {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(201,168,76,0.05) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: glowPulse 5s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes glowPulse {
+            0% { transform: translate(-50%, -50%) scale(0.85); opacity: 0.5; }
+            100% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+        }
+
+        .hero-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(4rem, 16vw, 13rem);
+            letter-spacing: 0.35em;
+            color: var(--gold);
+            display: flex;
+            position: relative;
+            z-index: 2;
+            text-shadow: 0 0 30px rgba(201,168,76,0.12);
+            text-indent: 0.35em; /* balance letter-spacing on left */
+        }
+
+        .hero-title span {
+            opacity: 0;
+            display: inline-block;
+            animation: letterIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation-delay: calc(0.5s + var(--i) * 0.13s);
+        }
+
+        @keyframes letterIn {
+            0% {
+                opacity: 0;
+                transform: translateY(40px) scale(0.7);
+                text-shadow: 0 0 0 transparent;
+            }
+            35% {
+                text-shadow: 0 0 50px var(--gold), 0 0 100px rgba(201,168,76,0.3);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                text-shadow: 0 0 15px rgba(201,168,76,0.1);
+            }
+        }
+
+        /* Shimmer that activates after reveal */
+        .hero-title.shimmer {
+            background: linear-gradient(
+                90deg,
+                var(--gold) 0%,
+                var(--gold) 25%,
+                var(--gold-light) 50%,
+                var(--gold) 75%,
+                var(--gold) 100%
+            );
+            background-size: 250% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 7s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 100% center; }
+            100% { background-position: -100% center; }
+        }
+
+        .hero-line {
+            width: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            margin-top: 2rem;
+            animation: drawLine 1.8s ease forwards;
+            animation-delay: 1.6s;
+            position: relative;
+            z-index: 2;
+        }
+
+        @keyframes drawLine {
+            to { width: min(75vw, 550px); }
+        }
+
+        .hero-subtitle {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(0.85rem, 2vw, 1.2rem);
+            font-weight: 300;
+            letter-spacing: 0.55em;
+            color: var(--gold-dim);
+            margin-top: 1.5rem;
+            opacity: 0;
+            animation: fadeUp 1.2s ease forwards;
+            animation-delay: 2.2s;
+            position: relative;
+            z-index: 2;
+            text-indent: 0.55em;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .scroll-hint {
+            position: absolute;
+            bottom: 2.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.6rem;
+            opacity: 0;
+            animation: fadeUp 1s ease forwards;
+            animation-delay: 3.2s;
+        }
+
+        .scroll-hint span {
+            font-size: 0.65rem;
+            letter-spacing: 0.35em;
+            color: var(--gold-dim);
+            text-transform: uppercase;
+        }
+
+        .scroll-hint .arrow {
+            width: 1px;
+            height: 28px;
+            background: linear-gradient(to bottom, var(--gold-dim), transparent);
+            animation: arrowPulse 2.2s ease infinite;
+        }
+
+        @keyframes arrowPulse {
+            0%, 100% { opacity: 0.25; transform: scaleY(0.5); }
+            50% { opacity: 1; transform: scaleY(1); }
+        }
+
+        /* ===================== CONVERGENCE ===================== */
+        .convergence {
+            min-height: 100vh;
+            padding: 10vh 0;
+            position: relative;
+        }
+
+        .convergence-intro {
+            text-align: center;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(1rem, 2.2vw, 1.35rem);
+            font-weight: 300;
+            font-style: italic;
+            color: var(--gold-dim);
+            letter-spacing: 0.12em;
+            padding: 0 2rem;
+            margin-bottom: 7vh;
+            opacity: 0;
+            transform: translateY(25px);
+            transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .convergence-intro.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .pair {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2.2rem clamp(2rem, 10vw, 10rem);
+            position: relative;
+        }
+
+        .pair-word {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(1.4rem, 4.5vw, 3.2rem);
+            letter-spacing: 0.2em;
+            color: var(--bone);
+            opacity: 0;
+            transition: all 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+
+        .pair-word::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--gold);
+            transition: width 1s ease 1.2s;
+        }
+
+        .pair-word.left { transform: translateX(-80px); }
+        .pair-word.right { transform: translateX(80px); }
+
+        .pair.visible .pair-word {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .pair.visible .pair-word::after {
+            width: 100%;
+        }
+
+        .pair-word:hover {
+            color: var(--gold);
+            text-shadow: 0 0 25px var(--gold-glow);
+            cursor: default;
+        }
+
+        .pair-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+        }
+
+        .pair-connector {
+            width: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            transition: width 1.5s ease 0.4s;
+        }
+
+        .pair.visible .pair-connector {
+            width: clamp(20px, 8vw, 80px);
+        }
+
+        .pair-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--gold);
+            opacity: 0;
+            transition: opacity 0.8s ease 0.9s;
+            box-shadow: 0 0 8px var(--gold-glow);
+            flex-shrink: 0;
+        }
+
+        .pair.visible .pair-dot { opacity: 1; }
+
+        /* ===================== QUOTE ===================== */
+        .quote-section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 6rem 2rem;
+            position: relative;
+        }
+
+        .quote-section .bg-glow {
+            position: absolute;
+            width: 450px;
+            height: 450px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(201,168,76,0.04) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .quote-mark {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(5rem, 12vw, 9rem);
+            color: var(--gold-dim);
+            line-height: 0.5;
+            margin-bottom: 1rem;
+            opacity: 0;
+            transition: all 1.8s ease;
+            position: relative;
+            z-index: 2;
+        }
+        .quote-mark.visible { opacity: 0.3; }
+
+        .quote-line {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(1.25rem, 3.8vw, 2.6rem);
+            font-weight: 300;
+            font-style: italic;
+            line-height: 2;
+            text-align: center;
+            max-width: 780px;
+            color: var(--bone);
+            opacity: 0;
+            transform: translateY(25px);
+            transition: all 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            z-index: 2;
+        }
+
+        .quote-line.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .gold-word {
+            position: relative;
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        .gold-word::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--gold);
+            transition: width 1.2s ease 0.5s;
+        }
+
+        .quote-line.visible .gold-word::after {
+            width: 100%;
+        }
+
+        .quote-attribution {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(0.8rem, 1.5vw, 1rem);
+            letter-spacing: 0.5em;
+            color: var(--gold-dim);
+            margin-top: 3rem;
+            opacity: 0;
+            transform: translateY(12px);
+            transition: all 1s ease;
+            position: relative;
+            z-index: 2;
+            text-indent: 0.5em;
+        }
+        .quote-attribution.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ===================== INTERACTIVE ===================== */
+        .interactive {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8vh 2rem;
+            position: relative;
+        }
+
+        .interactive-heading {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(1.5rem, 4vw, 3rem);
+            letter-spacing: 0.35em;
+            color: var(--gold);
+            opacity: 0;
+            transition: all 1.2s ease;
+            text-indent: 0.35em;
+        }
+        .interactive-heading.visible { opacity: 1; }
+
+        .interactive-sub {
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            color: var(--gold-dim);
+            margin-top: 0.6rem;
+            margin-bottom: 3rem;
+            opacity: 0;
+            transition: all 1.2s ease 0.25s;
+        }
+        .interactive-sub.visible { opacity: 1; }
+
+        .canvas-wrap {
+            position: relative;
+            width: min(88vw, 880px);
+            height: 55vh;
+            border: 1px solid rgba(201,168,76,0.12);
+            transition: border-color 0.6s ease, box-shadow 0.6s ease;
+        }
+
+        .canvas-wrap:hover {
+            border-color: rgba(201,168,76,0.28);
+            box-shadow: 0 0 40px rgba(201,168,76,0.04);
+        }
+
+        .canvas-wrap canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .canvas-hint {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Crimson Text', serif;
+            font-size: 0.75rem;
+            color: var(--gold-dim);
+            opacity: 0.45;
+            pointer-events: none;
+            letter-spacing: 0.08em;
+            white-space: nowrap;
+            transition: opacity 0.5s ease;
+        }
+
+        .canvas-wrap:hover .canvas-hint { opacity: 0; }
+
+        /* ===================== SIGNATURE ===================== */
+        .signature {
+            padding: 5rem 2rem 3rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .sig-line {
+            width: min(45vw, 260px);
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+            margin: 0 auto 2rem;
+        }
+
+        .sig-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(1.2rem, 3vw, 2rem);
+            font-weight: 600;
+            color: var(--gold);
+            letter-spacing: 0.08em;
+        }
+
+        .sig-show {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 0.85rem;
+            letter-spacing: 0.55em;
+            color: var(--gold-dim);
+            margin-top: 0.5rem;
+            text-indent: 0.55em;
+        }
+
+        /* ===================== FINAL MESSAGE ===================== */
+        .final {
+            padding: 8vh 2rem 10vh;
+            text-align: center;
+            position: relative;
+        }
+
+        .final-text {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(1.3rem, 3vw, 2.2rem);
+            font-weight: 300;
+            font-style: italic;
+            color: var(--gold);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .final-text.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .final-sub {
+            font-family: 'Crimson Text', serif;
+            font-size: 0.85rem;
+            color: var(--gold-dim);
+            margin-top: 1rem;
+            opacity: 0;
+            transition: all 1.5s ease 0.8s;
+        }
+
+        .final-sub.visible {
+            opacity: 0.6;
+        }
+
+        .final-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--gold);
+            margin: 3rem auto 0;
+            opacity: 0;
+            transition: all 1s ease 1.5s;
+            box-shadow: 0 0 12px var(--gold-glow);
+        }
+
+        .final-dot.visible { opacity: 1; }
+
+        /* ===================== RESPONSIVE ===================== */
+        @media (max-width: 768px) {
+            .hero-title {
+                letter-spacing: 0.22em;
+                text-indent: 0.22em;
+            }
+            .hero-subtitle {
+                letter-spacing: 0.3em;
+                text-indent: 0.3em;
+            }
+            .pair {
+                padding: 1.8rem 1.5rem;
+            }
+            .pair-word {
+                font-size: clamp(1rem, 5.5vw, 1.8rem);
+                letter-spacing: 0.12em;
+            }
+            .pair-connector {
+                display: none;
+            }
+        }
+
+        @media (hover: hover) {
+            body { cursor: none; }
+            a, button, .pair-word, .canvas-wrap canvas { cursor: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Companion -->
+    <div class="companion" id="companion"></div>
+
+    <!-- Overlays -->
+    <div class="grain"></div>
+    <div class="vignette"></div>
+
+    <!-- Two-Way Street Lines -->
+    <div class="street-line left" id="streetL"></div>
+    <div class="street-line right" id="streetR"></div>
+
+    <!-- ==================== HERO ==================== -->
+    <section class="hero">
+        <div class="hero-glow"></div>
+        <div class="hero-title" id="heroTitle">
+            <span style="--i:0">L</span><span style="--i:1">O</span><span style="--i:2">Y</span><span style="--i:3">A</span><span style="--i:4">L</span><span style="--i:5">T</span><span style="--i:6">Y</span>
+        </div>
+        <div class="hero-line"></div>
+        <p class="hero-subtitle">A TWO-WAY STREET</p>
+        <div class="scroll-hint">
+            <span>Scroll</span>
+            <div class="arrow"></div>
+        </div>
+    </section>
+
+    <!-- ==================== CONVERGENCE ==================== -->
+    <section class="convergence" id="convergence">
+        <p class="convergence-intro reveal" data-delay="0">Where two paths become one</p>
+
+        <div class="pair reveal" data-delay="0">
+            <span class="pair-word left">TRUST</span>
+            <div class="pair-center"><div class="pair-connector"></div><div class="pair-dot"></div><div class="pair-connector"></div></div>
+            <span class="pair-word right">TRUST</span>
+        </div>
+        <div class="pair reveal" data-delay="120">
+            <span class="pair-word left">GIVE</span>
+            <div class="pair-center"><div class="pair-connector"></div><div class="pair-dot"></div><div class="pair-connector"></div></div>
+            <span class="pair-word right">RECEIVE</span>
+        </div>
+        <div class="pair reveal" data-delay="240">
+            <span class="pair-word left">SACRIFICE</span>
+            <div class="pair-center"><div class="pair-connector"></div><div class="pair-dot"></div><div class="pair-connector"></div></div>
+            <span class="pair-word right">DEVOTION</span>
+        </div>
+        <div class="pair reveal" data-delay="360">
+            <span class="pair-word left">STAND</span>
+            <div class="pair-center"><div class="pair-connector"></div><div class="pair-dot"></div><div class="pair-connector"></div></div>
+            <span class="pair-word right">FIGHT</span>
+        </div>
+        <div class="pair reveal" data-delay="480">
+            <span class="pair-word left">PROTECT</span>
+            <div class="pair-center"><div class="pair-connector"></div><div class="pair-dot"></div><div class="pair-connector"></div></div>
+            <span class="pair-word right">HONOR</span>
+        </div>
+    </section>
+
+    <!-- ==================== QUOTE ==================== -->
+    <section class="quote-section" id="quoteSection">
+        <div class="bg-glow"></div>
+        <div class="quote-mark reveal" data-delay="0">&ldquo;</div>
+        <p class="quote-line reveal" data-delay="200">Loyalty is a <span class="gold-word">two-way street</span>.</p>
+        <p class="quote-line reveal" data-delay="550">If I&rsquo;m asking for it from <span class="gold-word">you</span>,</p>
+        <p class="quote-line reveal" data-delay="900">then you&rsquo;re getting it from <span class="gold-word">me</span>.</p>
+        <p class="quote-attribution reveal" data-delay="1300">&mdash; HARVEY SPECTER</p>
+    </section>
+
+    <!-- ==================== INTERACTIVE ==================== -->
+    <section class="interactive" id="interactiveSection">
+        <h2 class="interactive-heading reveal" data-delay="0">PROVE YOURS</h2>
+        <p class="interactive-sub reveal" data-delay="200">Move. Stay. Commit.</p>
+        <div class="canvas-wrap">
+            <canvas id="loyaltyCanvas"></canvas>
+            <span class="canvas-hint">Your presence draws loyalty</span>
+        </div>
+    </section>
+
+    <!-- ==================== SIGNATURE ==================== -->
+    <section class="signature">
+        <div class="sig-line"></div>
+        <p class="sig-name">Harvey Specter</p>
+        <p class="sig-show">SUITS &middot; 2011</p>
+    </section>
+
+    <!-- ==================== FINAL ==================== -->
+    <section class="final" id="finalSection">
+        <p class="final-text reveal" data-delay="0">You stayed.</p>
+        <p class="final-sub reveal" data-delay="300">That&rsquo;s all loyalty ever asked.</p>
+        <div class="final-dot reveal" data-delay="600"></div>
+    </section>
+
+
+    <script>
+    (function () {
+        'use strict';
+
+        /* ==========================================
+           COMPANION DOT
+           Follows cursor faithfully. Never leaves.
+        ========================================== */
+        const companion = document.getElementById('companion');
+        let mX = window.innerWidth / 2;
+        let mY = window.innerHeight / 2;
+        let cX = mX, cY = mY;
+        let active = false;
+
+        function activate() {
+            if (!active) {
+                active = true;
+                companion.classList.add('active');
+            }
+        }
+
+        document.addEventListener('mousemove', e => { mX = e.clientX; mY = e.clientY; activate(); });
+        document.addEventListener('touchstart', e => { mX = e.touches[0].clientX; mY = e.touches[0].clientY; activate(); }, { passive: true });
+        document.addEventListener('touchmove', e => { mX = e.touches[0].clientX; mY = e.touches[0].clientY; }, { passive: true });
+
+        (function tick() {
+            cX += (mX - cX) * 0.055;
+            cY += (mY - cY) * 0.055;
+            companion.style.left = cX + 'px';
+            companion.style.top = cY + 'px';
+            requestAnimationFrame(tick);
+        })();
+
+        /* ==========================================
+           STREET LINES  — converge on scroll
+        ========================================== */
+        const streetL = document.getElementById('streetL');
+        const streetR = document.getElementById('streetR');
+
+        setTimeout(() => {
+            streetL.classList.add('visible');
+            streetR.classList.add('visible');
+        }, 3200);
+
+        function updateStreets() {
+            const total = document.documentElement.scrollHeight - window.innerHeight;
+            if (total <= 0) return;
+            const p = Math.min(1, window.scrollY / total);
+            const start = window.innerWidth <= 768 ? 12 : 40;
+            const center = window.innerWidth / 2;
+            const offset = start + (center - start) * p;
+            streetL.style.left = offset + 'px';
+            streetR.style.right = offset + 'px';
+        }
+
+        /* ==========================================
+           HERO PARALLAX
+        ========================================== */
+        const heroTitle = document.getElementById('heroTitle');
+
+        function updateHeroParallax() {
+            const s = window.scrollY;
+            if (s < window.innerHeight) {
+                heroTitle.style.transform = 'translateY(' + (s * 0.28) + 'px)';
+                heroTitle.style.opacity = 1 - (s / window.innerHeight);
+            }
+        }
+
+        /* ==========================================
+           SCROLL REVEAL  (Intersection Observer)
+        ========================================== */
+        const reveals = document.querySelectorAll('.reveal');
+        const revealIO = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const d = parseInt(entry.target.dataset.delay) || 0;
+                    setTimeout(() => entry.target.classList.add('visible'), d);
+                    revealIO.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.25, rootMargin: '0px 0px -40px 0px' });
+
+        reveals.forEach(el => revealIO.observe(el));
+
+        /* ==========================================
+           MASTER SCROLL HANDLER
+        ========================================== */
+        let ticking = false;
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                requestAnimationFrame(() => {
+                    updateHeroParallax();
+                    updateStreets();
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        });
+
+        /* ==========================================
+           SHIMMER  (activates after hero reveal)
+        ========================================== */
+        setTimeout(() => {
+            heroTitle.classList.add('shimmer');
+        }, 3500);
+
+        /* ==========================================
+           INTERACTIVE CANVAS
+           Presence = loyalty. Hover draws gold.
+        ========================================== */
+        const canvas = document.getElementById('loyaltyCanvas');
+        const ctx = canvas.getContext('2d');
+        const wrap = canvas.parentElement;
+
+        function sizeCanvas() {
+            const r = wrap.getBoundingClientRect();
+            canvas.width = r.width * window.devicePixelRatio;
+            canvas.height = r.height * window.devicePixelRatio;
+            ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+        }
+        sizeCanvas();
+        window.addEventListener('resize', sizeCanvas);
+
+        let hovering = false;
+        let lx = 0, ly = 0;
+
+        function pos(e) {
+            const r = canvas.getBoundingClientRect();
+            return { x: e.clientX - r.left, y: e.clientY - r.top };
+        }
+
+        function enter(e) {
+            hovering = true;
+            const p = pos(e);
+            lx = p.x; ly = p.y;
+        }
+
+        function move(e) {
+            if (!hovering) return;
+            const p = pos(e);
+            ctx.beginPath();
+            ctx.moveTo(lx, ly);
+            ctx.lineTo(p.x, p.y);
+            ctx.strokeStyle = 'rgba(201,168,76,' + (0.25 + Math.random() * 0.35) + ')';
+            ctx.lineWidth = 0.6 + Math.random() * 1.4;
+            ctx.shadowColor = 'rgba(201,168,76,0.45)';
+            ctx.shadowBlur = 6;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Occasional accent dot
+            if (Math.random() > 0.88) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 1.2 + Math.random(), 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(232,213,163,0.5)';
+                ctx.fill();
+            }
+
+            lx = p.x; ly = p.y;
+        }
+
+        function leave() { hovering = false; }
+
+        canvas.addEventListener('mouseenter', enter);
+        canvas.addEventListener('mousemove', move);
+        canvas.addEventListener('mouseleave', leave);
+
+        // Touch support
+        canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            hovering = true;
+            const t = e.touches[0];
+            const r = canvas.getBoundingClientRect();
+            lx = t.clientX - r.left;
+            ly = t.clientY - r.top;
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            if (!hovering) return;
+            const t = e.touches[0];
+            const r = canvas.getBoundingClientRect();
+            const x = t.clientX - r.left;
+            const y = t.clientY - r.top;
+
+            ctx.beginPath();
+            ctx.moveTo(lx, ly);
+            ctx.lineTo(x, y);
+            ctx.strokeStyle = 'rgba(201,168,76,' + (0.25 + Math.random() * 0.35) + ')';
+            ctx.lineWidth = 0.6 + Math.random() * 1.4;
+            ctx.shadowColor = 'rgba(201,168,76,0.45)';
+            ctx.shadowBlur = 6;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            lx = x; ly = y;
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', () => { hovering = false; });
+
+    })();
+    </script>
+</body>
+</html>
