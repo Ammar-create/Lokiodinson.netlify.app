@@ -176,20 +176,6 @@ The original main page - preserved for nostalgia and reference. See how far we'v
 
 ---
 
-## 🏗️ Architecture & Principles
-
-```
-🔹  Single-file HTML - no build steps, no frameworks
-🔹  Firebase Realtime Database (Asia Southeast 1) for server-side data
-🔹  Netlify serverless functions for backend logic
-🔹  localStorage for client-side state persistence
-🔹  ES6+ modules with CDN imports (Three.js, jQuery, etc.)
-🔹  Mobile-first responsive design throughout
-🔹  Base64-embedded assets for true zero-dependency pages
-```
-
----
-
 ## 📊 GitHub Stats
 
 <p align="center">
