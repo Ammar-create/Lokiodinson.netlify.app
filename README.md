@@ -206,14 +206,6 @@ The original main page - preserved for nostalgia and reference. See how far we'v
 
 ---
 
-## 🏆 Trophies
-
-<p align="center">
-  <img src="https://github-profile-trophy.vercel.app/?username=Ammar-create&theme=discord&no-frame=true&column=6&margin-w=8&margin-h=8" width="100%"/>
-</p>
-
----
-
 ## 🔗 Links
 
 <p align="center">
