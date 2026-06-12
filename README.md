@@ -40,16 +40,12 @@ lokiodinson.netlify.app/
 │   └── translator.html       →  Document Translator
 │
 ├── 📁 Chatbot/               →  AI Image Studio (AquaDevs API)
-│   └── index.html            →  11-model image generator
+│   └── index.html            →  2-model image generator
 │
 ├── 📁 Diary Generator/       →  Digital school diary creator
-│
 ├── 📁 OnePieceWiki/          →  One Piece anime wiki (Three.js 3D)
-│
 ├── 📁 PdfGenerator/          →  HTML → PDF converter
-│
 ├── 📁 Watchlist/             →  Media tracking app (TV / Movies)
-│
 ├── 📁 story/                 →  Creative literary projects
 │   └── Ali&Ayesha.html       →  Multi-language literary story
 │
@@ -81,13 +77,13 @@ Your central hub for all AI-powered tools. Generate images, synthesize voice, tr
 ### 🖼️ AI Image Studio - [`/Chatbot`](https://lokiodinson.netlify.app/chatbot)
 
 <p align="left">
-  <img src="https://img.shields.io/badge/11%20Models-Available-6C63FF?style=flat-square"/>
+  <img src="https://img.shields.io/badge/2%20Models-Available-6C63FF?style=flat-square"/>
   <img src="https://img.shields.io/badge/Async-Polling-00C7B7?style=flat-square"/>
 </p>
 
-Generate stunning images with **11 powerful models** including Flux 2, GPT Image, Midjourney, Grok, and more. Features aspect ratios, style presets, reference images, and async polling support - all powered by the **AquaDevs API**.
+Generate stunning images with **2 powerful models**: GPTIMAGE-2 and zimage. Features aspect ratios, style presets, reference images, and async polling support - all powered by the **AquaDevs API**.
 
-> Models: `flux-2`, `gptimage-1.5`, `gptimage-2`, `zimage`, `grok-image`, `midjourney`, `qwen-image`, `imagen4`, `nanobanana`, `nanobanana-pro`, `seedream`
+> Models: `gptimage-2`, `zimage`
 
 ---
 
@@ -183,7 +179,7 @@ The original main page - preserved for nostalgia and reference. See how far we'v
 </p>
 
 <p align="center">
-  <img src="https://skillicons.dev/icons?i=html,css,js,firebase,netlify,nodejs,threejs,python,tailwind&theme=dark&perline=9" />
+  <img src="https://skillicons.dev/icons?i=html,css,js,firebase,netlify,nodejs,threejs,python,tailwind&theme=dark&perLine=9" />
 </p>
 
 <p align="center">
