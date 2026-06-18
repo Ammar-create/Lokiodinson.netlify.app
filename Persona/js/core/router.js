@@ -1,48 +1,54 @@
-// ===== ROUTER =====
-// Hash-based SPA router. Each screen module exports mount/unmount.
-
-import { store } from './store.js';
-import { $, clear } from './dom.js';
-
-const screens = new Map(); // name -> { mount, unmount }
+/***** HASH ROUTER *****/
+const screens = new Map();
 let currentScreen = null;
-let currentCleanup = null;
+let currentModule = null;
 
 export const router = {
-  register(name, module) {
-    screens.set(name, module);
-  },
-
-  async go(name, params = {}) {
-    if (currentScreen && screens.get(currentScreen)?.unmount) {
-      try { screens.get(currentScreen).unmount(); } catch (e) { console.error('Unmount error:', e); }
+  register(mapping) {
+    for (const [name, module] of Object.entries(mapping)) {
+      screens.set(name, module);
     }
+    window.addEventListener('hashchange', () => this.resolve());
+    this.resolve();
+  },
+  resolve() {
+    const hash = location.hash.slice(1) || 'dashboard';
+    this.go(hash);
+  },
+  go(name, params = {}) {
+    const module = screens.get(name);
+    if (!module) {
+      console.warn('No screen registered:', name);
+      return;
+    }
+    const stage = document.getElementById('stage');
+    if (!stage) return;
+
+    // Unmount current
+    if (currentModule?.unmount) {
+      try { currentModule.unmount(stage); } catch (e) {}
+    }
+
+    // Clear stage
+    stage.innerHTML = '';
+
+    // Mount new screen container
+    const container = document.createElement('div');
+    container.className = `screen active`;
+    container.id = `${name}-screen`;
+    stage.appendChild(container);
+
     currentScreen = name;
-    store.set('screen', name);
+    currentModule = module;
 
-    const container = $('#stage');
-    if (!container) return;
-    clear(container);
-
-    const mod = screens.get(name);
-    if (!mod) { console.error(`Screen "${name}" not registered`); return; }
-
-    const screenEl = document.createElement('div');
-    screenEl.className = 'screen active';
-    container.append(screenEl);
-
-    try {
-      currentCleanup = await mod.mount(screenEl, params);
-    } catch (e) {
-      console.error(`Mount error for "${name}":`, e);
+    if (module.mount) {
+      module.mount(container, params);
     }
 
-    // Update header
-    const header = $('#app-header');
-    if (header) {
-      import('../ui/header.js').then(({ Header }) => Header.render(name)).catch(() => {});
-    }
+    // Update header if needed
+    events?.emit?.('screen:changed', name);
   },
-
-  current() { return currentScreen; },
+  current() {
+    return currentScreen;
+  }
 };
