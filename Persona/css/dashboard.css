@@ -1,0 +1,40 @@
+/* DASHBOARD */
+#dashboard-screen{flex-direction:column}
+.dash-tabs{display:flex;border-bottom:1px solid var(--rail);padding:0 var(--space-xl);background:var(--stage);flex-shrink:0}
+.dash-tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);font-family:var(--font-body);
+  font-size:12px;font-weight:700;letter-spacing:.08em;padding:var(--space-md) var(--space-lg);cursor:pointer;
+  transition:var(--t-base) var(--ease-out);text-transform:uppercase;margin-bottom:-1px}
+.dash-tab:hover{color:var(--text-soft)}
+.dash-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.dash-body{flex:1;overflow-y:auto;padding:var(--space-xl)}
+
+/* Section header */
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-lg)}
+.section-title{font-family:var(--font-display);font-size:14px;font-weight:600;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase}
+
+/* Bento Cards */
+.bento{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--space-lg)}
+.bento .card{padding:var(--space-lg)}
+
+/* Scenario card (poster) */
+.sc-card{min-height:200px}
+.sc-card-lore{font-size:13px;color:var(--text-soft);line-height:1.55;margin:var(--space-sm) 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.sc-card-cast{display:flex;margin:var(--space-md) 0}
+.cast-ring{width:28px;height:28px;border-radius:50%;border:2px solid var(--stage);background:var(--rail);
+  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:var(--font-display);
+  margin-left:-6px;flex-shrink:0;overflow:hidden}
+.cast-ring:first-child{margin-left:0}
+.cast-ring img{width:100%;height:100%;object-fit:cover}
+.sc-card-meta{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-top:auto}
+
+/* Empty state */
+.empty{text-align:center;padding:var(--space-3xl) var(--space-xl);color:var(--text-muted)}
+.empty-icon{font-size:44px;margin-bottom:var(--space-md);opacity:.35}
+.empty-title{font-family:var(--font-display);font-size:16px;color:var(--text-soft);margin-bottom:var(--space-sm);letter-spacing:.04em}
+.empty-desc{font-size:13px;margin-bottom:var(--space-xl);max-width:320px;margin-left:auto;margin-right:auto}
+
+/* Responsive */
+@media(max-width:700px){
+  .bento{grid-template-columns:1fr}
+  .dash-body{padding:var(--space-lg)}
+}

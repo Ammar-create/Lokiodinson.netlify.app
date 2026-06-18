@@ -1,0 +1,34 @@
+/* CHARACTER CREATE / EDIT */
+#char-create-screen{overflow-y:auto}
+.char-form{max-width:720px;margin:0 auto;padding:var(--space-2xl) var(--space-xl);display:flex;flex-direction:column;gap:var(--space-xl)}
+.form-header{display:flex;align-items:center;gap:var(--space-md);margin-bottom:var(--space-sm)}
+.form-title{font-family:var(--font-display);font-size:22px;font-weight:700;letter-spacing:.06em;color:var(--gold);text-transform:uppercase}
+.form-actions{margin-left:auto}
+
+/* Avatar section */
+.avatar-section{display:flex;align-items:flex-start;gap:var(--space-xl)}
+.avatar-preview{width:90px;height:90px;border-radius:50%;background:var(--stage);border:2px dashed var(--frame);
+  cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-xs);
+  font-size:10px;color:var(--text-muted);transition:var(--t-base) var(--ease-out);overflow:hidden;flex-shrink:0}
+.avatar-preview:hover{border-color:var(--gold-dim);color:var(--text-soft)}
+.avatar-preview img{width:100%;height:100%;object-fit:cover}
+.avatar-controls{display:flex;flex-direction:column;gap:var(--space-sm);flex:1}
+
+/* Color swatch diagonal masonry */
+.swatch-deck{display:grid;grid-template-columns:repeat(8,1fr);gap:var(--space-sm);margin-top:var(--space-sm)}
+
+/* Two column layout */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-lg)}
+
+/* Toggle row */
+.toggle-row{padding:var(--space-md) 0}
+.toggle-row .tgl{padding:0}
+
+/* Danger zone */
+.danger-zone{border:1px solid var(--crim-glow);border-radius:var(--rl);padding:var(--space-lg);margin-top:var(--space-xl)}
+.danger-zone .field-label{color:var(--crim-soft)}
+
+@media(max-width:700px){
+  .form-row{grid-template-columns:1fr}
+  .avatar-section{flex-direction:column;align-items:center}
+}
