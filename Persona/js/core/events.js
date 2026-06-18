@@ -1,24 +1,20 @@
-// ===== EVENT BUS =====
-// Decoupled pub/sub for cross-module communication.
-// Controllers emit events; screens subscribe and react.
-
-const channels = new Map();
+/***** EVENT BUS *****/
+const listeners = new Map();
 
 export const events = {
   on(name, handler) {
-    if (!channels.has(name)) channels.set(name, new Set());
-    channels.get(name).add(handler);
-    return () => channels.get(name)?.delete(handler);
+    if (!listeners.has(name)) listeners.set(name, new Set());
+    listeners.get(name).add(handler);
+    return () => listeners.get(name).delete(handler);
   },
-
-  emit(name, payload) {
-    const handlers = channels.get(name);
-    if (handlers) for (const h of handlers) {
-      try { h(payload); } catch (e) { console.error(`Event "${name}" handler error:`, e); }
+  emit(name, ...args) {
+    const handlers = listeners.get(name);
+    if (!handlers) return;
+    for (const fn of [...handlers]) {
+      try { fn(...args); } catch (e) { console.error(`Event "${name}" handler error:`, e); }
     }
   },
-
   off(name, handler) {
-    channels.get(name)?.delete(handler);
-  },
+    listeners.get(name)?.delete(handler);
+  }
 };
