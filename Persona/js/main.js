@@ -28,7 +28,6 @@ async function init() {
     header.mount(document.getElementById('app-header'));
     router.go('dashboard');
 
-    // onboarding banner (if no aqua key and not dismissed)
     const dismissed = await db.getSetting('banner_dismissed');
     if (!store.get('settings.aquaKey') && !dismissed) {
       showOnboardBanner();
@@ -53,13 +52,20 @@ function showOnboardBanner() {
     <div class="onboard-inner">
       <svg class="icon" style="width:20px;height:20px;flex-shrink:0;color:var(--gold)"><use href="assets/icons.svg#key"/></svg>
       <div class="onboard-text"><strong>Unlock premium models</strong> — Add your Aqua API key for enhanced controllers and premium characters.</div>
-      <button class="btn btn-primary btn-sm" onclick="router.go('settings');this.closest('.onboard').remove()">Add Key</button>
-      <button class="onboard-close" onclick="db.setSetting('banner_dismissed',true);this.closest('.onboard').remove()">
-        <svg class="icon" style="width:16px;height:16px"><use href="assets/icons.svg#x"/></svg>
-      </button>
+      <button class="btn btn-primary btn-sm" id="ob-add">Add Key</button>
+      <button class="onboard-close" id="ob-close">&times;</button>
     </div>
   `;
   app.insertBefore(banner, app.children[1] || null);
+
+  banner.querySelector('#ob-add').addEventListener('click', () => {
+    router.go('settings');
+    banner.remove();
+  });
+  banner.querySelector('#ob-close').addEventListener('click', () => {
+    db.setSetting('banner_dismissed', true);
+    banner.remove();
+  });
 }
 
 init();

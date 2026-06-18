@@ -1,4 +1,5 @@
-/***** HASH ROUTER *****/
+import { events } from './events.js';
+
 const screens = new Map();
 let currentScreen = null;
 let currentModule = null;
@@ -24,15 +25,12 @@ export const router = {
     const stage = document.getElementById('stage');
     if (!stage) return;
 
-    // Unmount current
     if (currentModule?.unmount) {
       try { currentModule.unmount(stage); } catch (e) {}
     }
 
-    // Clear stage
     stage.innerHTML = '';
 
-    // Mount new screen container
     const container = document.createElement('div');
     container.className = `screen active`;
     container.id = `${name}-screen`;
@@ -45,8 +43,7 @@ export const router = {
       module.mount(container, params);
     }
 
-    // Update header if needed
-    events?.emit?.('screen:changed', name);
+    events.emit('screen:changed', name);
   },
   current() {
     return currentScreen;
