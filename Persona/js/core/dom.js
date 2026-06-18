@@ -1,13 +1,10 @@
 /***** DOM UTILITIES *****/
-export const $ = (sel, ctx = document) => ctx.querySelector(sel);
+export const $ = (sel, ctx = document) =>> ctx.querySelector(sel);
 export const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
+
 export function esc(s) {
-  return String(s)
-    .replace(&/g, '&amp;')
-    .replace(</g, '&lt;')
-    .replace(>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  const map = { &: '&amp;', <: '&lt;', >: '&gt;', '"': '&quot;', "'": '&#39;' };
+  return String(s).replace(/[&<>"']/g, ch => map[ch]);
 }
 
 /** Robust RP parser: bold, italic, dialogue */
@@ -49,7 +46,6 @@ export function parseRP(text, color = '#d4a843') {
 export function createEl(tag, attrs = {}, children = []) {
   const el = document.createElement(tag);
 
-  // Normalize children: single values become arrays, flatten nested arrays
   if (children != null && !Array.isArray(children)) children = [children];
   const flat = children.flat(Infinity).filter(c => c != null);
 
