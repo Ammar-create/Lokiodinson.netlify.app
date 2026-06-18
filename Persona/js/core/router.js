@@ -1,3 +1,4 @@
+import { store } from './store.js';
 import { events } from './events.js';
 
 const screens = new Map();
@@ -38,6 +39,7 @@ export const router = {
 
     currentScreen = name;
     currentModule = module;
+    store.set('screen', name);
 
     if (module.mount) {
       module.mount(container, params);
