@@ -1,0 +1,96 @@
+/***** RESPONSIVE OVERRIDES — loaded last to win the cascade *****/
+
+/* Use dynamic viewport height so mobile toolbars do not clip content */
+#app{height:100dvh}
+
+/* Enable momentum scrolling on all scrollable areas */
+.screen-content{-webkit-overflow-scrolling:touch}
+
+/* Bottom safe-area breathing room */
+.chat-input-area{padding-bottom:calc(var(--space-md) + env(safe-area-inset-bottom, 0px))}
+
+/* ===== MOBILE HEADER ===== */
+@media(max-width:700px){
+  .hdr{height:52px;padding:0 var(--space-md);gap:var(--space-sm)}
+  .hdr-logo{font-size:15px;letter-spacing:.1em}
+  .hdr-nav{display:none!important}
+  .mobile-only{display:flex!important}
+  .hide-mobile{display:none!important}
+  .hdr-actions{gap:var(--space-xs)}
+  .hdr-actions .btn-sm{padding:6px 8px}
+}
+
+/* Mobile overlay nav (hamburger menu) */
+.mobile-nav{position:fixed;inset:52px 0 auto 0;background:rgba(12,12,15,.98);border-bottom:1px solid var(--rail);
+  z-index:90;display:none;flex-direction:column;padding:var(--space-md);gap:var(--space-xs);backdrop-filter:blur(12px)}
+.mobile-nav.open{display:flex}
+.mobile-nav .hdr-btn{width:100%;justify-content:center;padding:12px}
+
+/* ===== SCREEN CONTENT BREATHING ROOM ===== */
+@media(max-width:700px){
+  .screen-content{padding:var(--space-md);padding-bottom:160px}
+}
+
+/* ===== DASHBOARD ===== */
+@media(max-width:700px){
+  .bento{grid-template-columns:1fr}
+  .dash-body{padding:var(--space-md)}
+  .dash-tabs{padding:0 var(--space-md)}
+  .dash-tab{padding:var(--space-sm) var(--space-md);font-size:11px}
+}
+
+/* ===== CHARACTER FORM ===== */
+@media(max-width:700px){
+  .char-form{padding:var(--space-lg) var(--space-md);gap:var(--space-lg)}
+  .form-title{font-size:18px}
+  .form-row{grid-template-columns:1fr}
+  .avatar-section{flex-direction:column;align-items:center;gap:var(--space-lg)}
+  .avatar-preview{width:72px;height:72px}
+  .swatch-deck{grid-template-columns:repeat(6,1fr)}
+}
+
+/* ===== SCENARIO FORM ===== */
+@media(max-width:700px){
+  .scen-form{padding:var(--space-lg) var(--space-md);gap:var(--space-lg)}
+  .cast-grid{grid-template-columns:1fr 1fr}
+  .settings-panel{padding:var(--space-lg)}
+}
+
+/* ===== SETTINGS ===== */
+@media(max-width:700px){
+  .settings-nav{width:64px}
+  .settings-item{padding:10px 8px;font-size:10px}
+  .settings-item .icon{width:20px;height:20px}
+  .settings-body{padding:var(--space-md)}
+  .settings-row.inline{flex-direction:column;align-items:flex-start;gap:var(--space-sm)}
+}
+
+/* ===== CHAT ===== */
+@media(max-width:700px){
+  .wings{width:100vw;position:fixed;right:0;top:52px;height:calc(100dvh - 52px);z-index:500}
+  .wings.collapsed{width:0;border-left:none}
+  .wings-toggle{left:auto;right:0;top:10px;border:1px solid var(--rail);border-right:1px solid var(--rail);border-left:none;border-radius:6px 0 0 6px}
+  .wings.collapsed .wings-toggle{right:-28px}
+  .chat-input-area{padding:var(--space-sm) var(--space-md)}
+  .chat-hdr{padding:var(--space-sm) var(--space-md)}
+  .msg{padding:var(--space-xs) var(--space-md)}
+  .msg-av{width:24px;height:24px}
+  .msg-name{font-size:11px}
+  .msg-body{font-size:13px}
+}
+
+/* ===== MODAL ===== */
+@media(max-width:700px){
+  .modal{width:95vw;max-height:92vh}
+  .modal-narrow{max-width:340px}
+  .modal-wide{max-width:95vw}
+  .toast{min-width:auto;width:calc(100vw - 48px);right:24px;left:24px}
+}
+
+/* ===== PICKER BOTTOM SHEET ===== */
+@media(max-width:700px){
+  .picker-list{position:fixed;left:16px;right:16px;top:auto;bottom:16px;max-height:55vh;
+    border-radius:var(--rl);margin:0;z-index:200;border:1px solid var(--frame);
+    box-shadow:var(--shadow-lg)}
+  .picker-item{padding:12px 14px;font-size:14px}
+}
