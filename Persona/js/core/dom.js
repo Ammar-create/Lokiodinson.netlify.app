@@ -3,8 +3,12 @@ export const $ = (sel, ctx = document) => ctx.querySelector(sel);
 export const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
 
 export function esc(s) {
-  const map = { &: '&amp;', <: '&lt;', >: '&gt;', '"': '&quot;', "'": '&#39;' };
-  return String(s).replace(/[&<>"']/g, ch => map[ch]);
+  return String(s)
+    .replace(/\u0026/g, '\u0026amp;')
+    .replace(/\u003c/g, '\u0026lt;')
+    .replace(/\u003e/g, '\u0026gt;')
+    .replace(/"/g, '\u0026quot;')
+    .replace(/'/g, '\u0026#39;');
 }
 
 /** Robust RP parser: bold, italic, dialogue */
