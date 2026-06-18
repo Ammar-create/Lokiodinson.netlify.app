@@ -84,10 +84,10 @@ export function finalizeEl(el, msgId) {
   const mb = el.querySelector('.msg-body');
   if (mb) mb.classList.remove('streaming');
   const ar = createEl('div', { class: 'msg-toolbar' }, [
-    createEl('button', { class: 'msg-tool', onclick: () => window.CA?.img(msgId) }, [iconEl('image', 10), ' Image']),
-    createEl('button', { class: 'msg-tool', onclick: () => window.CA?.voice(msgId) }, [iconEl('voice', 10), ' Voice']),
-    createEl('button', { class: 'msg-tool', onclick: () => window.CA?.regen(msgId) }, [iconEl('regen', 10), ' Regen']),
-    createEl('button', { class: 'msg-tool', onclick: () => window.CA?.branch(msgId) }, [iconEl('branch', 10), ' Branch'])
+    createEl('button', { class: 'msg-tool', onclick: () => window.ChatEngine?.img(msgId) }, [iconEl('image', 10), ' Image']),
+    createEl('button', { class: 'msg-tool', onclick: () => window.ChatEngine?.voice(msgId) }, [iconEl('voice', 10), ' Voice']),
+    createEl('button', { class: 'msg-tool', onclick: () => window.ChatEngine?.regen(msgId) }, [iconEl('regen', 10), ' Regen']),
+    createEl('button', { class: 'msg-tool', onclick: () => window.ChatEngine?.branch(msgId) }, [iconEl('branch', 10), ' Branch'])
   ]);
   el.appendChild(ar);
 }
@@ -113,7 +113,7 @@ export function renderMsg(msg, char, withActions = false) {
     hdr.appendChild(avatarElFromChar(char, 26));
   }
   if (isPrivate) {
-    hdr.insertBefore(createEl('span', { style: 'font-size:10px;color:var(--gold)', text: ' whisper' }), hdr.lastChild);
+    hdr.insertBefore(createEl('span', { style: 'font-size:10px;color:var(--gold);margin-left:6px', text: 'whisper' }), hdr.lastChild);
   }
 
   const body = createEl('div', {
@@ -129,10 +129,10 @@ export function renderMsg(msg, char, withActions = false) {
 
   if (withActions) {
     const ar = createEl('div', { class: 'msg-toolbar' }, [
-      createEl('button', { class: 'msg-tool', onclick: () => window.CA?.img(msg.id) }, [iconEl('image', 10), ' Image']),
-      createEl('button', { class: 'msg-tool', onclick: () => window.CA?.voice(msg.id) }, [iconEl('voice', 10), ' Voice']),
-      createEl('button', { class: 'msg-tool', onclick: () => window.CA?.regen(msg.id) }, [iconEl('regen', 10), ' Regen']),
-      createEl('button', { class: 'msg-tool', onclick: () => window.CA?.branch(msg.id) }, [iconEl('branch', 10), ' Branch'])
+      createEl('button', { class: 'msg-tool', onclick: () => window.ChatEngine?.img(msg.id) }, [iconEl('image', 10), ' Image']),
+      createEl('button', { class: 'msg-tool', onclick: () => window.ChatEngine?.voice(msg.id) }, [iconEl('voice', 10), ' Voice']),
+      createEl('button', { class: 'msg-tool', onclick: () => window.ChatEngine?.regen(msg.id) }, [iconEl('regen', 10), ' Regen']),
+      createEl('button', { class: 'msg-tool', onclick: () => window.ChatEngine?.branch(msg.id) }, [iconEl('branch', 10), ' Branch'])
     ]);
     el.appendChild(ar);
   }
@@ -146,7 +146,7 @@ export function addCtrlMsg(text) {
   if (!log) return;
   const el = createEl('div', { class: 'msg msg-system' }, [
     createEl('div', { class: 'msg-hdr' }, [
-      createEl('div', { class: 'msg-av', style: 'background:var(--rail);color:var(--text-muted);font-size:10px', text: '\u2699' }),
+      createEl('div', { class: 'msg-av', style: 'background:var(--rail);color:var(--text-muted);display:flex;align-items:center;justify-content:center;overflow:hidden' }, iconEl('settings', 10)),
       createEl('span', { class: 'msg-name', style: 'color:var(--text-muted);font-size:10px', text: 'System' })
     ]),
     createEl('div', { class: 'msg-body', text })
@@ -160,7 +160,7 @@ export function renderRels() {
   if (!c) return;
   const entries = Object.values(store.get('chat.rels'));
   if (!entries.length) {
-    c.innerHTML = `<p style="color:var(--text-muted);font-size:12px">No relationships tracked yet.</p>`;
+    c.innerHTML = '<p style="color:var(--text-muted);font-size:12px">No relationships tracked yet.</p>';
     return;
   }
   c.innerHTML = '';
@@ -220,6 +220,7 @@ function audioPlayerHtml(src) {
   </div>`;
 }
 
+/* local icon helper */
 function iconEl(name, size) {
   const div = document.createElement('div');
   div.innerHTML = `<svg class="icon" style="width:${size}px;height:${size}px" aria-hidden="true"><use href="assets/icons.svg#${name}"/></svg>`;
