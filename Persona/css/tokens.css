@@ -1,0 +1,70 @@
+:root{
+  /* Proscenium Palette */
+  --void:#080808;
+  --curtain:#0c0c0f;
+  --stage:#101015;
+  --wing:#16161e;
+  --rail:#1e1e28;
+  --frame:#2a2a38;
+  --beam:#3a3a4e;
+
+  /* Incandescent Accents */
+  --gold:#d4a843;
+  --gold-soft:#b8922f;
+  --gold-dim:#7a6020;
+  --gold-glow:rgba(212,168,67,.18);
+  --gold-glow-strong:rgba(212,168,67,.35);
+
+  --crim:#c13a4b;
+  --crim-soft:#a02e3c;
+  --crim-glow:rgba(193,58,75,.15);
+
+  /* Signal Colors */
+  --ok:#3d8a5f;
+  --warn:#c07730;
+  --err:#b02540;
+  --info:#5088c8;
+
+  /* Text */
+  --text:#ece8df;
+  --text-soft:#b8b3a8;
+  --text-muted:#6e6a78;
+  --text-faint:#45424e;
+
+  /* Glows & Depth */
+  --shadow-sm:0 2px 8px rgba(0,0,0,.4);
+  --shadow-md:0 8px 24px rgba(0,0,0,.5);
+  --shadow-lg:0 16px 48px rgba(0,0,0,.6);
+  --shadow-gold:0 0 20px rgba(212,168,67,.12);
+
+  /* Radii */
+  --r:8px;
+  --rl:12px;
+  --rxl:16px;
+  --pill:999px;
+
+  /* Typography */
+  --font-display:'Playfair Display',Georgia,serif;
+  --font-body:'DM Sans',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+
+  /* Spacing Scale */
+  --space-xs:4px;
+  --space-sm:8px;
+  --space-md:12px;
+  --space-lg:16px;
+  --space-xl:24px;
+  --space-2xl:32px;
+  --space-3xl:48px;
+
+  /* Timing */
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --ease-in-out:cubic-bezier(.4,0,.2,1);
+  --t-fast:.12s;
+  --t-base:.2s;
+  --t-slow:.35s;
+
+  /* Spotlight Gradient */
+  --spotlight:radial-gradient(ellipse 70% 35% at 50% 0%, rgba(212,168,67,.06) 0%, transparent 70%);
+  --velvet-wash:radial-gradient(ellipse 60% 30% at 100% 100%, rgba(193,58,75,.04) 0%, transparent 70%);
+}

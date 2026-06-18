@@ -1,0 +1,15 @@
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{background:var(--void);color:var(--text);font-family:var(--font-body);font-size:14px;line-height:1.6}
+img,svg{display:block;max-width:100%}
+button{font-family:inherit;font-size:inherit;cursor:pointer;background:none;border:none;color:inherit}
+input,textarea{font-family:inherit;font-size:inherit;color:inherit;background:none;border:none;outline:none}
+textarea{resize:vertical}
+a{color:var(--gold);text-decoration:none}
+a:hover{text-decoration:underline}
+ul,ol{list-style:none}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--frame);border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:var(--beam)}
+::selection{background:rgba(212,168,67,.25);color:var(--text)}
