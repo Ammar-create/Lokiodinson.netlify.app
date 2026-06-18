@@ -6,8 +6,55 @@ import { header } from './ui/header.js';
 import * as dashboard from './screens/dashboard.js';
 import * as charEdit from './screens/char-edit.js';
 import * as scenEdit from './screens/scen-edit.js';
-import * as chat from './screens/chat.js';
+import * as chatScreen from './screens/chat.js';
 import * as settings from './screens/settings.js';
+
+/* Bridge engine exports to window so HTML-string contexts
+   inside parseRP / audio player / message actions can reach them.
+   We still use createEl + addEventListener for 99% of UI. */
+import * as ChatCore from './engine/chat-core.js';
+import * as ChatActions from './engine/chat-actions.js';
+import * as ChatSession from './engine/chat-session.js';
+import * as ChatRender from './engine/chat-render.js';
+import * as Ctrl from './engine/controllers.js';
+
+window.ChatEngine = {
+  ...ChatCore,
+  ...ChatActions,
+  saveSession: ChatSession.saveSession,
+  loadSession: ChatSession.loadSession,
+  toggleSTT: ChatSession.toggleSTT,
+  apToggle: ChatCore.apToggle,
+  apSeek: ChatCore.apSeek,
+  renderMsg: ChatRender.renderMsg,
+  addCtrlMsg: ChatRender.addCtrlMsg,
+  renderRels: ChatRender.renderRels,
+  renderCast: ChatRender.renderCast,
+  scrollEnd: ChatRender.scrollEnd,
+  addThinking: ChatRender.addThinking,
+  createStreamEl: ChatRender.createStreamEl,
+  updateStreamEl: ChatRender.updateStreamEl,
+  finalizeEl: ChatRender.finalizeEl,
+  setupScrollWatcher: ChatRender.setupScrollWatcher,
+  runMain: Ctrl.runMain,
+  runScenario: Ctrl.runScenario,
+  runCreative: Ctrl.runCreative,
+  createScenario: Ctrl.createScenario,
+  generateCharacterImages: Ctrl.generateCharacterImages,
+  genImagePrompt: Ctrl.genImagePrompt,
+  genVoiceHint: Ctrl.genVoiceHint,
+  autoImprove: Ctrl.autoImprove,
+  buildSysPrompt: Ctrl.buildSysPrompt,
+  buildConvo: Ctrl.buildConvo,
+  addMemory: Ctrl.addMemory,
+  loadMemories: Ctrl.loadMemories,
+  dlog: Ctrl.dlog,
+};
+
+window.store = store;
+window.db = db;
+window.router = router;
+window.toast = toast;
 
 async function init() {
   try {
@@ -21,7 +68,7 @@ async function init() {
       'char-edit': charEdit,
       'scenario-create': scenEdit,
       'scenario-edit': scenEdit,
-      chat: chat,
+      chat: chatScreen,
       settings: settings
     });
 
