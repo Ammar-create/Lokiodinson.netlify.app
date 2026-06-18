@@ -1,6 +1,6 @@
 import { createEl, esc, fmtDate } from '../core/dom.js';
 import { store } from '../core/store.js';
-import { db } from '../../services/db.js';
+import { db } from '../services/db.js';
 import { router } from '../core/router.js';
 import { toast } from '../ui/toast.js';
 import { confirm } from '../ui/modal.js';
@@ -84,7 +84,7 @@ function renderScenarios(scens, chars) {
         createEl('span', { text: `${cast.length} character${cast.length !== 1 ? 's' : ''}` }),
         createEl('span', { text: s.updatedAt ? fmtDate(s.updatedAt) : 'New' })
       ]),
-      createEl('div', { class: 'card-foot', style: 'display:flex;gap:6px;margin-top:10px;justify-content:flex-end' }, [
+      createEl('div', { style: 'display:flex;gap:6px;margin-top:10px;justify-content:flex-end' }, [
         createEl('button', {
           class: 'btn btn-ghost btn-sm',
           onclick: e => { e.stopPropagation(); editScenario(s.id); }
@@ -126,7 +126,7 @@ function renderCharacters(chars) {
         avatarEl(c, 40),
         createEl('div', { style: 'flex:1;min-width:0' }, [
           createEl('div', { class: 'card-title', text: c.name }),
-          createEl('div', { class: 'card-sub', text: `${c.modelId || 'openai-fast'} · ${c.voice || 'nova'}` })
+          createEl('div', { class: 'card-sub', text: `${c.modelId || 'openai-fast'} \u00b7 ${c.voice || 'nova'}` })
         ]),
         c.isUser ? createEl('span', { class: 'pill pill-gold', style: 'font-size:10px', text: 'You' }) : null
       ]),
@@ -169,7 +169,6 @@ function emptyState(type) {
 }
 
 async function initChat(scenId) {
-  // Will be fully implemented in Phase 3 chat engine
   store.set('chat.scenId', scenId);
   router.go('chat');
 }
@@ -184,7 +183,6 @@ async function deleteCharacter(id) {
   if (!ok) return;
   await db.del('characters', id);
   toast.success('Character deleted');
-  // Re-render current dashboard view
   const container = document.getElementById('dashboard-screen');
   if (container) render(container);
 }
