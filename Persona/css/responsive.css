@@ -52,7 +52,7 @@
 /* ===== SCENARIO FORM ===== */
 @media(max-width:700px){
   .scen-form{padding:var(--space-lg) var(--space-md);gap:var(--space-lg)}
-  .cast-grid{grid-template-columns:1fr 1fr}
+  .cast-grid{grid-template-columns:1fr 2fr}
   .settings-panel{padding:var(--space-lg)}
 }
 
@@ -87,10 +87,20 @@
   .toast{min-width:auto;width:calc(100vw - 48px);right:24px;left:24px}
 }
 
-/* ===== PICKER BOTTOM SHEET ===== */
-@media(max-width:700px){
+/* ===== PICKER — MOBILE + TABLET BOTTOM SHEET ===== */
+@media(max-width:1024px){
   .picker-list{position:fixed;left:16px;right:16px;top:auto;bottom:16px;max-height:55vh;
-    border-radius:var(--rl);margin:0;z-index:200;border:1px solid var(--frame);
+    border-radius:var(--rl);margin:0;z-index:2000;border:1px solid var(--frame);
     box-shadow:var(--shadow-lg)}
   .picker-item{padding:12px 14px;font-size:14px}
+}
+
+/* ===== TABLET SPECIFIC ===== */
+@media(min-width:701px) and (max-width:1024px){
+  .screen-content{padding:var(--space-lg);padding-bottom:120px}
+  .bento{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+  .char-form{max-width:640px}
+  .scen-form{max-width:640px}
+  .settings-body{max-width:540px}
+  .wings{width:260px}
 }

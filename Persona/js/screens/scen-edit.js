@@ -6,6 +6,7 @@ import { toast } from '../ui/toast.js';
 import { confirm, prompt, open as openModal } from '../ui/modal.js';
 import { iconEl } from '../ui/icons.js';
 import { avatarEl } from '../ui/avatar.js';
+import * as Ctrl from '../engine/controllers.js';
 
 let dropdownCloser = null;
 
@@ -243,6 +244,23 @@ async function autoCreate() {
   });
   if (!desc) return;
 
-  // Phase 3: integrate creative controller
-  toast.info('Auto-create requires Phase 3 creative controller. Proceeding with manual mode.');
+  toast.info('Generating scenario...');
+  try {
+    const result = await Ctrl.createScenario(desc.trim(), allChars);
+    if (!result) { toast.error('Generation failed'); return; }
+    store.set('scenForm', {
+      name: result.name || '',
+      lore: result.lore || '',
+      characterIds: allChars.map(c => c.id),
+      settings: { aiKnowsUser: true, autoImage: false, autoTTS: false, controllerFreq: 10 },
+      openingMessage: result.openingMessage || '',
+      unifiedMemory: false
+    });
+    toast.success('Scenario generated! Review and save.');
+    // Re-render to show generated content
+    const container = document.getElementById('scenario-create-screen');
+    if (container) render(container);
+  } catch (err) {
+    toast.error('Auto-create failed: ' + err.message);
+  }
 }
