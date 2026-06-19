@@ -65,7 +65,8 @@ const Chat={
  autoChatRunning:false,autoChatStop:false,msgSinceCtrl:0,
  panelOpen:window.innerWidth>900,panelTab:'directive',
  directive:{next:'',details:''},debugLog:[],
- sending:false,controllerRunning:false,sttRecording:false,
+ sending:false,controllerRunning:false,generating:false,
+ sttRecording:false,
  whisper:false,whisperWith:[],
  whisperTarget:null,
  };
@@ -74,8 +75,11 @@ const Chat={
 
  async send(content,charId,isPrivate=false,privateWith=[]){
  if(!content.trim())return;
- // Race condition guard
- if(ST.chat.sending){Toast.w('Please wait — still processing...');return;}
+ // Block if a response is currently being generated (any character, any source)
+ if(ST.chat.sending || ST.chat.generating){
+ Toast.w('Please wait — still processing...');
+ return;
+ }
  ST.chat.sending=true;
  try{
  const char=ST.chat.characters.find(c=>c.id===charId);if(!char)return;
@@ -135,6 +139,7 @@ const Chat={
 
  async genResponse(char,visibleMessages){
  if(!char)return;
+ ST.chat.generating=true; // <-- guard: blocks any concurrent response generation
  const tid=`th-${char.id}-${Date.now()}`;
  let msgId=null;
  Chat.addThinking(tid,char);Chat.scrollEnd();
@@ -192,9 +197,9 @@ const Chat={
  let imgPrompt;
  try{
  const imgData=await Ctrl.genImagePrompt(msg,char,ST.chat.scenario);
- imgPrompt=imgData?.prompt||`${char.appearance||''}, ${full.replace(/\*[^*]+\*/g,'').replace(/"[^"]+"/g,'').trim().slice(0,200)}`;
+ imgPrompt=imgData?.prompt||`${char.appearance||''}, ${full.replace(/\*[^*]+\*/g,'').replace(/\"[^\"]+\"/g,'').trim().slice(0,200)}`;
  }catch{
- imgPrompt=`${char.appearance||''}, ${full.replace(/\*[^*]+\*/g,'').replace(/"[^"]+"/g,'').trim().slice(0,200)}`;
+ imgPrompt=`${char.appearance||''}, ${full.replace(/\*[^*]+\*/g,'').replace(/\"[^\"]+\"/g,'').trim().slice(0,200)}`;
  }
  const imgModel = ST.settings.imgModel || 'flux';
  const imgUrl = await API.generateImageUrl(imgPrompt, 512, 512, imgModel);
@@ -223,6 +228,18 @@ const Chat={
  }
  Toast.e(`${char.name} failed: ${err.message}`);
  Ctrl.dlog(`${char.name} error: ${err.message}`,'derr');
+ }
+ finally{
+ ST.chat.generating=false; // <-- always release the guard
+ }
+ };
+
+ // FIX #35: Clean up any orphaned thinking indicators left by aborted streams
+ // Call this after any screen transition or state reset
+ async cleanupOrphans(){
+ const tidEls=$$('[id^="th-"]');
+ for(const el of tidEls){
+ el.remove();
  }
  }
 };
