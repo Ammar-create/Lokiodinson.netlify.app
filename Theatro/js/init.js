@@ -15,7 +15,7 @@ async function init(){
  const banner=document.createElement('div');
  banner.className='onboard-banner';
  banner.innerHTML=`<div class="ob-inner">
- <span class="ob-ico">🔱</span>
+ <span class="ob-ico">${I('trident',20)}</span>
  <div class="ob-text"><strong>Unlock premium models</strong> — Add your Aqua API key for Grok controllers and premium characters.</div>
  <button class="btn bp bsm ob-action" onclick="Router.go('settings');ST.settTab='providers';this.closest('.onboard-banner').remove()">Add Key</button>
  <button class="ob-x" onclick="DB.setSetting('banner_dismissed',true);this.closest('.onboard-banner').remove()">&times;</button>

@@ -149,9 +149,9 @@ const Ctrl={
  let parsed;
  try{parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());}
  catch{Ctrl.dlog('Scenario Controller: JSON parse failed','err');return null;}
- if(parsed.narration)Chat.addCtrlMsg(`\ud83c\udfac ${parsed.narration}`);
- if(parsed.sceneChange){Ctrl.dlog(`Scene changed: ${parsed.sceneChange}`,'ok');Chat.addCtrlMsg(`\ud83d\udccd Scene: ${parsed.sceneChange}`);}
- if(parsed.surpriseEvent){Ctrl.dlog(`Surprise event: ${parsed.surpriseEvent}`,'ok');Chat.addCtrlMsg(`\u26a1 Event: ${parsed.surpriseEvent}`);}
+ if(parsed.narration)Chat.addCtrlMsg(`${I('clapper',14)} ${parsed.narration}`);
+ if(parsed.sceneChange){Ctrl.dlog(`Scene changed: ${parsed.sceneChange}`,'ok');Chat.addCtrlMsg(`${I('pin',14)} Scene: ${parsed.sceneChange}`);}
+ if(parsed.surpriseEvent){Ctrl.dlog(`Surprise event: ${parsed.surpriseEvent}`,'ok');Chat.addCtrlMsg(`${I('zap',14)} Event: ${parsed.surpriseEvent}`);}
  const unified = scenario?.unifiedMemory === true;
  if(parsed.characterEffects){
  for(const eff of parsed.characterEffects){

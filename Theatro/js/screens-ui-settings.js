@@ -18,7 +18,7 @@ Object.assign(Scr,{
  const el=$('#screen-settings');if(!el)return;
  const s=ST.settings;const tab=ST.settTab||'providers';
  el.innerHTML=`<nav class="sett-nav">
- ${[['providers','🔑','API Keys'],['models','🤖','Models'],['controllers','⚙','Controllers'],['memory','🧠','Memory'],['tweaks','⚡','Tweaks'],['themes','🎨','Themes'],['storage','💾','Storage']].map(([id,ico,label])=>`
+ ${[['providers',I('key',14),'API Keys'],['models',I('robot',14),'Models'],['controllers',I('gear',14),'Controllers'],['memory',I('brain',14),'Memory'],['tweaks',I('zap',14),'Tweaks'],['themes',I('palette',14),'Themes'],['storage',I('save',14),'Storage']].map(([id,ico,label])=>`
  <div class="sett-ni ${tab===id?'on':''}" onclick="ST.settTab='${id}';Scr.settings()"><span>${ico}</span><span>${esc(label)}</span></div>
  `).join('')}
  </nav>
@@ -110,16 +110,16 @@ Object.assign(Scr,{
  <p style="font-size:12px;color:var(--tdim)">All data is stored locally in your browser's IndexedDB. Export regularly to back up your scenarios and characters.</p>
  <div style="display:flex;gap:20px;margin-bottom:12px">
  <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
- <input type="checkbox" id="export-images-checkbox" style="width:16px;height:16px;margin:0"> <span>📷 Export images</span>
+ <input type="checkbox" id="export-images-checkbox" style="width:16px;height:16px;margin:0"> <span>${I('image',14)} Export images</span>
  </label>
  <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
- <input type="checkbox" id="export-audio-checkbox" style="width:16px;height:16px;margin:0"> <span>🎵 Export audio files</span>
+ <input type="checkbox" id="export-audio-checkbox" style="width:16px;height:16px;margin:0"> <span>${I('voice',14)} Export audio</span>
  </label>
  </div>
  <div style="display:flex;gap:10px;flex-wrap:wrap">
  <button class="btn bs bsm" onclick="Scr.exportAll()">${I('download',12)} Export All</button>
  <button class="btn bs bsm" onclick="Scr.importAll()">${I('upload',12)} Import</button>
- <button class="btn bd bsm" onclick="Scr.clearAll()">🗑 Clear Everything</button>
+ <button class="btn bd bsm" onclick="Scr.clearAll()">${I('trash',14)} Clear Everything</button>
  </div>
  </div>
  </div>
