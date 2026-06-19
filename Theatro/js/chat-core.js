@@ -125,7 +125,9 @@ const Chat={
  msgId=uid();
  const el=Chat.createStreamEl(msgId,char);
  if(el)el.dataset.streamChar=char.id;
- const tidEl=$(tid);if(tidEl)tidEl.remove();
+ // BUGFIX: $(tid) without # prefix was searching for a non-existent <th-...> tag
+ // It must be #${tid} to match the element's id attribute
+ const tidEl=$('#'+tid);if(tidEl)tidEl.remove();
  await API.stream([{role:'system',content:sys},...hist],model,(chunk,done)=>{
  if(ST.chat.genToken!==_genToken)return;
  full+=chunk;Chat.updateStreamEl(el,char,full,done);Chat.scrollEnd();
