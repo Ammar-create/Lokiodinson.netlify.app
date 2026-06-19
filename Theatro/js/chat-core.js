@@ -1,1 +1,249 @@
-'use strict';\n// ===== CHAT ENGINE — CORE =====\n// Initialization, messaging, AI response generation, whisper routing\n// Rendering split → chat-render.js | Session management split → chat-session.js\n// Message actions (img/voice/regen/branch) in chat-actions.js\nconst Chat={\n  // STT state (used by chat-session.js)\n  _sttRecorder:null,\n  _sttChunks:[],\n  _sttStream:null,\n\n  // #12: Filter messages visible to a character (respects private conversations)\n  filterVisible(messages,charId){\n    return messages.filter(m=>{\n      if(m.isPrivate){\n        if(m.privateWith&&m.privateWith.length)\n          return m.charId===charId||m.privateWith.includes(charId);\n        return m.charId===charId;\n      }\n      return true;\n    });\n  },\n\n  async init(scenId){\n    // BUG 23: Stop any running auto-chat before overwriting state\n    if(ST.chat.autoChatRunning){Chat.stopAuto();await new Promise(r=>setTimeout(r,200));}\n    const scenario=await DB.get('scenarios',scenId);\n    if(!scenario){Toast.e('Scenario not found');return;}\n    const chars=[];\n    for(const cid of scenario.characterIds||[]){\n      const c=await DB.get('characters',cid);\n      if(c){\n        chars.push({...c,\n          emotionalState:c.emotionalState||'neutral',\n          moodNotes:c.moodNotes||'',\n          systemInjection:c.systemInjection||''\n        });\n      }\n    }\n    // Auto-migrate stale/invalid modelIds to 'openai-fast'\n    for(const c of chars){\n      if(c.modelId&&!MODELS.find(m=>m.id===c.modelId)){\n        Ctrl?.dlog?.(`Migrating ${c.name} model from '${c.modelId}' to 'openai-fast'`,'warn');\n        c.modelId='openai-fast';\n        await DB.put('characters',c);\n      }\n    }\n    let msgs=await DB.getByIndex('messages','scenarioId',scenId);\n    msgs.sort((a,b)=>a.timestamp-b.timestamp);\n    // BUG 28: Persist opening message if no messages exist yet\n    if(!msgs.length&&scenario.openingMessage){\n      const openingMsg={id:'opening-'+scenId,scenarioId:scenId,charId:'narrator',content:scenario.openingMessage,timestamp:Date.now(),isUser:false};\n      msgs.push(openingMsg);\n      await DB.put('messages',openingMsg);\n    }\n    const relData=await DB.get('relationships',scenId);\n    const allChars=await DB.getAll('characters');\n    const userChar=allChars.find(c=>c.isUser);\n    // Load memories – respect unified flag\n    const unified = scenario.unifiedMemory === true;\n    await Ctrl.loadMemories(scenId, chars, unified);\n    ST.chat={\n      ...ST.chat,scenId,scenario,characters:chars,messages:msgs,rels:relData?.matrix||{},\n      activeCharId:userChar?.id||chars[0]?.id||null,\n      autoChatRunning:false,autoChatStop:false,msgSinceCtrl:0,\n      panelOpen:window.innerWidth>900,panelTab:'directive',\n      directive:{next:'',details:''},debugLog:[],\n      sending:false,controllerRunning:false,sttRecording:false,\n      whisper:false,whisperWith:[]\n      whisperTarget:null,\n    };\n    Router.go('chat');\n  },\n\n  async send(content,charId,isPrivate=false,privateWith=[]){\n    if(!content.trim())return;\n    // Race condition guard\n    if(ST.chat.sending){Toast.w('Please wait — still processing...');return;}\n    ST.chat.sending=true;\n    try{\n      const char=ST.chat.characters.find(c=>c.id===charId);if(!char)return;\n      const msg={id:uid(),scenarioId:ST.chat.scenId,charId,content:content.trim(),timestamp:Date.now(),isUser:!!char.isUser};\n      // #12: Track private conversation metadata\n      if(isPrivate){msg.isPrivate=true;msg.privateWith=privateWith;}\n      ST.chat.messages.push(msg);\n      await DB.put('messages',msg);\n      Chat.renderMsg(msg,char,true);\n      Chat.scrollEnd();\n      // Track user's own message in their memory – respect unified flag\n      const unified = ST.chat.scenario?.unifiedMemory === true;\n      await Ctrl.addMemory(char.id, ST.chat.scenId, `I said: "${content.trim().slice(0,150)}"`, 'witnessed', unified);\n      // Other characters witness this message (only if they can see it)\n      for(const other of ST.chat.characters){\n        if(other.id!==charId){\n          if(!isPrivate||privateWith.includes(other.id)){\n            await Ctrl.addMemory(other.id, ST.chat.scenId, `${char.name} said: "${content.trim().slice(0,100)}"`, 'witnessed', unified);\n          }\n        }\n      }\n      // FIX #1: Trigger AI responses after user message.\n      // Pass true to skipSendingCheck so doResponses runs even though\n      // sending is still true (it gets reset in the finally block below).\n      // Pass whisperTarget so only the targeted character responds in group mode.\n      const whisperResp=isPrivate&&privateWith.length?privateWith[0]:null;\n      await Chat.doResponses(charId,true,whisperResp);\n    }finally{ST.chat.sending=false;}\n  },\n\n  // doResponses: trigger AI character replies after a user message.\n  // skipSendingCheck: when true, bypass the sending guard (used when called\n  // from inside send() where sending=true but we still want responses).\n  // onlyCharId: when set, ONLY this character responds (whisper routing).\n  async doResponses(excludeId,skipSendingCheck=false,onlyCharId=null){\n    let responders=ST.chat.characters.filter(c=>c.id!==excludeId&&!c.isUser);\n    // Whisper routing: if onlyCharId is set, filter to just that character\n    if(onlyCharId){\n      responders=responders.filter(c=>c.id===onlyCharId);\n    }\n    if(!responders.length){\n      Ctrl?.dlog?.('No AI characters available to respond','warn');\n      return;\n    }\n    for(const c of responders){\n      if(ST.chat.autoChatStop)break;\n      // When called from send(), skipSendingCheck is true so we skip this guard.\n      // When called from auto-chat (startAuto), skipSendingCheck is false and\n      // the guard prevents responses during an active user send.\n      if(!skipSendingCheck&&ST.chat.sending&&!ST.chat.autoChatRunning)break;\n      // #12: Each character only sees messages they're allowed to see\n      const visible=Chat.filterVisible(ST.chat.messages,c.id);\n      await Chat.genResponse(c,visible);\n      if(ST.chat.autoChatStop)break;\n    }\n  },\n\n  async genResponse(char,visibleMessages){\n    if(!char)return;\n    const tid=`th-${char.id}-${Date.now()}`;\n    let msgId=null;\n    let reasoningInterval=null;\n    let reasoningText='';\n    let reasoningStartTime=0;\n    let useReasoning=false;\n    Chat.addThinking(tid,char);Chat.scrollEnd();\n    try{\n      const msgs=visibleMessages||Chat.filterVisible(ST.chat.messages,char.id);\n      const sys=Ctrl.buildSysPrompt(char,ST.chat.scenario,msgs,ST.chat.rels);\n      const hist=Ctrl.buildConvo(char,msgs,ST.chat.characters);\n      const model=char.modelId||ST.settings.charModel||'openai-fast';\n      Ctrl.dlog(`Generating for ${char.name} (${model})...`,'dinfo');\n      let full='';\n      msgId=uid();\n      const el=Chat.createStreamEl(msgId,char);\n      useReasoning=ST.settings.reasoning&&API.isReasoningModel(model);\n      if(useReasoning){\n        reasoningStartTime=Date.now();\n        Chat.addReasoning(el,msgId);\n        reasoningInterval=setInterval(()=>{\n          const elapsed=Math.floor((Date.now()-reasoningStartTime)/1000);\n          Chat.updateReasoningTime(msgId,elapsed);\n        },1000);\n      }\n      const tidEl=$(tid);\n      if(tidEl)tidEl.remove();\n      // BUG 2: Use smart scrollEnd — only scrolls if user is near bottom\n      await API.stream([{role:'system',content:sys},...hist],model,(chunk,done)=>{\n        full+=chunk;Chat.updateStreamEl(el,char,full,done);Chat.scrollEnd();\n      },{temp:0.93,onReasoning:useReasoning?(text,done)=>{\n        if(!done&&text){\n          reasoningText+=text;\n          const elapsed=Math.floor((Date.now()-reasoningStartTime)/1000);\n          Chat.updateReasoningContent(el,msgId,reasoningText,elapsed);\n        }\n      }:undefined});\n      if(reasoningInterval)clearInterval(reasoningInterval);\n      if(useReasoning)Chat.finalizeReasoning(el,msgId);\n      Chat.finalizeEl(el,msgId);\n      const msg={id:msgId,scenarioId:ST.chat.scenId,charId:char.id,content:full,timestamp:Date.now(),isUser:false};\n      ST.chat.messages.push(msg);\n      await DB.put('messages',msg);\n      // Track this character's memory of what they said – respect unified flag\n      const unified = ST.chat.scenario?.unifiedMemory === true;\n      await Ctrl.addMemory(char.id, ST.chat.scenId, `I said: "${full.slice(0,150)}"`, 'witnessed', unified);\n      // Track other characters witnessing this message\n      for(const other of ST.chat.characters){\n        if(other.id!==char.id){\n          if(!msg.isPrivate||!msg.privateWith||msg.privateWith.includes(other.id)){\n            await Ctrl.addMemory(other.id, ST.chat.scenId, `${char.name} said: "${full.slice(0,100)}"`, 'witnessed', unified);\n          }\n        }\n      }\n      ST.chat.msgSinceCtrl++;\n      const freq=ST.chat.scenario?.settings?.controllerFreq||ST.settings.ctrlFreq||10;\n      if(ST.chat.msgSinceCtrl>=freq){\n        ST.chat.msgSinceCtrl=0;\n        // FIX #2: Use controllerRunning flag to prevent concurrent controller + auto-chat\n        if(!ST.chat.controllerRunning){\n          ST.chat.controllerRunning=true;\n          try{\n            await Ctrl.runMain(ST.chat.scenario,ST.chat.characters,ST.chat.messages,ST.chat.rels);\n            await DB.put('relationships',{scenarioId:ST.chat.scenId,matrix:ST.chat.rels});\n          }catch(err){\n            Ctrl.dlog(`Controller run failed: ${err.message}`,'err');\n          }finally{\n            ST.chat.controllerRunning=false;\n          }\n        }\n      }\n      // BUG 26: Use Media Controller for auto-image generation\n      if(ST.chat.scenario?.settings?.autoImage){\n        try{\n          let imgPrompt;\n          try{\n            const imgData=await Ctrl.genImagePrompt(msg,char,ST.chat.scenario);\n            imgPrompt=imgData?.prompt||`${char.appearance||''}, ${full.replace(/[*]+/g,'').replace(/["]+/g,'').trim().slice(0,200)}`;\n          }catch{\n            imgPrompt=`${char.appearance||''}, ${full.replace(/[*]+/g,'').replace(/["]+/g,'').trim().slice(0,200)}`;\n          }\n          const imgModel = ST.settings.imgModel || 'flux';\n          const imgUrl = await API.generateImageUrl(imgPrompt, 512, 512, imgModel);\n          const mb=el.querySelector('.msg-body');\n          if(mb){const img=document.createElement('img');img.className='msg-img';img.src=imgUrl;img.loading='lazy';mb.appendChild(img);}\n          // FIX #4: Persist imageUrl to IndexedDB\n          msg.imageUrl=imgUrl;\n          await DB.put('messages',msg);\n        }catch{}\n      }\n      Ctrl.dlog(`${char.name} responded`,'dok');\n    }catch(err){\n      if(reasoningInterval)clearInterval(reasoningInterval);\n      $(tid)?.remove();\n      // BUG 32: Clean up partial stream message on error\n      if(msgId){\n        const partialEl=$(msgId);\n        if(partialEl){\n          const mb=partialEl.querySelector('.msg-body');\n          if(mb){\n            mb.classList.remove('stream');\n            if(!mb.textContent.trim()){\n              partialEl.remove();\n            }\n          }\n        }\n      }\n      Toast.e(`${char.name} failed: ${err.message}`);\n      Ctrl.dlog(`${char.name} error: ${err.message}`,'derr');\n    }\n  }\n};\n", "path": "Theatro/js/chat-core.js"}, {"content": "'use strict';\n// ===== CHAT ENGINE — RENDERING =====\n// Message rendering, streaming elements, scroll management, avatars, panels\n// Depends on: Chat (from chat-core.js), ST, DB, I, esc, parseRP, fmtT\nObject.assign(Chat,{\n  addThinking(id,char){\n    const log=$('#chat-log');if(!log)return;\n    const el=document.createElement('div');el.className='msg';el.id=id;\n    el.innerHTML=`<div class=\"msg-hdr\">${Chat.avHtml(char,26)}<span class=\"msg-name\" style=\"color:${esc(char.color)}\">${esc(char.name)}</span></div>\n    <div class=\"msg-body\" style=\"--mc:${esc(char.color)}\"><div class=\"thinking\"><span></span><span></span><span></span></div></div>`;\n    log.appendChild(el);\n  },\n  createStreamEl(msgId,char){\n    const log=$('#chat-log');if(!log)return null;\n    const el=document.createElement('div');el.className='msg';el.id=`msg-${msgId}`;\n    el.innerHTML=`<div class=\"msg-hdr\">${Chat.avHtml(char,26)}<span class=\"msg-name\" style=\"color:${esc(char.color)}\">${esc(char.name)}</span><span class=\"msg-time\">${fmtT(Date.now())}</span></div>\n    <div class=\"msg-body stream\" id=\"mb-${msgId}\" style=\"--mc:${esc(char.color)}\"></div>`;\n    log.appendChild(el);return el;\n  },\n  updateStreamEl(el,char,text,done){\n    if(!el)return;\n    const mb=el.querySelector('[id^=\"mb-\"]');if(!mb)return;\n    mb.innerHTML=parseRP(text,char.color);\n    if(done)mb.classList.remove('stream');\n  },\n  finalizeEl(el,msgId){\n    if(!el)return;\n    const mb=el.querySelector('[id^=\"mb-\"]');if(mb)mb.classList.remove('stream');\n    const ar=document.createElement('div');ar.className='msg-ar';\n    ar.innerHTML=`<button class=\"mabtn\" onclick=\"CA.img('${msgId}')\">${I('image',11)} Image</button>\n    <button class=\"mabtn\" onclick=\"CA.voice('${msgId}')\">${I('voice',11)} Voice</button>\n    <button class=\"mabtn\" onclick=\"CA.regen('${msgId}')\">${I('regen',11)} Regen</button>\n    <button class=\"mabtn\" onclick=\"CA.branch('${msgId}')\">${I('branch',11)} Branch</button>`;\n    el.appendChild(ar);\n  },\n  renderMsg(msg,char,withActions=false){\n    const log=$('#chat-log');if(!log)return;\n    const el=document.createElement('div');\n    let cls=`msg${char.isUser?' usr':''}`;\n    // #12: Visual indicator for private messages\n    if(msg.isPrivate)cls+=' private';\n    el.className=cls;el.id=`msg-${msg.id}`;\n    const privateTag=msg.isPrivate?'<span class=\"priv-tag\">🔒 whisper</span>':'';\n    el.innerHTML=`<div class=\"msg-hdr\">${Chat.avHtml(char,26)}<span class=\"msg-name\" style=\"color:${esc(char.color)}\">${esc(char.name)}</span>${privateTag}<span class=\"msg-time\">${fmtT(msg.timestamp)}</span></div>\n    <div class=\"msg-body\" style=\"--mc:${esc(char.color)}\">${parseRP(msg.content,char.color)}${msg.imageUrl?`<img class=\"msg-img\" src=\"${esc(msg.imageUrl)}\" loading=\"lazy\">`:''}${msg.audioUrl?Chat._audioPlayerHtml(msg.audioUrl):''}</div>`;\n    if(withActions){\n      const ar=document.createElement('div');ar.className='msg-ar';\n      ar.innerHTML=`<button class=\"mabtn\" onclick=\"CA.img('${msg.id}')\">${I('image',11)} Image</button>\n      <button class=\"mabtn\" onclick=\"CA.voice('${msg.id}')\">${I('voice',11)} Voice</button>\n      <button class=\"mabtn\" onclick=\"CA.regen('${msg.id}')\">${I('regen',11)} Regen</button>\n      <button class=\"mabtn\" onclick=\"CA.branch('${msg.id}')\">${I('branch',11)} Branch</button>`;\n      el.appendChild(ar);\n    }\n    log.appendChild(el);\n  },\n  addCtrlMsg(text){\n    const log=$('#chat-log');if(!log)return;\n    const el=document.createElement('div');el.className='msg ctrl';\n    el.innerHTML=`<div class=\"msg-hdr\"><div class=\"msg-av\" style=\"background:var(--s3);color:var(--tmut);font-size:10px\">⚙</div><span class=\"msg-name\" style=\"color:var(--tmut);font-size:10px\">System</span></div><div class=\"msg-body\">${esc(text)}</div>`;\n    log.appendChild(el);Chat.scrollEnd();\n  },\n  // BUG 2: scrollEnd now checks if user is near bottom (within 200px).\n  // Only force-scrolls when near bottom; otherwise shows scroll-to-bottom button.\n  // BUG 5: 200px threshold matches Bug 30 spec.\n  scrollEnd(force){\n    const l=$('#chat-log');\n    if(!l)return;\n    if(force||Chat._nearBottom()){\n      l.scrollTop=l.scrollHeight;\n      $('#scroll-bottom-btn')?.remove();\n    }else{\n      Chat._showScrollBtn();\n    }\n  },\n  // BUG 2+5: Check if user is scrolled within 200px of the bottom\n  _nearBottom(){\n    const l=$('#chat-log');\n    if(!l)return true;\n    return(l.scrollHeight-l.scrollTop-l.clientHeight)<=200;\n  },\n  // BUG 30: Show scroll-to-bottom button when user is scrolled up during auto-chat\n  _showScrollBtn(){\n    let btn=$('#scroll-bottom-btn');\n    if(btn)return;\n    const log=$('#chat-log');if(!log)return;\n    btn=document.createElement('button');\n    btn.id='scroll-bottom-btn';\n    btn.className='scroll-bottom-btn';\n    btn.innerHTML='↓ New messages';\n    btn.onclick=()=>{Chat.scrollEnd(true);};\n    log.parentElement.style.position='relative';\n    log.parentElement.appendChild(btn);\n  },\n  avHtml(char,sz=26){\n    const st=`width:${sz}px;height:${sz}px;background:${char.color}22;border:2px solid ${char.color};`;\n    if(char.avatar)return`<div class=\"msg-av\" style=\"${st}\"><img src=\"${esc(char.avatar)}\" style=\"width:100%;height:100%;object-fit:cover\"></div>`;\n    return`<div class=\"msg-av\" style=\"${st};color:${char.color};font-size:${Math.floor(sz*.4)}px\">${char.name[0].toUpperCase()}</div>`;\n  },\n  _audioPlayerHtml(src) {\n    const id = 'ap-' + uid();\n    return `<div class=\"audio-player\" id=\"${id}\" data-src=\"${esc(src)}\">\n    <button class=\"ap-play\" onclick=\"Chat._apToggle('${id}')\">▶</button>\n    <div class=\"ap-bar\" onclick=\"Chat._apSeek(event, '${id}')\">\n    <div class=\"ap-fill\"></div>\n    </div>\n    <span class=\"ap-time\">0:00</span>\n    </div>`;\n  },\n  _apToggle(playerId) {\n    const el = document.getElementById(playerId);\n    if (!el) return;\n    let audio = el._audio;\n    if (!audio) {\n      audio = new Audio(el.dataset.src);\n      el._audio = audio;\n      audio.ontimeupdate = () => {\n        const fill = el.querySelector('.ap-fill');\n        const time = el.querySelector('.ap-time');\n        if (fill) fill.style.width = (audio.currentTime / audio.duration * 100 || 0) + '%';\n        if (time) time.textContent = Chat._fmtAudioTime(audio.currentTime);\n      };\n      audio.onended = () => {\n        const btn = el.querySelector('.ap-play');\n        if (btn) btn.textContent = '▶';\n        const fill = el.querySelector('.ap-fill');\n        if (fill) fill.style.width = '0%';\n      };\n    }\n    if (audio.paused) {\n      // Pause all other audio players first\n      document.querySelectorAll('.audio-player').forEach(p => {\n        if (p.id !== playerId && p._audio && !p._audio.paused) {\n          p.pause();\n          const btn = p.querySelector('.ap-play');\n          if (btn) btn.textContent = '▶';\n        }\n      });\n      audio.play();\n      el.querySelector('.ap-play').textContent = '⏸';\n    } else {\n      audio.pause();\n      el.querySelector('.ap-play').textContent = '▶';\n    }\n  },\n  _apSeek(event, playerId) {\n    const el = document.getElementById(playerId);\n    if (!el || !el._audio || !el._audio.duration) return;\n    const bar = event.currentTarget;\n    const rect = bar.getBoundingClientRect();\n    const pct = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));\n    el._audio.currentTime = pct * el._audio.duration;\n  },\n  _fmtAudioTime(sec) {\n    if (!sec || isNaN(sec)) return '0:00';\n    const m = Math.floor(sec / 60);\n    const s = Math.floor(sec % 60);\n    return m + ':' + (s < 10 ? '0' : '') + s;\n  },\n  renderRels(){\n    const c=$('#rel-container');if(!c)return;\n    const entries=Object.values(ST.chat.rels);\n    if(!entries.length){c.innerHTML='<p style=\"color:var(--tmut);font-size:12px\">No relationships tracked yet.</p>';return;}\n    c.innerHTML=entries.map(r=>`<div class=\"rel-entry\">\n    <div class=\"rel-chars\">${esc(r.fromName||r.fromId)} → ${esc(r.toName||r.toId)}</div>\n    <div style=\"display:flex;align-items:center;gap:8px\">\n    <span class=\"rmood ${r.mood==='positive'||r.mood==='romantic'?r.mood==='romantic'?'rom':'pos':r.mood==='negative'?'neg':'neu'}\">${esc(r.mood||'neutral')}</span>\n    <span style=\"font-size:11px;color:var(--tmut)\">${r.intensity||5}/10</span>\n    </div>\n    <div class=\"rel-reason\">${esc(r.reason||'')}</div>\n    </div>`).join('');\n  },\n  renderCast(){\n    const c=$('#active-chars-list');if(!c)return;\n    c.innerHTML=ST.chat.characters.map(ch=>`<div class=\"act-char-row\">${Chat.avHtml(ch,24)}\n    <div style=\"flex:1\"><div style=\"font-size:12px;color:${esc(ch.color)};font-weight:600\">${esc(ch.name)}</div>\n    <div style=\"font-size:11px;color:var(--tmut)\">${esc(ch.emotionalState||'neutral')}</div></div>\n    ${ch.isUser?'<span class=\"pill g\" style=\"font-size:10px\">You</span>':''}\n    </div>`).join('');\n  },\n  addReasoning(el,msgId){\n    if(!el)return;\n    const hdr=document.createElement('div');\n    hdr.className='reasoning-header';\n    hdr.id=`rhdr-${msgId}`;\n    hdr.innerHTML=`<span class=\"reasoning-timer\" id=\"rtimer-${msgId}\">0:00</span><span class=\"reasoning-label\">Thinking</span><span class=\"reasoning-chevron\">▼</span>`;\n    hdr.onclick=()=>Chat.toggleReasoning(msgId);\n    const content=document.createElement('div');\n    content.className='reasoning-content stream';\n    content.id=`rcontent-${msgId}`;\n    const block=document.createElement('div');\n    block.className='reasoning-block collapsed';\n    block.id=`rblock-${msgId}`;\n    block.appendChild(hdr);\n    block.appendChild(content);\n    el.insertBefore(block,el.querySelector('.msg-body'));\n  },\n  updateReasoningTime(msgId,elapsed){\n    const timer=document.getElementById(`rtimer-${msgId}`);\n    if(timer){\n      const m=Math.floor(elapsed/60);\n      const s=elapsed%60;\n      timer.textContent=m>0?`${m}:${s.toString().padStart(2,'0')}`:`${s}s`;\n    }\n  },\n  updateReasoningContent(el,msgId,text,elapsed){\n    const content=document.getElementById(`rcontent-${msgId}`);\n    if(content){\n      content.textContent=text;\n      content.classList.remove('stream');\n    }\n    Chat.updateReasoningTime(msgId,elapsed);\n  },\n  finalizeReasoning(el,msgId){\n    const block=document.getElementById(`rblock-${msgId}`);\n    if(block)block.classList.add('collapsed');\n  },\n  toggleReasoning(msgId){\n    const block=document.getElementById(`rblock-${msgId}`);\n    if(block)block.classList.toggle('collapsed');\n  }\n});\n", "path": "Theatro/js/chat-render.js"}, {"content": "'use strict';\n// ===== SCREENS-UI-SETTINGS =====\n// Settings page + export/import/data management\n// Extends Scr with settings UI (loaded after screens.js)\nObject.assign(Scr,{\n  // --- SETTINGS ---\n  // FIX #8: Mark settings dirty + start debounce auto-save\n  markSettingsDirty(){\n    Scr._settDirty=true;\n    if(Scr._settSaveTimer)clearTimeout(Scr._settSaveTimer);\n    Scr._settSaveTimer=setTimeout(async()=>{\n      if(!Scr._settDirty)return;\n      await DB.setSetting('app_settings',ST.settings);\n      Scr._settDirty=false;\n    },1500);\n  },\n  async settings(){\n    const el=$('#screen-settings');if(!el)return;\n    const s=ST.settings;const tab=ST.settTab||'providers';\n    el.innerHTML=`<nav class=\"sett-nav\">\n    ${[['providers','🔑','API Keys'],['models','🤖','Models'],['controllers','⚙','Controllers'],['memory','🧠','Memory'],['tweaks','⚡','Tweaks'],['storage','💾','Storage']].map(([id,ico,label])=>`\n    <div class=\"sett-ni ${tab===id?'on':''}\" onclick=\"ST.settTab='${id}';Scr.settings()\"><span>${ico}</span><span>${esc(label)}</span></div>\n    `).join('')}\n    </nav>\n    <div class=\"sett-body">\n    <div class=\"sett-sec ${tab==='providers'?'on':''}\">\n    <div class=\"sett-grp\">\n    <div class=\"sett-gt\">Pollinations (Default)</div>\n    <p style=\"font-size:12px;color:var(--tdim)\">Works out-of-the-box. Add your publishable key (pk_...) for authenticated endpoints and higher limits.</p>\n    <div class=\"field\"><label class=\"lbl\">Pollinations Key</label><input type=\"text\" id=\"s-pk\" value=\"${esc(s.pollinationsKey)}\" placeholder=\"pk_...\" oninput=\"ST.settings.pollinationsKey=this.value;Scr.markSettingsDirty()\"></div>\n    </div>\n    <div class=\"sett-grp\">\n    <div class=\"sett-gt\">Aqua API (Premium Models)</div>\n    <p style=\"font-size:12px;color:var(--tdim)\">Unlocks Grok 4.1 Thinking for controllers and premium characters.</p>\n    <div class=\"field\"><label class=\"lbl\">Aqua API Key</label><input type=\"password\" id=\"s-aq\" value=\"${esc(s.aquaKey)}\" placeholder=\"Paste key...\" oninput=\"ST.settings.aquaKey=this.value;Scr.markSettingsDirty()\"></div>\n    </div>\n    <div class=\"sett-grp\">\n    <div class=\"sett-gt\">Custom OpenAI-Compatible Endpoint</div>\n    <div class=\"field\"><label class=\"lbl\">Base URL</label><input type=\"url\" id=\"s-curl\" value=\"${esc(s.customUrl||'')}\" placeholder=\"https://...\" oninput=\"ST.settings.customUrl=this.value;Scr.markSettingsDirty()\"></div>\n    <div class=\"field\"><label class=\"lbl\">API Key</label><input type=\"password\" id=\"s-ckey\" value=\"${esc(s.customKey||'')}\" placeholder=\"Bearer token...\" oninput=\"ST.settings.customKey=this.value;Scr.markSettingsDirty()\"></div>\n    </div>\n    <button class=\"btn bp bsm\" onclick=\"Scr.saveSettings()\">Save Provider Settings</button>\n    <button class=\"btn bs bsm\" onclick=\"Scr.fetchProviderModels()\" style=\"margin-left:8px\">${I('refresh',12)} Refresh Model List</button>\n    </div>\n    <div class=\"sett-sec ${tab==='models'?'on':''}\">\n    <div class=\"sett-grp\">\n    <div class=\"sett-gt\">Default Model Assignments</div>\n    <div class=\"field\"><label class=\"lbl\">Character Default</label>${Scr.mpHtml('s-cm',s.charModel||'openai-fast')}</div>\n    <div class=\"field\"><label class=\"lbl\">Controller Default</label>${Scr.mpHtml('s-ctm',s.ctrlModel||'openai')}</div>\n    <div class=\"field\"><label class=\"lbl\">Image Model</label>${Scr.imgMpHtml('s-imgm',s.imgModel||'flux')}</div>\n    <div class=\"field\"><label class=\"lbl\">TTS Model</label>${Scr.ttsMpHtml('s-ttsm',s.ttsModel||'openai-audio')}</div>\n    <div class=\"field\"><label class=\"lbl\">STT Model</label>${Scr.sttMpHtml('s-sttm',s.sttModel||'whisper-large-v3')}</div>\n    <div class=\"field\"><label class=\"lbl\">Default Voice</label>${Scr.vpHtml('s-dv',s.defVoice||'nova')}</div>\n    </div>\n    <div class=\"sett-grp\">\n    <div class=\"sett-gt\">Creative Controller</div>\n    <p style=\"font-size:11px;color:var(--tmut)\">Used for character auto-creation, scenario auto-creation, and character image generation. Falls back to the default controller/image model if not set.</p>\n    <div class=\"field\"><label class=\"lbl\">Text Model</label>${Scr.mpHtml('s-crtm',s.creativeModel||s.ctrlModel||'openai')}</div>\n    <div class=\"field\"><label class=\"lbl\">Image Model</label>${Scr.imgMpHtml('s-crimgm',s.creativeImgModel||s.imgModel||'flux')}</div>\n    </div>\n    <button class=\"btn bp bsm\" onclick=\"Scr.saveSettings()\">Save Model Settings</button>\n    </div>\n    <div class=\"sett-sec ${tab==='controllers'?'on':''}\">\n    <div class=\"sett-grp\">\n    <div class=\"sett-gt\">Main Controller</div>\n    <div class=\"field\" style=\"flex-direction:row;align-items:center;gap:12px\"><label class=\"lbl\" style=\"flex-shrink:0\">Analysis Frequency</label><input type=\"number\" min=\"3\" max=\"100\" value=\"${s.ctrlFreq||10}\" style=\"width:70px\" oninput=\"ST.settings.ctrlFreq=parseInt(this.value)||10;Scr.markSettingsDirty()\"><span style=\"font-size:11px;color:var(--tmut)\">messages between runs</span></div>\n    <div class=\"tgl-wrap\" onclick=\"ST.settings.streaming=!ST.settings.streaming;$('#s-stream').classList.toggle('on',ST.settings.streaming);Scr.markSettingsDirty()\">\n    <div class=\"tgl ${s.streaming!==false?'on':''}\" id=\"s-stream\"></div>\n    <span class=\"tgl-lbl\">Enable streaming responses</span>\n    </div>\n    <div class=\"tgl-wrap\" onclick=\"ST.settings.reasoning=!ST.settings.reasoning;$('#s-reasoning').classList.toggle('on',ST.settings.reasoning);Scr.markSettingsDirty()\">\n    <div class=\"tgl ${s.reasoning?'on':''}\" id=\"s-reasoning\"></div>\n    <span class=\"tgl-lbl\">Show AI Reasoning — only works with reasoning models (DeepSeek R1, OpenAI o1/o3)</span>\n    </div>\n    </div>\n    <button class=\"btn bp bsm\" onclick=\"Scr.saveSettings()\">Save Controller Settings</button>\n    </div>\n    <div class=\"sett-sec ${tab==='memory'?'on':''}\">\n    <div class=\"sett-grp\">\n    <div class=\"sett-gt\">Memory Configuration</div>\n    <div class=\"field\" style=\"flex-direction:row;align-items:center;gap:12px\"><label class=\"lbl\" style=\"flex-shrink:0\">Short-term Window</label><input type=\"number\" min=\"5\" max=\"100\" value=\"${s.stWindow||30}\" style=\"width:70px\" oninput=\"ST.settings.stWindow=parseInt(this.value)||30;Scr.markSettingsDirty()\"><span style=\"font-size:11px;color:var(--tmut)\">messages in context</span></div>\n    </div>\n    <button class=\"btn bp bsm\" onclick=\"Scr.saveSettings()\">Save Memory Settings</button>\n    </div>\n    <div class=\"sett-sec ${tab==='tweaks'?'on':''}\">\n    <div class=\"sett-grp\">\n    <div class=\"sett-gt\">Character Image Generation</div>\n    <div class=\"tgl-wrap\" onclick=\"ST.settings.customImagePrompt=!ST.settings.customImagePrompt;$('#tweak-cip').classList.toggle('on',ST.settings.customImagePrompt);Scr.markSettingsDirty()\">\n    <div class=\"tgl ${s.customImagePrompt?'on':''}\" id=\"tweak-cip\"></div>\n    <span class=\"tgl-lbl\">Custom Prompt Field — When generating character image, show prompt input instead of auto-using description</span>\n    </div>\n    </div>\n    <div class=\"sett-grp\">\n    <div class=\"sett-gt\">Memory Management</div>\n    <div style=\"display:flex;flex-direction:column;gap:12px\">\n    <button class=\"btn bs bsm\" onclick=\"Scr.resetMemoryModal()\">${I('refresh',12)} Reset Memory (per character, per scenario)</button>\n    <button class=\"btn bd bsm\" onclick=\"Scr.clearAllMemories()\">${I('trash',12)} Clear All Memories (all characters, all scenarios)</button>\n    <p style=\"font-size:11px;color:var(--tmut);margin-top:4px\">Reset Memory lets you wipe a specific character's memory in a specific scenario. Clear All Memories removes all memory data — use with caution.</p>\n    </div>\n    </div>\n    <button class=\"btn bp bsm\" onclick=\"Scr.saveSettings()\">Save Tweaks</button>\n    </div>\n    <div class=\"sett-sec ${tab==='storage'?'on':''}\">\n    <div class=\"sett-grp\">\n    <div class=\"sett-gt\">Data Management</div>\n    <p style=\"font-size:12px;color:var(--tdim)\">All data is stored locally in your browser's IndexedDB. Export regularly to back up your scenarios and characters.</p>\n    <div style=\"display:flex;gap:20px;margin-bottom:12px\">\n    <label style=\"display:flex;align-items:center;gap:6px;cursor:pointer\">\n    <input type=\"checkbox\" id=\"export-images-checkbox\" style=\"width:16px;height:16px;margin:0\"> <span>📷 Export images</span>\n    </label>\n    <label style=\"display:flex;align-items:center;gap:6px;cursor:pointer\">\n    <input type=\"checkbox\" id=\"export-audio-checkbox\" style=\"width:16px;height:16px;margin:0\"> <span>🎵 Export audio files</span>\n    </label>\n    </div>\n    <div style=\"display:flex;gap:10px;flex-wrap:wrap\">\n    <button class=\"btn bs bsm\" onclick=\"Scr.exportAll()\">${I('download',12)} Export All</button>\n    <button class=\"btn bs bsm\" onclick=\"Scr.importAll()\">${I('upload',12)} Import</button>\n    <button class=\"btn bd bsm\" onclick=\"Scr.clearAll()\">🗑 Clear Everything</button>\n    </div>\n    </div>\n    </div>\n    </div>`;\n  },\n  async saveSettings(){\n    if(Scr._settSaveTimer)clearTimeout(Scr._settSaveTimer);\n    await DB.setSetting('app_settings',ST.settings);\n    Scr._settDirty=false;\n    Toast.s('Settings saved');\n  },\n  async exportAll(){\n    const includeImages = !!$('#export-images-checkbox')?.checked;\n    const includeAudio = !!$('#export-audio-checkbox')?.checked;\n    const data = {\n      _theatro: true,\n      version: 2,\n      exportedAt: Date.now(),\n      characters: await DB.getAll('characters'),\n      scenarios: await DB.getAll('scenarios'),\n      settings: ST.settings\n    };\n    if (includeImages || includeAudio) {\n      const allBlobs = await DB.getAllBlobs();\n      const filtered = allBlobs.filter(b => {\n        if (includeImages && b.kind === 'image') return true;\n        if (includeAudio && b.kind === 'audio') return true;\n        return false;\n      });\n      const blobEntries = await Promise.all(filtered.map(async b => {\n        let base64 = '';\n        try {\n          if (b.blob) {\n            const reader = new FileReader();\n            const promise = new Promise((res, rej) => {\n              reader.onload = () => res(reader.result);\n              reader.onerror = rej;\n            });\n            reader.readAsDataURL(b.blob);\n            base64 = await promise;\n          }\n        } catch (err) {\n          Ctrl?.dlog?.(`Failed to convert blob ${b.id}: ${err.message}`, 'warn');\n        }\n        return {\n          id: b.id,\n          url: b.url,\n          kind: b.kind,\n          type: b.type,\n          size: b.size,\n          cachedAt: b.cachedAt,\n          data: base64\n        };\n      }));\n      data.blobs = blobEntries;\n    }\n    const a = document.createElement('a');\n    a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));\n    a.download = `theatro_backup_${Date.now()}.json`;\n    a.click();\n    Toast.s('Exported');\n  },\n  async importAll(){\n    const inp=document.createElement('input');inp.type='file';inp.accept='.json';\n    inp.onchange=async e=>{\n      const f=e.target.files[0];if(!f)return;\n      try{\n        const data=JSON.parse(await f.text());if(!data._theatro){Toast.e('Not a Theatro backup');return;}\n        const ok=await Modal.confirm('Import characters and scenarios from file?',{ok:'Import'});if(!ok)return;\n        for(const c of data.characters||[])await DB.put('characters',c);\n        for(const s of data.scenarios||[])await DB.put('scenarios',s);\n        if (data.version >= 2 && data.blobs && Array.isArray(data.blobs)) {\n          for (const blobEntry of data.blobs) {\n            if (blobEntry.data && blobEntry.data.startsWith('data:')) {\n              try {\n                const response = await fetch(blobEntry.data);\n                const blob = await response.blob();\n                await DB.cacheBlob(blobEntry.url, blob, blobEntry.kind);\n              } catch (err) {\n                Ctrl?.dlog?.(`Failed to restore blob ${blobEntry.id}: ${err.message}`, 'warn');\n              }\n            }\n          }\n          Toast.s(`Imported ${data.blobs.length} blobs`);\n        }\n        Toast.s('Import complete');Scr.dashboard();\n      }catch{Toast.e('Import failed');}\n    };\n    inp.click();\n  },\n  async clearAll(){\n    const ok=await Modal.confirm('Permanently delete ALL data? Cannot be undone.',{ok:'Delete Everything',danger:true});if(!ok)return;\n    const r=indexedDB.deleteDatabase('theatro');r.onsuccess=()=>{Toast.s('All data cleared. Reloading...');setTimeout(()=>location.reload(),1500)};\n  }\n});\n", "path": "Theatro/js/screens-ui-settings.js"}]
+'use strict';
+// ===== CHAT ENGINE — CORE =====
+// Initialization, messaging, AI response generation, whisper routing
+// Rendering split → chat-render.js | Session management split → chat-session.js
+// Message actions (img/voice/regen/branch) in chat-actions.js
+const Chat={
+  // STT state (used by chat-session.js)
+  _sttRecorder:null,
+  _sttChunks:[],
+  _sttStream:null,
+
+  // #12: Filter messages visible to a character (respects private conversations)
+  filterVisible(messages,charId){
+    return messages.filter(m=>{
+      if(m.isPrivate){
+        if(m.privateWith&&m.privateWith.length)
+          return m.charId===charId||m.privateWith.includes(charId);
+        return m.charId===charId;
+      }
+      return true;
+    });
+  },
+
+  async init(scenId){
+    // BUG 23: Stop any running auto-chat before overwriting state
+    if(ST.chat.autoChatRunning){Chat.stopAuto();await new Promise(r=>setTimeout(r,200));}
+    const scenario=await DB.get('scenarios',scenId);
+    if(!scenario){Toast.e('Scenario not found');return;}
+    const chars=[];
+    for(const cid of scenario.characterIds||[]){
+      const c=await DB.get('characters',cid);
+      if(c){
+        chars.push({...c,
+          emotionalState:c.emotionalState||'neutral',
+          moodNotes:c.moodNotes||'',
+          systemInjection:c.systemInjection||''
+        });
+      }
+    }
+    // Auto-migrate stale/invalid modelIds to 'openai-fast'
+    for(const c of chars){
+      if(c.modelId&&!MODELS.find(m=>m.id===c.modelId)){
+        Ctrl?.dlog?.(`Migrating ${c.name} model from '${c.modelId}' to 'openai-fast'`,'warn');
+        c.modelId='openai-fast';
+        await DB.put('characters',c);
+      }
+    }
+    let msgs=await DB.getByIndex('messages','scenarioId',scenId);
+    msgs.sort((a,b)=>a.timestamp-b.timestamp);
+    // BUG 28: Persist opening message if no messages exist yet
+    if(!msgs.length&&scenario.openingMessage){
+      const openingMsg={id:'opening-'+scenId,scenarioId:scenId,charId:'narrator',content:scenario.openingMessage,timestamp:Date.now(),isUser:false};
+      msgs.push(openingMsg);
+      await DB.put('messages',openingMsg);
+    }
+    const relData=await DB.get('relationships',scenId);
+    const allChars=await DB.getAll('characters');
+    const userChar=allChars.find(c=>c.isUser);
+    // Load memories – respect unified flag
+    const unified = scenario.unifiedMemory === true;
+    await Ctrl.loadMemories(scenId, chars, unified);
+    ST.chat={
+      ...ST.chat,scenId,scenario,characters:chars,messages:msgs,rels:relData?.matrix||{},
+      activeCharId:userChar?.id||chars[0]?.id||null,
+      autoChatRunning:false,autoChatStop:false,msgSinceCtrl:0,
+      panelOpen:window.innerWidth>900,panelTab:'directive',
+      directive:{next:'',details:''},debugLog:[],
+      sending:false,controllerRunning:false,sttRecording:false,
+      whisper:false,whisperWith:[],
+      whisperTarget:null,
+    };
+    Router.go('chat');
+  },
+
+  async send(content,charId,isPrivate=false,privateWith=[]){
+    if(!content.trim())return;
+    // Race condition guard
+    if(ST.chat.sending){Toast.w('Please wait — still processing...');return;}
+    ST.chat.sending=true;
+    try{
+      const char=ST.chat.characters.find(c=>c.id===charId);if(!char)return;
+      const msg={id:uid(),scenarioId:ST.chat.scenId,charId,content:content.trim(),timestamp:Date.now(),isUser:!!char.isUser};
+      // #12: Track private conversation metadata
+      if(isPrivate){msg.isPrivate=true;msg.privateWith=privateWith;}
+      ST.chat.messages.push(msg);
+      await DB.put('messages',msg);
+      Chat.renderMsg(msg,char,true);
+      Chat.scrollEnd();
+      // Track user's own message in their memory – respect unified flag
+      const unified = ST.chat.scenario?.unifiedMemory === true;
+      await Ctrl.addMemory(char.id, ST.chat.scenId, `I said: "${content.trim().slice(0,150)}"`, 'witnessed', unified);
+      // Other characters witness this message (only if they can see it)
+      for(const other of ST.chat.characters){
+        if(other.id!==charId){
+          if(!isPrivate||privateWith.includes(other.id)){
+            await Ctrl.addMemory(other.id, ST.chat.scenId, `${char.name} said: "${content.trim().slice(0,100)}"`, 'witnessed', unified);
+          }
+        }
+      }
+      // FIX #1: Trigger AI responses after user message.
+      // Pass true to skipSendingCheck so doResponses runs even though
+      // sending is still true (it gets reset in the finally block below).
+      // Pass whisperTarget so only the targeted character responds in group mode.
+      const whisperResp=isPrivate&&privateWith.length?privateWith[0]:null;
+      await Chat.doResponses(charId,true,whisperResp);
+    }finally{ST.chat.sending=false;}
+  },
+
+  // doResponses: trigger AI character replies after a user message.
+  // skipSendingCheck: when true, bypass the sending guard (used when called
+  // from inside send() where sending=true but we still want responses).
+  // onlyCharId: when set, ONLY this character responds (whisper routing).
+  async doResponses(excludeId,skipSendingCheck=false,onlyCharId=null){
+    let responders=ST.chat.characters.filter(c=>c.id!==excludeId&&!c.isUser);
+    // Whisper routing: if onlyCharId is set, filter to just that character
+    if(onlyCharId){
+      responders=responders.filter(c=>c.id===onlyCharId);
+    }
+    if(!responders.length){
+      Ctrl?.dlog?.('No AI characters available to respond','warn');
+      return;
+    }
+    for(const c of responders){
+      if(ST.chat.autoChatStop)break;
+      // When called from send(), skipSendingCheck is true so we skip this guard.
+      // When called from auto-chat (startAuto), skipSendingCheck is false and
+      // the guard prevents responses during an active user send.
+      if(!skipSendingCheck&&ST.chat.sending&&!ST.chat.autoChatRunning)break;
+      // #12: Each character only sees messages they're allowed to see
+      const visible=Chat.filterVisible(ST.chat.messages,c.id);
+      await Chat.genResponse(c,visible);
+      if(ST.chat.autoChatStop)break;
+    }
+  },
+
+  async genResponse(char,visibleMessages){
+    if(!char)return;
+    const tid=`th-${char.id}-${Date.now()}`;
+    let msgId=null;
+    let reasoningInterval=null;
+    let reasoningText='';
+    let reasoningStartTime=0;
+    let useReasoning=false;
+    Chat.addThinking(tid,char);Chat.scrollEnd();
+    try{
+      const msgs=visibleMessages||Chat.filterVisible(ST.chat.messages,char.id);
+      const sys=Ctrl.buildSysPrompt(char,ST.chat.scenario,msgs,ST.chat.rels);
+      const hist=Ctrl.buildConvo(char,msgs,ST.chat.characters);
+      const model=char.modelId||ST.settings.charModel||'openai-fast';
+      Ctrl.dlog(`Generating for ${char.name} (${model})...`,'dinfo');
+      let full='';
+      msgId=uid();
+      const el=Chat.createStreamEl(msgId,char);
+      useReasoning=ST.settings.reasoning&&API.isReasoningModel(model);
+      if(useReasoning){
+        reasoningStartTime=Date.now();
+        Chat.addReasoning(el,msgId);
+        reasoningInterval=setInterval(()=>{
+          const elapsed=Math.floor((Date.now()-reasoningStartTime)/1000);
+          Chat.updateReasoningTime(msgId,elapsed);
+        },1000);
+      }
+      const tidEl=$(tid);
+      if(tidEl)tidEl.remove();
+      // BUG 2: Use smart scrollEnd — only scrolls if user is near bottom
+      await API.stream([{role:'system',content:sys},...hist],model,(chunk,done)=>{
+        full+=chunk;Chat.updateStreamEl(el,char,full,done);Chat.scrollEnd();
+      },{temp:0.93,onReasoning:useReasoning?(text,done)=>{
+        if(!done&&text){
+          reasoningText+=text;
+          const elapsed=Math.floor((Date.now()-reasoningStartTime)/1000);
+          Chat.updateReasoningContent(el,msgId,reasoningText,elapsed);
+        }
+      }:undefined});
+      if(reasoningInterval)clearInterval(reasoningInterval);
+      if(useReasoning)Chat.finalizeReasoning(el,msgId);
+      Chat.finalizeEl(el,msgId);
+      const msg={id:msgId,scenarioId:ST.chat.scenId,charId:char.id,content:full,timestamp:Date.now(),isUser:false};
+      ST.chat.messages.push(msg);
+      await DB.put('messages',msg);
+      // Track this character's memory of what they said – respect unified flag
+      const unified = ST.chat.scenario?.unifiedMemory === true;
+      await Ctrl.addMemory(char.id, ST.chat.scenId, `I said: "${full.slice(0,150)}"`, 'witnessed', unified);
+      // Track other characters witnessing this message
+      for(const other of ST.chat.characters){
+        if(other.id!==char.id){
+          if(!msg.isPrivate||!msg.privateWith||msg.privateWith.includes(other.id)){
+            await Ctrl.addMemory(other.id, ST.chat.scenId, `${char.name} said: "${full.slice(0,100)}"`, 'witnessed', unified);
+          }
+        }
+      }
+      ST.chat.msgSinceCtrl++;
+      const freq=ST.chat.scenario?.settings?.controllerFreq||ST.settings.ctrlFreq||10;
+      if(ST.chat.msgSinceCtrl>=freq){
+        ST.chat.msgSinceCtrl=0;
+        // FIX #2: Use controllerRunning flag to prevent concurrent controller + auto-chat
+        if(!ST.chat.controllerRunning){
+          ST.chat.controllerRunning=true;
+          try{
+            await Ctrl.runMain(ST.chat.scenario,ST.chat.characters,ST.chat.messages,ST.chat.rels);
+            await DB.put('relationships',{scenarioId:ST.chat.scenId,matrix:ST.chat.rels});
+          }catch(err){
+            Ctrl.dlog(`Controller run failed: ${err.message}`,'err');
+          }finally{
+            ST.chat.controllerRunning=false;
+          }
+        }
+      }
+      // BUG 26: Use Media Controller for auto-image generation
+      if(ST.chat.scenario?.settings?.autoImage){
+        try{
+          let imgPrompt;
+          try{
+            const imgData=await Ctrl.genImagePrompt(msg,char,ST.chat.scenario);
+            imgPrompt=imgData?.prompt||`${char.appearance||''}, ${full.replace(/[*]+/g,'').replace(/["]+/g,'').trim().slice(0,200)}`;
+          }catch{
+            imgPrompt=`${char.appearance||''}, ${full.replace(/[*]+/g,'').replace(/["]+/g,'').trim().slice(0,200)}`;
+          }
+          const imgModel = ST.settings.imgModel || 'flux';
+          const imgUrl = await API.generateImageUrl(imgPrompt, 512, 512, imgModel);
+          const mb=el.querySelector('.msg-body');
+          if(mb){const img=document.createElement('img');img.className='msg-img';img.src=imgUrl;img.loading='lazy';mb.appendChild(img);}
+          // FIX #4: Persist imageUrl to IndexedDB
+          msg.imageUrl=imgUrl;
+          await DB.put('messages',msg);
+        }catch{}
+      }
+      Ctrl.dlog(`${char.name} responded`,'dok');
+    }catch(err){
+      if(reasoningInterval)clearInterval(reasoningInterval);
+      $(`#${tid}`)?.remove();
+      // BUG 32: Clean up partial stream message on error
+      if(msgId){
+        const partialEl=$(`#msg-${msgId}`);
+        if(partialEl){
+          const mb=partialEl.querySelector('.msg-body');
+          if(mb){
+            mb.classList.remove('stream');
+            if(!mb.textContent.trim()){
+              partialEl.remove();
+            }
+          }
+        }
+      }
+      Toast.e(`${char.name} failed: ${err.message}`);
+      Ctrl.dlog(`${char.name} error: ${err.message}`,'derr');
+    }
+  }
+};
