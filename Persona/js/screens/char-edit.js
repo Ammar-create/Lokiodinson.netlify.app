@@ -170,7 +170,7 @@ function handleAvatar(e) {
 
 function inlineDropdown(id, selectedId, items, onSelect) {
   const selected = items.find(i => i.id === selectedId);
-  return createEl('div', { style: 'position:relative' }, [
+  return createEl('div', { class: 'picker-wrap' }, [
     createEl('button', {
       class: 'picker-btn',
       id: `${id}-btn`,
@@ -181,8 +181,7 @@ function inlineDropdown(id, selectedId, items, onSelect) {
     ]),
     createEl('div', {
       class: 'picker-list',
-      id: `${id}-list`,
-      style: 'display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:50;max-height:240px;overflow-y:auto'
+      id: `${id}-list`
     }, items.map(item => createEl('div', {
       class: `picker-item ${item.id === selectedId ? 'selected' : ''}`,
       onclick: () => {

@@ -87,11 +87,39 @@
   .toast{min-width:auto;width:calc(100vw - 48px);right:24px;left:24px}
 }
 
+/* ===== PICKER — DEFAULT (DESKTOP) ===== */
+.picker-wrap{position:relative}
+.picker-list{
+  display:none;
+  position:absolute;
+  top:calc(100% + 4px);
+  left:0;
+  right:0;
+  z-index:50;
+  max-height:240px;
+  overflow-y:auto;
+  background:var(--wing);
+  border:1px solid var(--rail);
+  border-radius:var(--r);
+  box-shadow:var(--shadow-md)
+}
+.picker-list.open{display:block}
+
 /* ===== PICKER — MOBILE + TABLET BOTTOM SHEET ===== */
 @media(max-width:1024px){
-  .picker-list{position:fixed;left:16px;right:16px;top:auto;bottom:16px;max-height:55vh;
-    border-radius:var(--rl);margin:0;z-index:2000;border:1px solid var(--frame);
-    box-shadow:var(--shadow-lg)}
+  .picker-list{
+    position:fixed;
+    left:16px;
+    right:16px;
+    top:auto;
+    bottom:16px;
+    max-height:55vh;
+    border-radius:var(--rl);
+    margin:0;
+    z-index:2000;
+    border:1px solid var(--frame);
+    box-shadow:var(--shadow-lg)
+  }
   .picker-item{padding:12px 14px;font-size:14px}
 }
 
