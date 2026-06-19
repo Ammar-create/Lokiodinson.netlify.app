@@ -24,6 +24,9 @@ const Chat={
  async init(scenId){
  // BUG 23: Stop any running auto-chat before overwriting state
  if(ST.chat.autoChatRunning){Chat.stopAuto();await new Promise(r=>setTimeout(r,200));}
+ // Invalidate any ongoing response generation so orphaned streams abort cleanly
+ ST.chat.genToken=(ST.chat.genToken||0)+1;
+ ST.chat.generating=false;
  const scenario=await DB.get('scenarios',scenId);
  if(!scenario){Toast.e('Scenario not found');return;}
  const chars=[];
@@ -139,7 +142,8 @@ const Chat={
 
  async genResponse(char,visibleMessages){
  if(!char)return;
- ST.chat.generating=true; // <-- guard: blocks any concurrent response generation
+ const _genToken=ST.chat.genToken||0; // capture session token at start
+ ST.chat.generating=true;
  const tid=`th-${char.id}-${Date.now()}`;
  let msgId=null;
  Chat.addThinking(tid,char);Chat.scrollEnd();
@@ -159,6 +163,11 @@ const Chat={
  await API.stream([{role:'system',content:sys},...hist],model,(chunk,done)=>{
  full+=chunk;Chat.updateStreamEl(el,char,full,done);Chat.scrollEnd();
  },{temp:0.93});
+ // Abort if session changed during streaming (user navigated away and back)
+ if(ST.chat.genToken!==_genToken){
+ Ctrl?.dlog?.(`Generation for ${char.name} aborted (session changed during stream)`,'warn');
+ return;
+ }
  Chat.finalizeEl(el,msgId);
  const msg={id:msgId,scenarioId:ST.chat.scenId,charId:char.id,content:full,timestamp:Date.now(),isUser:false};
  ST.chat.messages.push(msg);
@@ -230,7 +239,9 @@ const Chat={
  Ctrl.dlog(`${char.name} error: ${err.message}`,'derr');
  }
  finally{
- ST.chat.generating=false; // <-- always release the guard
+ // Only release guard if this generation's token still matches
+ // (prevents resetting a newer session's flag)
+ if(ST.chat.genToken===_genToken) ST.chat.generating=false;
  }
  },
 

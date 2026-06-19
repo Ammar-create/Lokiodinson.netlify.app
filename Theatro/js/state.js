@@ -111,7 +111,7 @@ const ST={
  activeCharId:null,autoChatRunning:false,autoChatStop:false,
  msgSinceCtrl:0,panelOpen:true,panelTab:'directive',
  directive:{next:'',details:''},debugLog:[],
- sending:false,controllerRunning:false,generating:false,
+ sending:false,controllerRunning:false,generating:false,genToken:0,
  modelsCache:{pollinations:[],aqua:[]},
  sttRecording:false,
  whisper:false,whisperWith:[],
