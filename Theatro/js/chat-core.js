@@ -98,21 +98,14 @@ const Chat={
         }
       }
       // FIX #1: Trigger AI responses after user message.
-      // Pass true to skipSendingCheck so doResponses runs even though
-      // sending is still true (it gets reset in the finally block below).
-      // Pass whisperTarget so only the targeted character responds in group mode.
       const whisperResp=isPrivate&&privateWith.length?privateWith[0]:null;
       await Chat.doResponses(charId,true,whisperResp);
     }finally{ST.chat.sending=false;}
   },
 
   // doResponses: trigger AI character replies after a user message.
-  // skipSendingCheck: when true, bypass the sending guard (used when called
-  // from inside send() where sending=true but we still want responses).
-  // onlyCharId: when set, ONLY this character responds (whisper routing).
   async doResponses(excludeId,skipSendingCheck=false,onlyCharId=null){
     let responders=ST.chat.characters.filter(c=>c.id!==excludeId&&!c.isUser);
-    // Whisper routing: if onlyCharId is set, filter to just that character
     if(onlyCharId){
       responders=responders.filter(c=>c.id===onlyCharId);
     }
@@ -122,11 +115,7 @@ const Chat={
     }
     for(const c of responders){
       if(ST.chat.autoChatStop)break;
-      // When called from send(), skipSendingCheck is true so we skip this guard.
-      // When called from auto-chat (startAuto), skipSendingCheck is false and
-      // the guard prevents responses during an active user send.
       if(!skipSendingCheck&&ST.chat.sending&&!ST.chat.autoChatRunning)break;
-      // #12: Each character only sees messages they're allowed to see
       const visible=Chat.filterVisible(ST.chat.messages,c.id);
       await Chat.genResponse(c,visible);
       if(ST.chat.autoChatStop)break;
@@ -155,23 +144,28 @@ const Chat={
       if(useReasoning){
         reasoningStartTime=Date.now();
         Chat.addReasoning(el,msgId);
-        reasoningInterval=setInterval(()=>{
+        reasoningInterval=setInterval(function(){
           const elapsed=Math.floor((Date.now()-reasoningStartTime)/1000);
           Chat.updateReasoningTime(msgId,elapsed);
         },1000);
       }
-      $(`#${tid}`)?.remove();
-      // BUG 2: Use smart scrollEnd — only scrolls if user is near bottom
-      await API.stream([{role:'system',content:sys},...hist],model,(chunk,done)=>{
+      const tidEl=document.getElementById(tid);
+      if(tidEl)tidEl.remove();
+      // Build the reasoning callback (if applicable)
+      const streamOpts={temp:0.93};
+      if(useReasoning){
+        streamOpts.onReasoning=function(text,done){
+          if(!done&&text){
+            reasoningText+=text;
+            const elapsed=Math.floor((Date.now()-reasoningStartTime)/1000);
+            Chat.updateReasoningContent(el,msgId,reasoningText,elapsed);
+          }
+        };
+      }
+      await API.stream([{role:'system',content:sys},...hist],model,function(chunk,done){
         full+=chunk;Chat.updateStreamEl(el,char,full,done);Chat.scrollEnd();
-      },{temp:0.93,onReasoning:useReasoning?(text,done)=>{
-        if(!done&&text){
-          reasoningText+=text;
-          const elapsed=Math.floor((Date.now()-reasoningStartTime)/1000);
-          Chat.updateReasoningContent(el,msgId,reasoningText,elapsed);
-        }
-      }:undefined});
-      if(reasoningInterval)clearInterval(reasoningInterval);
+      },streamOpts);
+      if(reasoningInterval){clearInterval(reasoningInterval);reasoningInterval=null;}
       if(useReasoning)Chat.finalizeReasoning(el,msgId);
       Chat.finalizeEl(el,msgId);
       const msg={id:msgId,scenarioId:ST.chat.scenId,charId:char.id,content:full,timestamp:Date.now(),isUser:false};
@@ -192,7 +186,6 @@ const Chat={
       const freq=ST.chat.scenario?.settings?.controllerFreq||ST.settings.ctrlFreq||10;
       if(ST.chat.msgSinceCtrl>=freq){
         ST.chat.msgSinceCtrl=0;
-        // FIX #2: Use controllerRunning flag to prevent concurrent controller + auto-chat
         if(!ST.chat.controllerRunning){
           ST.chat.controllerRunning=true;
           try{
@@ -200,35 +193,36 @@ const Chat={
             await DB.put('relationships',{scenarioId:ST.chat.scenId,matrix:ST.chat.rels});
           }catch(err){
             Ctrl.dlog(`Controller run failed: ${err.message}`,'err');
-          }finally{\n            ST.chat.controllerRunning=false;\n          }
+          }finally{
+            ST.chat.controllerRunning=false;
+          }
         }
       }
       // BUG 26: Use Media Controller for auto-image generation
-      if(ST.chat.scenario?.settings?.autoImage){
+      if(ST.chat.scenario&&ST.chat.scenario.settings&&ST.chat.scenario.settings.autoImage){
         try{
           let imgPrompt;
           try{
             const imgData=await Ctrl.genImagePrompt(msg,char,ST.chat.scenario);
-            imgPrompt=imgData?.prompt||`${char.appearance||''}, ${full.replace(/\*[^*]+\*/g,'').replace(/"[^"]+"/g,'').trim().slice(0,200)}`;
-          }catch{
-            imgPrompt=`${char.appearance||''}, ${full.replace(/\*[^*]+\*/g,'').replace(/"[^"]+"/g,'').trim().slice(0,200)}`;
+            imgPrompt=(imgData&&imgData.prompt)||(char.appearance||'')+', '+full.replace(/\*[^*]+\*/g,'').replace(/"[^"]+"/g,'').trim().slice(0,200);
+          }catch(e){
+            imgPrompt=(char.appearance||'')+', '+full.replace(/\*[^*]+\*/g,'').replace(/"[^"]+"/g,'').trim().slice(0,200);
           }
           const imgModel = ST.settings.imgModel || 'flux';
           const imgUrl = await API.generateImageUrl(imgPrompt, 512, 512, imgModel);
           const mb=el.querySelector('.msg-body');
           if(mb){const img=document.createElement('img');img.className='msg-img';img.src=imgUrl;img.loading='lazy';mb.appendChild(img);}
-          // FIX #4: Persist imageUrl to IndexedDB
           msg.imageUrl=imgUrl;
           await DB.put('messages',msg);
-        }catch{}
+        }catch(e){}
       }
-      Ctrl.dlog(`${char.name} responded`,'dok');
+      Ctrl.dlog(char.name+' responded','dok');
     }catch(err){
-      if(reasoningInterval)clearInterval(reasoningInterval);
-      $(`#${tid}`)?.remove();
-      // BUG 32: Clean up partial stream message on error
+      if(reasoningInterval){clearInterval(reasoningInterval);reasoningInterval=null;}
+      const tidEl=document.getElementById(tid);
+      if(tidEl)tidEl.remove();
       if(msgId){
-        const partialEl=$(`#msg-${msgId}`);
+        const partialEl=document.getElementById('msg-'+msgId);
         if(partialEl){
           const mb=partialEl.querySelector('.msg-body');
           if(mb){
@@ -239,8 +233,8 @@ const Chat={
           }
         }
       }
-      Toast.e(`${char.name} failed: ${err.message}`);
-      Ctrl.dlog(`${char.name} error: ${err.message}`,'derr');
+      Toast.e(char.name+' failed: '+err.message);
+      Ctrl.dlog(char.name+' error: '+err.message,'derr');
     }
   }
 };
