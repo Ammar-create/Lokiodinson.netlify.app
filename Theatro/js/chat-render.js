@@ -40,7 +40,7 @@ Object.assign(Chat,{
  // #12: Visual indicator for private messages
  if(msg.isPrivate)cls+=' private';
  el.className=cls;el.id=`msg-${msg.id}`;
- const privateTag=msg.isPrivate?'<span class="priv-tag">'+I('lock',10)+' whisper</span>':'';
+ const privateTag=msg.isPrivate?'<span class="priv-tag">'+I('lock',10)+'</span>':'';
  el.innerHTML=`<div class="msg-hdr">${Chat.avHtml(char,26)}<span class="msg-name" style="color:${esc(char.color)}">${esc(char.name)}</span>${privateTag}<span class="msg-time">${fmtT(msg.timestamp)}</span></div>
  <div class="msg-body" style="--mc:${esc(char.color)}">${parseRP(msg.content,char.color)}${msg.imageUrl?`<img class="msg-img" src="${esc(msg.imageUrl)}" loading="lazy">`:''}${msg.audioUrl?Chat._audioPlayerHtml(msg.audioUrl):''}</div>`;
  if(withActions){
