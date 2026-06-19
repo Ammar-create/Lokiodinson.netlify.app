@@ -63,16 +63,7 @@ const Ctrl={
  const recent=messages.slice(-stw);
  const convo=recent.map(m=>{const c=chars.find(x=>x.id===m.charId);return`${c?.name||'?'}: ${m.content}`;}).join('\n');
  const charList=chars.map(c=>`- ${c.name} [${c.id}] mood:${c.emotionalState||'neutral'}`).join('\n');
- const sys=`You are the Main Controller for a roleplay scenario. Analyze the conversation, then respond ONLY with a valid JSON object \u2014 no other text, no markdown fences.\nReturn this exact structure:\n{
- "characterUpdates":[{"charId":"id","emotionalState":"mood","moodNotes":"notes","systemInjection":"optional hidden note to inject"}],
- "relationshipUpdates":[{"fromId":"id","toId":"id","fromName":"name","toName":"name","mood":"positive|negative|neutral|romantic|suspicious|jealous|fearful","intensity":7,
- "reason":"why"}],
- "memoryUpdates":[{"charId":"id","content":"what this character witnessed or felt",
- "type":"witnessed|felt|told"}],
- "storySummary":"brief summary of events so far",
- "requestScenario":false,
- "scenarioHint":"brief hint for what the scenario controller should do next"
-}\n\nBe concise. You are a silent orchestrator, not a narrator.`;
+ const sys=`You are the Main Controller for a roleplay scenario. Analyze the conversation, then respond ONLY with a valid JSON object \u2014 no other text, no markdown fences.\nReturn this exact structure:\n{\n "characterUpdates":[{"charId":"id","emotionalState":"mood","moodNotes":"notes","systemInjection":"optional hidden note to inject"}],\n "relationshipUpdates":[{"fromId":"id","toId":"id","fromName":"name","toName":"name","mood":"positive|negative|neutral|romantic|suspicious|jealous|fearful","intensity":7,\n "reason":"why"}],\n "memoryUpdates":[{"charId":"id","content":"what this character witnessed or felt",\n "type":"witnessed|felt|told"}],\n "storySummary":"brief summary of events so far",\n "requestScenario":false,\n "scenarioHint":"brief hint for what the scenario controller should do next"\n}\n\nBe concise. You are a silent orchestrator, not a narrator.`;
  const usr=`CHARACTERS:\n${charList}\n\nCONVERSATION:\n${convo}\n\nUSER DIRECTIVE: ${ST.chat.directive.next||'Continue naturally'}\nSTORY NOTES: ${ST.chat.directive.details||'None'}`;
  try{
  const raw=await Ctrl._withTimeout(API.chat([{role:'system',content:sys},{role:'user',content:usr}],model,{temp:0.7,maxTokens:1500}));
@@ -116,7 +107,7 @@ const Ctrl={
  await DB.put('scenarios',scenario);
  }
  Ctrl.dlog(`Applied: ${parsed.characterUpdates?.length||0} char updates, ${parsed.relationshipUpdates?.length||0} rel updates`,'ok');
- if(parsed.storySummary)Chat.addCtrlMsg('\u25c6 Narrative updated by Main Controller');
+ if(parsed.storySummary)Chat.addCtrlMsg(I('diamond',13)+' Narrative updated by Main Controller');
  Chat.renderCast();
  // Auto-trigger Scenario Controller if requested
  if(parsed.requestScenario&&parsed.scenarioHint){
@@ -135,13 +126,7 @@ const Ctrl={
  const recent=messages.slice(-stw);
  const convo=recent.map(m=>{const c=chars.find(x=>x.id===m.charId);return`${c?.name||'?'}: ${m.content}`;}).join('\n');
  const charList=chars.map(c=>`- ${c.name} [${c.id}] mood:${c.emotionalState||'neutral'}`).join('\n');
- const sys=`You are the Scenario Controller for a roleplay narrative. Your job is to advance the story with surprising events, scene changes, and dramatic twists. Respond ONLY with valid JSON \u2014 no other text, no markdown fences.\n\nReturn this exact structure:\n{
- "sceneChange": "description of new location/setting if applicable, or null",
- "surpriseEvent": "a dramatic event (eavesdropping, arrival, discovery, weather, etc.) or null",
- "narration": "brief narration text to display in chat as a system message, or null",
- "characterEffects": [{"charId":"id","effect":"how this event affects them specifically"}],
- "suggestedNext": "what might naturally happen next"
-}\n\nBe creative but consistent with the scenario tone. Events should feel organic, not forced.`;
+ const sys=`You are the Scenario Controller for a roleplay narrative. Your job is to advance the story with surprising events, scene changes, and dramatic twists. Respond ONLY with valid JSON \u2014 no other text, no markdown fences.\n\nReturn this exact structure:\n{\n "sceneChange": "description of new location/setting if applicable, or null",\n "surpriseEvent": "a dramatic event (eavesdropping, arrival, discovery, weather, etc.) or null",\n "narration": "brief narration text to display in chat as a system message, or null",\n "characterEffects": [{"charId":"id","effect":"how this event affects them specifically"}],\n "suggestedNext": "what might naturally happen next"\n}\n\nBe creative but consistent with the scenario tone. Events should feel organic, not forced.`;
  const usr=`SCENARIO: ${scenario.name}\nSETTING: ${scenario.lore||'Unspecified'}\n\nCHARACTERS:\n${charList}\n\nRECENT CONVERSATION:\n${convo}\n\nHINT: ${hint||ST.chat.directive.next||'Continue naturally with a surprise'}`;
  try{
  const raw=await Ctrl._withTimeout(API.chat([{role:'system',content:sys},{role:'user',content:usr}],model,{temp:0.92,maxTokens:800}));
