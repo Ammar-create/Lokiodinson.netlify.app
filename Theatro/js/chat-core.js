@@ -232,7 +232,7 @@ const Chat={
  finally{
  ST.chat.generating=false; // <-- always release the guard
  }
- };
+ },
 
  // FIX #35: Clean up any orphaned thinking indicators left by aborted streams
  // Call this after any screen transition or state reset
