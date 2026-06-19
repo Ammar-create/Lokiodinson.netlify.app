@@ -41,7 +41,7 @@ const Chat={
  let msgs=await DB.getByIndex('messages','scenarioId',scenId);
  msgs.sort((a,b)=>a.timestamp-b.timestamp);
  if(!msgs.length&&scenario.openingMessage){
- const openingMsg={id:'opening-'+scenId,scenarioId:scenId,charId:'narrator',content:scenario.openingMessage,timestamp:DateisUser:false};
+ const openingMsg={id:'opening-'+scenId,scenarioId:scenId,charId:'narrator',content:scenario.openingMessage,timestamp:Date.now(),isUser:false};
  msgs.push(openingMsg);
  await DB.put('messages',openingMsg);
  }
