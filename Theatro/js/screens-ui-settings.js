@@ -18,7 +18,7 @@ Object.assign(Scr,{
  const el=$('#screen-settings');if(!el)return;
  const s=ST.settings;const tab=ST.settTab||'providers';
  el.innerHTML=`<nav class="sett-nav">
- ${[['providers','🔑','API Keys'],['models','🤖','Models'],['controllers','⚙','Controllers'],['memory','🧠','Memory'],['tweaks','⚡','Tweaks'],['storage','💾','Storage']].map(([id,ico,label])=>`
+ ${[['providers','🔑','API Keys'],['models','🤖','Models'],['controllers','⚙','Controllers'],['memory','🧠','Memory'],['tweaks','⚡','Tweaks'],['themes','🎨','Themes'],['storage','💾','Storage']].map(([id,ico,label])=>`
  <div class="sett-ni ${tab===id?'on':''}" onclick="ST.settTab='${id}';Scr.settings()"><span>${ico}</span><span>${esc(label)}</span></div>
  `).join('')}
  </nav>
@@ -96,6 +96,14 @@ Object.assign(Scr,{
  </div>
  <button class="btn bp bsm" onclick="Scr.saveSettings()">Save Tweaks</button>
  </div>
+ <div class="sett-sec ${tab==='themes'?'on':''}">
+ <div class="sett-grp">
+ <div class="sett-gt">Color Palette</div>
+ <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">
+ ${Scr._themeHtml()}
+ </div>
+ </div>
+ </div>
  <div class="sett-sec ${tab==='storage'?'on':''}">
  <div class="sett-grp">
  <div class="sett-gt">Data Management</div>
@@ -117,8 +125,48 @@ Object.assign(Scr,{
  </div>
  </div>`;
  },
+
+ // Theme definitions for the picker
+ _themes:[
+ {id:'proscenium',name:'Proscenium',desc:'Theater gold + crimson',bg:'#08080f',ac:'#c9a84c',sc:'#8b2232'},
+ {id:'stratosphere',name:'Stratosphere',desc:'Cloudy sky-blue',bg:'#0D1520',ac:'#87C8E8',sc:'#4A7A9B'},
+ {id:'noir',name:'Noir',desc:'Monochrome + acid lime',bg:'#0B0B0C',ac:'#C0C0C8',sc:'#D4FF1A'},
+ {id:'verdant',name:'Verdant',desc:'Deep forest + orchid',bg:'#0D1610',ac:'#8FB89A',sc:'#D84B9E'},
+ ],
+
+ _themeHtml(){
+ const cur=ST.settings.theme||'proscenium';
+ return Scr._themes.map(t=>`
+ <div class="th-card ${t.id===cur?'sel':''}" onclick="Scr._setTheme('${t.id}')" style="
+ background:${t.bg};border:2px solid ${t.id===cur?t.ac:'var(--border)'};
+ border-radius:var(--rxl);padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:10px;
+ transition:all var(--t) var(--ease);
+ " onmouseenter="this.style.borderColor='${t.ac}'" onmouseleave="this.style.borderColor='${t.id===cur?t.ac:"var(--border)"}'"
+ >
+ <div style="display:flex;gap:6px">
+ <div style="width:20px;height:20px;border-radius:50%;background:${t.bg};box-shadow:0 0 0 2px var(--border)"></div>
+ <div style="width:20px;height:20px;border-radius:50%;background:${t.ac}"></div>
+ <div style="width:20px;height:20px;border-radius:50%;background:${t.sc}"></div>
+ </div>
+ <div>
+ <div style="font-weight:700;font-size:13px;color:${t.ac};font-family:var(--fd);letter-spacing:.04em">${t.name}</div>
+ <div style="font-size:11px;color:var(--tmut);margin-top:2px">${t.desc}</div>
+ </div>
+ ${t.id===cur?'<div style="font-size:10px;color:${t.ac};font-weight:700;text-transform:uppercase;letter-spacing:.1em">Active</div>':''}
+ </div>`).join('');
+ },
+
+ _setTheme(id){
+ ST.settings.theme=id;
+ document.documentElement.setAttribute('data-theme',id);
+ Scr.markSettingsDirty();
+ Scr.settings(); // re-render the theme picker
+ },
+
  async saveSettings(){
  if(Scr._settSaveTimer)clearTimeout(Scr._settSaveTimer);
+ // Persist theme immediately (not debounced) so it survives refresh
+ document.documentElement.setAttribute('data-theme',ST.settings.theme||'proscenium');
  await DB.setSetting('app_settings',ST.settings);
  Scr._settDirty=false;
  Toast.s('Settings saved');

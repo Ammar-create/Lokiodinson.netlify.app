@@ -1,4 +1,4 @@
-:root{
+:root,[data-theme="proscenium"]{
  --bg:#08080f;--surface:#0f0f1a;--s2:#161624;--s3:#1d1d2e;
  --border:#252538;--bl:#343450;
  --gold:#c9a84c;--gdim:#7a6028;--gglow:rgba(201,168,76,.12);--gglow2:rgba(201,168,76,.06);
@@ -9,6 +9,30 @@
  --fd:'Cinzel',serif;--fb:'Raleway',sans-serif;
  --pw:304px;--hdr:54px;--ease:cubic-bezier(.4,0,.2,1);--t:.18s;
 }
+[data-theme="stratosphere"]{
+ --bg:#0D1520;--surface:#131D2E;--s2:#192639;--s3:#1F3048;
+ --border:#233550;--bl:#314868;
+ --gold:#87C8E8;--gdim:#3A6B88;--gglow:rgba(135,200,232,.12);--gglow2:rgba(135,200,232,.06);
+ --crim:#4A7A9B;--criml:#6BA3C7;
+ --text:#E2EAF2;--tdim:#8A9BB5;--tmut:#4A5E7A;
+ --ok:#5A9B7F;--warn:#C08740;--err:#B84A5A;
+}
+[data-theme="noir"]{
+ --bg:#0B0B0C;--surface:#141416;--s2:#1C1C1F;--s3:#252528;
+ --border:#2E2E32;--bl:#404045;
+ --gold:#C0C0C8;--gdim:#606068;--gglow:rgba(192,192,200,.10);--gglow2:rgba(192,192,200,.05);
+ --crim:#D4FF1A;--criml:#E0FF40;
+ --text:#EEEEF0;--tdim:#909098;--tmut:#505058;
+ --ok:#5A9B7F;--warn:#E08820;--err:#D04050;
+}
+[data-theme="verdant"]{
+ --bg:#0D1610;--surface:#121E16;--s2:#18261C;--s3:#1E3024;
+ --border:#283A2E;--bl:#384E40;
+ --gold:#8FB89A;--gdim:#4A6B55;--gglow:rgba(143,184,154,.12);--gglow2:rgba(143,184,154,.06);
+ --crim:#D84B9E;--criml:#E870B0;
+ --text:#E2ECE4;--tdim:#8A9E90;--tmut:#4A5E50;
+ --ok:#6BAF7F;--warn:#C09040;--err:#C85070;
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
 body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px;line-height:1.6}
@@ -18,8 +42,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 
 /* STRUCTURE */
 #app{height:100vh;height:100dvh;display:flex;flex-direction:column;
- background:radial-gradient(ellipse 80% 40% at 50% 0%,rgba(201,168,76,.05) 0%,transparent 70%),
- radial-gradient(ellipse 60% 30% at 100% 100%,rgba(139,34,50,.05) 0%,transparent 70%),var(--bg)}
+ background:radial-gradient(ellipse 80% 40% at 50% 0%,var(--gglow2) 0%,transparent 70%),
+ radial-gradient(ellipse 60% 30% at 100% 100%,var(--gglow) 0%,transparent 70%),var(--bg)}
 #app-header{flex-shrink:0}
 #main-content{flex:1;overflow:hidden;display:flex;flex-direction:column}
 .screen{display:none;flex:1;overflow:hidden;min-height:0}

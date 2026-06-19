@@ -100,6 +100,7 @@ const ST={
  creativeModel:null,
  creativeImgModel:null,
  customImagePrompt:false,
+ theme:'proscenium',
  },
  rateLimits:{
  pollinations:{calls:[],warned:false},
