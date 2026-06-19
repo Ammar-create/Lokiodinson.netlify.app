@@ -22,6 +22,8 @@ Object.assign(Scr,{
  <span class="chat-title">${esc(scenario.name||'Untitled Scenario')}</span>
  ${scenario.lore?`<span style="font-size:11px;color:var(--tmut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(scenario.lore.slice(0,60))}${scenario.lore.length>60?'…':''}</span>`:''}
  </div>
+ <!-- Mobile: Panel trigger button (visible only on mobile via CSS) -->
+ <button class="ibtn panel-trigger-btn" title="Directive Panel" onclick="Scr.openMobilePanel()" style="flex-shrink:0">${I('panel',15)}</button>
  <button class="ibtn" title="Run Controller Now" onclick="Scr.runCtrl()" style="margin-left:auto;flex-shrink:0">${I('ctrl',15)}</button>
  </div>
  <div id="chat-log" class="chat-log"></div>
@@ -49,8 +51,12 @@ Object.assign(Scr,{
  </div>
  </div>
  </div>
+ <!-- Mobile panel backdrop (hidden on desktop via CSS) -->
+ <div class="panel-backdrop" id="panel-backdrop" onclick="Scr.closeMobilePanel()"></div>
  <div class="spanel ${panelOpen?'':'collapsed'}" id="spanel">
  <div class="ptoggle" onclick="Scr.togPanel()">${I('panel',14)}</div>
+ <!-- Mobile close button (hidden on desktop via CSS) -->
+ <button class="panel-close" onclick="Scr.closeMobilePanel()">✕</button>
  <div class="ptabs">
  ${['directive','memory','rels','cast','debug'].map(t=>`<button class="ptab ${ST.chat.panelTab===t?'on':''}" onclick="Scr.setPTab('${t}')">${t==='directive'?'Directive':t==='memory'?'Memory':t==='rels'?'Relations':t==='cast'?'Cast':'Debug'}</button>`).join('')}
  </div>
@@ -175,7 +181,30 @@ Object.assign(Scr,{
  $$('.p-sec').forEach(s=>s.classList.remove('on'));
  $(`#pt-${tab}`)?.classList.add('on');
  },
- togPanel(){ST.chat.panelOpen=!ST.chat.panelOpen;$('#spanel')?.classList.toggle('collapsed',!ST.chat.panelOpen)},
+
+ // Panel toggle — on desktop this is a no-op (panel always open); on mobile it slides overlay
+ togPanel(){
+ ST.chat.panelOpen=!ST.chat.panelOpen;
+ $('#spanel')?.classList.toggle('collapsed',!ST.chat.panelOpen);
+ if(window.innerWidth<=700){
+ $('#panel-backdrop')?.classList.toggle('show',ST.chat.panelOpen);
+ }
+ },
+
+ // Mobile-specific: open the directive panel overlay
+ openMobilePanel(){
+ ST.chat.panelOpen=true;
+ $('#spanel')?.classList.remove('collapsed');
+ $('#panel-backdrop')?.classList.add('show');
+ },
+
+ // Mobile-specific: close the directive panel overlay
+ closeMobilePanel(){
+ ST.chat.panelOpen=false;
+ $('#spanel')?.classList.add('collapsed');
+ $('#panel-backdrop')?.classList.remove('show');
+ },
+
  toggleAuto(){if(ST.chat.autoChatRunning)Chat.stopAuto();else Chat.startAuto()},
  async runCtrl(){
  Toast.i('Running Main Controller...');

@@ -53,6 +53,10 @@
 .char-pill .dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
 .char-pill .arr{font-size:8px;color:var(--tmut)}
 
+/* MOBILE-ONLY PANEL ELEMENTS (hidden on desktop by default) */
+.panel-trigger-btn{display:none}
+.panel-close{display:none}
+
 /* SIDE PANEL */
 .spanel{width:var(--pw);background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:width var(--t) var(--ease);overflow:hidden;position:relative}
 .spanel.collapsed{width:0;border-left:none}
@@ -155,11 +159,40 @@
  font-variant-numeric: tabular-nums;
 }
 
+/* DESKTOP: Panel always visible as persistent sidebar */
+@media(min-width:701px){
+ .ptoggle{display:none}
+ .spanel.collapsed{width:var(--pw);border-left:1px solid var(--border)}
+ .panel-backdrop{display:none!important}
+}
+
 /* MOBILE RESPONSIVE */
 @media(max-width:700px){
  :root{--pw:100vw}
- .spanel{position:fixed;right:0;top:var(--hdr);height:calc(100dvh - var(--hdr));height:calc(100vh - var(--hdr));z-index:500}
- .ptoggle{left:auto;right:0;top:10px;border:1px solid var(--border);border-right:1px solid var(--border);border-left:none;border-radius:6px 0 0 6px}
- .spanel.collapsed .ptoggle{right:-28px}
+
+ /* Show mobile panel trigger button in header */
+ .panel-trigger-btn{display:inline-flex}
+
+ /* Panel slides in from right as overlay */
+ .spanel{position:fixed;right:0;top:var(--hdr);height:calc(100dvh - var(--hdr));z-index:500;
+  width:var(--pw);transform:translateX(100%);transition:transform .25s var(--ease)}
+ .spanel:not(.collapsed){transform:translateX(0)}
+ .spanel.collapsed{transform:translateX(100%);width:var(--pw);border-left:1px solid var(--border)}
+
+ /* Hide old ptoggle on mobile */
+ .ptoggle{display:none}
+
+ /* Close button inside mobile panel */
+ .panel-close{display:flex;position:absolute;right:8px;top:8px;background:var(--s3);
+  border:1px solid var(--border);border-radius:6px;width:30px;height:30px;
+  align-items:center;justify-content:center;cursor:pointer;color:var(--tdim);z-index:10;
+  font-size:15px;line-height:1;transition:color var(--t) var(--ease)}
+ .panel-close:hover{color:var(--text);border-color:var(--bl)}
+
+ /* Backdrop overlay */
+ .panel-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:499;
+  opacity:0;pointer-events:none;transition:opacity .25s var(--ease)}
+ .panel-backdrop.show{opacity:1;pointer-events:all}
+
  .chat-main{min-height:0}
 }

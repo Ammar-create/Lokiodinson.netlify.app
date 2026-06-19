@@ -54,7 +54,7 @@ const Chat={
  ...ST.chat,scenId,scenario,characters:chars,messages:msgs,rels:relData?.matrix||{},
  activeCharId:userChar?.id||chars[0]?.id||null,
  autoChatRunning:false,autoChatStop:false,msgSinceCtrl:0,
- panelOpen:window.innerWidth>900,panelTab:'directive',
+ panelOpen:window.innerWidth>700,panelTab:'directive',
  directive:{next:'',details:''},debugLog:[],
  sending:false,controllerRunning:false,generating:false,generatingChars:{},
  sttRecording:false,whisper:false,whisperWith:[],whisperTarget:null,
