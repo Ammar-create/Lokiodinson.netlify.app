@@ -54,7 +54,7 @@ Object.assign(Scr,{
       <div class="field">
         <label class="lbl">Character Color</label>
         <div class="cgrid">${COLORS.map(c=>`<div class="csw ${c===f.color?'sel':''}" style="background:${c}" onclick="Scr.pickColor('${c}')"></div>`).join('')}</div>
-        <div style="margin-top:6px;display:flex;gap:8px;align-items:center"><input type="text" id="cf-color" value="${esc(f.color)}" placeholder="#c9a84c" style="width:100px" oninput="Scr.pickColor(this.value)"><div id="cp" style="width:26px;height:26px;border-radius:50%;background:${esc(f.color)};border:2px solid var(--border)"></div></div>
+        <div style="margin-top:6px;display:flex;gap:8px;align-items:center	ext" id="cf-color" value="${esc(f.color)}" placeholder="#c9a84c" style="width:100px" oninput="Scr.pickColor(this.value)"><div id="cp" style="width:26px;height:26px;border-radius:50%;background:${esc(f.color)};border:2px solid var(--border)"></div></div>
       </div>
       <div class="field"><label class="lbl">Personality <span>*</span></label><textarea id="cf-p" rows="3" placeholder="Personality, traits, speaking style, quirks..." oninput="ST.charForm.personality=this.value">${esc(f.personality)}</textarea></div>
       <div class="field"><label class="lbl">Appearance</label><textarea id="cf-a" rows="2" placeholder="Physical description, clothing, distinctive features..." oninput="ST.charForm.appearance=this.value">${esc(f.appearance)}</textarea></div>
@@ -65,7 +65,7 @@ Object.assign(Scr,{
       <!-- Voice Description (Creative Controller fills this) -->
       <div class="field" id="voice-desc-section" style="${f.useStandardVoice?'display:none':''}">
         <label class="lbl">Voice Description <span style="font-size:9px;color:var(--gold);font-weight:400;letter-spacing:0">(Voice Design)</span></label>
-        <textarea id="cf-vdesc" rows="2" placeholder="e.g. Young woman in her mid-20s, silky and mellow voice, warm and confident tone, slow and deliberate pace. Describing 1-3 sentences." oninput="ST.charForm.voiceDescription=this.value">${esc(f.voiceDescription||'')}</textarea>
+        <textarea id="cf-vdesc" rows="2" placeholder="e.g. Young woman in her mid-20s, silky and mellow voice, warm and confident tone, slow and deliberate pace. 1-3 sentences." oninput="ST.charForm.voiceDescription=this.value">${esc(f.voiceDescription||'')}</textarea>
         ${f.voiceDemo?`<div style="font-size:11px;color:var(--gold);margin-top:4px">Demo: "${esc(f.voiceDemo)}"</div>`:''}
       </div>
       <!-- Override: Use Standard Voice -->
@@ -94,7 +94,8 @@ Object.assign(Scr,{
           </div>
         </div>
       </div>
-      <div class="t.char.create-cForm       .createImage?'on':''}" id="cf-cimg"></div>
+      <div class="tgl-wrap" onclick="ST.charForm.createImage=!ST.charForm.createImage;$('#cf-cimg')?.classList.toggle('on',ST.charForm.createImage)">
+        <div class="tgl ${f.createImage?'on':''}" id="cf-cimg"></div>
         <span class="tgl-lbl">Create Image on save</span>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end">
