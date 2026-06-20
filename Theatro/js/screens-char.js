@@ -54,7 +54,7 @@ Object.assign(Scr,{
       <div class="field">
         <label class="lbl">Character Color</label>
         <div class="cgrid">${COLORS.map(c=>`<div class="csw ${c===f.color?'sel':''}" style="background:${c}" onclick="Scr.pickColor('${c}')"></div>`).join('')}</div>
-        <div style="margin-top:6px;display:flex;gap:8px;align-items:center	ext" id="cf-color" value="${esc(f.color)}" placeholder="#c9a84c" style="width:100px" oninput="Scr.pickColor(this.value)"><div id="cp" style="width:26px;height:26px;border-radius:50%;background:${esc(f.color)};border:2px solid var(--border)"></div></div>
+        <div style="margin-top:6px;display:flex;gap:8px;align-items:center"><input type="text" id="cf-color" value="${esc(f.color)}" placeholder="#c9a84c" style="width:100px" oninput="Scr.pickColor(this.value)"><div id="cp" style="width:26px;height:26px;border-radius:50%;background:${esc(f.color)};border:2px solid var(--border)"></div></div>
       </div>
       <div class="field"><label class="lbl">Personality <span>*</span></label><textarea id="cf-p" rows="3" placeholder="Personality, traits, speaking style, quirks..." oninput="ST.charForm.personality=this.value">${esc(f.personality)}</textarea></div>
       <div class="field"><label class="lbl">Appearance</label><textarea id="cf-a" rows="2" placeholder="Physical description, clothing, distinctive features..." oninput="ST.charForm.appearance=this.value">${esc(f.appearance)}</textarea></div>
