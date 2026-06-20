@@ -103,7 +103,10 @@ const API = {
  API.trackCall(ep.provider);
  try {
  const r = await fetch(ep.url, { method: 'POST', headers: ep.headers, body: JSON.stringify({ model: ep.model, messages: msgs, max_tokens: opts.maxTokens || 1000, temperature: opts.temp != null ? opts.temp : 0.9, stream: true }) });
- if (!r.ok) ifep err Ctrl.dlog && Ctrl.dlog('Aqua stream ' + r.status + ': ' + errText.slice(0, 100) + ' — falling back to Pollinations (non-stream)', 'warn');
+ if (!r.ok) {
+ if (ep.provider === 'aqua') {
+ const errText = await r.text();
+ Ctrl && Ctrl.dlog && Ctrl.dlog('Aqua stream ' + r.status + ': ' + errText.slice(0, 100) + ' — falling back to Pollinations (non-stream)', 'warn');
  const fbModel = model.startsWith('aqua:') ? model.slice(5) : model;
  const text = await API.chat(msgs, fbModel, opts);
  if (text) onChunk(text, true);
@@ -200,8 +203,6 @@ const API = {
  },
 
  // ===== TTS — Aqua MiMo (with CORS-proxy fallback for GitHub Pages) =====
- // Aqua's /v1/audio/speech does not return CORS headers, blocking browser fetch.
- // We try direct first (works on localhost/Netlify), then retry via corsproxy.io.
  async tts(text, opts) {
  API._syncLegacyKeys();
  opts = opts || {};
@@ -242,23 +243,16 @@ const API = {
  };
 
  let r;
- try {
- // Try direct first
- r = await doPost(fullUrl);
- } catch (directErr) {
+ try { r = await doPost(fullUrl); }
+ catch (directErr) {
  if (directErr.message === 'Failed to fetch') {
  Ctrl && Ctrl.dlog && Ctrl.dlog('TTS: direct blocked by CORS, retrying via corsproxy.io...', 'warn');
- try {
- r = await doPost(proxyUrl);
- } catch (proxyErr) {
- if (proxyErr.message === 'Failed to fetch') {
- throw new Error('Cannot reach Aqua TTS API (direct + proxy both failed). Check your internet connection and API key.');
- }
+ try { r = await doPost(proxyUrl); }
+ catch (proxyErr) {
+ if (proxyErr.message === 'Failed to fetch') throw new Error('Cannot reach Aqua TTS API (direct + proxy both failed). Check internet and API key.');
  throw proxyErr;
  }
- } else {
- throw directErr;
- }
+ } else { throw directErr; }
  }
 
  if (!r.ok) {
