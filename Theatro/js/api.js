@@ -1,20 +1,27 @@
 'use strict';
 // ===== API =====
 const API = {
- // Look up a provider by ID from ST.settings.providers
  _getProvider(id){
  const provs = ST.settings.providers || [];
  return provs.find(p => p.id === id) || null;
  },
+ // Sync legacy aquaKey/pollinationsKey into providers on first load
+ _syncLegacyKeys(){
+ const provs = ST.settings.providers || [];
+ const aqua = provs.find(p => p.id === 'aqua');
+ const polli = provs.find(p => p.id === 'pollinations');
+ if (aqua && !aqua.apiKey && ST.settings.aquaKey) { aqua.apiKey = ST.settings.aquaKey; }
+ if (polli && !polli.apiKey && ST.settings.pollinationsKey) { polli.apiKey = ST.settings.pollinationsKey; }
+ },
  _providerBase(providerId){
+ API._syncLegacyKeys();
  const p = API._getProvider(providerId);
  if (p && p.apiKey) return { url: (p.baseUrl || '').replace(/\/$/, ''), headers: { 'Authorization': 'Bearer ' + p.apiKey } };
- // Fallback for aqua
  if (providerId === 'aqua') return { url: 'https://api.aquadevs.com/v1', headers: { 'Authorization': 'Bearer ' + (ST.settings.aquaKey || '') } };
- // Fallback for pollinations
  return { url: 'https://gen.pollinations.ai/v1', headers: { 'Authorization': 'Bearer ' + (ST.settings.pollinationsKey || 'pk_LUy70Tu8OwLI1HrU') } };
  },
  endpoint(model) {
+ API._syncLegacyKeys();
  const s = ST.settings;
  if (model.startsWith('aqua:')) {
  const real = model.slice(5);
@@ -40,12 +47,7 @@ const API = {
  h['Authorization'] = 'Bearer ' + (p?.apiKey || s.pollinationsKey || 'pk_LUy70Tu8OwLI1HrU');
  return { url, headers: h };
  },
- _base(provider) {
- if (provider === 'aqua' || provider === 'pollinations' || provider === 'custom') {
- return API._providerBase(provider);
- }
- return API._providerBase(provider);
- },
+ _base(provider) { return API._providerBase(provider); },
  _pollinationsKey() {
  const p = API._getProvider('pollinations');
  return p?.apiKey || ST.settings.pollinationsKey || 'pk_LUy70Tu8OwLI1HrU';
@@ -160,13 +162,14 @@ const API = {
 
  // ===== IMAGE GENERATION =====
  async generateImageUrl(prompt, w, h, model) {
+ API._syncLegacyKeys();
  w = w || 512; h = h || 512;
  const provId = ST.settings.imgProvider || 'aqua';
  model = model || ST.settings.imgModel || 'zimage';
  const isAqua = provId === 'aqua';
  if (isAqua) {
  const realModel = model.startsWith('aqua:') ? model.slice(5) : model;
- const key = ST.settings.aquaKey || (API._getProvider('aqua')?.apiKey || '');
+ const key = (API._getProvider('aqua')?.apiKey) || ST.settings.aquaKey || '';
  if (key) {
  let ratio = 'square';
  if (w > h) ratio = 'landscape'; else if (h > w) ratio = 'portrait';
@@ -183,7 +186,6 @@ const API = {
  } catch (err) { Ctrl && Ctrl.dlog && Ctrl.dlog('Aqua image error: ' + err.message, 'err'); throw err; }
  }
  }
- // Pollinations fallback
  const key = API._pollinationsKey();
  const realModel = model.startsWith('aqua:') ? model.slice(5) : model;
  const pollUrl = 'https://gen.pollinations.ai/image/' + encodeURIComponent(prompt) + '?model=' + encodeURIComponent(realModel) + '&width=' + w + '&height=' + h + '&nologo=true&key=' + encodeURIComponent(key);
@@ -203,53 +205,67 @@ const API = {
  return pollUrl;
  },
 
- // ===== TTS — Aqua MiMo (standard / voice design / voice clone) =====
- // opts: { voice?, voiceDescription?, useStandardVoice?, voiceClone? }
+ // ===== TTS — Aqua MiMo =====
  async tts(text, opts) {
+ API._syncLegacyKeys();
  opts = opts || {};
  const provId = ST.settings.ttsProvider || 'aqua';
  const prov = API._getProvider(provId);
  const baseUrl = (prov?.baseUrl || 'https://api.aquadevs.com/v1').replace(/\/$/, '');
  const apiKey = prov?.apiKey || ST.settings.aquaKey || '';
- if (!apiKey) throw new Error('No API key configured for TTS provider');
+
+ if (!apiKey) {
+ const msg = 'No Aqua API key configured. Go to Settings → Providers and add your Aqua API key.';
+ Ctrl && Ctrl.dlog && Ctrl.dlog('TTS: ' + msg, 'err');
+ throw new Error(msg);
+ }
 
  let model, body = { input: text };
-
  if (opts.voiceClone) {
- // Voice clone mode
  model = ST.settings.ttsVoicecloneModel || 'mimo-v2.5-tts-voiceclone';
  body.audio = { voice: opts.voiceClone };
  } else if (opts.voiceDescription && !opts.useStandardVoice) {
- // Voice design mode
  model = ST.settings.ttsVoicedesignModel || 'mimo-v2.5-tts-voicedesign';
  body.instructions = opts.voiceDescription;
  } else {
- // Standard mode
  model = ST.settings.ttsModel || 'mimo-v2.5-tts';
  body.audio = { voice: opts.voice || ST.settings.defVoice || 'Mia' };
  }
  body.model = model;
 
+ const fullUrl = baseUrl + '/audio/speech';
+ Ctrl && Ctrl.dlog && Ctrl.dlog('TTS: POST ' + fullUrl + ' model=' + model + ' voice=' + (body.audio?.voice || 'design'), 'dinfo');
+
  try {
- const r = await fetch(baseUrl + '/audio/speech', {
+ const r = await fetch(fullUrl, {
  method: 'POST',
  headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
  body: JSON.stringify(body)
  });
  if (!r.ok) {
  const errText = await r.text().catch(function() { return ''; });
- Ctrl && Ctrl.dlog && Ctrl.dlog('TTS ' + r.status + ': ' + errText.slice(0, 200), 'err');
- throw new Error('TTS ' + r.status + ': ' + (errText.slice(0, 80) || r.statusText));
+ Ctrl && Ctrl.dlog && Ctrl.dlog('TTS HTTP ' + r.status + ': ' + errText.slice(0, 300), 'err');
+ throw new Error('TTS ' + r.status + ': ' + (errText.slice(0, 100) || r.statusText));
  }
  const data = await r.json();
- if (!data.success || !data.url) throw new Error('TTS response missing success or url');
- // Download the mp3 from the returned URL
+ if (!data.success || !data.url) {
+ Ctrl && Ctrl.dlog && Ctrl.dlog('TTS response missing success/url: ' + JSON.stringify(data).slice(0, 200), 'err');
+ throw new Error('TTS response missing audio URL');
+ }
+ Ctrl && Ctrl.dlog && Ctrl.dlog('TTS mp3 ready: ' + data.filename + ' (' + (data.size_bytes || '?') + ' bytes)', 'ok');
  const mp3Resp = await fetch(data.url);
  if (!mp3Resp.ok) throw new Error('TTS mp3 download failed: ' + mp3Resp.status);
  const blob = await mp3Resp.blob();
+ if (!blob || blob.size === 0) throw new Error('TTS mp3 blob is empty');
  API._cacheMedia(data.url, 'audio').catch(function() {});
  return API._cacheAndReturnBlob(blob, 'audio');
  } catch (err) {
+ // Distinguish network errors from API errors
+ if (err.message === 'Failed to fetch') {
+ const netMsg = 'Cannot reach Aqua TTS API. Check your internet connection and verify the API key in Settings → Providers.';
+ Ctrl && Ctrl.dlog && Ctrl.dlog('TTS network error: ' + netMsg + ' (URL: ' + fullUrl + ')', 'err');
+ throw new Error(netMsg);
+ }
  Ctrl && Ctrl.dlog && Ctrl.dlog('TTS error: ' + err.message, 'err');
  throw err;
  }
@@ -257,13 +273,14 @@ const API = {
 
  // ===== STT =====
  async transcribe(audioBlob) {
+ API._syncLegacyKeys();
  const provId = ST.settings.sttProvider || 'pollinations';
  const model = ST.settings.sttModel || 'whisper-large-v3';
  if (provId === 'aqua') {
  const prov = API._getProvider('aqua');
  const baseUrl = (prov?.baseUrl || 'https://api.aquadevs.com/v1').replace(/\/$/, '');
  const apiKey = prov?.apiKey || ST.settings.aquaKey || '';
- if (!apiKey) throw new Error('No Aqua API key for STT');
+ if (!apiKey) throw new Error('No Aqua API key configured for STT. Go to Settings → Providers.');
  const fd = new FormData();
  fd.append('file', audioBlob, 'recording.webm');
  fd.append('model', model);
@@ -272,7 +289,6 @@ const API = {
  const d = await r.json();
  return d.text || '';
  }
- // Pollinations fallback
  const base = API._base('pollinations');
  const fd = new FormData();
  fd.append('file', audioBlob, 'recording.webm');
