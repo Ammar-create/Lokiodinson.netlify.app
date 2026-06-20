@@ -167,28 +167,23 @@ API.tts = async function(text, opts) {
  var fullUrl = baseUrl + '/audio/speech';
  var apiHeaders = { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' };
  var bodyStr = JSON.stringify(body);
- if (Ctrl && Ctrl.dlog) Ctrl.dlog('TTS: ' + model + ' key=' + apiKey.slice(0,8) + '...', 'dinfo');
+ if (Ctrl && Ctrl.dlog) Ctrl.dlog('TTS: ' + model, 'dinfo');
 
  var lastErr = '';
  var proxies = [null, 'https://corsproxy.io/?' + encodeURIComponent(fullUrl)];
  for (var i = 0; i < proxies.length; i++) {
  var proxyUrl = proxies[i]; var url = proxyUrl || fullUrl; var isProxy = !!proxyUrl;
+ var headers = isProxy ? { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } : apiHeaders;
  try {
- var r = await fetch(url, { method: 'POST}, apiHeaders, { 'X-Requested-With': 'XMLHttpRequest' }) : apiHeaders, body: bodyStr });
+ var r = await fetch(url, { method: 'POST', headers: headers, body: bodyStr });
  if (!r.ok) {
  var errText = ''; try { errText = await r.text(); } catch (e2) {}
- if (r.status === 401 || r.status === 403) {
- throw new Error('Aqua rejected your API key (HTTP ' + r.status + '). Check Settings > Providers > Aqua.');
- }
- if (r.status === 502 || r.status === 503) {
- lastErr = 'Aqua TTS server returned ' + r.status + '. It may be temporarily down, or your API key is invalid.';
- if (Ctrl && Ctrl.dlog) Ctrl.dlog('TTS ' + r.status + (isProxy ? ' (proxy)' : '') + ': ' + (errText.slice(0, 200) || 'no body'), 'warn');
- continue;
- }
- throw new Error('TTS HTTP ' + r.status + ': ' + (errText.slice(0, 100) || 'unknown error'));
+ if (r.status === 401 || r.status === 403) throw new Error('Aqua rejected your API key (HTTP ' + r.status + '). Check Settings > Providers > Aqua.');
+ if (r.status === 502 || r.status === 503) { lastErr = 'Aqua TTS server returned ' + r.status + '. Server may be down or API key is invalid.'; continue; }
+ throw new Error('TTS HTTP ' + r.status + ': ' + (errText.slice(0, 100) || 'unknown'));
  }
  var data = await r.json();
- if (!data.success || !data.url) { lastErr = 'TTS responded OK but returned no audio URL.'; continue; }
+ if (!data.success || !data.url) { lastErr = 'TTS response missing audio URL.'; continue; }
  if (Ctrl && Ctrl.dlog) Ctrl.dlog('TTS ok: ' + data.filename + (isProxy ? ' [proxy]' : ''), 'ok');
  var mp3Resp = await fetch(data.url);
  if (!mp3Resp.ok) throw new Error('MP3 download failed: ' + mp3Resp.status);
