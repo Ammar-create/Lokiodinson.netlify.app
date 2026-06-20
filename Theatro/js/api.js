@@ -5,7 +5,6 @@ const API = {
  const provs = ST.settings.providers || [];
  return provs.find(p => p.id === id) || null;
  },
- // Sync legacy aquaKey/pollinationsKey into providers on first load
  _syncLegacyKeys(){
  const provs = ST.settings.providers || [];
  const aqua = provs.find(p => p.id === 'aqua');
@@ -104,10 +103,7 @@ const API = {
  API.trackCall(ep.provider);
  try {
  const r = await fetch(ep.url, { method: 'POST', headers: ep.headers, body: JSON.stringify({ model: ep.model, messages: msgs, max_tokens: opts.maxTokens || 1000, temperature: opts.temp != null ? opts.temp : 0.9, stream: true }) });
- if (!r.ok) {
- if (ep.provider === 'aqua') {
- const errText = await r.text();
- Ctrl && Ctrl.dlog && Ctrl.dlog('Aqua stream ' + r.status + ': ' + errText.slice(0, 100) + ' — falling back to Pollinations (non-stream)', 'warn');
+ if (!r.ok) ifep err Ctrl.dlog && Ctrl.dlog('Aqua stream ' + r.status + ': ' + errText.slice(0, 100) + ' — falling back to Pollinations (non-stream)', 'warn');
  const fbModel = model.startsWith('aqua:') ? model.slice(5) : model;
  const text = await API.chat(msgs, fbModel, opts);
  if (text) onChunk(text, true);
@@ -159,8 +155,6 @@ const API = {
  await DB.cacheBlob(pseudoUrl, blob, kind);
  return DB.getBlobUrl(pseudoUrl);
  },
-
- // ===== IMAGE GENERATION =====
  async generateImageUrl(prompt, w, h, model) {
  API._syncLegacyKeys();
  w = w || 512; h = h || 512;
@@ -205,7 +199,9 @@ const API = {
  return pollUrl;
  },
 
- // ===== TTS — Aqua MiMo =====
+ // ===== TTS — Aqua MiMo (with CORS-proxy fallback for GitHub Pages) =====
+ // Aqua's /v1/audio/speech does not return CORS headers, blocking browser fetch.
+ // We try direct first (works on localhost/Netlify), then retry via corsproxy.io.
  async tts(text, opts) {
  API._syncLegacyKeys();
  opts = opts || {};
@@ -234,24 +230,49 @@ const API = {
  body.model = model;
 
  const fullUrl = baseUrl + '/audio/speech';
- Ctrl && Ctrl.dlog && Ctrl.dlog('TTS: POST ' + fullUrl + ' model=' + model + ' voice=' + (body.audio?.voice || 'design'), 'dinfo');
+ const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(fullUrl);
+ Ctrl && Ctrl.dlog && Ctrl.dlog('TTS: ' + fullUrl + ' model=' + model, 'dinfo');
 
- try {
- const r = await fetch(fullUrl, {
+ const doPost = async (url) => {
+ return await fetch(url, {
  method: 'POST',
  headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
  body: JSON.stringify(body)
  });
+ };
+
+ let r;
+ try {
+ // Try direct first
+ r = await doPost(fullUrl);
+ } catch (directErr) {
+ if (directErr.message === 'Failed to fetch') {
+ Ctrl && Ctrl.dlog && Ctrl.dlog('TTS: direct blocked by CORS, retrying via corsproxy.io...', 'warn');
+ try {
+ r = await doPost(proxyUrl);
+ } catch (proxyErr) {
+ if (proxyErr.message === 'Failed to fetch') {
+ throw new Error('Cannot reach Aqua TTS API (direct + proxy both failed). Check your internet connection and API key.');
+ }
+ throw proxyErr;
+ }
+ } else {
+ throw directErr;
+ }
+ }
+
  if (!r.ok) {
  const errText = await r.text().catch(function() { return ''; });
  Ctrl && Ctrl.dlog && Ctrl.dlog('TTS HTTP ' + r.status + ': ' + errText.slice(0, 300), 'err');
  throw new Error('TTS ' + r.status + ': ' + (errText.slice(0, 100) || r.statusText));
  }
+
  const data = await r.json();
  if (!data.success || !data.url) {
  Ctrl && Ctrl.dlog && Ctrl.dlog('TTS response missing success/url: ' + JSON.stringify(data).slice(0, 200), 'err');
  throw new Error('TTS response missing audio URL');
  }
+
  Ctrl && Ctrl.dlog && Ctrl.dlog('TTS mp3 ready: ' + data.filename + ' (' + (data.size_bytes || '?') + ' bytes)', 'ok');
  const mp3Resp = await fetch(data.url);
  if (!mp3Resp.ok) throw new Error('TTS mp3 download failed: ' + mp3Resp.status);
@@ -259,16 +280,6 @@ const API = {
  if (!blob || blob.size === 0) throw new Error('TTS mp3 blob is empty');
  API._cacheMedia(data.url, 'audio').catch(function() {});
  return API._cacheAndReturnBlob(blob, 'audio');
- } catch (err) {
- // Distinguish network errors from API errors
- if (err.message === 'Failed to fetch') {
- const netMsg = 'Cannot reach Aqua TTS API. Check your internet connection and verify the API key in Settings → Providers.';
- Ctrl && Ctrl.dlog && Ctrl.dlog('TTS network error: ' + netMsg + ' (URL: ' + fullUrl + ')', 'err');
- throw new Error(netMsg);
- }
- Ctrl && Ctrl.dlog && Ctrl.dlog('TTS error: ' + err.message, 'err');
- throw err;
- }
  },
 
  // ===== STT =====
