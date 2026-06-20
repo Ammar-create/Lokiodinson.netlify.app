@@ -1,38 +1,54 @@
 'use strict';
 // ===== API =====
 const API = {
+ // Look up a provider by ID from ST.settings.providers
+ _getProvider(id){
+ const provs = ST.settings.providers || [];
+ return provs.find(p => p.id === id) || null;
+ },
+ _providerBase(providerId){
+ const p = API._getProvider(providerId);
+ if (p && p.apiKey) return { url: (p.baseUrl || '').replace(/\/$/, ''), headers: { 'Authorization': 'Bearer ' + p.apiKey } };
+ // Fallback for aqua
+ if (providerId === 'aqua') return { url: 'https://api.aquadevs.com/v1', headers: { 'Authorization': 'Bearer ' + (ST.settings.aquaKey || '') } };
+ // Fallback for pollinations
+ return { url: 'https://gen.pollinations.ai/v1', headers: { 'Authorization': 'Bearer ' + (ST.settings.pollinationsKey || 'pk_LUy70Tu8OwLI1HrU') } };
+ },
  endpoint(model) {
  const s = ST.settings;
  if (model.startsWith('aqua:')) {
  const real = model.slice(5);
- if (s.aquaKey)
- return { url: 'https://api.aquadevs.com/v1/chat/completions', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.aquaKey }, model: real, provider: 'aqua' };
+ const p = API._getProvider('aqua');
+ const key = p?.apiKey || s.aquaKey;
+ if (key) return { url: (p?.baseUrl || 'https://api.aquadevs.com/v1').replace(/\/$/, '') + '/chat/completions', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, model: real, provider: 'aqua' };
  return { ...API._pollinationsEndpoint(), model: real, provider: 'pollinations' };
  }
  const m = MODELS.find(x => x.id === model);
- if (m && m.provider === 'aqua' && s.aquaKey)
- return { url: 'https://api.aquadevs.com/v1/chat/completions', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.aquaKey }, model, provider: 'aqua' };
- if (s.customUrl && s.customKey)
- return { url: s.customUrl.replace(/\/$/, '') + '/chat/completions', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.customKey }, model, provider: 'custom' };
+ if (m && m.provider === 'aqua') {
+ const p = API._getProvider('aqua');
+ const key = p?.apiKey || s.aquaKey;
+ if (key) return { url: (p?.baseUrl || 'https://api.aquadevs.com/v1').replace(/\/$/, '') + '/chat/completions', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, model, provider: 'aqua' };
+ }
+ if (s.customUrl && s.customKey) return { url: s.customUrl.replace(/\/$/, '') + '/chat/completions', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.customKey }, model, provider: 'custom' };
  return { ...API._pollinationsEndpoint(), model, provider: 'pollinations' };
  },
  _pollinationsEndpoint() {
  const s = ST.settings;
  const url = 'https://gen.pollinations.ai/v1/chat/completions';
  const h = { 'Content-Type': 'application/json' };
- h['Authorization'] = 'Bearer ' + (s.pollinationsKey || 'pk_LUy70Tu8OwLI1HrU');
+ const p = API._getProvider('pollinations');
+ h['Authorization'] = 'Bearer ' + (p?.apiKey || s.pollinationsKey || 'pk_LUy70Tu8OwLI1HrU');
  return { url, headers: h };
  },
  _base(provider) {
- const s = ST.settings;
- if (provider === 'aqua' && s.aquaKey)
- return { url: 'https://api.aquadevs.com/v1', headers: { 'Authorization': 'Bearer ' + s.aquaKey } };
- if (provider === 'custom' && s.customUrl && s.customKey)
- return { url: s.customUrl.replace(/\/$/, '') + '/v1', headers: { 'Authorization': 'Bearer ' + s.customKey } };
- return { url: 'https://gen.pollinations.ai/v1', headers: { 'Authorization': 'Bearer ' + (s.pollinationsKey || 'pk_LUy70Tu8OwLI1HrU') } };
+ if (provider === 'aqua' || provider === 'pollinations' || provider === 'custom') {
+ return API._providerBase(provider);
+ }
+ return API._providerBase(provider);
  },
  _pollinationsKey() {
- return ST.settings.pollinationsKey || 'pk_LUy70Tu8OwLI1HrU';
+ const p = API._getProvider('pollinations');
+ return p?.apiKey || ST.settings.pollinationsKey || 'pk_LUy70Tu8OwLI1HrU';
  },
  trackCall(provider) {
  const now = Date.now();
@@ -41,7 +57,7 @@ const API = {
  bucket.calls.push(now);
  bucket.calls = bucket.calls.filter(t => now - t < 3600000);
  if (bucket.calls.length % 10 === 0 && bucket.calls.length > 0) {
- Ctrl && Ctrl.dlog && Ctrl.dlog('Pollinations: ' + bucket.calls.length + ' calls this hour. pk_ keys are limited to 1 pollen/hr.', 'warn');
+ Ctrl && Ctrl.dlog && Ctrl.dlog(provider + ': ' + bucket.calls.length + ' calls this hour.', 'warn');
  }
  },
  async chat(msgs, model, opts) {
@@ -85,11 +101,7 @@ const API = {
  const ep = API.endpoint(model);
  API.trackCall(ep.provider);
  try {
- const r = await fetch(ep.url, {
- method: 'POST',
- headers: ep.headers,
- body: JSON.stringify({ model: ep.model, messages: msgs, max_tokens: opts.maxTokens || 1000, temperature: opts.temp != null ? opts.temp : 0.9, stream: true })
- });
+ const r = await fetch(ep.url, { method: 'POST', headers: ep.headers, body: JSON.stringify({ model: ep.model, messages: msgs, max_tokens: opts.maxTokens || 1000, temperature: opts.temp != null ? opts.temp : 0.9, stream: true }) });
  if (!r.ok) {
  if (ep.provider === 'aqua') {
  const errText = await r.text();
@@ -115,27 +127,17 @@ const API = {
  if (line.indexOf('data: ') !== 0) continue;
  const data = line.slice(6).trim();
  if (data === '[DONE]') { onChunk('', true); return; }
- try {
- const p = JSON.parse(data);
- const delta = p.choices && p.choices[0] && p.choices[0].delta;
- if (delta && delta.content) onChunk(delta.content, false);
- } catch (e) { /* ignore parse errors */ }
+ try { const p = JSON.parse(data); const delta = p.choices && p.choices[0] && p.choices[0].delta; if (delta && delta.content) onChunk(delta.content, false); } catch (e) {}
  }
  }
  } catch (err) {
  Ctrl && Ctrl.dlog && Ctrl.dlog('Stream interrupted: ' + err.message, 'warn');
  if (ep.provider === 'aqua') {
  Ctrl && Ctrl.dlog && Ctrl.dlog('Aqua stream error — falling back to Pollinations (non-stream)', 'warn');
- try {
- const fbModel = model.startsWith('aqua:') ? model.slice(5) : model;
- const text = await API.chat(msgs, fbModel, opts);
- if (text) onChunk(text, true);
- } catch (fbErr) { Ctrl && Ctrl.dlog && Ctrl.dlog('Pollinations fallback failed: ' + fbErr.message, 'err'); }
+ try { const fbModel = model.startsWith('aqua:') ? model.slice(5) : model; const text = await API.chat(msgs, fbModel, opts); if (text) onChunk(text, true); } catch (fbErr) { Ctrl && Ctrl.dlog && Ctrl.dlog('Pollinations fallback failed: ' + fbErr.message, 'err'); }
  }
  }
- } finally {
- try { reader.releaseLock(); } catch (e) { }
- }
+ } finally { try { reader.releaseLock(); } catch (e) {} }
  },
  async _cacheMedia(url, kind) {
  if (!url) return;
@@ -147,9 +149,7 @@ const API = {
  if (!blob || blob.size === 0) return;
  await DB.cacheBlob(url, blob, kind);
  Ctrl && Ctrl.dlog && Ctrl.dlog('Cached ' + kind + ' blob for ' + url.slice(0, 60), 'ok');
- } catch (err) {
- Ctrl && Ctrl.dlog && Ctrl.dlog('Media cache failed for ' + url.slice(0, 60) + ': ' + err.message, 'warn');
- }
+ } catch (err) { Ctrl && Ctrl.dlog && Ctrl.dlog('Media cache failed: ' + err.message, 'warn'); }
  },
  async _cacheAndReturnBlob(blob, kind) {
  kind = kind || 'audio';
@@ -157,43 +157,44 @@ const API = {
  await DB.cacheBlob(pseudoUrl, blob, kind);
  return DB.getBlobUrl(pseudoUrl);
  },
+
+ // ===== IMAGE GENERATION =====
  async generateImageUrl(prompt, w, h, model) {
- w = w || 512;
- h = h || 512;
- model = model || ST.settings.imgModel || 'flux';
+ w = w || 512; h = h || 512;
+ const provId = ST.settings.imgProvider || 'aqua';
+ model = model || ST.settings.imgModel || 'zimage';
+ const isAqua = provId === 'aqua';
+ if (isAqua) {
  const realModel = model.startsWith('aqua:') ? model.slice(5) : model;
- if (model.startsWith('aqua:') && ST.settings.aquaKey) {
+ const key = ST.settings.aquaKey || (API._getProvider('aqua')?.apiKey || '');
+ if (key) {
  let ratio = 'square';
- if (w > h) ratio = 'landscape';
- else if (h > w) ratio = 'portrait';
+ if (w > h) ratio = 'landscape'; else if (h > w) ratio = 'portrait';
  const body = { model: realModel, prompt: prompt, ratio: ratio };
  const url = 'https://api.aquadevs.com/v1/images/generations';
- const headers = { 'Authorization': 'Bearer ' + ST.settings.aquaKey, 'Content-Type': 'application/json' };
+ const headers = { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' };
  try {
  const response = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(body) });
- if (!response.ok) {
- const errText = await response.text();
- throw new Error('Aqua image generation failed: ' + response.status + ' - ' + errText.slice(0, 100));
- }
+ if (!response.ok) { const errText = await response.text(); throw new Error('Aqua image generation failed: ' + response.status + ' - ' + errText.slice(0, 100)); }
  const data = await response.json();
  if (!data.success || !data.url) throw new Error('Aqua image generation response missing success or url');
  API._cacheMedia(data.url, 'image').catch(function() {});
  return data.url;
- } catch (err) {
- Ctrl && Ctrl.dlog && Ctrl.dlog('Aqua image generation error: ' + err.message, 'err');
- throw err;
+ } catch (err) { Ctrl && Ctrl.dlog && Ctrl.dlog('Aqua image error: ' + err.message, 'err'); throw err; }
  }
  }
+ // Pollinations fallback
  const key = API._pollinationsKey();
+ const realModel = model.startsWith('aqua:') ? model.slice(5) : model;
  const pollUrl = 'https://gen.pollinations.ai/image/' + encodeURIComponent(prompt) + '?model=' + encodeURIComponent(realModel) + '&width=' + w + '&height=' + h + '&nologo=true&key=' + encodeURIComponent(key);
  API._cacheMedia(pollUrl, 'image').catch(function() {});
  return pollUrl;
  },
  imageUrl(prompt, w, h, model) {
- w = w || 512;
- h = h || 512;
- model = model || ST.settings.imgModel || 'flux';
- if (model.startsWith('aqua:')) {
+ w = w || 512; h = h || 512;
+ model = model || ST.settings.imgModel || 'zimage';
+ const provId = ST.settings.imgProvider || 'aqua';
+ if (provId === 'aqua' || model.startsWith('aqua:')) {
  throw new Error('Aqua image models require async generateImageUrl. Use await API.generateImageUrl(...)');
  }
  const key = API._pollinationsKey();
@@ -201,65 +202,96 @@ const API = {
  API._cacheMedia(pollUrl, 'image').catch(function() {});
  return pollUrl;
  },
- async tts(text, voice) {
- voice = voice || 'nova';
- const model = ST.settings.ttsModel || 'openai-audio';
- const key = API._pollinationsKey();
- var base = API._base('pollinations');
- var ttsUrl = base.url + '/audio/speech';
- var ttsHeaders = Object.assign({}, base.headers, { 'Content-Type': 'application/json' });
+
+ // ===== TTS — Aqua MiMo (standard / voice design / voice clone) =====
+ // opts: { voice?, voiceDescription?, useStandardVoice?, voiceClone? }
+ async tts(text, opts) {
+ opts = opts || {};
+ const provId = ST.settings.ttsProvider || 'aqua';
+ const prov = API._getProvider(provId);
+ const baseUrl = (prov?.baseUrl || 'https://api.aquadevs.com/v1').replace(/\/$/, '');
+ const apiKey = prov?.apiKey || ST.settings.aquaKey || '';
+ if (!apiKey) throw new Error('No API key configured for TTS provider');
+
+ let model, body = { input: text };
+
+ if (opts.voiceClone) {
+ // Voice clone mode
+ model = ST.settings.ttsVoicecloneModel || 'mimo-v2.5-tts-voiceclone';
+ body.audio = { voice: opts.voiceClone };
+ } else if (opts.voiceDescription && !opts.useStandardVoice) {
+ // Voice design mode
+ model = ST.settings.ttsVoicedesignModel || 'mimo-v2.5-tts-voicedesign';
+ body.instructions = opts.voiceDescription;
+ } else {
+ // Standard mode
+ model = ST.settings.ttsModel || 'mimo-v2.5-tts';
+ body.audio = { voice: opts.voice || ST.settings.defVoice || 'Mia' };
+ }
+ body.model = model;
+
  try {
- const r = await fetch(ttsUrl, { method: 'POST', headers: ttsHeaders, body: JSON.stringify({ model: model, input: text, voice: voice }) });
+ const r = await fetch(baseUrl + '/audio/speech', {
+ method: 'POST',
+ headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
+ body: JSON.stringify(body)
+ });
  if (!r.ok) {
  const errText = await r.text().catch(function() { return ''; });
- Ctrl && Ctrl.dlog && Ctrl.dlog('TTS POST ' + r.status + ': ' + errText.slice(0, 200), 'err');
+ Ctrl && Ctrl.dlog && Ctrl.dlog('TTS ' + r.status + ': ' + errText.slice(0, 200), 'err');
  throw new Error('TTS ' + r.status + ': ' + (errText.slice(0, 80) || r.statusText));
  }
- const blob = await r.blob();
+ const data = await r.json();
+ if (!data.success || !data.url) throw new Error('TTS response missing success or url');
+ // Download the mp3 from the returned URL
+ const mp3Resp = await fetch(data.url);
+ if (!mp3Resp.ok) throw new Error('TTS mp3 download failed: ' + mp3Resp.status);
+ const blob = await mp3Resp.blob();
+ API._cacheMedia(data.url, 'audio').catch(function() {});
  return API._cacheAndReturnBlob(blob, 'audio');
- } catch (postErr) {
- Ctrl && Ctrl.dlog && Ctrl.dlog('TTS POST failed (' + postErr.message + '), trying GET fallback...', 'warn');
- try {
- const getUrl = 'https://gen.pollinations.ai/audio/' + encodeURIComponent(text) + '?model=' + encodeURIComponent(model) + '&voice=' + encodeURIComponent(voice) + '&key=' + encodeURIComponent(key);
- const r2 = await fetch(getUrl);
- if (!r2.ok) {
- const err2 = await r2.text().catch(function() { return ''; });
- Ctrl && Ctrl.dlog && Ctrl.dlog('TTS GET ' + r2.status + ': ' + err2.slice(0, 200), 'err');
- throw new Error('TTS GET ' + r2.status + ': ' + (err2.slice(0, 80) || r2.statusText));
- }
- const blob = await r2.blob();
- return API._cacheAndReturnBlob(blob, 'audio');
- } catch (getErr) {
- throw new Error('TTS failed — POST: ' + postErr.message + ' | GET: ' + getErr.message);
- }
+ } catch (err) {
+ Ctrl && Ctrl.dlog && Ctrl.dlog('TTS error: ' + err.message, 'err');
+ throw err;
  }
  },
+
+ // ===== STT =====
  async transcribe(audioBlob) {
+ const provId = ST.settings.sttProvider || 'pollinations';
  const model = ST.settings.sttModel || 'whisper-large-v3';
- var base = API._base('pollinations');
- var fd = new FormData();
+ if (provId === 'aqua') {
+ const prov = API._getProvider('aqua');
+ const baseUrl = (prov?.baseUrl || 'https://api.aquadevs.com/v1').replace(/\/$/, '');
+ const apiKey = prov?.apiKey || ST.settings.aquaKey || '';
+ if (!apiKey) throw new Error('No Aqua API key for STT');
+ const fd = new FormData();
  fd.append('file', audioBlob, 'recording.webm');
  fd.append('model', model);
- var h = { 'Authorization': base.headers['Authorization'] };
- var r = await fetch(base.url + '/audio/transcriptions', { method: 'POST', headers: h, body: fd });
- if (!r.ok) { var t = await r.text(); throw new Error('STT ' + r.status + ': ' + t.slice(0, 100)); }
- var d = await r.json();
+ const r = await fetch(baseUrl + '/audio/transcriptions', { method: 'POST', headers: { 'Authorization': 'Bearer ' + apiKey }, body: fd });
+ if (!r.ok) { const t = await r.text(); throw new Error('STT ' + r.status + ': ' + t.slice(0, 100)); }
+ const d = await r.json();
+ return d.text || '';
+ }
+ // Pollinations fallback
+ const base = API._base('pollinations');
+ const fd = new FormData();
+ fd.append('file', audioBlob, 'recording.webm');
+ fd.append('model', model);
+ const h = { 'Authorization': base.headers['Authorization'] };
+ const r = await fetch(base.url + '/audio/transcriptions', { method: 'POST', headers: h, body: fd });
+ if (!r.ok) { const t = await r.text(); throw new Error('STT ' + r.status + ': ' + t.slice(0, 100)); }
+ const d = await r.json();
  return d.text || '';
  },
  async fetchModels(provider) {
  provider = provider || 'pollinations';
  try {
- var base = API._base(provider);
- var r = await fetch(base.url + '/models', { method: 'GET', headers: base.headers });
+ const base = API._base(provider);
+ const r = await fetch(base.url + '/models', { method: 'GET', headers: base.headers });
  if (!r.ok) throw new Error(provider + ' models: ' + r.status);
- var d = await r.json();
- var raw = Array.isArray(d) ? d : (d.data || []);
- return raw.map(function(m) {
- return { id: m.id, name: m.name || m.id, provider: provider, desc: m.description || m.owned_by || '', object: m.object || 'model', raw: m };
- });
- } catch (err) {
- Ctrl && Ctrl.dlog && Ctrl.dlog('Failed to fetch ' + provider + ' models: ' + err.message, 'warn');
- return [];
- }
+ const d = await r.json();
+ const raw = Array.isArray(d) ? d : (d.data || []);
+ return raw.map(function(m) { return { id: m.id, name: m.name || m.id, provider: provider, desc: m.description || m.owned_by || '', object: m.object || 'model', raw: m }; });
+ } catch (err) { Ctrl && Ctrl.dlog && Ctrl.dlog('Failed to fetch ' + provider + ' models: ' + err.message, 'warn'); return []; }
  }
 };

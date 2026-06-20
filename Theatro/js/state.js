@@ -35,53 +35,30 @@ const MODELS=[
  {id:'aqua:deepseek-v4',name:'DeepSeek V4',provider:'aqua',premium:true,desc:'DeepSeek V4 — advanced reasoning'},
  {id:'aqua:custom',name:'Custom Aqua Model',provider:'aqua',desc:'Type any model ID — requires manual entry'},
 ];
-const VOICES=[
- {id:'alloy',name:'Alloy',desc:'Neutral, balanced'},
- {id:'echo',name:'Echo',desc:'Deep male'},
- {id:'fable',name:'Fable',desc:'British, expressive'},
- {id:'onyx',name:'Onyx',desc:'Deep, authoritative'},
- {id:'nova',name:'Nova',desc:'Warm female'},
- {id:'shimmer',name:'Shimmer',desc:'Clear female'},
- {id:'coral',name:'Coral',desc:'Warm, conversational'},
- {id:'verse',name:'Verse',desc:'Poetic, melodic'},
- {id:'ballad',name:'Ballad',desc:'Musical, singing'},
- {id:'ash',name:'Ash',desc:'Calm, measured'},
- {id:'sage',name:'Sage',desc:'Wise, elder'},
- {id:'amuch',name:'Amuch',desc:'Energetic, youthful'},
- {id:'dan',name:'Dan',desc:'Casual, friendly'},
+// MiMo TTS voices (Aqua provider)
+const MIMO_VOICES=[
+ {id:'mimo_default',name:'MiMo-默认',desc:'Cluster-dependent default'},
+ {id:'冰糖',name:'冰糖',desc:'Chinese — Female'},
+ {id:'茉莉',name:'茉莉',desc:'Chinese — Female'},
+ {id:'苏打',name:'苏打',desc:'Chinese — Male'},
+ {id:'白桦',name:'白桦',desc:'Chinese — Male'},
+ {id:'Mia',name:'Mia',desc:'English — Female'},
+ {id:'Chloe',name:'Chloe',desc:'English — Female'},
+ {id:'Milo',name:'Milo',desc:'English — Male'},
+ {id:'Dean',name:'Dean',desc:'English — Male'},
 ];
+// Reference lists kept for fetchProviderModels compatibility — not used as dropdowns for image/TTS/STT
 const IMG_MODELS=[
- {id:'flux',name:'Flux',provider:'pollinations',desc:'Fast, high-quality image generation',rec:true},
- {id:'gptimage-large',name:'GPT Image Large',provider:'pollinations',desc:'Large OpenAI image model'},
- {id:'seedream',name:'Seedream',provider:'pollinations',desc:'Seedream image generation'},
- {id:'kontext',name:'Kontext',provider:'pollinations',desc:'Kontext image model'},
+ {id:'flux',name:'Flux',provider:'pollinations',desc:'Fast, high-quality image generation'},
  {id:'zimage',name:'ZImage',provider:'pollinations',desc:'ZImage default model'},
- {id:'gptimage',name:'GPT Image',provider:'pollinations',desc:'Standard GPT image model'},
- {id:'seedream5',name:'Seedream 5',provider:'pollinations',desc:'Seedream 5 image model'},
+ {id:'gptimage-large',name:'GPT Image Large',provider:'pollinations',desc:'Large OpenAI image model'},
  {id:'aqua:flux-2',name:'Flux 2',provider:'aqua',desc:'Flux 2 via Aqua'},
- {id:'aqua:zimage',name:'ZImage',provider:'aqua',desc:'ZImage via Aqua'},
- {id:'aqua:qwen-image',name:'Qwen Image',provider:'aqua',desc:'Qwen image generation via Aqua'},
- {id:'aqua:nanobanana',name:'NanoBanana',provider:'aqua',desc:'NanoBanana image model via Aqua'},
- {id:'aqua:gptimage-1.5',name:'GPT Image 1.5',provider:'aqua',desc:'GPT Image 1.5 via Aqua'},
- {id:'aqua:gptimage-2',name:'GPT Image 2',provider:'aqua',desc:'GPT Image 2 via Aqua'},
- {id:'aqua:imagen4',name:'Imagen 4',provider:'aqua',desc:'Google Imagen 4 via Aqua'},
- {id:'aqua:seedream',name:'Seedream 5 Lite',provider:'aqua',desc:'Seedream 5 Lite via Aqua'},
- {id:'aqua:midjourney',name:'Midjourney 7',provider:'aqua',desc:'Midjourney 7 via Aqua'},
+ {id:'aqua:zimage',name:'ZImage',provider:'aqua',desc:'ZImage via Aqua',rec:true},
  {id:'aqua:grok-image',name:'Grok Imagine 1.0',provider:'aqua',desc:'Grok Imagine 1.0 via Aqua'},
 ];
-const TTS_MODELS=[
- {id:'openai-audio',name:'OpenAI Audio',provider:'pollinations',desc:'Voice chat capable — alloy, echo, fable, onyx, nova, shimmer + more',rec:true},
- {id:'openai-audio-large',name:'OpenAI Audio Large',provider:'pollinations',desc:'Premium voice quality'},
- {id:'elevenlabs',name:'ElevenLabs',provider:'pollinations',desc:'Best quality, natural speech — 65 pollen'},
- {id:'elevenmusic',name:'ElevenLabs Music',provider:'pollinations',desc:'Singing and music capable — 4 pollen'},
- {id:'qwen3-tts-flash',name:'Qwen 3 TTS Flash',provider:'pollinations',desc:'Fast Alibaba TTS — 200 pollen'},
- {id:'qwen3-tts-instruct',name:'Qwen 3 TTS Instruct',provider:'pollinations',desc:'Instruct-capable TTS — 500 pollen'},
-];
+const TTS_MODELS=[]; // no longer used as dropdown — deprecated
 const STT_MODELS=[
- {id:'whisper-large-v3',name:'Whisper Large v3',provider:'pollinations',desc:'Best accuracy — 1000 pollen',rec:true},
- {id:'whisper',name:'Whisper',provider:'pollinations',desc:'Standard Whisper — 1000 pollen'},
- {id:'elevenlabs-scribe-v2',name:'ElevenLabs Scribe v2',provider:'pollinations',desc:'90+ languages, cheaper — 200 pollen'},
- {id:'scribe',name:'Scribe',provider:'pollinations',desc:'ElevenLabs transcription — 200 pollen'},
+ {id:'whisper-large-v3',name:'Whisper Large v3',provider:'pollinations',desc:'Best accuracy'},
 ];
 
 // ===== STATE =====
@@ -90,15 +67,31 @@ const ST={
  editCharId:null,editScenId:null,
  charForm:{},scenForm:{},
  settings:{
- pollinationsKey:'pk_LUy70Tu8OwLI1HrU',
- aquaKey:'',customUrl:'',customKey:'',
- charModel:'openai-fast',ctrlModel:'openai',
- imgModel:'flux',ttsModel:'openai-audio',
- sttModel:'whisper-large-v3',
- defVoice:'nova',
- ctrlFreq:10,stWindow:30,streaming:true,
+ // Provider system
+ providers:[
+ {id:'aqua',name:'Aqua',baseUrl:'https://api.aquadevs.com/v1',apiKey:'',deletable:false},
+ {id:'pollinations',name:'Pollinations (deprecated)',baseUrl:'https://gen.pollinations.ai/v1',apiKey:'pk_LUy70Tu8OwLI1HrU',deletable:false},
+ ],
+ // Legacy keys — kept for backward compat during transition
+ aquaKey:'',pollinationsKey:'pk_LUy70Tu8OwLI1HrU',customUrl:'',customKey:'',
+ // Chat models (dropdown-based, unchanged)
+ charModel:'aqua:deepseek-v4',ctrlModel:'aqua:deepseek-v4',
  creativeModel:null,
- creativeImgModel:null,
+ // Image model (provider + free-text)
+ imgProvider:'aqua',imgModel:'zimage',
+ creativeImgModel:null,creativeImgProvider:null,
+ // TTS models (provider + 3 modes)
+ ttsProvider:'aqua',
+ ttsModel:'mimo-v2.5-tts',
+ ttsVoicedesignModel:'mimo-v2.5-tts-voicedesign',
+ ttsVoicecloneModel:'mimo-v2.5-tts-voiceclone',
+ // STT model (provider + free-text)
+ sttProvider:'pollinations',sttModel:'whisper-large-v3',
+ // Voice / TTS settings
+ defVoice:'Mia',
+ generateVoiceDemo:false,
+ // Controller / memory / tweaks
+ ctrlFreq:10,stWindow:30,streaming:true,
  customImagePrompt:false,
  theme:'proscenium',
  },
