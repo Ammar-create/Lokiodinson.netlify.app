@@ -122,7 +122,8 @@ const API = {
  const result = await reader.read();
  if (result.done) break;
  buf += dec.decode(result.value, { stream: true });
- const lines = buf.split('\n');
+ const lines = buf.split('
+');
  buf = lines.pop();
  for (const line of lines) {
  if (line.indexOf('data: ') !== 0) continue;
@@ -149,8 +150,7 @@ const API = {
  const blob = await response.blob();
  if (!blob || blob.size === 0) return;
  await DB.cacheBlob(url, blob, kind);
- Ctrl && Ctrl.dlog && Ctrl.dlog('Cached ' + kind + ' blob for ' + url.slice(0, 60), 'ok');
- } catch (err) { Ctrl && Ctrl.dlog && Ctrl.dlog('Media cache failed: ' + err.message, 'warn'); }
+ } catch (err) {}
  },
  async _cacheAndReturnBlob(blob, kind) {
  kind = kind || 'audio';
@@ -163,24 +163,18 @@ const API = {
  w = w || 512; h = h || 512;
  const provId = ST.settings.imgProvider || 'aqua';
  model = model || ST.settings.imgModel || 'zimage';
- const isAqua = provId === 'aqua';
- if (isAqua) {
+ if (provId === 'aqua') {
  const realModel = model.startsWith('aqua:') ? model.slice(5) : model;
  const key = (API._getProvider('aqua')?.apiKey) || ST.settings.aquaKey || '';
  if (key) {
  let ratio = 'square';
  if (w > h) ratio = 'landscape'; else if (h > w) ratio = 'portrait';
- const body = { model: realModel, prompt: prompt, ratio: ratio };
- const url = 'https://api.aquadevs.com/v1/images/generations';
- const headers = { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' };
- try {
- const response = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(body) });
- if (!response.ok) { const errText = await response.text(); throw new Error('Aqua image generation failed: ' + response.status + ' - ' + errText.slice(0, 100)); }
- const data = await response.json();
- if (!data.success || !data.url) throw new Error('Aqua image generation response missing success or url');
- API._cacheMedia(data.url, 'image').catch(function() {});
- return data.url;
- } catch (err) { Ctrl && Ctrl.dlog && Ctrl.dlog('Aqua image error: ' + err.message, 'err'); throw err; }
+ const r = await fetch('https://api.aquadevs.com/v1/images/generations', { method: 'POST', headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: realModel, prompt: prompt, ratio: ratio }) });
+ if (!r.ok) { const t = await r.text(); throw new Error('Aqua image: ' + r.status + ' - ' + t.slice(0, 100)); }
+ const d = await r.json();
+ if (!d.success || !d.url) throw new Error('Aqua image: no url');
+ API._cacheMedia(d.url, 'image').catch(function() {});
+ return d.url;
  }
  }
  const key = API._pollinationsKey();
@@ -192,91 +186,78 @@ const API = {
  imageUrl(prompt, w, h, model) {
  w = w || 512; h = h || 512;
  model = model || ST.settings.imgModel || 'zimage';
- const provId = ST.settings.imgProvider || 'aqua';
- if (provId === 'aqua' || model.startsWith('aqua:')) {
- throw new Error('Aqua image models require async generateImageUrl. Use await API.generateImageUrl(...)');
- }
+ if ((ST.settings.imgProvider || 'aqua') === 'aqua' || model.startsWith('aqua:')) throw new Error('Use await API.generateImageUrl()');
  const key = API._pollinationsKey();
  const pollUrl = 'https://gen.pollinations.ai/image/' + encodeURIComponent(prompt) + '?model=' + encodeURIComponent(model) + '&width=' + w + '&height=' + h + '&nologo=true&key=' + encodeURIComponent(key);
- API._cacheMedia(pollUrl, 'image').catch(function() {});
  return pollUrl;
  },
 
- // ===== TTS — Aqua MiMo (with CORS-proxy fallback for GitHub Pages) =====
+ // ===== TTS — Aqua MiMo (multi-proxy CORS fallback) =====
  async tts(text, opts) {
  API._syncLegacyKeys();
  opts = opts || {};
- const provId = ST.settings.ttsProvider || 'aqua';
- const prov = API._getProvider(provId);
+ const prov = API._getProvider(ST.settings.ttsProvider || 'aqua');
  const baseUrl = (prov?.baseUrl || 'https://api.aquadevs.com/v1').replace(/\/$/, '');
  const apiKey = prov?.apiKey || ST.settings.aquaKey || '';
-
- if (!apiKey) {
- const msg = 'No Aqua API key configured. Go to Settings → Providers and add your Aqua API key.';
- Ctrl && Ctrl.dlog && Ctrl.dlog('TTS: ' + msg, 'err');
- throw new Error(msg);
- }
+ if (!apiKey) throw new Error('No Aqua API key. Go to Settings → Providers.');
 
  let model, body = { input: text };
- if (opts.voiceClone) {
- model = ST.settings.ttsVoicecloneModel || 'mimo-v2.5-tts-voiceclone';
- body.audio = { voice: opts.voiceClone };
- } else if (opts.voiceDescription && !opts.useStandardVoice) {
- model = ST.settings.ttsVoicedesignModel || 'mimo-v2.5-tts-voicedesign';
- body.instructions = opts.voiceDescription;
- } else {
- model = ST.settings.ttsModel || 'mimo-v2.5-tts';
- body.audio = { voice: opts.voice || ST.settings.defVoice || 'Mia' };
- }
+ if (opts.voiceClone) { model = ST.settings.ttsVoicecloneModel || 'mimo-v2.5-tts-voiceclone'; body.audio = { voice: opts.voiceClone }; }
+ else if (opts.voiceDescription && !opts.useStandardVoice) { model = ST.settings.ttsVoicedesignModel || 'mimo-v2.5-tts-voicedesign'; body.instructions = opts.voiceDescription; }
+ else { model = ST.settings.ttsModel || 'mimo-v2.5-tts'; body.audio = { voice: opts.voice || ST.settings.defVoice || 'Mia' }; }
  body.model = model;
 
  const fullUrl = baseUrl + '/audio/speech';
- const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(fullUrl);
+ const apiHeaders = { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' };
+ const bodyStr = JSON.stringify(body);
  Ctrl && Ctrl.dlog && Ctrl.dlog('TTS: ' + fullUrl + ' model=' + model, 'dinfo');
 
- const doPost = async (url) => {
- return await fetch(url, {
- method: 'POST',
- headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
- body: JSON.stringify(body)
- });
- };
+ // Try direct first, then proxies
+ const proxies = [
+ null, // direct
+ 'https://corsproxy.io/?' + encodeURIComponent(fullUrl),
+ 'https://api.allorigins.win/raw?url=' + encodeURIComponent(fullUrl)
+ ];
 
- let r;
- try { r = await doPost(fullUrl); }
- catch (directErr) {
- if (directErr.message === 'Failed to fetch') {
- Ctrl && Ctrl.dlog && Ctrl.dlog('TTS: direct blocked by CORS, retrying via corsproxy.io...', 'warn');
- try { r = await doPost(proxyUrl); }
- catch (proxyErr) {
- if (proxyErr.message === 'Failed to fetch') throw new Error('Cannot reach Aqua TTS API (direct + proxy both failed). Check internet and API key.');
- throw proxyErr;
- }
- } else { throw directErr; }
- }
-
+ let lastErr;
+ for (let i = 0; i < proxies.length; i++) {
+ const proxyUrl = proxies[i];
+ const url = proxyUrl || fullUrl;
+ const isProxy = !!proxyUrl;
+ try {
+ const r = await fetch(url, { method: 'POST', headers: isProxy ? { ...apiHeaders, 'X-Requested-With': 'XMLHttpRequest' } : apiHeaders, body: bodyStr });
  if (!r.ok) {
  const errText = await r.text().catch(function() { return ''; });
- Ctrl && Ctrl.dlog && Ctrl.dlog('TTS HTTP ' + r.status + ': ' + errText.slice(0, 300), 'err');
+ if (r.status === 502 || r.status === 503) {
+ lastErr = new Error('Aqua TTS server returned ' + r.status + ' — may be temporarily down.');
+ Ctrl && Ctrl.dlog && Ctrl.dlog('TTS ' + r.status + (isProxy ? ' (proxy)' : ' (direct)') + ': ' + errText.slice(0, 150), 'warn');
+ continue; // try next proxy
+ }
  throw new Error('TTS ' + r.status + ': ' + (errText.slice(0, 100) || r.statusText));
  }
-
  const data = await r.json();
  if (!data.success || !data.url) {
- Ctrl && Ctrl.dlog && Ctrl.dlog('TTS response missing success/url: ' + JSON.stringify(data).slice(0, 200), 'err');
- throw new Error('TTS response missing audio URL');
+ lastErr = new Error('TTS response missing audio URL');
+ continue;
  }
-
- Ctrl && Ctrl.dlog && Ctrl.dlog('TTS mp3 ready: ' + data.filename + ' (' + (data.size_bytes || '?') + ' bytes)', 'ok');
+ Ctrl && Ctrl.dlog && Ctrl.dlog('TTS ok: ' + data.filename + ' (' + (data.size_bytes||'?') + ' bytes)' + (isProxy ? ' [proxy]' : ' [direct]'), 'ok');
  const mp3Resp = await fetch(data.url);
- if (!mp3Resp.ok) throw new Error('TTS mp3 download failed: ' + mp3Resp.status);
+ if (!mp3Resp.ok) throw new Error('MP3 download failed: ' + mp3Resp.status);
  const blob = await mp3Resp.blob();
- if (!blob || blob.size === 0) throw new Error('TTS mp3 blob is empty');
  API._cacheMedia(data.url, 'audio').catch(function() {});
  return API._cacheAndReturnBlob(blob, 'audio');
+ } catch (err) {
+ if (err.message === 'Failed to fetch') {
+ lastErr = new Error('CORS blocked' + (isProxy ? ' (proxy also blocked)' : '') + '.');
+ continue;
+ }
+ throw err;
+ }
+ }
+ Ctrl && Ctrl.dlog && Ctrl.dlog('TTS: all attempts failed. ' + (lastErr?.message||''), 'err');
+ throw lastErr || new Error('TTS failed — all connection attempts exhausted.');
  },
 
- // ===== STT =====
  async transcribe(audioBlob) {
  API._syncLegacyKeys();
  const provId = ST.settings.sttProvider || 'pollinations';
@@ -285,24 +266,18 @@ const API = {
  const prov = API._getProvider('aqua');
  const baseUrl = (prov?.baseUrl || 'https://api.aquadevs.com/v1').replace(/\/$/, '');
  const apiKey = prov?.apiKey || ST.settings.aquaKey || '';
- if (!apiKey) throw new Error('No Aqua API key configured for STT. Go to Settings → Providers.');
- const fd = new FormData();
- fd.append('file', audioBlob, 'recording.webm');
- fd.append('model', model);
+ if (!apiKey) throw new Error('No Aqua API key for STT.');
+ const fd = new FormData(); fd.append('file', audioBlob, 'recording.webm'); fd.append('model', model);
  const r = await fetch(baseUrl + '/audio/transcriptions', { method: 'POST', headers: { 'Authorization': 'Bearer ' + apiKey }, body: fd });
  if (!r.ok) { const t = await r.text(); throw new Error('STT ' + r.status + ': ' + t.slice(0, 100)); }
- const d = await r.json();
- return d.text || '';
+ const d = await r.json(); return d.text || '';
  }
  const base = API._base('pollinations');
- const fd = new FormData();
- fd.append('file', audioBlob, 'recording.webm');
- fd.append('model', model);
+ const fd = new FormData(); fd.append('file', audioBlob, 'recording.webm'); fd.append('model', model);
  const h = { 'Authorization': base.headers['Authorization'] };
  const r = await fetch(base.url + '/audio/transcriptions', { method: 'POST', headers: h, body: fd });
  if (!r.ok) { const t = await r.text(); throw new Error('STT ' + r.status + ': ' + t.slice(0, 100)); }
- const d = await r.json();
- return d.text || '';
+ const d = await r.json(); return d.text || '';
  },
  async fetchModels(provider) {
  provider = provider || 'pollinations';
