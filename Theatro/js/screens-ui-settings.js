@@ -25,7 +25,6 @@ Object.assign(Scr,{
  </div>`;
  },
 
- // --- PROVIDERS TAB ---
  _providersTab(s){
  const provs=s.providers||[];
  return`<div class="sett-sec on">
@@ -35,9 +34,10 @@ Object.assign(Scr,{
  <div class="field"><label class="lbl">API Key</label><input type="password" id="prov-key-${p.id}" value="${esc(p.apiKey||'')}" placeholder="sk-..." oninput="Scr._updateProvider('${p.id}','apiKey',this.value)"></div>
  ${p.deletable!==false?`<button class="btn bd bsm" onclick="Scr._deleteProvider('${p.id}')">${I('trash',12)} Remove</button>`:''}
  </div>`).join('')}
- <div style="display:flex;gap:10px">
+ <div style="display:flex;gap:10px;flex-wrap:wrap">
  <button class="btn bp bsm" onclick="Scr._addProvider()">${I('plus',13)} Add Provider</button>
- <button class="btn bs bsm" onclick="Scr.saveSettings()">${I('check',13)} Save Providers</button>
+ <button class="btn bs bsm" onclick="Scr.fetchProviderModels()">${I('refresh',12)} Refresh Model List</button>
+ <button class="btn bp bsm" onclick="Scr.saveSettings()">${I('check',13)} Save All Settings</button>
  </div>
  </div>`;
  },
@@ -62,7 +62,6 @@ Object.assign(Scr,{
  Scr.markSettingsDirty();Scr.settings();
  },
 
- // --- MODELS TAB ---
  _modelsTab(s){
  return`<div class="sett-sec on">
  <div class="sett-grp">
@@ -71,33 +70,57 @@ Object.assign(Scr,{
  <div class="field"><label class="lbl">Controller Default</label>${Scr.mpHtml('s-ctm',s.ctrlModel||'aqua:deepseek-v4')}</div>
  </div>
  <div class="sett-grp">
- <div class="sett-gt">Image Model</div>
+ <div class="sett-gt">Chat Image Generation</div>
+ <p style="font-size:11px;color:var(--tmut)">Used when generating images from chat messages (per-message Image button, auto-image).</p>
  ${Scr._provModelInput('img',s.imgProvider||'aqua',s.imgModel||'zimage','e.g. zimage')}
- ${Scr._provModelInput('crimg',s.creativeImgProvider||s.imgProvider||'aqua',s.creativeImgModel||s.imgModel||'zimage','Creative Controller image model')}
  </div>
  <div class="sett-grp">
- <div class="sett-gt">TTS Models (Aqua MiMo)</div>
- ${Scr._provModelInput('tts',s.ttsProvider||'aqua',s.ttsModel||'mimo-v2.5-tts','Standard voice model')}
- ${Scr._provModelInput('ttsvd',s.ttsProvider||'aqua',s.ttsVoicedesignModel||'mimo-v2.5-tts-voicedesign','Voice Design model')}
- ${Scr._provModelInput('ttsvc',s.ttsProvider||'aqua',s.ttsVoicecloneModel||'mimo-v2.5-tts-voiceclone','Voice Clone model')}
+ <div class="sett-g Image</div>
+ <p style="font-size:11px;color:var(--tmut)">Used for character profile picture generation. Falls back to Chat Image if not set.</p>
+ ${Scr._provModelInput('crimg',s.creativeImgProvider||s.imgProvider||'aqua',s.creativeImgModel||s.imgModel||'zimage','e.g. flux-2')}
  </div>
  <div class="sett-grp">
- <div class="sett-gt">STT Model</div>
+ <div class="sett-gt">Creative Controller Text</div>
+ <p style="font-size:11px;color:var(--tmut)">Used for character auto-creation and scenario generation.</p>
+ <div class="field"><label class="lbl">Text Model</label>${Scr.mpHtml('s-crtm',s.creativeModel||s.ctrlModel||'aqua:deepseek-v4')}</div>
+ </div>
+ <div class="sett-grp">
+ <div class="sett-gt">TTS — Aqua MiMo</div>
+ <p style="font-size:11px;color:var(--tmut)">Provider is shared across all three TTS modes. Only the model ID differs.</p>
+ <div class="field"><label class="lbl">TTS Provider</label>${Scr._provDropdown('ttsProv',s.ttsProvider||'aqua')}</div>
+ <div class="field"><label class="lbl">Standard Model ID</label><input type="text" id="s-tts" value="${esc(s.ttsModel||'mimo-v2.5-tts')}" placeholder="mimo-v2.5-tts" oninput="ST.settings.ttsModel=this.value;Scr.markSettingsDirty()"></div>
+ <div class="field"><label class="lbl">Voice Design Model ID</label><input type="text" id="s-ttsvd" value="${esc(s.ttsVoicedesignModel||'mimo-v2.5-tts-voicedesign')}" placeholder="mimo-v2.5-tts-voicedesign" oninput="ST.settings.ttsVoicedesignModel=this.value;Scr.markSettingsDirty()"></div>
+ <div class="field"><label class="lbl">Voice Clone Model ID</label><input type="text" id="s-ttsvc" value="${esc(s.ttsVoicecloneModel||'mimo-v2.5-tts-voiceclone')}" placeholder="mimo-v2.5-tts-voiceclone" oninput="ST.settings.ttsVoicecloneModel=this.value;Scr.markSettingsDirty()"></div>
+ </div>
+ <div class="sett-grp">
+ <div class="sett-gt">STT (Speech-to-Text)</div>
  ${Scr._provModelInput('stt',s.sttProvider||'pollinations',s.sttModel||'whisper-large-v3','e.g. whisper-large-v3')}
  </div>
  <div class="sett-grp">
  <div class="sett-gt">Default Voice</div>
- <div class="field"><label class="lbl">Standard Voice ID</label>${Scr.vpHtml('s-dv',s.defVoice||'Mia')}</div>
+ <p style="font-size:11px;color:var(--tmut)">Standard voice used when a character has no voice description configured.</p>
+ <div class="field"><label class="lbl">Voice ID</label>${Scr.vpHtml('s-dv',s.defVoice||'Mia')}</div>
  </div>
- <div class="sett-grp">
- <div class="sett-gt">Creative Controller</div>
- <p style="font-size:11px;color:var(--tmut)">Used for character auto-creation, scenario auto-creation, and character image generation.</p>
- <div class="field"><label class="lbl">Text Model</label>${Scr.mpHtml('s-crtm',s.creativeModel||s.ctrlModel||'aqua:deepseek-v4')}</div>
- </div>
- <button class="btn bp bsm" onclick="Scr.saveSettings()">Save Model Settings</button>
+ <button class="btn bp bsm" onclick="Scr.saveSettings()">${I('check',13)} Save Model Settings</button>
  </div>`;
  },
- // Provider dropdown + model text input
+ _provDropdown(key,provId){
+ const provs=ST.settings.providers||[];
+ const opt=provs.map(p=>`<div class="mopt ${p.id===provId?'sel':''}" onclick="Scr._selProvDrop('${key}','${p.id}')">${esc(p.name)} ${p.id===provId?'<span style="color:var(--gold)">✓</span>':''}</div>`).join('');
+ return`<div style="position:relative"><button class="mpbtn" onclick="Scr._openProvDrop('${key}')" id="provdrp-${key}" style="font-size:12px"><span id="provdrplbl-${key}">${esc(provs.find(p=>p.id===provId)?.name||provId)}</span><span class="arr">▼</span></button><div class="mlist" id="provdrplist-${key}" style="display:none;position:absolute;z-index:100;width:100%">${opt}</div></div>`;
+ },
+ _openProvDrop(key){
+ const lst=$(`#provdrplist-${key}`);if(!lst)return;
+ lst.style.display=lst.style.display==='none'?'block':'none';
+ setTimeout(()=>document.addEventListener('click',function h(e){if(!e.target.closest(`#provdrp-${key}`)&&!e.target.closest(`#provdrplist-${key}`)){lst.style.display='none';document.removeEventListener('click',h);}},{once:true}),10);
+ },
+ _selProvDrop(key,provId){
+ if(key==='ttsProv')ST.settings.ttsProvider=provId;
+ const lbl=$(`#provdrplbl-${key}`);const provs=ST.settings.providers||[];
+ if(lbl)lbl.textContent=provs.find(p=>p.id===provId)?.name||provId;
+ $(`#provdrplist-${key}`).style.display='none';
+ Scr.markSettingsDirty();
+ },
  _provModelInput(key,provId,modelVal,placeholder){
  const provs=ST.settings.providers||[];
  const opt=provs.map(p=>`<div class="mopt ${p.id===provId?'sel':''}" onclick="Scr._setProvModelProv('${key}','${p.id}')">${esc(p.name)} ${p.id===provId?'<span style="color:var(--gold)">✓</span>':''}</div>`).join('');
@@ -121,9 +144,6 @@ Object.assign(Scr,{
  _setProvModelProv(key,provId){
  if(key==='img')ST.settings.imgProvider=provId;
  else if(key==='crimg')ST.settings.creativeImgProvider=provId;
- else if(key==='tts')ST.settings.ttsProvider=provId;
- else if(key==='ttsvd'){/* same provider as tts */}
- else if(key==='ttsvc'){/* same provider as tts */}
  else if(key==='stt')ST.settings.sttProvider=provId;
  const lbl=$(`#provlbl-${key}`);const provs=ST.settings.providers||[];
  if(lbl)lbl.textContent=provs.find(p=>p.id===provId)?.name||provId;
@@ -133,14 +153,10 @@ Object.assign(Scr,{
  _setProvModel(key,val){
  if(key==='img')ST.settings.imgModel=val;
  else if(key==='crimg')ST.settings.creativeImgModel=val;
- else if(key==='tts')ST.settings.ttsModel=val;
- else if(key==='ttsvd')ST.settings.ttsVoicedesignModel=val;
- else if(key==='ttsvc')ST.settings.ttsVoicecloneModel=val;
  else if(key==='stt')ST.settings.sttModel=val;
  Scr.markSettingsDirty();
  },
 
- // --- CONTROLLERS TAB ---
  _controllersTab(s){
  return`<div class="sett-sec on">
  <div class="sett-grp">
@@ -151,7 +167,6 @@ Object.assign(Scr,{
  <button class="btn bp bsm" onclick="Scr.saveSettings()">Save Controller Settings</button>
  </div>`;
  },
- // --- MEMORY TAB ---
  _memoryTab(s){
  return`<div class="sett-sec on">
  <div class="sett-grp">
@@ -161,7 +176,6 @@ Object.assign(Scr,{
  <button class="btn bp bsm" onclick="Scr.saveSettings()">Save Memory Settings</button>
  </div>`;
  },
- // --- TWEAKS TAB ---
  _tweaksTab(s){
  return`<div class="sett-sec on">
  <div class="sett-grp">
@@ -182,7 +196,6 @@ Object.assign(Scr,{
  <button class="btn bp bsm" onclick="Scr.saveSettings()">Save Tweaks</button>
  </div>`;
  },
- // --- THEMES TAB ---
  _themes:[
  {id:'proscenium',name:'Proscenium',desc:'Theater gold + crimson',bg:'#08080f',ac:'#c9a84c',sc:'#8b2232'},
  {id:'stratosphere',name:'Stratosphere',desc:'Cloudy sky-blue',bg:'#0D1520',ac:'#87C8E8',sc:'#4A7A9B'},
@@ -197,7 +210,6 @@ Object.assign(Scr,{
  return Scr._themes.map(t=>`<div class="th-card ${t.id===cur?'sel':''}" onclick="Scr._setTheme('${t.id}')" style="background:${t.bg};border:2px solid ${t.id===cur?t.ac:'var(--border)'};border-radius:var(--rxl);padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:10px;transition:all var(--t) var(--ease)" onmouseenter="this.style.borderColor='${t.ac}'" onmouseleave="this.style.borderColor='${t.id===cur?t.ac:"var(--border)"}'"><div style="display:flex;gap:6px"><div style="width:20px;height:20px;border-radius:50%;background:${t.bg};box-shadow:0 0 0 2px var(--border)"></div><div style="width:20px;height:20px;border-radius:50%;background:${t.ac}"></div><div style="width:20px;height:20px;border-radius:50%;background:${t.sc}"></div></div><div><div style="font-weight:700;font-size:13px;color:${t.ac};font-family:var(--fd);letter-spacing:.04em">${t.name}</div><div style="font-size:11px;color:var(--tmut);margin-top:2px">${t.desc}</div></div>${t.id===cur?'<div style="font-size:10px;color:${t.ac};font-weight:700;text-transform:uppercase;letter-spacing:.1em">Active</div>':''}</div>`).join('');
  },
  _setTheme(id){ST.settings.theme=id;document.documentElement.setAttribute('data-theme',id);Scr.markSettingsDirty();Scr.settings();},
- // --- STORAGE TAB ---
  _storageTab(){
  return`<div class="sett-sec on"><div class="sett-grp"><div class="sett-gt">Data Management</div><p style="font-size:12px;color:var(--tdim)">All data is stored locally in your browser's IndexedDB. Export regularly to back up.</p><div style="display:flex;gap:20px;margin-bottom:12px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="export-images-checkbox" style="width:16px;height:16px;margin:0"><span>${I('image',14)} Export images</span></label><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="export-audio-checkbox" style="width:16px;height:16px;margin:0"><span>${I('voice',14)} Export audio</span></label></div><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn bs bsm" onclick="Scr.exportAll()">${I('download',12)} Export All</button><button class="btn bs bsm" onclick="Scr.importAll()">${I('upload',12)} Import</button><button class="btn bd bsm" onclick="Scr.clearAll()">${I('trash',14)} Clear Everything</button></div></div></div>`;
  },

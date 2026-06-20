@@ -7,15 +7,38 @@ Object.assign(Scr,{
  async fetchProviderModels(){
  Toast.i('Fetching models from providers...');
  try{
- const [polli,aqua]=await Promise.all([API.fetchModels('pollinations'),(ST.settings.aquaKey||(ST.settings.providers||[]).find(p=>p.id==='aqua')?.apiKey)?API.fetchModels('aqua'):Promise.resolve([])]);
+ const promises=[API.fetchModels('pollinations')];
+ const aquaProv=ST.settings.providers?.find(p=>p.id==='aqua');
+ const hasAquaKey=!!(aquaProv?.apiKey||ST.settings.aquaKey);
+ if(hasAquaKey)promises.push(API.fetchModels('aqua'));
+ else promises.push(Promise.resolve([]));
+ const [polli,aqua]=await Promise.all(promises);
+ // Reset MODELS to original hardcoded set
  MODELS.length=Scr._ORIGINAL_MODELS_COUNT;
  const existing=new Set(MODELS.map(m=>m.id));
+ // Merge fetched Pollinations models
  for(const m of polli){if(!existing.has(m.id)){MODELS.push({id:m.id,name:m.name||m.id,provider:'pollinations',desc:m.desc||'Fetched from API'});existing.add(m.id);}}
+ // Merge fetched Aqua models
  for(const m of aqua){const prefixed='aqua:'+m.id;if(!existing.has(prefixed)){MODELS.push({id:prefixed,name:m.name||m.id,provider:'aqua',desc:m.desc||'Fetched from Aqua API'});existing.add(prefixed);}}
- await DB.put('providers',{id:'model_cache',polli,aqua,cachedAt:Date.now()});
+ // Persist merged MODELS to IndexedDB so they survive refresh
+ await DB.put('providers',{id:'chat_models',models:MODELS,polli,aqua,cachedAt:Date.now()});
  Toast.s(`Fetched ${polli.length} Pollinations + ${aqua.length} Aqua models`);
  Ctrl.dlog(`Model cache updated: ${polli.length} P + ${aqua.length} A`,'ok');
  }catch(err){Toast.e('Model fetch failed: '+err.message);}
+ },
+
+ // Load persisted models on init
+ async _loadPersistedModels(){
+ try{
+ const cached=await DB.get('providers','chat_models');
+ if(cached?.models&&Array.isArray(cached.models)){
+ // Replace MODELS entirely with cached version (includes hardcoded + fetched)
+ MODELS.length=0;
+ for(const m of cached.models)MODELS.push(m);
+ Scr._ORIGINAL_MODELS_COUNT=MODELS.length;
+ Ctrl?.dlog?.('Loaded ' + MODELS.length + ' models from cache','ok');
+ }
+ }catch(e){/* no cache yet */}
  },
 
  // ---- CHAT MODEL PICKER (unchanged dropdowns) ----
@@ -33,7 +56,7 @@ Object.assign(Scr,{
  <div class="plbl">📡 Pollinations</div>
  <div class="mlist">${pollis.map(m=>`<div class="mopt ${m.id===cur?'sel':''}" onclick="Scr.selModel('${id}','${m.id}','${esc(m.name)}')"><div><div style="font-weight:600">${esc(m.name)}</div><div class="mopt-id">${esc(m.id)}</div><div style="font-size:11px;color:var(--tdim)">${esc(m.desc||'')}</div></div>${m.rec?'<span class="mopt-rec">★ Recommended</span>':''}</div>`).join('')}</div>
  <div class="plbl">🔱 Aqua</div>
- <div class="mlist">${aquas.length?aquas.map(m=>`<div class="mopt ${m.id===cur?'sel':''}" onclick="Scr.selModel('${id}','${m.id}','${esc(m.name)}')"><div><div style="font-weight:600">${esc(m.name)}</div><div class="mopt-id">${esc(m.id.replace('aqua:',''))}${m.premium?' <span style="color:var(--criml);font-size:9px">★ Premium</span>':''}</div></div></div>`).join(''):'<div style="padding:10px;color:var(--tmut);font-size:11px">No Aqua models available. Add API key in Settings.</div>'}</div></div>`;
+ <div class="mlist">${aquas.length?aquas.map(m=>`<div class="mopt ${m.id===cur?'sel':''}" onclick="Scr.selModel('${id}','${m.id}','${esc(m.name)}')"><div><div style="font-weight:600">${esc(m.name)}</div><div class="mopt-id">${esc(m.id.replace('aqua:',''))}${m.premium?' <span style="color:var(--criml);font-size:9px">★ Premium</span>':''}</div></div></div>`).join(''):'<div style="padding:10px;color:var(--tmut);font-size:11px">No Aqua models available. Add API key in Settings → Providers, then click Refresh Model List.</div>'}</div></div>`;
  }});
  },
  selModel(id,val,name){
