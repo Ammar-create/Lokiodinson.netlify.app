@@ -107,6 +107,7 @@ const Ctrl={
  await DB.put('scenarios',scenario);
  }
  Ctrl.dlog(`Applied: ${parsed.characterUpdates?.length||0} char updates, ${parsed.relationshipUpdates?.length||0} rel updates`,'ok');
+ // addCtrlMsg now accepts raw HTML — I() output is trusted SVG, text is safe (hardcoded)
  if(parsed.storySummary)Chat.addCtrlMsg(I('diamond',13)+' Narrative updated by Main Controller');
  Chat.renderCast();
  // Auto-trigger Scenario Controller if requested
@@ -134,9 +135,10 @@ const Ctrl={
  let parsed;
  try{parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());}
  catch{Ctrl.dlog('Scenario Controller: JSON parse failed','err');return null;}
- if(parsed.narration)Chat.addCtrlMsg(`${I('clapper',14)} ${parsed.narration}`);
- if(parsed.sceneChange){Ctrl.dlog(`Scene changed: ${parsed.sceneChange}`,'ok');Chat.addCtrlMsg(`${I('pin',14)} Scene: ${parsed.sceneChange}`);}
- if(parsed.surpriseEvent){Ctrl.dlog(`Surprise event: ${parsed.surpriseEvent}`,'ok');Chat.addCtrlMsg(`${I('zap',14)} Event: ${parsed.surpriseEvent}`);}
+ // addCtrlMsg now accepts raw HTML — esc() the AI-generated text, I() output is trusted SVG
+ if(parsed.narration)Chat.addCtrlMsg(`${I('clapper',14)} ${esc(parsed.narration)}`);
+ if(parsed.sceneChange){Ctrl.dlog(`Scene changed: ${parsed.sceneChange}`,'ok');Chat.addCtrlMsg(`${I('pin',14)} Scene: ${esc(parsed.sceneChange)}`);}
+ if(parsed.surpriseEvent){Ctrl.dlog(`Surprise event: ${parsed.surpriseEvent}`,'ok');Chat.addCtrlMsg(`${I('zap',14)} Event: ${esc(parsed.surpriseEvent)}`);}
  const unified = scenario?.unifiedMemory === true;
  if(parsed.characterEffects){
  for(const eff of parsed.characterEffects){

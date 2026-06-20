@@ -53,10 +53,12 @@ Object.assign(Chat,{
  }
  log.appendChild(el);
  },
- addCtrlMsg(text){
+ // NOTE: addCtrlMsg accepts TRUSTED HTML — callers must esc() any AI-generated text before passing it in.
+ // I() icon output (raw SVG) is trusted and should NOT be esc()'d by callers.
+ addCtrlMsg(html){
  const log=$('#chat-log');if(!log)return;
  const el=document.createElement('div');el.className='msg ctrl';
- el.innerHTML=`<div class="msg-hdr"><div class="msg-av" style="background:var(--s3);color:var(--tmut);font-size:10px">${I('gear',10)}</div><span class="msg-name" style="color:var(--tmut);font-size:10px">System</span></div><div class="msg-body">${esc(text)}</div>`;
+ el.innerHTML=`<div class="msg-hdr"><div class="msg-av" style="background:var(--s3);color:var(--tmut);font-size:10px">${I('gear',10)}</div><span class="msg-name" style="color:var(--tmut);font-size:10px">System</span></div><div class="msg-body">${html}</div>`;
  log.appendChild(el);Chat.scrollEnd();
  },
  scrollEnd(force){
