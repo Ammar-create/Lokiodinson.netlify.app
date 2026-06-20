@@ -75,7 +75,7 @@ Object.assign(Scr,{
  ${Scr._provModelInput('img',s.imgProvider||'aqua',s.imgModel||'zimage','e.g. zimage')}
  </div>
  <div class="sett-grp">
- <div class="sett-g Image</div>
+ <div class="sett-gt">Creative Controller Image</div>
  <p style="font-size:11px;color:var(--tmut)">Used for character profile picture generation. Falls back to Chat Image if not set.</p>
  ${Scr._provModelInput('crimg',s.creativeImgProvider||s.imgProvider||'aqua',s.creativeImgModel||s.imgModel||'zimage','e.g. flux-2')}
  </div>
@@ -184,7 +184,7 @@ Object.assign(Scr,{
  </div>
  <div class="sett-grp">
  <div class="sett-gt">Voice Demo</div>
- <div class="tgl-wrap" onclick="ST.settings.generateVoiceDemo=!ST.settings.generateVoiceDemo;$('#tweak-vd').classList.toggle('on',ST.settings.generateVoiceDemo);Scr.markSettingsDirty()"><div class="tgl ${s.generateVoiceDemo?'on':''}" id="tweak-vd"></div><span class="tgl-lbl">Generate voice demo text — Creative Controller creates a matching sample sentence for the voice description</span></div>
+ <div class="tgl-wrap" onclick="ST.settings.generateVoiceDemo=!ST.settings.generateVoiceDemo;$('#tweak-vd').classList.toggle('on',ST.settings.generateVoiceDemo);Scr.markSettingsDirty()"><div class="tgl ${s.generateVoiceDemo?'on':''}" id="tweak-vd"></div><span class="tgl-lbl">Generate voice demo text — Creative Controller creates a matching sample sentence</span></div>
  </div>
  <div class="sett-grp">
  <div class="sett-gt">Memory Management</div>
@@ -207,7 +207,7 @@ Object.assign(Scr,{
  },
  _themeHtml(){
  const cur=ST.settings.theme||'proscenium';
- return Scr._themes.map(t=>`<div class="th-card ${t.id===cur?'sel':''}" onclick="Scr._setTheme('${t.id}')" style="background:${t.bg};border:2px solid ${t.id===cur?t.ac:'var(--border)'};border-radius:var(--rxl);padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:10px;transition:all var(--t) var(--ease)" onmouseenter="this.style.borderColor='${t.ac}'" onmouseleave="this.style.borderColor='${t.id===cur?t.ac:"var(--border)"}'"><div style="display:flex;gap:6px"><div style="width:20px;height:20px;border-radius:50%;background:${t.bg};box-shadow:0 0 0 2px var(--border)"></div><div style="width:20px;height:20px;border-radius:50%;background:${t.ac}"></div><div style="width:20px;height:20px;border-radius:50%;background:${t.sc}"></div></div><div><div style="font-weight:700;font-size:13px;color:${t.ac};font-family:var(--fd);letter-spacing:.04em">${t.name}</div><div style="font-size:11px;color:var(--tmut);margin-top:2px">${t.desc}</div></div>${t.id===cur?'<div style="font-size:10px;color:${t.ac};font-weight:700;text-transform:uppercase;letter-spacing:.1em">Active</div>':''}</div>`).join('');
+ return Scr._themes.map(t=>`<div class="th-card ${t.id===cur?'sel':''}" onclick="Scr._setTheme('${t.id}')" style="background:${t.bg};border:2px solid ${t.id===cur?t.ac:'var(--border)'};border-radius:var(--rxl);padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:10px;transition:all var(--t) var(--ease)" onmouseenter="this.style.borderColor='${t.ac}'" onmouseleave="this.style.borderColor='${t.id===cur?t.ac:\"var(--border)\"}'"><div style="display:flex;gap:6px"><div style="width:20px;height:20px;border-radius:50%;background:${t.bg};box-shadow:0 0 0 2px var(--border)"></div><div style="width:20px;height:20px;border-radius:50%;background:${t.ac}"></div><div style="width:20px;height:20px;border-radius:50%;background:${t.sc}"></div></div><div><div style="font-weight:700;font-size:13px;color:${t.ac};font-family:var(--fd);letter-spacing:.04em">${t.name}</div><div style="font-size:11px;color:var(--tmut);margin-top:2px">${t.desc}</div></div>${t.id===cur?'<div style="font-size:10px;color:${t.ac};font-weight:700;text-transform:uppercase;letter-spacing:.1em">Active</div>':''}</div>`).join('');
  },
  _setTheme(id){ST.settings.theme=id;document.documentElement.setAttribute('data-theme',id);Scr.markSettingsDirty();Scr.settings();},
  _storageTab(){
