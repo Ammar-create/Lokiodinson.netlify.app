@@ -218,6 +218,7 @@ const SPAWN_MARGIN = 100;
 
 const colors = {
   neon: '#00f0ff',
+  neonBright: '#80ffff',
   neonDim: '#00a8b8',
   neonGlow: 'rgba(0,240,255,0.6)',
   warn: '#ff3366',
@@ -232,6 +233,12 @@ const colors = {
   particleWarn: '#ff3366',
   particleGold: '#ffd700',
   bgStar: 'rgba(255,255,255,0.4)',
+  dinoBody: '#1e1e3a',
+  dinoBodyDark: '#141428',
+  dinoBodyLight: '#2a2a4a',
+  dinoAccent: '#00ffff',
+  dinoEye: '#050508',
+  dinoMouth: '#ff3366',
 };
 
 const state = {
@@ -242,7 +249,6 @@ const state = {
   speed: BASE_SPEED,
   frame: 0,
   groundOffset: 0,
-  dino: null,
   obstacles: [],
   particles: [],
   stars: [],
@@ -275,10 +281,10 @@ function initGrid() {
     state.gridLines.push({ y, offset: 0, color: r % 2 === 0 ? colors.grid : colors.gridBright });
   }
 }
+initGrid();
 
 const dino = {
   x: 60,
-  y: GROUND_Y,
   w: 44,
   h: 48,
   duckedH: 28,
@@ -317,11 +323,26 @@ const dino = {
   setDuck(d) {
     if (this.grounded) this.ducking = d;
   },
+  reset() {
+    this.y = this.getY();
+    this.vy = 0;
+    this.grounded = true;
+    this.ducking = false;
+    this.invincible = 0;
+    this.trail = [];
+    this.boostParticles = 0;
+    this.animFrame = 0;
+    this.animTimer = 0;
+    this.runCycle = 0;
+    this.blinkTimer = 0;
+    this.eyeOpen = true;
+  },
   update(dt) {
     this.vy += GRAVITY;
     this.y += this.vy;
-    if (this.y >= this.getY()) {
-      this.y = this.getY();
+    const targetY = this.getY();
+    if (this.y >= targetY) {
+      this.y = targetY;
       this.vy = 0;
       this.grounded = true;
       if (this.boostParticles > 0) {
@@ -364,8 +385,9 @@ const dino = {
     const cx = this.x + this.w * 0.5;
     const cy = y + h * 0.5;
 
+    // Trail
     this.trail.forEach(t => {
-      const alpha = t.life * 0.4;
+      const alpha = t.life * 0.5;
       ctx.globalAlpha = alpha;
       const grad = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.size);
       grad.addColorStop(0, colors.neon);
@@ -377,100 +399,125 @@ const dino = {
     });
     ctx.globalAlpha = 1;
 
+    // Invincibility flash
     if (this.invincible > 0 && Math.floor(this.invincible / 50) % 2 === 0) {
-      ctx.globalAlpha = 0.5;
+      ctx.globalAlpha = 0.4;
     }
 
     ctx.save();
     ctx.translate(cx, cy);
 
     const bodyGrad = ctx.createLinearGradient(-this.w * 0.5, -h * 0.5, -this.w * 0.5, h * 0.5);
-    bodyGrad.addColorStop(0, '#1a1a2e');
-    bodyGrad.addColorStop(0.5, '#0f0f1a');
-    bodyGrad.addColorStop(1, '#1a1a2e');
+    bodyGrad.addColorStop(0, colors.dinoBodyLight);
+    bodyGrad.addColorStop(0.3, colors.dinoBody);
+    bodyGrad.addColorStop(0.7, colors.dinoBody);
+    bodyGrad.addColorStop(1, colors.dinoBodyDark);
 
     ctx.fillStyle = bodyGrad;
-    ctx.strokeStyle = colors.neon;
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = colors.dinoAccent;
+    ctx.lineWidth = 2.5;
     ctx.shadowColor = colors.neonGlow;
-    ctx.shadowBlur = 8;
+    ctx.shadowBlur = 10;
 
-    const legOffset = this.grounded && !this.ducking ? Math.sin(this.runCycle * Math.PI * 2) * 4 : 0;
+    const legOffset = this.grounded && !this.ducking ? Math.sin(this.runCycle * Math.PI * 2) * 5 : 0;
 
-    ctx.beginPath();
     if (!this.ducking) {
+      // Body
+      ctx.beginPath();
       ctx.roundRect(-this.w * 0.5, -h * 0.5, this.w, h, 8);
       ctx.fill();
       ctx.stroke();
 
-      ctx.fillStyle = colors.neon;
+      // Eye glow background
+      ctx.fillStyle = colors.neonBright;
       ctx.beginPath();
-      ctx.arc(this.w * 0.25, -h * 0.35, 5, 0, Math.PI * 2);
+      ctx.arc(this.w * 0.25, -h * 0.35, 6, 0, Math.PI * 2);
       ctx.fill();
 
+      // Eye
       if (this.eyeOpen) {
-        ctx.fillStyle = '#050508';
+        ctx.fillStyle = colors.dinoEye;
         ctx.beginPath();
-        ctx.arc(this.w * 0.28, -h * 0.35, 2, 0, Math.PI * 2);
+        ctx.arc(this.w * 0.28, -h * 0.35, 2.5, 0, Math.PI * 2);
         ctx.fill();
+        // Eye highlight
+        ctx.fillStyle = colors.neonBright;
+        ctx.globalAlpha = 0.6;
+        ctx.beginPath();
+        ctx.arc(this.w * 0.26, -h * 0.37, 1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
       } else {
-        ctx.strokeStyle = '#050508';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = colors.dinoEye;
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
         ctx.beginPath();
         ctx.moveTo(this.w * 0.2, -h * 0.35);
         ctx.lineTo(this.w * 0.36, -h * 0.35);
         ctx.stroke();
       }
 
-      ctx.fillStyle = colors.warn;
+      // Snout/nose
+      ctx.fillStyle = colors.dinoMouth;
       ctx.beginPath();
       ctx.moveTo(this.w * 0.5, -h * 0.1);
-      ctx.lineTo(this.w * 0.5 + 12, -h * 0.25);
-      ctx.lineTo(this.w * 0.5 + 8, -h * 0.05);
+      ctx.lineTo(this.w * 0.5 + 14, -h * 0.25);
+      ctx.lineTo(this.w * 0.5 + 10, -h * 0.05);
       ctx.closePath();
       ctx.fill();
 
-      ctx.fillStyle = colors.neon;
+      // Front legs
+      ctx.fillStyle = colors.neonBright;
       ctx.beginPath();
-      ctx.arc(-this.w * 0.3, h * 0.1 + legOffset, 4, 0, Math.PI * 2);
+      ctx.arc(-this.w * 0.3, h * 0.15 + legOffset, 5, 0, Math.PI * 2);
       ctx.fill();
       ctx.beginPath();
-      ctx.arc(this.w * 0.1, h * 0.1 - legOffset, 4, 0, Math.PI * 2);
+      ctx.arc(this.w * 0.1, h * 0.15 - legOffset, 5, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.strokeStyle = colors.neon;
-      ctx.lineWidth = 3;
+      // Back spines
+      ctx.strokeStyle = colors.neonBright;
+      ctx.lineWidth = 3.5;
       ctx.lineCap = 'round';
+      ctx.shadowColor = colors.neonGlow;
+      ctx.shadowBlur = 8;
       ctx.beginPath();
       ctx.moveTo(-this.w * 0.45, -h * 0.45);
-      ctx.lineTo(-this.w * 0.45 - 10, -h * 0.45 - 8);
+      ctx.lineTo(-this.w * 0.45 - 12, -h * 0.45 - 10);
       ctx.moveTo(-this.w * 0.45, -h * 0.25);
-      ctx.lineTo(-this.w * 0.45 - 12, -h * 0.25 - 5);
+      ctx.lineTo(-this.w * 0.45 - 14, -h * 0.25 - 6);
+      ctx.moveTo(-this.w * 0.45, -h * 0.05);
+      ctx.lineTo(-this.w * 0.45 - 10, -h * 0.05 - 4);
       ctx.stroke();
 
+      // Top spikes
       for (let i = 0; i < 3; i++) {
         const spikeX = -this.w * 0.2 + i * 8;
-        ctx.fillStyle = colors.neon;
+        ctx.fillStyle = colors.neonBright;
+        ctx.shadowBlur = 6;
         ctx.beginPath();
         ctx.moveTo(spikeX, -h * 0.5);
-        ctx.lineTo(spikeX + 4, -h * 0.5 - 10);
+        ctx.lineTo(spikeX + 4, -h * 0.5 - 12);
         ctx.lineTo(spikeX + 8, -h * 0.5);
         ctx.closePath();
         ctx.fill();
       }
     } else {
+      // Ducked body
+      ctx.beginPath();
       ctx.roundRect(-this.w * 0.5, -h * 0.5, this.w, h, 6);
       ctx.fill();
       ctx.stroke();
 
-      ctx.fillStyle = colors.neon;
+      // Eye
+      ctx.fillStyle = colors.neonBright;
       ctx.beginPath();
-      ctx.arc(this.w * 0.2, -h * 0.2, 4, 0, Math.PI * 2);
+      ctx.arc(this.w * 0.2, -h * 0.2, 5, 0, Math.PI * 2);
       ctx.fill();
       if (this.eyeOpen) {
-        ctx.fillStyle = '#050508';
+        ctx.fillStyle = colors.dinoEye;
         ctx.beginPath();
-        ctx.arc(this.w * 0.23, -h * 0.2, 1.5, 0, Math.PI * 2);
+        ctx.arc(this.w * 0.23, -h * 0.2, 2, 0, Math.PI * 2);
         ctx.fill();
       }
     }
@@ -481,15 +528,18 @@ const dino = {
   },
 };
 
+// Initialize dino position correctly
+dino.y = dino.getY();
+
 function spawnJumpParticles() {
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 15; i++) {
     state.particles.push({
       x: dino.x + dino.w * 0.5,
       y: dino.y + dino.h * 0.5,
-      vx: (Math.random() - 0.5) * 6,
-      vy: Math.random() * -4 - 2,
+      vx: (Math.random() - 0.5) * 8,
+      vy: Math.random() * -5 - 2,
       life: 1,
-      size: 3 + Math.random() * 3,
+      size: 3 + Math.random() * 4,
       color: Math.random() > 0.5 ? colors.neon : colors.gold,
       gravity: 0.15,
     });
@@ -497,51 +547,51 @@ function spawnJumpParticles() {
 }
 
 function spawnLandingParticles() {
-  for (let i = 0; i < 18; i++) {
+  for (let i = 0; i < 22; i++) {
     const angle = Math.random() * Math.PI * 2;
-    const speed = 3 + Math.random() * 5;
+    const speed = 4 + Math.random() * 6;
     state.particles.push({
       x: dino.x + dino.w * 0.5,
       y: GROUND_Y,
       vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed * 0.5 - 2,
+      vy: Math.sin(angle) * speed * 0.5 - 3,
       life: 1,
-      size: 4 + Math.random() * 3,
-      color: colors.neon,
+      size: 4 + Math.random() * 4,
+      color: colors.neonBright,
       gravity: 0.25,
       ground: true,
     });
   }
-  state.screenShake = 8;
+  state.screenShake = 10;
 }
 
 function spawnHitParticles(obstacle) {
-  for (let i = 0; i < 25; i++) {
+  for (let i = 0; i < 30; i++) {
     const angle = Math.random() * Math.PI * 2;
-    const speed = 4 + Math.random() * 8;
+    const speed = 5 + Math.random() * 10;
     state.particles.push({
       x: obstacle.x + obstacle.w * 0.5,
       y: obstacle.y + obstacle.h * 0.5,
       vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 3,
+      vy: Math.sin(angle) * speed - 4,
       life: 1,
-      size: 3 + Math.random() * 4,
+      size: 3 + Math.random() * 5,
       color: colors.warn,
       gravity: 0.2,
     });
   }
-  state.screenShake = 15;
-  state.flashAlpha = 0.6;
+  state.screenShake = 18;
+  state.flashAlpha = 0.7;
 }
 
 function spawnScoreParticles(x, y) {
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 12; i++) {
     state.particles.push({
       x, y,
-      vx: (Math.random() - 0.5) * 3,
-      vy: -2 - Math.random() * 3,
+      vx: (Math.random() - 0.5) * 4,
+      vy: -3 - Math.random() * 4,
       life: 1,
-      size: 2 + Math.random() * 2,
+      size: 2 + Math.random() * 3,
       color: colors.gold,
       gravity: 0.05,
     });
@@ -569,7 +619,6 @@ class Obstacle {
       this.color = colors.neon;
       this.glow = colors.neonGlow;
       this.wingPhase = 0;
-      this.wingDir = 1;
     } else if (type === 'barrier') {
       this.w = 24;
       this.h = 80;
@@ -605,26 +654,26 @@ class Obstacle {
   draw(ctx) {
     ctx.save();
     ctx.shadowColor = this.glow;
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = 14;
 
     if (this.type === 'cactus') {
       const bodyGrad = ctx.createLinearGradient(this.x, this.y, this.x + this.w, this.y + this.h);
-      bodyGrad.addColorStop(0, '#2a0a0a');
+      bodyGrad.addColorStop(0, '#3a0a0a');
       bodyGrad.addColorStop(1, '#1a0505');
       ctx.fillStyle = bodyGrad;
       ctx.strokeStyle = this.color;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.5;
 
       if (this.variant === 0) {
         ctx.roundRect(this.x, this.y, this.w, this.h, 4);
         ctx.fill(); ctx.stroke();
         ctx.beginPath();
         ctx.moveTo(this.x + this.w * 0.3, this.y + this.h * 0.2);
-        ctx.lineTo(this.x - 8, this.y + this.h * 0.4);
+        ctx.lineTo(this.x - 10, this.y + this.h * 0.4);
         ctx.stroke();
         ctx.beginPath();
         ctx.moveTo(this.x + this.w * 0.7, this.y + this.h * 0.6);
-        ctx.lineTo(this.x + this.w + 8, this.y + this.h * 0.7);
+        ctx.lineTo(this.x + this.w + 10, this.y + this.h * 0.7);
         ctx.stroke();
       } else if (this.variant === 1) {
         ctx.roundRect(this.x, this.y, this.w * 0.5, this.h, 4);
@@ -643,63 +692,72 @@ class Obstacle {
       for (let i = 0; i < 3; i++) {
         const spikeX = this.x + (i + 0.5) * (this.w / 3);
         ctx.fillStyle = this.color;
+        ctx.shadowBlur = 8;
         ctx.beginPath();
-        ctx.moveTo(spikeX - 3, this.y + this.h * 0.1);
-        ctx.lineTo(spikeX, this.y - 4);
-        ctx.lineTo(spikeX + 3, this.y + this.h * 0.1);
+        ctx.moveTo(spikeX - 4, this.y + this.h * 0.1);
+        ctx.lineTo(spikeX, this.y - 6);
+        ctx.lineTo(spikeX + 4, this.y + this.h * 0.1);
         ctx.closePath();
         ctx.fill();
       }
     } else if (this.type === 'bird') {
-      const wingOffset = Math.sin(this.wingPhase * 4) * 8;
+      const wingOffset = Math.sin(this.wingPhase * 4) * 10;
       const bodyGrad = ctx.createLinearGradient(this.x, this.y, this.x + this.w, this.y);
-      bodyGrad.addColorStop(0, '#0a1a2a');
-      bodyGrad.addColorStop(1, '#05101a');
+      bodyGrad.addColorStop(0, '#0a2a3a');
+      bodyGrad.addColorStop(1, '#051520');
       ctx.fillStyle = bodyGrad;
-      ctx.strokeStyle = this.color;
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = colors.neonBright;
+      ctx.lineWidth = 2.5;
 
+      // Body
       ctx.beginPath();
       ctx.ellipse(this.x + this.w * 0.6, this.y + this.h * 0.5, this.w * 0.35, this.h * 0.4, 0, 0, Math.PI * 2);
       ctx.fill(); ctx.stroke();
 
+      // Head
       ctx.beginPath();
       ctx.ellipse(this.x + this.w * 0.2, this.y + this.h * 0.45, this.w * 0.18, this.h * 0.18, 0, 0, Math.PI * 2);
       ctx.fill(); ctx.stroke();
 
-      ctx.fillStyle = this.color;
+      // Eye glow
+      ctx.fillStyle = colors.neonBright;
       ctx.beginPath();
-      ctx.arc(this.x + this.w * 0.3, this.y + this.h * 0.38, 3, 0, Math.PI * 2);
+      ctx.arc(this.x + this.w * 0.3, this.y + this.h * 0.38, 4, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#050508';
+      ctx.fillStyle = colors.dinoEye;
       ctx.beginPath();
       ctx.arc(this.x + this.w * 0.31, this.y + this.h * 0.38, 1.5, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = this.color;
+      // Beak
+      ctx.fillStyle = colors.neonBright;
       ctx.beginPath();
       ctx.moveTo(this.x + this.w * 0.75, this.y + this.h * 0.5);
-      ctx.lineTo(this.x + this.w * 0.75 + 10, this.y + this.h * 0.4);
-      ctx.lineTo(this.x + this.w * 0.75 + 6, this.y + this.h * 0.55);
+      ctx.lineTo(this.x + this.w * 0.75 + 12, this.y + this.h * 0.4);
+      ctx.lineTo(this.x + this.w * 0.75 + 8, this.y + this.h * 0.55);
       ctx.closePath();
       ctx.fill();
 
-      ctx.strokeStyle = this.color;
-      ctx.lineWidth = 3;
+      // Wings
+      ctx.strokeStyle = colors.neonBright;
+      ctx.lineWidth = 3.5;
       ctx.lineCap = 'round';
+      ctx.shadowColor = colors.neonGlow;
+      ctx.shadowBlur = 10;
       ctx.beginPath();
       ctx.moveTo(this.x + this.w * 0.3, this.y + this.h * 0.55);
-      ctx.lineTo(this.x + this.w * 0.3 - 15, this.y + this.h * 0.55 + wingOffset);
+      ctx.lineTo(this.x + this.w * 0.3 - 18, this.y + this.h * 0.55 + wingOffset);
       ctx.moveTo(this.x + this.w * 0.3, this.y + this.h * 0.45);
-      ctx.lineTo(this.x + this.w * 0.3 - 15, this.y + this.h * 0.45 - wingOffset);
+      ctx.lineTo(this.x + this.w * 0.3 - 18, this.y + this.h * 0.45 - wingOffset);
       ctx.stroke();
 
+      // Engine glow
       for (let i = 0; i < 3; i++) {
         const glowX = this.x + this.w * 0.1 + i * 8;
-        ctx.fillStyle = this.color;
-        ctx.globalAlpha = 0.3 + Math.sin(this.animPhase + i) * 0.2;
+        ctx.fillStyle = colors.neonBright;
+        ctx.globalAlpha = 0.4 + Math.sin(this.animPhase + i) * 0.3;
         ctx.beginPath();
-        ctx.arc(glowX, this.y + this.h * 0.5, 3, 0, Math.PI * 2);
+        ctx.arc(glowX, this.y + this.h * 0.5, 4, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
@@ -707,15 +765,15 @@ class Obstacle {
       const pulse = Math.sin(this.pulsePhase * 3) * 0.3 + 0.7;
       const grad = ctx.createLinearGradient(this.x, this.y, this.x + this.w, this.y);
       grad.addColorStop(0, 'transparent');
-      grad.addColorStop(0.5, this.color);
+      grad.addColorStop(0.5, colors.neonBright);
       grad.addColorStop(1, 'transparent');
       ctx.fillStyle = grad;
       ctx.globalAlpha = pulse;
       ctx.fillRect(this.x, this.y, this.w, this.h);
       ctx.globalAlpha = 1;
 
-      ctx.strokeStyle = this.color;
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = colors.neonBright;
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.moveTo(this.x, this.y);
       ctx.lineTo(this.x + this.w, this.y);
@@ -725,10 +783,10 @@ class Obstacle {
 
       for (let i = 0; i < 4; i++) {
         const lineY = this.y + (i + 1) * (this.h / 5);
-        ctx.globalAlpha = 0.4 + Math.sin(this.pulsePhase * 2 + i) * 0.3;
+        ctx.globalAlpha = 0.5 + Math.sin(this.pulsePhase * 2 + i) * 0.3;
         ctx.beginPath();
-        ctx.moveTo(this.x - 5, lineY);
-        ctx.lineTo(this.x + this.w + 5, lineY);
+        ctx.moveTo(this.x - 8, lineY);
+        ctx.lineTo(this.x + this.w + 8, lineY);
         ctx.stroke();
       }
       ctx.globalAlpha = 1;
@@ -760,7 +818,7 @@ function spawnObstacle() {
 }
 
 function checkCollision() {
-  if (dino.invincible > 0) return false;
+  if (dino.invincible > 0) return null;
   const dh = dino.getHitbox();
   for (const obs of state.obstacles) {
     const oh = obs.getHitbox();
@@ -829,14 +887,15 @@ function updateGrid(dt) {
 
 function drawBackground() {
   const grad = ctx.createLinearGradient(0, 0, 0, CSS_H);
-  grad.addColorStop(0, '#06060a');
-  grad.addColorStop(0.4, '#0a0a12');
-  grad.addColorStop(1, '#0d0d14');
+  grad.addColorStop(0, '#050508');
+  grad.addColorStop(0.4, '#080810');
+  grad.addColorStop(1, '#0c0c14');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, CSS_W, CSS_H);
 
+  // Stars
   for (const s of state.stars) {
-    ctx.globalAlpha = s.alpha * 0.6;
+    ctx.globalAlpha = s.alpha * 0.5;
     ctx.fillStyle = colors.bgStar;
     ctx.beginPath();
     ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
@@ -844,10 +903,11 @@ function drawBackground() {
   }
   ctx.globalAlpha = 1;
 
+  // Perspective grid
   ctx.strokeStyle = colors.grid;
   ctx.lineWidth = 1;
   for (const line of state.gridLines) {
-    ctx.globalAlpha = 0.4;
+    ctx.globalAlpha = 0.35;
     ctx.beginPath();
     for (let x = line.offset; x < CSS_W + 40; x += 40) {
       ctx.moveTo(x, line.y);
@@ -863,24 +923,26 @@ function drawBackground() {
   }
   ctx.globalAlpha = 1;
 
+  // Ground
   ctx.fillStyle = colors.ground;
   ctx.fillRect(0, GROUND_Y, CSS_W, CSS_H - GROUND_Y);
 
+  // Ground line
   ctx.strokeStyle = colors.groundLine;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2.5;
   ctx.shadowColor = colors.neonGlow;
-  ctx.shadowBlur = 6;
+  ctx.shadowBlur = 8;
   ctx.beginPath();
   ctx.moveTo(0, GROUND_Y);
   ctx.lineTo(CSS_W, GROUND_Y);
   ctx.stroke();
   ctx.shadowBlur = 0;
 
-  ctx.strokeStyle = 'rgba(0,240,255,0.15)';
+  // Ground dash
+  ctx.strokeStyle = 'rgba(0,240,255,0.12)';
   ctx.lineWidth = 1;
-  const dashOffset = state.groundOffset;
   ctx.setLineDash([20, 20]);
-  ctx.lineDashOffset = dashOffset;
+  ctx.lineDashOffset = state.groundOffset;
   ctx.beginPath();
   ctx.moveTo(0, GROUND_Y + 8);
   ctx.lineTo(CSS_W, GROUND_Y + 8);
@@ -907,14 +969,14 @@ function drawUI() {
     const intensity = state.screenShake;
     ctx.save();
     ctx.translate((Math.random() - 0.5) * intensity, (Math.random() - 0.5) * intensity);
-    state.screenShake *= 0.9;
+    state.screenShake *= 0.88;
     if (state.screenShake < 0.5) state.screenShake = 0;
   }
 
   if (state.flashAlpha > 0) {
     ctx.fillStyle = `rgba(255,51,102,${state.flashAlpha})`;
     ctx.fillRect(0, 0, CSS_W, CSS_H);
-    state.flashAlpha *= 0.85;
+    state.flashAlpha *= 0.82;
     if (state.flashAlpha < 0.01) state.flashAlpha = 0;
   }
 
@@ -995,16 +1057,7 @@ function startGame() {
   state.particles = [];
   state.screenShake = 0;
   state.flashAlpha = 0;
-  dino.y = GROUND_Y;
-  dino.vy = 0;
-  dino.grounded = true;
-  dino.ducking = false;
-  dino.invincible = 0;
-  dino.trail = [];
-  dino.boostParticles = 0;
-  dino.animFrame = 0;
-  dino.animTimer = 0;
-  dino.runCycle = 0;
+  dino.reset();
   scoreEl.textContent = '00000';
   startOverlay.classList.remove('visible');
   gameoverOverlay.classList.remove('visible');
