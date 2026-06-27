@@ -261,36 +261,6 @@ const touchJump = $('touch-jump'), touchDuck = $('touch-duck');
 let hiScore = parseInt(localStorage.getItem('neon_runner_hiscore') || '0', 10);
 hiScoreEl.textContent = String(hiScore).padStart(5, '0');
 
-// --- Responsive canvas sizing ---
-function resizeCanvas() {
-  const rect = wrapper.getBoundingClientRect();
-  const maxW = rect.width;
-  const maxH = rect.height;
-  let drawW, drawH;
-  if (maxW / maxH > ASPECT) {
-    drawH = maxH;
-    drawW = drawH * ASPECT;
-  } else {
-    drawW = maxW;
-    drawH = drawW / ASPECT;
-  }
-  const DPR = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width = Math.floor(drawW * DPR);
-  canvas.height = Math.floor(drawH * DPR);
-  canvas.style.width = drawW + 'px';
-  canvas.style.height = drawH + 'px';
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  // Scale logical coordinates to CSS pixels
-  state.scaleX = drawW / CSS_W;
-  state.scaleY = drawH / CSS_H;
-}
-let resizeTO;
-window.addEventListener('resize', () => {
-  clearTimeout(resizeTO);
-  resizeTO = setTimeout(resizeCanvas, 50);
-});
-resizeCanvas();
-
 // --- Game constants (logical coordinates) ---
 const GRAVITY = 0.65;
 const JUMP_VELOCITY = -14.5;
@@ -327,6 +297,7 @@ const colors = {
   dinoMouth: '#ff3366',
 };
 
+// --- State (initialized BEFORE resizeCanvas) ---
 const state = {
   running: false,
   paused: false,
@@ -372,6 +343,36 @@ function initGrid() {
   }
 }
 initGrid();
+
+// --- Responsive canvas sizing ---
+function resizeCanvas() {
+  const rect = wrapper.getBoundingClientRect();
+  const maxW = rect.width;
+  const maxH = rect.height;
+  let drawW, drawH;
+  if (maxW / maxH > ASPECT) {
+    drawH = maxH;
+    drawW = drawH * ASPECT;
+  } else {
+    drawW = maxW;
+    drawH = drawW / ASPECT;
+  }
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.floor(drawW * DPR);
+  canvas.height = Math.floor(drawH * DPR);
+  canvas.style.width = drawW + 'px';
+  canvas.style.height = drawH + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  // Scale logical coordinates to CSS pixels
+  state.scaleX = drawW / CSS_W;
+  state.scaleY = drawH / CSS_H;
+}
+let resizeTO;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTO);
+  resizeTO = setTimeout(resizeCanvas, 50);
+});
+resizeCanvas(); // Now safe - state exists
 
 const dino = {
   x: 60,
