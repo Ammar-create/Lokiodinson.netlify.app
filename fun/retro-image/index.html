@@ -1,0 +1,2051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#1a0b2e" />
+<title>RETRO//IMAGE — AquaDevs Generator</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  /* =========================================================
+     RETRO//IMAGE  —  Synthwave / CRT / Arcade aesthetic
+     Built for Lenovo Tab M9 (1340x800) primary
+     ========================================================= */
+
+  :root{
+    /* core synthwave palette */
+    --bg-0: #0a0418;
+    --bg-1: #14082b;
+    --bg-2: #1d0f3d;
+    --bg-3: #2a1654;
+    --panel: #160a32;
+    --panel-2: #1f0e44;
+    --line: #3a1f6b;
+
+    --ink: #f8e9ff;
+    --ink-dim: #c4a8e8;
+    --ink-faint: #7b5fa3;
+
+    --magenta: #ff2e93;
+    --magenta-glow: #ff5cb0;
+    --cyan: #00f0ff;
+    --cyan-glow: #6dfaff;
+    --orange: #ff8a3d;
+    --yellow: #ffd23f;
+    --green: #3dff8a;
+    --red: #ff3d5a;
+
+    --shadow-hard: 4px 4px 0 0 #000;
+    --shadow-mag:  4px 4px 0 0 var(--magenta);
+    --shadow-cyan: 4px 4px 0 0 var(--cyan);
+
+    --font-display: 'Press Start 2P', monospace;
+    --font-pixel: 'VT323', monospace;
+    --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+
+    --radius: 2px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+  html,body{
+    height:100%;
+    background: var(--bg-0);
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* ---------- CRT background atmosphere ---------- */
+  body{
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(255,46,147,0.18), transparent 50%),
+      radial-gradient(ellipse at 100% 100%, rgba(0,240,255,0.14), transparent 55%),
+      linear-gradient(180deg, #0a0418 0%, #14082b 100%);
+    background-attachment: fixed;
+    min-height: 100dvh;
+  }
+
+  /* scanlines overlay */
+  body::before{
+    content:'';
+    position: fixed;
+    inset:0;
+    pointer-events:none;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.18) 0px,
+      rgba(0,0,0,0.18) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    z-index: 9998;
+    mix-blend-mode: multiply;
+  }
+
+  /* grain */
+  body::after{
+    content:'';
+    position: fixed;
+    inset:0;
+    pointer-events:none;
+    z-index: 9997;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  /* ---------- App shell ---------- */
+  .app{
+    min-height: 100dvh;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ===== HEADER ===== */
+  .topbar{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 2px solid var(--line);
+    background: linear-gradient(180deg, rgba(20,8,43,0.95), rgba(20,8,43,0.7));
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .brand{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brand-mark{
+    width: 38px; height: 38px;
+    display: grid; place-items: center;
+    background: var(--magenta);
+    border: 2px solid #000;
+    box-shadow: var(--shadow-cyan);
+    transform: rotate(-2deg);
+  }
+
+  .brand-title{
+    font-family: var(--font-display);
+    font-size: 14px;
+    letter-spacing: 1px;
+    color: var(--ink);
+    text-shadow: 2px 2px 0 var(--magenta), 4px 4px 0 var(--cyan);
+    line-height: 1.4;
+  }
+  .brand-title small{
+    display:block;
+    font-family: var(--font-pixel);
+    font-size: 16px;
+    color: var(--cyan);
+    text-shadow: none;
+    letter-spacing: 2px;
+    margin-top: 2px;
+  }
+
+  .topbar-actions{ display:flex; gap: 10px; }
+
+  .icon-btn{
+    width: 44px; height: 44px;
+    display: grid; place-items: center;
+    background: var(--panel);
+    border: 2px solid var(--line);
+    color: var(--cyan);
+    cursor: pointer;
+    transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s;
+  }
+  .icon-btn:hover{ background: var(--panel-2); border-color: var(--cyan); }
+  .icon-btn:active{ transform: translate(2px,2px); }
+  .icon-btn svg{ width: 22px; height: 22px; }
+
+  /* ===== Main layout — two column on tablet/desktop ===== */
+  .main{
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 0;
+    min-height: 0;
+  }
+  @media (max-width: 900px){
+    .main{ grid-template-columns: 1fr; }
+  }
+
+  /* ===== Left control panel ===== */
+  .controls{
+    background: linear-gradient(180deg, var(--panel) 0%, var(--bg-1) 100%);
+    border-right: 2px solid var(--line);
+    padding: 22px 20px 120px;
+    overflow-y: auto;
+    max-height: calc(100dvh - 70px);
+  }
+  @media (max-width: 900px){
+    .controls{ max-height: none; border-right: none; border-bottom: 2px solid var(--line);}
+  }
+
+  .panel-section{
+    margin-bottom: 22px;
+  }
+
+  .label{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--font-display);
+    font-size: 9px;
+    color: var(--cyan);
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+  .label .hint{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  /* textarea */
+  .textbox{
+    width: 100%;
+    background: #07021a;
+    color: var(--ink);
+    border: 2px solid var(--line);
+    padding: 12px 14px;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.55;
+    resize: vertical;
+    min-height: 110px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    caret-color: var(--magenta);
+  }
+  .textbox:focus{
+    border-color: var(--magenta);
+    box-shadow: 0 0 0 1px var(--magenta), 0 0 14px rgba(255,46,147,0.4);
+  }
+  .textbox::placeholder{ color: var(--ink-faint); font-style: italic;}
+
+  .text-input{
+    width: 100%;
+    background: #07021a;
+    color: var(--ink);
+    border: 2px solid var(--line);
+    padding: 10px 12px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .text-input:focus{
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 1px var(--cyan), 0 0 12px rgba(0,240,255,0.3);
+  }
+
+  /* collapsible negative prompt */
+  .collapse-head{
+    display:flex; align-items:center; justify-content:space-between;
+    cursor: pointer;
+    padding: 8px 10px;
+    background: var(--panel-2);
+    border: 2px solid var(--line);
+    font-family: var(--font-display);
+    font-size: 9px;
+    color: var(--ink-dim);
+    letter-spacing: 1.5px;
+    transition: border-color 0.15s;
+  }
+  .collapse-head:hover{ border-color: var(--cyan); color: var(--cyan); }
+  .collapse-head .chev{ transition: transform 0.2s; }
+  .collapse[open] .collapse-head .chev{ transform: rotate(180deg); }
+  .collapse-body{ padding-top: 8px; }
+
+  /* ===== Custom dropdown ===== */
+  .dropdown{ position: relative; }
+  .dd-trigger{
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: #07021a;
+    color: var(--ink);
+    border: 2px solid var(--line);
+    padding: 11px 14px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    text-align: left;
+  }
+  .dd-trigger:hover{ border-color: var(--magenta); }
+  .dd-trigger.open{
+    border-color: var(--magenta);
+    box-shadow: 0 0 0 1px var(--magenta), 0 0 12px rgba(255,46,147,0.35);
+  }
+  .dd-trigger .dd-value{
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .dd-trigger .dd-value small{
+    display:block;
+    color: var(--ink-faint);
+    font-size: 11px;
+    margin-top: 2px;
+  }
+  .dd-trigger svg{ width: 14px; height: 14px; color: var(--cyan); flex-shrink: 0;}
+
+  .dd-menu{
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0; right: 0;
+    background: #0c0524;
+    border: 2px solid var(--magenta);
+    box-shadow: 4px 4px 0 0 #000;
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 100;
+    display: none;
+  }
+  .dd-menu.open{ display: block; animation: ddIn 0.15s ease-out; }
+  @keyframes ddIn{
+    from{ opacity: 0; transform: translateY(-4px);}
+    to{ opacity: 1; transform: translateY(0);}
+  }
+  .dd-item{
+    padding: 10px 14px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    border-bottom: 1px solid var(--line);
+    transition: background 0.1s, color 0.1s;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .dd-item:last-child{ border-bottom: none;}
+  .dd-item:hover{ background: var(--magenta); color: #000; }
+  .dd-item:hover small{ color: #000; }
+  .dd-item small{ color: var(--ink-faint); font-size: 11px;}
+  .dd-item.active{ background: var(--panel-2); color: var(--cyan);}
+  .dd-item.active::before{ content: '> '; color: var(--magenta); }
+
+  /* ===== Aspect ratio picker ===== */
+  .ratio-grid{
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .ratio-btn{
+    background: #07021a;
+    border: 2px solid var(--line);
+    padding: 10px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.12s;
+    color: var(--ink-dim);
+    font-family: var(--font-display);
+    font-size: 7px;
+    letter-spacing: 1px;
+    min-height: 64px;
+  }
+  .ratio-btn:hover{ border-color: var(--cyan); color: var(--cyan);}
+  .ratio-btn.active{
+    border-color: var(--magenta);
+    background: rgba(255,46,147,0.15);
+    color: var(--magenta);
+    box-shadow: inset 0 0 0 1px var(--magenta);
+  }
+  .ratio-btn .shape{
+    background: currentColor;
+    display:block;
+    border-radius: 1px;
+  }
+
+  /* custom ratio inputs */
+  .custom-ratio{
+    display: none;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 6px;
+    align-items: center;
+    margin-top: 10px;
+  }
+  .custom-ratio.show{ display: grid; }
+  .custom-ratio input{
+    background: #07021a;
+    border: 2px solid var(--line);
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 8px;
+    text-align: center;
+    outline: none;
+  }
+  .custom-ratio input:focus{ border-color: var(--magenta);}
+  .custom-ratio .sep{
+    font-family: var(--font-display);
+    font-size: 14px;
+    color: var(--magenta);
+  }
+
+  /* ===== Batch count ===== */
+  .batch-grid{
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .batch-btn{
+    background: #07021a;
+    border: 2px solid var(--line);
+    color: var(--ink-dim);
+    padding: 12px 0;
+    font-family: var(--font-display);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .batch-btn:hover{ border-color: var(--cyan); color: var(--cyan);}
+  .batch-btn.active{
+    background: var(--cyan);
+    color: #000;
+    border-color: var(--cyan);
+    box-shadow: 0 0 12px rgba(0,240,255,0.5);
+  }
+
+  /* ===== Generate button ===== */
+  .generate-wrap{
+    margin-top: 28px;
+    padding-top: 18px;
+    border-top: 2px dashed var(--line);
+  }
+  .generate-btn{
+    width: 100%;
+    background: var(--magenta);
+    color: #fff;
+    border: 3px solid #000;
+    padding: 18px;
+    font-family: var(--font-display);
+    font-size: 13px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    box-shadow: 5px 5px 0 0 var(--cyan), 5px 5px 0 2px #000;
+    transition: transform 0.08s, box-shadow 0.08s;
+    position: relative;
+    overflow: hidden;
+  }
+  .generate-btn:hover{ background: var(--magenta-glow);}
+  .generate-btn:active{
+    transform: translate(5px, 5px);
+    box-shadow: 0 0 0 0 var(--cyan), 0 0 0 2px #000;
+  }
+  .generate-btn:disabled{
+    background: var(--bg-3);
+    color: var(--ink-faint);
+    cursor: not-allowed;
+    box-shadow: 5px 5px 0 0 var(--line), 5px 5px 0 2px #000;
+  }
+  .generate-btn::before{
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.6s;
+  }
+  .generate-btn:hover::before{ left: 100%;}
+
+  /* ===== Right gallery panel ===== */
+  .gallery-wrap{
+    padding: 22px 22px 80px;
+    overflow-y: auto;
+    max-height: calc(100dvh - 70px);
+  }
+  @media (max-width: 900px){
+    .gallery-wrap{ max-height: none;}
+  }
+
+  .gallery-head{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 18px;
+  }
+  .gallery-title{
+    font-family: var(--font-display);
+    font-size: 12px;
+    color: var(--ink);
+    letter-spacing: 1.5px;
+    text-shadow: 2px 2px 0 var(--magenta);
+  }
+  .gallery-count{
+    font-family: var(--font-pixel);
+    font-size: 20px;
+    color: var(--cyan);
+    letter-spacing: 1px;
+  }
+
+  .gallery{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  @media (min-width: 1200px){
+    .gallery{ grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  }
+
+  .gal-empty{
+    grid-column: 1/-1;
+    text-align: center;
+    padding: 70px 20px;
+    color: var(--ink-faint);
+    font-family: var(--font-pixel);
+    font-size: 22px;
+    letter-spacing: 2px;
+    border: 2px dashed var(--line);
+  }
+  .gal-empty .big{
+    display:block;
+    font-family: var(--font-display);
+    font-size: 14px;
+    color: var(--magenta);
+    margin-bottom: 14px;
+    letter-spacing: 2px;
+  }
+
+  /* tile */
+  .tile{
+    position: relative;
+    background: #07021a;
+    border: 2px solid var(--line);
+    aspect-ratio: 1/1;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  }
+  .tile:hover{
+    border-color: var(--magenta);
+    transform: translateY(-2px);
+    box-shadow: 3px 3px 0 0 var(--cyan);
+  }
+  .tile.loading{
+    border-color: var(--cyan);
+    background:
+      linear-gradient(135deg, #1a0b3e 0%, #2a1654 50%, #1a0b3e 100%);
+  }
+  .tile.error{ border-color: var(--red);}
+  .tile img{
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* loading animation */
+  .tile-loader{
+    position: absolute; inset: 0;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+  }
+  .tile-loader::before{
+    content:'';
+    position:absolute;
+    inset: 0;
+    background: linear-gradient(180deg,
+      transparent 0%,
+      rgba(0,240,255,0.5) 50%,
+      transparent 100%);
+    height: 8px;
+    animation: scan 1.8s linear infinite;
+  }
+  @keyframes scan{
+    0%{ transform: translateY(-20px);}
+    100%{ transform: translateY(280px);}
+  }
+  .tile-loader-text{
+    position: relative;
+    z-index: 2;
+    font-family: var(--font-display);
+    font-size: 10px;
+    color: var(--cyan);
+    letter-spacing: 2px;
+    text-shadow: 0 0 8px var(--cyan);
+    animation: glitch 1.8s infinite;
+  }
+  @keyframes glitch{
+    0%,90%,100%{ transform: translate(0); opacity: 1; }
+    92%{ transform: translate(-2px, 1px); opacity: 0.8;}
+    94%{ transform: translate(2px, -1px); opacity: 1;}
+    96%{ transform: translate(-1px, 0); opacity: 0.9;}
+  }
+  .tile-loader-dots{
+    position: absolute;
+    bottom: 14px; left: 50%; transform: translateX(-50%);
+    font-family: var(--font-pixel);
+    font-size: 18px;
+    color: var(--magenta);
+    letter-spacing: 4px;
+  }
+
+  /* tile overlay info */
+  .tile-meta{
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 8px 10px;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.85));
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .tile:hover .tile-meta{ opacity: 1;}
+  .tile-meta .m-model{
+    font-family: var(--font-display);
+    font-size: 7px;
+    color: var(--cyan);
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+  }
+  .tile-meta .m-prompt{
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .tile-error{
+    position: absolute; inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 10px;
+    padding: 14px;
+    text-align: center;
+  }
+  .tile-error-text{
+    font-family: var(--font-display);
+    font-size: 10px;
+    color: var(--red);
+    letter-spacing: 1.5px;
+  }
+  .tile-error-msg{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    max-width: 90%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+  }
+  .retry-btn{
+    background: var(--red);
+    color: #fff;
+    border: 2px solid #000;
+    padding: 6px 12px;
+    font-family: var(--font-display);
+    font-size: 8px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 0 #000;
+  }
+  .retry-btn:active{ transform: translate(2px,2px); box-shadow: none;}
+
+  /* batch group header */
+  .batch-row{
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--line);
+  }
+  .batch-row:first-child{ margin-top:0;}
+  .batch-row .b-label{
+    font-family: var(--font-display);
+    font-size: 8px;
+    color: var(--magenta);
+    letter-spacing: 1.5px;
+  }
+  .batch-row .b-time{
+    font-family: var(--font-pixel);
+    font-size: 16px;
+    color: var(--ink-faint);
+    letter-spacing: 1px;
+  }
+  .batch-row .b-status{
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--cyan);
+  }
+
+  /* ===== Modal ===== */
+  .modal-back{
+    position: fixed;
+    inset: 0;
+    background: rgba(5,1,15,0.85);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-back.open{ display: flex; animation: fadeIn 0.2s;}
+  @keyframes fadeIn{ from{ opacity:0;} to{ opacity:1;}}
+
+  .modal{
+    background: var(--panel);
+    border: 3px solid var(--magenta);
+    box-shadow: 8px 8px 0 0 #000, 8px 8px 0 3px var(--cyan);
+    width: 100%;
+    max-width: 640px;
+    max-height: 90dvh;
+    overflow-y: auto;
+    padding: 24px;
+    position: relative;
+  }
+  .modal-head{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 2px dashed var(--line);
+  }
+  .modal-title{
+    font-family: var(--font-display);
+    font-size: 13px;
+    color: var(--ink);
+    letter-spacing: 2px;
+    text-shadow: 2px 2px 0 var(--magenta);
+  }
+
+  .modal-tabs{
+    display: flex;
+    gap: 6px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .modal-tab{
+    background: transparent;
+    border: 2px solid var(--line);
+    color: var(--ink-dim);
+    padding: 8px 14px;
+    font-family: var(--font-display);
+    font-size: 9px;
+    cursor: pointer;
+    letter-spacing: 1.5px;
+    transition: all 0.12s;
+  }
+  .modal-tab:hover{ border-color: var(--cyan); color: var(--cyan);}
+  .modal-tab.active{
+    background: var(--magenta);
+    color: #fff;
+    border-color: #000;
+    box-shadow: 2px 2px 0 0 #000;
+  }
+
+  .tab-content{ display:none;}
+  .tab-content.active{ display:block;}
+
+  .form-row{ margin-bottom: 16px;}
+  .form-row label{
+    display: block;
+    font-family: var(--font-display);
+    font-size: 9px;
+    color: var(--cyan);
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+  }
+
+  /* model manager list */
+  .model-list{
+    border: 2px solid var(--line);
+    background: #07021a;
+    max-height: 220px;
+    overflow-y: auto;
+    margin-top: 8px;
+  }
+  .model-row{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    gap: 10px;
+  }
+  .model-row:last-child{ border-bottom: none;}
+  .model-row .m-info{ overflow: hidden;}
+  .model-row .m-nick{ color: var(--ink);}
+  .model-row .m-id{ color: var(--ink-faint); font-size: 11px; }
+  .model-row .m-badge{
+    font-family: var(--font-display);
+    font-size: 7px;
+    padding: 3px 6px;
+    letter-spacing: 1px;
+    border: 1px solid;
+  }
+  .m-badge.built{ color: var(--cyan); border-color: var(--cyan);}
+  .m-badge.custom{ color: var(--yellow); border-color: var(--yellow);}
+  .del-btn{
+    background: transparent;
+    border: 2px solid var(--red);
+    color: var(--red);
+    width: 32px; height: 32px;
+    display: grid; place-items: center;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .del-btn:hover{ background: var(--red); color: #fff;}
+  .del-btn:disabled{ opacity: 0.3; cursor: not-allowed;}
+  .del-btn svg{ width: 16px; height: 16px;}
+
+  .add-model-grid{
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  @media (max-width: 600px){
+    .add-model-grid{ grid-template-columns: 1fr;}
+  }
+
+  .btn{
+    background: var(--cyan);
+    color: #000;
+    border: 2px solid #000;
+    padding: 10px 18px;
+    font-family: var(--font-display);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 0 #000;
+    transition: transform 0.08s, box-shadow 0.08s;
+  }
+  .btn:hover{ background: var(--cyan-glow);}
+  .btn:active{ transform: translate(3px,3px); box-shadow: none;}
+  .btn.ghost{
+    background: transparent;
+    color: var(--ink);
+    border-color: var(--line);
+    box-shadow: none;
+  }
+  .btn.ghost:hover{ border-color: var(--cyan); color: var(--cyan);}
+  .btn.danger{ background: var(--red); color: #fff;}
+
+  /* ===== Lightbox ===== */
+  .lightbox{
+    position: fixed;
+    inset: 0;
+    background: rgba(2,0,8,0.95);
+    z-index: 300;
+    display: none;
+    flex-direction: column;
+    padding: 20px;
+  }
+  .lightbox.open{ display: flex; animation: fadeIn 0.2s;}
+  .lb-bar{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 14px;
+  }
+  .lb-actions{ display:flex; gap: 8px; flex-wrap: wrap;}
+  .lb-body{
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 18px;
+    min-height: 0;
+  }
+  @media (max-width: 900px){
+    .lb-body{ grid-template-columns: 1fr; grid-template-rows: 1fr auto;}
+  }
+  .lb-img-wrap{
+    display: grid;
+    place-items: center;
+    background: #07021a;
+    border: 2px solid var(--line);
+    overflow: hidden;
+    min-height: 0;
+  }
+  .lb-img-wrap img{
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+  .lb-side{
+    background: var(--panel);
+    border: 2px solid var(--line);
+    padding: 16px;
+    overflow-y: auto;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .lb-meta-block{ margin-bottom: 14px;}
+  .lb-meta-block .k{
+    font-family: var(--font-display);
+    font-size: 8px;
+    color: var(--cyan);
+    letter-spacing: 1.5px;
+    margin-bottom: 4px;
+  }
+  .lb-meta-block .v{
+    color: var(--ink);
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+
+  /* ===== Toasts ===== */
+  .toasts{
+    position: fixed;
+    bottom: 20px; right: 20px;
+    z-index: 400;
+    display: flex; flex-direction: column-reverse; gap: 8px;
+    max-width: 360px;
+    pointer-events: none;
+  }
+  .toast{
+    background: var(--panel);
+    border: 2px solid var(--cyan);
+    box-shadow: 4px 4px 0 0 #000;
+    padding: 12px 14px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--ink);
+    pointer-events: auto;
+    animation: toastIn 0.25s ease-out;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .toast.err{ border-color: var(--red);}
+  .toast.ok{ border-color: var(--green);}
+  .toast .t-mark{
+    font-family: var(--font-display);
+    font-size: 9px;
+    color: var(--cyan);
+    letter-spacing: 1.5px;
+    flex-shrink: 0;
+  }
+  .toast.err .t-mark{ color: var(--red);}
+  .toast.ok .t-mark{ color: var(--green);}
+  @keyframes toastIn{
+    from{ transform: translateX(20px); opacity:0;}
+    to{ transform: translateX(0); opacity:1;}
+  }
+
+  /* hide scrollbars stylistically */
+  .controls::-webkit-scrollbar,
+  .gallery-wrap::-webkit-scrollbar,
+  .modal::-webkit-scrollbar,
+  .dd-menu::-webkit-scrollbar,
+  .model-list::-webkit-scrollbar,
+  .lb-side::-webkit-scrollbar{
+    width: 6px;
+  }
+  .controls::-webkit-scrollbar-track,
+  .gallery-wrap::-webkit-scrollbar-track,
+  .modal::-webkit-scrollbar-track,
+  .dd-menu::-webkit-scrollbar-track,
+  .model-list::-webkit-scrollbar-track,
+  .lb-side::-webkit-scrollbar-track{
+    background: var(--bg-1);
+  }
+  .controls::-webkit-scrollbar-thumb,
+  .gallery-wrap::-webkit-scrollbar-thumb,
+  .modal::-webkit-scrollbar-thumb,
+  .dd-menu::-webkit-scrollbar-thumb,
+  .model-list::-webkit-scrollbar-thumb,
+  .lb-side::-webkit-scrollbar-thumb{
+    background: var(--magenta);
+  }
+
+  /* selection */
+  ::selection{ background: var(--magenta); color: #fff;}
+
+  /* small util */
+  .row-gap-8 > * + *{ margin-top: 8px;}
+  .small-mono{ font-family: var(--font-mono); font-size: 12px; color: var(--ink-faint);}
+  .danger-text{ color: var(--red);}
+  .pulse{
+    display: inline-block;
+    width: 8px; height: 8px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulseDot 1s infinite;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  @keyframes pulseDot{
+    0%,100%{ opacity: 1; transform: scale(1);}
+    50%{ opacity: 0.4; transform: scale(0.7);}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============== TOP BAR ============== -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <!-- pixel cassette / chip icon -->
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.4">
+          <rect x="3" y="6" width="18" height="12" />
+          <circle cx="8" cy="12" r="1.6" fill="#000"/>
+          <circle cx="16" cy="12" r="1.6" fill="#000"/>
+          <path d="M3 12h2M19 12h2M12 6V4M12 20v-2"/>
+        </svg>
+      </div>
+      <div class="brand-title">
+        RETRO//IMAGE
+        <small>v1.0 ▸ AQUADEVS</small>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="btnSettings" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============== MAIN ============== -->
+  <main class="main">
+
+    <!-- LEFT CONTROL PANEL -->
+    <aside class="controls">
+
+      <!-- PROMPT -->
+      <div class="panel-section">
+        <div class="label">
+          <span>▸ PROMPT</span>
+          <span class="hint" id="promptCount">0 chars</span>
+        </div>
+        <textarea id="prompt" class="textbox" placeholder="describe the image you want to generate..."></textarea>
+      </div>
+
+      <!-- NEGATIVE PROMPT collapsible -->
+      <div class="panel-section">
+        <details class="collapse">
+          <summary class="collapse-head">
+            <span>▸ NEGATIVE PROMPT</span>
+            <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </summary>
+          <div class="collapse-body">
+            <textarea id="negPrompt" class="textbox" style="min-height:70px" placeholder="things to avoid..."></textarea>
+          </div>
+        </details>
+      </div>
+
+      <!-- MODEL -->
+      <div class="panel-section">
+        <div class="label"><span>▸ MODEL</span></div>
+        <div class="dropdown" id="ddModel">
+          <button class="dd-trigger" type="button">
+            <span class="dd-value">
+              <span class="v-main">Select model</span>
+              <small class="v-sub"></small>
+            </span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="dd-menu" role="listbox"></div>
+        </div>
+      </div>
+
+      <!-- ASPECT RATIO -->
+      <div class="panel-section">
+        <div class="label"><span>▸ ASPECT RATIO</span></div>
+        <div class="ratio-grid" id="ratioGrid">
+          <button class="ratio-btn active" data-ratio="square">
+            <span class="shape" style="width:22px;height:22px;"></span>
+            <span>1:1</span>
+          </button>
+          <button class="ratio-btn" data-ratio="portrait">
+            <span class="shape" style="width:18px;height:26px;"></span>
+            <span>2:3</span>
+          </button>
+          <button class="ratio-btn" data-ratio="landscape">
+            <span class="shape" style="width:28px;height:18px;"></span>
+            <span>3:2</span>
+          </button>
+          <button class="ratio-btn" data-ratio="custom">
+            <span class="shape" style="width:20px;height:20px;border-radius:50%;"></span>
+            <span>CUSTOM</span>
+          </button>
+        </div>
+        <div class="custom-ratio" id="customRatio">
+          <input type="number" id="ratioW" placeholder="W" min="1" value="16">
+          <span class="sep">:</span>
+          <input type="number" id="ratioH" placeholder="H" min="1" value="9">
+        </div>
+      </div>
+
+      <!-- BATCH -->
+      <div class="panel-section">
+        <div class="label"><span>▸ BATCH COUNT</span></div>
+        <div class="batch-grid" id="batchGrid">
+          <button class="batch-btn active" data-batch="1">1</button>
+          <button class="batch-btn" data-batch="2">2</button>
+          <button class="batch-btn" data-batch="3">3</button>
+          <button class="batch-btn" data-batch="4">4</button>
+        </div>
+      </div>
+
+      <!-- REFERENCE IMAGE -->
+      <div class="panel-section">
+        <div class="label">
+          <span>▸ REFERENCE URL</span>
+          <span class="hint">optional</span>
+        </div>
+        <input type="url" id="refImage" class="text-input" placeholder="https://..." />
+      </div>
+
+      <!-- GENERATE -->
+      <div class="generate-wrap">
+        <button class="generate-btn" id="btnGenerate">
+          ▶ GENERATE
+        </button>
+        <div class="small-mono" style="margin-top:10px;text-align:center;" id="apiStatus"></div>
+      </div>
+    </aside>
+
+    <!-- RIGHT GALLERY -->
+    <section class="gallery-wrap">
+      <div class="gallery-head">
+        <div class="gallery-title">▸ GALLERY</div>
+        <div class="gallery-count" id="galleryCount">[ 00 ]</div>
+      </div>
+      <div class="gallery" id="gallery">
+        <div class="gal-empty" id="galEmpty">
+          <span class="big">▸ NO TRANSMISSIONS YET</span>
+          enter a prompt &amp; press generate<br>
+          your gallery will populate here.
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+<!-- ============== SETTINGS MODAL ============== -->
+<div class="modal-back" id="modalSettings">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">▸ SETTINGS</div>
+      <button class="icon-btn" id="closeSettings" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+      </button>
+    </div>
+
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-tab="api">▸ API</button>
+      <button class="modal-tab" data-tab="models">▸ MODELS</button>
+      <button class="modal-tab" data-tab="data">▸ DATA</button>
+      <button class="modal-tab" data-tab="about">▸ ABOUT</button>
+    </div>
+
+    <!-- TAB: API -->
+    <div class="tab-content active" data-tab="api">
+      <div class="form-row">
+        <label>AQUADEVS API KEY</label>
+        <input type="password" id="apiKey" class="text-input" placeholder="paste your api key" />
+        <div class="small-mono" style="margin-top:6px;">stored locally in indexeddb. never sent anywhere except api.aquadevs.com</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn" id="saveApi">SAVE KEY</button>
+        <button class="btn ghost" id="testApi">TEST CONNECTION</button>
+      </div>
+    </div>
+
+    <!-- TAB: MODELS -->
+    <div class="tab-content" data-tab="models">
+      <div class="form-row">
+        <label>ADD CUSTOM MODEL</label>
+        <div class="add-model-grid">
+          <input type="text" id="newModelId" class="text-input" placeholder="model id (e.g. flux-2)" />
+          <input type="text" id="newModelNick" class="text-input" placeholder="nickname (e.g. Flux 2)" />
+          <button class="btn" id="addModelBtn">+ ADD</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>ALL MODELS</label>
+        <div class="model-list" id="modelList"></div>
+        <div class="small-mono" style="margin-top:6px;">built-in models cannot be deleted, only customs.</div>
+      </div>
+    </div>
+
+    <!-- TAB: DATA -->
+    <div class="tab-content" data-tab="data">
+      <div class="form-row">
+        <label>GALLERY DATA</label>
+        <div class="small-mono" style="margin-bottom:10px;" id="storageInfo">loading...</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn ghost" id="exportData">▸ EXPORT JSON</button>
+          <button class="btn danger" id="clearGallery">▸ CLEAR GALLERY</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: ABOUT -->
+    <div class="tab-content" data-tab="about">
+      <div class="small-mono" style="line-height:1.8">
+        <p style="color:var(--ink);font-family:var(--font-display);font-size:11px;letter-spacing:1.5px;margin-bottom:14px;">▸ RETRO//IMAGE v1.0</p>
+        <p>a retro-styled image generator powered by the aquadevs unified api.</p>
+        <p style="margin-top:10px;">all data lives in your browser's indexeddb. images, settings, and custom models persist across sessions.</p>
+        <p style="margin-top:10px;color:var(--cyan);">▸ batches run concurrently in the background.</p>
+        <p style="margin-top:10px;color:var(--magenta);">▸ built for tablets, but works everywhere.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============== LIGHTBOX ============== -->
+<div class="lightbox" id="lightbox">
+  <div class="lb-bar">
+    <div class="brand-title" style="font-size:11px;">▸ PREVIEW</div>
+    <div class="lb-actions">
+      <button class="btn ghost" id="lbDownload">▸ DOWNLOAD</button>
+      <button class="btn ghost" id="lbCopyPrompt">▸ COPY PROMPT</button>
+      <button class="btn ghost" id="lbReuse">▸ REUSE</button>
+      <button class="btn danger" id="lbDelete">▸ DELETE</button>
+      <button class="icon-btn" id="lbClose" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="lb-body">
+    <div class="lb-img-wrap"><img id="lbImg" alt=""></div>
+    <div class="lb-side" id="lbMeta"></div>
+  </div>
+</div>
+
+<!-- ============== TOASTS ============== -->
+<div class="toasts" id="toasts"></div>
+
+
+<script>
+/* ==========================================================
+   RETRO//IMAGE  —  application logic
+   - IndexedDB (settings, models, gallery as Blobs)
+   - AquaDevs API integration
+   - Concurrent batches, placeholder tiles, per-image retry
+   ========================================================== */
+
+'use strict';
+
+/* ---------- AquaDevs config ---------- */
+const API_BASE = 'https://api.aquadevs.com';
+
+/* Built-in image models (from AquaDevs catalog) */
+const BUILT_IN_MODELS = [
+  { id: 'qwen-image',    nick: 'Qwen Image',     builtin: true },
+  { id: 'ideogram',      nick: 'Ideogram V4',    builtin: true },
+  { id: 'gptimage-2',    nick: 'GPT Image 2',    builtin: true },
+  { id: 'agnes-image',   nick: 'Agnes Image 2.1',builtin: true },
+];
+
+/* ---------- IndexedDB wrapper ---------- */
+const DB_NAME = 'retro-image-db';
+const DB_VER  = 1;
+let db = null;
+
+function openDB(){
+  return new Promise((resolve, reject)=>{
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = (e)=>{
+      const d = e.target.result;
+      if(!d.objectStoreNames.contains('settings')) d.createObjectStore('settings', { keyPath: 'key' });
+      if(!d.objectStoreNames.contains('models'))   d.createObjectStore('models',   { keyPath: 'id' });
+      if(!d.objectStoreNames.contains('gallery'))  {
+        const g = d.createObjectStore('gallery', { keyPath: 'id' });
+        g.createIndex('byTime', 'createdAt');
+        g.createIndex('byBatch', 'batchId');
+      }
+    };
+    req.onsuccess = ()=>{ db = req.result; resolve(db); };
+    req.onerror   = ()=> reject(req.error);
+  });
+}
+
+function tx(store, mode='readonly'){
+  return db.transaction(store, mode).objectStore(store);
+}
+function idbGet(store, key){
+  return new Promise((res,rej)=>{
+    const r = tx(store).get(key);
+    r.onsuccess = ()=> res(r.result);
+    r.onerror   = ()=> rej(r.error);
+  });
+}
+function idbPut(store, val){
+  return new Promise((res,rej)=>{
+    const r = tx(store,'readwrite').put(val);
+    r.onsuccess = ()=> res(val);
+    r.onerror   = ()=> rej(r.error);
+  });
+}
+function idbDel(store, key){
+  return new Promise((res,rej)=>{
+    const r = tx(store,'readwrite').delete(key);
+    r.onsuccess = ()=> res();
+    r.onerror   = ()=> rej(r.error);
+  });
+}
+function idbAll(store){
+  return new Promise((res,rej)=>{
+    const r = tx(store).getAll();
+    r.onsuccess = ()=> res(r.result || []);
+    r.onerror   = ()=> rej(r.error);
+  });
+}
+function idbClear(store){
+  return new Promise((res,rej)=>{
+    const r = tx(store,'readwrite').clear();
+    r.onsuccess = ()=> res();
+    r.onerror   = ()=> rej(r.error);
+  });
+}
+
+/* ---------- App state ---------- */
+const state = {
+  apiKey: '',
+  models: [],            // [{id, nick, builtin?}]
+  selectedModel: null,   // string id
+  ratio: 'square',       // 'square'|'portrait'|'landscape'|'custom'
+  customRatio: { w:16, h:9 },
+  batchCount: 1,
+  gallery: [],           // newest first (in-memory mirror, blob -> objectURL on demand)
+  inflight: 0,           // count of active generations
+};
+
+/* ---------- DOM refs ---------- */
+const $ = (s, p=document)=> p.querySelector(s);
+const $$ = (s, p=document)=> Array.from(p.querySelectorAll(s));
+
+const elPrompt        = $('#prompt');
+const elPromptCount   = $('#promptCount');
+const elNeg           = $('#negPrompt');
+const elRefImage      = $('#refImage');
+const elRatioGrid     = $('#ratioGrid');
+const elCustomRatio   = $('#customRatio');
+const elRatioW        = $('#ratioW');
+const elRatioH        = $('#ratioH');
+const elBatchGrid     = $('#batchGrid');
+const elGenerate      = $('#btnGenerate');
+const elGallery       = $('#gallery');
+const elGalleryCount  = $('#galleryCount');
+const elGalEmpty      = $('#galEmpty');
+const elApiStatus     = $('#apiStatus');
+
+const ddModel         = $('#ddModel');
+const ddTrigger       = $('.dd-trigger', ddModel);
+const ddValueMain     = $('.v-main', ddTrigger);
+const ddValueSub      = $('.v-sub', ddTrigger);
+const ddMenu          = $('.dd-menu', ddModel);
+
+const modalSettings   = $('#modalSettings');
+const elApiKey        = $('#apiKey');
+const elNewModelId    = $('#newModelId');
+const elNewModelNick  = $('#newModelNick');
+const elModelList     = $('#modelList');
+const elStorageInfo   = $('#storageInfo');
+
+const lightbox        = $('#lightbox');
+const lbImg           = $('#lbImg');
+const lbMeta          = $('#lbMeta');
+
+const toastsEl        = $('#toasts');
+
+/* ---------- Toasts ---------- */
+function toast(msg, type='info', ms=3200){
+  const el = document.createElement('div');
+  el.className = 'toast' + (type==='err' ? ' err' : type==='ok' ? ' ok' : '');
+  const mark = type==='err' ? 'ERROR' : type==='ok' ? 'OK' : 'INFO';
+  el.innerHTML = `<span class="t-mark">[${mark}]</span><span>${escapeHtml(msg)}</span>`;
+  toastsEl.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateX(20px)'; setTimeout(()=>el.remove(), 250);}, ms);
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------- Init ---------- */
+async function init(){
+  try{
+    await openDB();
+    await loadSettings();
+    await loadModels();
+    await loadGallery();
+    renderModelDropdown();
+    renderModelList();
+    renderGallery();
+    bindEvents();
+    updatePromptCount();
+    updateApiStatus();
+  }catch(e){
+    console.error(e);
+    toast('Init failed: ' + e.message, 'err');
+  }
+}
+
+async function loadSettings(){
+  const k = await idbGet('settings', 'apiKey');
+  state.apiKey = k?.value || '';
+  elApiKey.value = state.apiKey;
+
+  const sel = await idbGet('settings', 'selectedModel');
+  state.selectedModel = sel?.value || null;
+
+  const ratio = await idbGet('settings', 'ratio');
+  if(ratio?.value) state.ratio = ratio.value;
+
+  const custom = await idbGet('settings', 'customRatio');
+  if(custom?.value) state.customRatio = custom.value;
+
+  const batch = await idbGet('settings', 'batchCount');
+  if(batch?.value) state.batchCount = batch.value;
+
+  // apply ratio + batch UI
+  $$('.ratio-btn', elRatioGrid).forEach(b=>{
+    b.classList.toggle('active', b.dataset.ratio === state.ratio);
+  });
+  if(state.ratio === 'custom'){
+    elCustomRatio.classList.add('show');
+    elRatioW.value = state.customRatio.w;
+    elRatioH.value = state.customRatio.h;
+  }
+  $$('.batch-btn', elBatchGrid).forEach(b=>{
+    b.classList.toggle('active', Number(b.dataset.batch) === state.batchCount);
+  });
+}
+
+async function loadModels(){
+  const stored = await idbAll('models');
+  // merge built-ins (always present) + customs from db
+  const customs = stored.filter(m=>!m.builtin);
+  state.models = [...BUILT_IN_MODELS, ...customs];
+  // ensure built-ins are saved so they show in list too (with builtin flag)
+  for(const m of BUILT_IN_MODELS){
+    const existing = stored.find(x=>x.id===m.id);
+    if(!existing) await idbPut('models', m);
+  }
+  // default selection
+  if(!state.selectedModel || !state.models.find(m=>m.id===state.selectedModel)){
+    state.selectedModel = state.models[0]?.id || null;
+  }
+}
+
+async function loadGallery(){
+  const all = await idbAll('gallery');
+  // sort newest first
+  all.sort((a,b)=> b.createdAt - a.createdAt);
+  state.gallery = all;
+}
+
+/* ---------- Render: model dropdown ---------- */
+function renderModelDropdown(){
+  ddMenu.innerHTML = '';
+  state.models.forEach(m=>{
+    const item = document.createElement('div');
+    item.className = 'dd-item' + (m.id === state.selectedModel ? ' active' : '');
+    item.innerHTML = `<span>${escapeHtml(m.nick)}</span><small>${escapeHtml(m.id)}</small>`;
+    item.addEventListener('click', ()=>{
+      state.selectedModel = m.id;
+      idbPut('settings', { key:'selectedModel', value: m.id });
+      renderModelDropdown();
+      closeDropdown();
+    });
+    ddMenu.appendChild(item);
+  });
+  const sel = state.models.find(m=>m.id === state.selectedModel);
+  if(sel){
+    ddValueMain.textContent = sel.nick;
+    ddValueSub.textContent  = sel.id;
+  }else{
+    ddValueMain.textContent = 'Select model';
+    ddValueSub.textContent  = '';
+  }
+}
+
+function openDropdown(){ ddTrigger.classList.add('open'); ddMenu.classList.add('open'); }
+function closeDropdown(){ ddTrigger.classList.remove('open'); ddMenu.classList.remove('open'); }
+
+/* ---------- Render: model list (settings) ---------- */
+function renderModelList(){
+  elModelList.innerHTML = '';
+  state.models.forEach(m=>{
+    const row = document.createElement('div');
+    row.className = 'model-row';
+    row.innerHTML = `
+      <div class="m-info">
+        <div class="m-nick">${escapeHtml(m.nick)}</div>
+        <div class="m-id">${escapeHtml(m.id)}</div>
+      </div>
+      <span class="m-badge ${m.builtin?'built':'custom'}">${m.builtin?'BUILT-IN':'CUSTOM'}</span>
+      <button class="del-btn" ${m.builtin?'disabled':''} title="${m.builtin?'Built-in models cannot be deleted':'Delete'}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6m5 0V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2"/>
+        </svg>
+      </button>
+    `;
+    const delBtn = $('.del-btn', row);
+    if(!m.builtin){
+      delBtn.addEventListener('click', async ()=>{
+        if(!confirm(`Delete model "${m.nick}"?`)) return;
+        await idbDel('models', m.id);
+        state.models = state.models.filter(x=>x.id !== m.id);
+        if(state.selectedModel === m.id){
+          state.selectedModel = state.models[0]?.id || null;
+          await idbPut('settings', { key:'selectedModel', value: state.selectedModel });
+        }
+        renderModelList();
+        renderModelDropdown();
+        toast('Model deleted', 'ok');
+      });
+    }
+    elModelList.appendChild(row);
+  });
+}
+
+/* ---------- Render: gallery ---------- */
+function renderGallery(){
+  // remove all but keep DOM-managed loading tiles? Simpler: full rerender every time.
+  // But loading tiles must be preserved if their generation is in-flight.
+  // We'll rebuild from state.gallery (which includes pending entries).
+  elGallery.innerHTML = '';
+  const items = state.gallery;
+  if(items.length === 0){
+    elGallery.appendChild(elGalEmpty);
+    elGalleryCount.textContent = '[ 00 ]';
+    return;
+  }
+
+  // group by batchId
+  const groups = new Map();
+  for(const it of items){
+    if(!groups.has(it.batchId)) groups.set(it.batchId, []);
+    groups.get(it.batchId).push(it);
+  }
+  // groups keys are insertion order = newest first because items already sorted
+  const finishedCount = items.filter(i=>i.status === 'done').length;
+  elGalleryCount.textContent = '[ ' + String(finishedCount).padStart(2,'0') + ' ]';
+
+  for(const [batchId, arr] of groups){
+    const first = arr[0];
+    const header = document.createElement('div');
+    header.className = 'batch-row';
+    const allDone = arr.every(x=>x.status === 'done');
+    const anyLoading = arr.some(x=>x.status === 'loading');
+    const errCount = arr.filter(x=>x.status === 'error').length;
+    let status = '';
+    if(anyLoading){
+      const done = arr.filter(x=>x.status==='done').length;
+      status = `<span class="pulse"></span> GENERATING ${done}/${arr.length}`;
+    }else if(errCount){
+      status = `<span style="color:var(--red)">▸ ${errCount} FAILED</span>`;
+    }else{
+      status = '<span style="color:var(--green)">▸ COMPLETE</span>';
+    }
+    header.innerHTML = `
+      <span class="b-label">BATCH ${batchId.slice(0,6).toUpperCase()}</span>
+      <span class="b-time">${formatTime(first.createdAt)}</span>
+      <span class="b-status">${status}</span>
+    `;
+    elGallery.appendChild(header);
+    for(const it of arr) elGallery.appendChild(renderTile(it));
+  }
+}
+
+function renderTile(item){
+  const tile = document.createElement('div');
+  tile.className = 'tile';
+  tile.dataset.id = item.id;
+
+  if(item.status === 'loading'){
+    tile.classList.add('loading');
+    tile.innerHTML = `
+      <div class="tile-loader">
+        <div class="tile-loader-text">GENERATING</div>
+        <div class="tile-loader-dots">...</div>
+      </div>
+    `;
+  }else if(item.status === 'error'){
+    tile.classList.add('error');
+    tile.innerHTML = `
+      <div class="tile-error">
+        <div class="tile-error-text">▸ TRANSMISSION FAILED</div>
+        <div class="tile-error-msg">${escapeHtml(item.error || 'unknown error')}</div>
+        <button class="retry-btn">▶ RETRY</button>
+      </div>
+    `;
+    $('.retry-btn', tile).addEventListener('click', (e)=>{
+      e.stopPropagation();
+      retryGeneration(item.id);
+    });
+  }else if(item.status === 'done'){
+    const url = item._objectURL || (item.blob ? URL.createObjectURL(item.blob) : item.imageUrl);
+    item._objectURL = url;
+    tile.innerHTML = `
+      <img src="${url}" alt="" loading="lazy">
+      <div class="tile-meta">
+        <div class="m-model">${escapeHtml(item.model)}</div>
+        <div class="m-prompt">${escapeHtml(item.prompt)}</div>
+      </div>
+    `;
+    tile.addEventListener('click', ()=> openLightbox(item.id));
+  }
+  return tile;
+}
+
+function formatTime(ts){
+  const d = new Date(ts);
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  return `${hh}:${mm}`;
+}
+
+/* ---------- Generation ---------- */
+function uuid(){
+  if(crypto?.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c=>{
+    const r = Math.random()*16|0; return (c==='x'? r : (r&0x3|0x8)).toString(16);
+  });
+}
+
+function currentRatioValue(){
+  if(state.ratio === 'custom'){
+    const w = Math.max(1, parseInt(elRatioW.value)||1);
+    const h = Math.max(1, parseInt(elRatioH.value)||1);
+    // AquaDevs uses 'square'|'portrait'|'landscape' per memory.
+    // For custom: if w==h => square, w>h => landscape, else portrait.
+    if(w === h) return 'square';
+    return w > h ? 'landscape' : 'portrait';
+  }
+  return state.ratio;
+}
+
+async function startBatch(){
+  const prompt = elPrompt.value.trim();
+  if(!prompt){ toast('prompt is required', 'err'); elPrompt.focus(); return; }
+  if(!state.apiKey){ toast('add your aquadevs api key in settings', 'err'); openSettings('api'); return; }
+  if(!state.selectedModel){ toast('select a model', 'err'); return; }
+
+  const negative = elNeg.value.trim();
+  const ratio = currentRatioValue();
+  const refUrl = elRefImage.value.trim();
+  const batchId = uuid();
+  const createdAt = Date.now();
+
+  const items = [];
+  for(let i=0; i<state.batchCount; i++){
+    const item = {
+      id: uuid(),
+      batchId,
+      batchIndex: i,
+      status: 'loading',
+      prompt,
+      negativePrompt: negative,
+      ratio,
+      ratioMeta: state.ratio === 'custom' ? { w:state.customRatio.w, h:state.customRatio.h } : null,
+      refUrl: refUrl || null,
+      model: state.selectedModel,
+      createdAt: createdAt + i, // tiny offset preserves order in batch
+      blob: null,
+      imageUrl: null,
+      error: null,
+    };
+    items.push(item);
+    state.gallery.unshift(item);
+    await idbPut('gallery', sanitize(item));
+  }
+  renderGallery();
+
+  // fire each request in parallel; non-blocking
+  items.forEach(item => generateOne(item));
+
+  // toast
+  toast(`batch of ${items.length} queued`, 'ok', 1800);
+}
+
+function sanitize(item){
+  // strip transient props before saving
+  const { _objectURL, ...rest } = item;
+  return rest;
+}
+
+async function generateOne(item){
+  state.inflight++;
+  try{
+    const body = {
+      model: item.model,
+      prompt: item.prompt,
+      ratio: item.ratio,
+    };
+    if(item.negativePrompt) body.negative_prompt = item.negativePrompt;
+    if(item.refUrl) body.image = item.refUrl;
+
+    const resp = await fetch(API_BASE + '/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + state.apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if(!resp.ok){
+      let msg = `HTTP ${resp.status}`;
+      try{
+        const errJson = await resp.json();
+        msg = errJson?.error?.message || errJson?.message || msg;
+      }catch{}
+      throw new Error(msg);
+    }
+
+    const data = await resp.json();
+    // OpenAI-compatible: data.data[0].url or .b64_json
+    const out = data?.data?.[0] || data;
+    let imageUrl = out?.url || data?.url || null;
+    let blob = null;
+
+    if(out?.b64_json){
+      blob = b64ToBlob(out.b64_json, 'image/png');
+    }else if(imageUrl){
+      // fetch and store as Blob so it survives offline
+      try{
+        const r = await fetch(imageUrl);
+        if(r.ok) blob = await r.blob();
+      }catch{ /* fall through, keep url */ }
+    }else{
+      throw new Error('no image returned');
+    }
+
+    item.status = 'done';
+    item.blob = blob;
+    item.imageUrl = imageUrl;
+    item.error = null;
+    await idbPut('gallery', sanitize(item));
+
+    // re-render gallery (cheap, items live in state)
+    renderGallery();
+
+  }catch(e){
+    console.error('generation failed', e);
+    item.status = 'error';
+    item.error = e.message || 'unknown error';
+    await idbPut('gallery', sanitize(item));
+    renderGallery();
+    toast('image failed: ' + item.error, 'err');
+  }finally{
+    state.inflight--;
+  }
+}
+
+function b64ToBlob(b64, type='image/png'){
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type });
+}
+
+async function retryGeneration(id){
+  const item = state.gallery.find(x=>x.id===id);
+  if(!item) return;
+  item.status = 'loading';
+  item.error = null;
+  await idbPut('gallery', sanitize(item));
+  renderGallery();
+  generateOne(item);
+}
+
+/* ---------- Lightbox ---------- */
+let currentLb = null;
+function openLightbox(id){
+  const item = state.gallery.find(x=>x.id===id);
+  if(!item || item.status !== 'done') return;
+  currentLb = item;
+  const url = item._objectURL || (item.blob ? URL.createObjectURL(item.blob) : item.imageUrl);
+  item._objectURL = url;
+  lbImg.src = url;
+
+  lbMeta.innerHTML = `
+    <div class="lb-meta-block"><div class="k">▸ PROMPT</div><div class="v">${escapeHtml(item.prompt)}</div></div>
+    ${item.negativePrompt ? `<div class="lb-meta-block"><div class="k">▸ NEGATIVE</div><div class="v">${escapeHtml(item.negativePrompt)}</div></div>` : ''}
+    <div class="lb-meta-block"><div class="k">▸ MODEL</div><div class="v">${escapeHtml(item.model)}</div></div>
+    <div class="lb-meta-block"><div class="k">▸ RATIO</div><div class="v">${escapeHtml(item.ratio)}${item.ratioMeta?` (${item.ratioMeta.w}:${item.ratioMeta.h})`:''}</div></div>
+    ${item.refUrl ? `<div class="lb-meta-block"><div class="k">▸ REFERENCE</div><div class="v">${escapeHtml(item.refUrl)}</div></div>` : ''}
+    <div class="lb-meta-block"><div class="k">▸ CREATED</div><div class="v">${new Date(item.createdAt).toLocaleString()}</div></div>
+    <div class="lb-meta-block"><div class="k">▸ ID</div><div class="v" style="font-size:10px;color:var(--ink-faint);">${escapeHtml(item.id)}</div></div>
+  `;
+  lightbox.classList.add('open');
+}
+function closeLightbox(){
+  lightbox.classList.remove('open');
+  currentLb = null;
+}
+
+/* ---------- Settings modal ---------- */
+function openSettings(tab){
+  modalSettings.classList.add('open');
+  if(tab){
+    $$('.modal-tab', modalSettings).forEach(t=> t.classList.toggle('active', t.dataset.tab===tab));
+    $$('.tab-content', modalSettings).forEach(t=> t.classList.toggle('active', t.dataset.tab===tab));
+  }
+  updateStorageInfo();
+}
+function closeSettings(){ modalSettings.classList.remove('open'); }
+
+async function updateStorageInfo(){
+  const items = state.gallery;
+  const done = items.filter(i=>i.status==='done');
+  let bytes = 0;
+  for(const it of done){ if(it.blob) bytes += it.blob.size; }
+  const mb = (bytes / (1024*1024)).toFixed(2);
+  elStorageInfo.innerHTML = `▸ ${done.length} images stored ▸ ~${mb} MB`;
+}
+
+function updateApiStatus(){
+  if(!state.apiKey){
+    elApiStatus.innerHTML = '<span style="color:var(--red)">▸ no api key — open settings</span>';
+  }else{
+    elApiStatus.innerHTML = `<span style="color:var(--green)">▸ ready</span>`;
+  }
+}
+
+/* ---------- Event binding ---------- */
+function bindEvents(){
+
+  // prompt counter (no limit — display only)
+  elPrompt.addEventListener('input', updatePromptCount);
+
+  // ratio
+  elRatioGrid.addEventListener('click', e=>{
+    const b = e.target.closest('.ratio-btn');
+    if(!b) return;
+    state.ratio = b.dataset.ratio;
+    $$('.ratio-btn', elRatioGrid).forEach(x=> x.classList.toggle('active', x===b));
+    elCustomRatio.classList.toggle('show', state.ratio === 'custom');
+    idbPut('settings', { key:'ratio', value: state.ratio });
+  });
+  elRatioW.addEventListener('input', ()=>{
+    state.customRatio.w = Math.max(1, parseInt(elRatioW.value)||1);
+    idbPut('settings', { key:'customRatio', value: state.customRatio });
+  });
+  elRatioH.addEventListener('input', ()=>{
+    state.customRatio.h = Math.max(1, parseInt(elRatioH.value)||1);
+    idbPut('settings', { key:'customRatio', value: state.customRatio });
+  });
+
+  // batch
+  elBatchGrid.addEventListener('click', e=>{
+    const b = e.target.closest('.batch-btn');
+    if(!b) return;
+    state.batchCount = Number(b.dataset.batch);
+    $$('.batch-btn', elBatchGrid).forEach(x=> x.classList.toggle('active', x===b));
+    idbPut('settings', { key:'batchCount', value: state.batchCount });
+  });
+
+  // dropdown
+  ddTrigger.addEventListener('click', e=>{
+    e.stopPropagation();
+    ddMenu.classList.contains('open') ? closeDropdown() : openDropdown();
+  });
+  document.addEventListener('click', e=>{
+    if(!ddModel.contains(e.target)) closeDropdown();
+  });
+
+  // generate
+  elGenerate.addEventListener('click', startBatch);
+
+  // settings open/close
+  $('#btnSettings').addEventListener('click', ()=> openSettings());
+  $('#closeSettings').addEventListener('click', closeSettings);
+  modalSettings.addEventListener('click', e=>{ if(e.target === modalSettings) closeSettings(); });
+
+  // tabs
+  $$('.modal-tab', modalSettings).forEach(t=>{
+    t.addEventListener('click', ()=>{
+      $$('.modal-tab', modalSettings).forEach(x=> x.classList.toggle('active', x===t));
+      $$('.tab-content', modalSettings).forEach(x=> x.classList.toggle('active', x.dataset.tab===t.dataset.tab));
+      if(t.dataset.tab === 'data') updateStorageInfo();
+    });
+  });
+
+  // API key save
+  $('#saveApi').addEventListener('click', async ()=>{
+    state.apiKey = elApiKey.value.trim();
+    await idbPut('settings', { key:'apiKey', value: state.apiKey });
+    updateApiStatus();
+    toast('api key saved', 'ok');
+  });
+
+  // test connection
+  $('#testApi').addEventListener('click', async ()=>{
+    if(!elApiKey.value.trim()){ toast('enter a key first', 'err'); return; }
+    try{
+      const r = await fetch(API_BASE + '/v1/models', {
+        headers: { 'Authorization': 'Bearer ' + elApiKey.value.trim() }
+      });
+      if(r.ok){ toast('connection ok', 'ok'); }
+      else{ toast(`connection failed (${r.status})`, 'err'); }
+    }catch(e){
+      toast('network error: ' + e.message, 'err');
+    }
+  });
+
+  // add custom model
+  $('#addModelBtn').addEventListener('click', async ()=>{
+    const id = elNewModelId.value.trim();
+    const nick = elNewModelNick.value.trim() || id;
+    if(!id){ toast('model id required', 'err'); return; }
+    if(state.models.find(m=>m.id===id)){ toast('model already exists', 'err'); return; }
+    const m = { id, nick, builtin: false };
+    await idbPut('models', m);
+    state.models.push(m);
+    elNewModelId.value = '';
+    elNewModelNick.value = '';
+    renderModelList();
+    renderModelDropdown();
+    toast('model added', 'ok');
+  });
+
+  // clear gallery
+  $('#clearGallery').addEventListener('click', async ()=>{
+    if(!confirm('delete ALL generated images? this cannot be undone.')) return;
+    await idbClear('gallery');
+    state.gallery = [];
+    renderGallery();
+    updateStorageInfo();
+    toast('gallery cleared', 'ok');
+  });
+
+  // export json
+  $('#exportData').addEventListener('click', ()=>{
+    const data = state.gallery.filter(i=>i.status==='done').map(i=>({
+      id: i.id, prompt: i.prompt, negativePrompt: i.negativePrompt,
+      model: i.model, ratio: i.ratio, ratioMeta: i.ratioMeta,
+      createdAt: i.createdAt, imageUrl: i.imageUrl
+    }));
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'retro-image-gallery.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('exported', 'ok');
+  });
+
+  // lightbox controls
+  $('#lbClose').addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', e=>{ if(e.target === lightbox) closeLightbox(); });
+  document.addEventListener('keydown', e=>{
+    if(e.key === 'Escape'){ closeLightbox(); closeSettings();}
+  });
+
+  $('#lbDownload').addEventListener('click', async ()=>{
+    if(!currentLb) return;
+    const blob = currentLb.blob || (currentLb.imageUrl ? await (await fetch(currentLb.imageUrl)).blob() : null);
+    if(!blob){ toast('nothing to download', 'err'); return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `retro-${currentLb.id.slice(0,8)}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  $('#lbCopyPrompt').addEventListener('click', async ()=>{
+    if(!currentLb) return;
+    try{
+      await navigator.clipboard.writeText(currentLb.prompt);
+      toast('prompt copied', 'ok');
+    }catch{
+      toast('clipboard blocked', 'err');
+    }
+  });
+
+  $('#lbReuse').addEventListener('click', ()=>{
+    if(!currentLb) return;
+    elPrompt.value = currentLb.prompt;
+    elNeg.value = currentLb.negativePrompt || '';
+    elRefImage.value = currentLb.refUrl || '';
+    // model
+    if(state.models.find(m=>m.id === currentLb.model)){
+      state.selectedModel = currentLb.model;
+      idbPut('settings', { key:'selectedModel', value: state.selectedModel });
+      renderModelDropdown();
+    }
+    // ratio
+    if(currentLb.ratioMeta){
+      state.ratio = 'custom';
+      state.customRatio = currentLb.ratioMeta;
+      elRatioW.value = currentLb.ratioMeta.w;
+      elRatioH.value = currentLb.ratioMeta.h;
+      elCustomRatio.classList.add('show');
+    }else{
+      state.ratio = currentLb.ratio;
+      elCustomRatio.classList.remove('show');
+    }
+    $$('.ratio-btn', elRatioGrid).forEach(b=> b.classList.toggle('active', b.dataset.ratio === state.ratio));
+    updatePromptCount();
+    closeLightbox();
+    toast('settings restored', 'ok');
+  });
+
+  $('#lbDelete').addEventListener('click', async ()=>{
+    if(!currentLb) return;
+    if(!confirm('delete this image?')) return;
+    await idbDel('gallery', currentLb.id);
+    state.gallery = state.gallery.filter(x=>x.id !== currentLb.id);
+    closeLightbox();
+    renderGallery();
+    toast('image deleted', 'ok');
+  });
+}
+
+function updatePromptCount(){
+  const len = elPrompt.value.length;
+  elPromptCount.textContent = len + ' chars';
+}
+
+/* ---------- Boot ---------- */
+init();
+
+</script>
+</body>
+</html>
