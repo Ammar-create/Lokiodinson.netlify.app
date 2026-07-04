@@ -1156,30 +1156,60 @@ async function speak(text, speakerKey, msgEl) {
     body.audio = { voice: c.builtinVoice || 'mimo_default' };
   }
 
+  const bodyStr = JSON.stringify(body);
+  const directUrl = `${PROVIDERS.aqua.base}/audio/speech`;
+  const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(directUrl)}`;
+  
   try {
     setSpeaking(speakerKey, true);
-    const res = await fetch(`${PROVIDERS.aqua.base}/audio/speech`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${settings.aquaKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
-    if (!res.ok) throw new Error(`TTS ${res.status}`);
-    const data = await res.json();
+    
+    // Try direct first, then proxy on CORS failure
+    let res, data;
+    try {
+      res = await fetch(directUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${settings.aquaKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: bodyStr
+      });
+      if (!res.ok) throw new Error(`TTS ${res.status}`);
+      data = await res.json();
+    } catch (e) {
+      // CORS blocked or network error — try proxy
+      console.warn('Direct TTS failed, trying proxy:', e.message);
+      res = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${settings.aquaKey}`,
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: bodyStr
+      });
+      if (!res.ok) throw new Error(`TTS proxy ${res.status}`);
+      data = await res.json();
+    }
+
     if (!data.success || !data.url) throw new Error('TTS returned no URL');
 
+    // Download and play the MP3
+    const audioRes = await fetch(data.url);
+    if (!audioRes.ok) throw new Error(`Audio download failed: ${audioRes.status}`);
+    const blob = await audioRes.blob();
+    const blobUrl = URL.createObjectURL(blob);
+
     if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-    currentAudio = new Audio(data.url);
+    currentAudio = new Audio(blobUrl);
     await new Promise((resolve) => {
-      currentAudio.onended = resolve;
-      currentAudio.onerror = resolve;
+      currentAudio.onended = () => { URL.revokeObjectURL(blobUrl); resolve(); };
+      currentAudio.onerror = () => { URL.revokeObjectURL(blobUrl); resolve(); };
       currentAudio.play().catch(resolve);
     });
   } catch (e) {
-    console.warn('TTS failed:', e);
-    toast('Voice generation failed');
+    console.error('TTS failed:', e);
+    toast('Voice generation failed: ' + e.message);
   } finally {
     setSpeaking(speakerKey, false);
   }
