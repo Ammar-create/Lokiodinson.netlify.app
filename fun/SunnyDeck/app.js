@@ -70,28 +70,33 @@ function createDropdown(container,options,value,placeholder){
   const list=document.createElement('div');list.className='dd-list';
   options.forEach(opt=>{
     const it=document.createElement('div');it.className='dd-item';
-    it.innerHTML=`${opt.value}${opt.note?`<span class="dd-note">${opt.note}</span>`:''}`;
+    it.innerHTML=`${esc(opt.value)}${opt.note?`<span class="dd-note">${esc(opt.note)}</span>`:''}`;
     it.onclick=()=>{input.value=opt.value;dd.classList.remove('open');input.dispatchEvent(new Event('change'));};
     list.appendChild(it);
   });
   dd.append(face,list);
   container.appendChild(dd);
-  arrow.onclick=()=>{
-    document.querySelectorAll('.dd.open').forEach(d=>{if(d!==dd)d.classList.remove('open');});
-    dd.classList.toggle('open');
-    list.querySelectorAll('.dd-item').forEach(it=>it.classList.toggle('sel',it.textContent.startsWith(input.value)));
-  };
-  input.onfocus=()=>{document.querySelectorAll('.dd.open').forEach(d=>{if(d!==dd)d.classList.remove('open');});};
+  arrow.onclick=()=>toggleDropdown(dd,list,input);
+  input.onfocus=()=>{closeAllDropdowns(dd);};
   return{
     get value(){return input.value.trim();},
     set value(v){input.value=v;},
     el:dd
   };
 }
+function toggleDropdown(self,list,input){
+  document.querySelectorAll('.dd.open').forEach(d=>{if(d!==self)d.classList.remove('open');});
+  self.classList.toggle('open');
+  list.querySelectorAll('.dd-item').forEach(it=>it.classList.toggle('sel',it.textContent.startsWith(input.value)));
+}
+function closeAllDropdowns(except){
+  document.querySelectorAll('.dd.open').forEach(d=>{if(d!==except)d.classList.remove('open');});
+}
 document.addEventListener('click',e=>{
-  if(!e.target.closest('.dd'))document.querySelectorAll('.dd.open').forEach(d=>d.classList.remove('open'));
-  if(!e.target.closest('.player-popover')&&!e.target.closest('.player-badge')){
+  if(!e.target.closest('.dd')&&!e.target.closest('.target-popover')&&!e.target.closest('.target-pill')&&!e.target.closest('.player-popover')&&!e.target.closest('.player-badge')){
+    closeAllDropdowns(null);
     document.querySelectorAll('.player-popover').forEach(p=>p.remove());
+    document.querySelectorAll('.target-popover.open').forEach(p=>p.classList.remove('open'));
   }
 });
 
@@ -111,13 +116,20 @@ const FAST_MODEL_OPTS=[
 ];
 const TTS_MODEL_OPTS=[
   {value:'aqua:mimo-v2.5-tts',note:'voice IDs'},
-  {value:'aqua:mimo-v2.5-tts-voicedesign',note:'described'}
+  {value:'aqua:mimo-v2.5-tts-voicedesign',note:'described'},
+  {value:'aqua:mimo-v2.5-tts-voiceclone',note:'clone'}
 ];
 const STT_MODEL_OPTS=[
   {value:'groq:whisper-large-v3',note:'default'},
   {value:'groq:whisper-large-v3-turbo',note:'faster'}
 ];
-const VOICE_OPTS=['Mia','Chloe','Milo','Dean','mimo_default'].map(v=>({value:v}));
+const VOICE_OPTS=[
+  {value:'Mia',note:'soft female'},
+  {value:'Chloe',note:'calm female'},
+  {value:'Milo',note:'energetic male'},
+  {value:'Dean',note:'deep male'},
+  {value:'mimo_default',note:'neutral'}
+];
 
 /* ====================== INDEXEDDB ====================== */
 const DB_NAME='sunny-deck-retro';
@@ -178,7 +190,7 @@ const DEFAULT_SETTINGS={
   taskModel:'aqua:gemini-3.1-lite',
   routerModel:'aqua:diffusion-gemma',
   chatModel:'aqua:deepseek-v4',
-  ttsModel:'aqua:mimo-v2.5-tts',
+  ttsModel:'aqua:mimo-v2.5-tts-voicedesign',
   sttModel:'groq:whisper-large-v3',
   ttsEnabled:true,
   theme:'synthwave'
@@ -198,6 +210,7 @@ function initSettingsDropdowns(){
   dd.task=createDropdown(document.getElementById('ddTask'),FAST_MODEL_OPTS,settings.taskModel);
   dd.router=createDropdown(document.getElementById('ddRouter'),FAST_MODEL_OPTS,settings.routerModel);
   dd.chat=createDropdown(document.getElementById('ddChat'),TEXT_MODEL_OPTS,settings.chatModel);
+  // TTS dropdown now includes voice-design + voice-clone options
   dd.tts=createDropdown(document.getElementById('ddTts'),TTS_MODEL_OPTS,settings.ttsModel);
   dd.stt=createDropdown(document.getElementById('ddStt'),STT_MODEL_OPTS,settings.sttModel);
 }
@@ -277,7 +290,7 @@ function seedPremadeRealms(){
   };
   [onePiece,friends,mcu].forEach(r=>{
     r.creativeModel='aqua:deepseek-v4';r.chatModel='aqua:deepseek-v4';
-    r.routerModel='aqua:diffusion-gemma';r.ttsModel='aqua:mimo-v2.5-tts';
+    r.routerModel='aqua:diffusion-gemma';r.ttsModel='aqua:mimo-v2.5-tts-voicedesign';
   });
   return[onePiece,friends,mcu];
 }
@@ -529,6 +542,7 @@ let currentRealmId=null;
 async function openRealmDetail(id){
   const r=await dbGet('realms',id);if(!r)return;
   currentRealmId=id;
+  currentRealm=r;
   document.getElementById('detailName').textContent=r.name;
   document.getElementById('detailDesc').textContent=r.description||'';
   document.getElementById('detailOverview').textContent=r.overview||'No overview.';
@@ -541,9 +555,12 @@ async function openRealmDetail(id){
   (r.characters||[]).forEach(c=>{
     const row=document.createElement('div');row.className='char-row';
     row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
-      <div class="char-info"><div class="char-name">${esc(c.name)}</div><div class="char-mini">${esc(c.personality)}</div></div>`;
+      <div class="char-info"><div class="char-name">${esc(c.name)}</div><div class="char-mini">${esc(c.voice||'Milo')} &middot; ${esc(c.personality)}</div></div>`;
     cList.appendChild(row);
   });
+
+  // VOICE EDITOR
+  renderVoiceEditor();
 
   const sessions=await dbGetAll('sessions');
   const mine=sessions.filter(s=>s.realmId===id).sort((a,b)=>(b.lastActiveAt||0)-(a.lastActiveAt||0));
@@ -555,7 +572,9 @@ async function openRealmDetail(id){
   }else{
     mine.forEach(s=>{
       const row=document.createElement('div');row.className='session-row';
-      row.innerHTML=`<div class="s-name">${esc(s.name)}</div><div class="s-meta">${new Date(s.lastActiveAt||Date.now()).toLocaleDateString()} · ${(s.history||[]).length} MSGS</div>`;
+      const player=currentRealm.characters.find(c=>c.key===s.playerKey);
+      const playerLabel=player?`as <span style="color:var(--neon-3)">${esc(player.name)}</span>`:'no player set';
+      row.innerHTML=`<div class="s-name">${esc(s.name)}</div><div class="s-meta">${playerLabel} &middot; ${new Date(s.lastActiveAt||Date.now()).toLocaleDateString()} &middot; ${(s.history||[]).length} MSGS</div>`;
       const go=document.createElement('button');go.className='s-btn';go.textContent='OPEN';go.onclick=()=>openSession(s.id);
       const del=document.createElement('button');del.className='s-btn danger';del.textContent='DEL';
       del.onclick=async()=>{if(confirm('Delete session?')){await dbDelete('sessions',s.id);openRealmDetail(id);}};
@@ -565,6 +584,51 @@ async function openRealmDetail(id){
   }
   showScreen('screen-detail');
 }
+
+/* ---- Voice editor (NEW) ---- */
+let voiceEditorDDs={};
+function renderVoiceEditor(){
+  voiceEditorDDs={};
+  const wrap=document.getElementById('voiceEditor');
+  wrap.innerHTML='';
+  (currentRealm.characters||[]).forEach(c=>{
+    const row=document.createElement('div');row.className='voice-edit-row';
+    row.dataset.charKey=c.key;
+    row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
+      <div class="ve-info">
+        <div class="ve-name">${esc(c.name)}</div>
+        <div class="ve-meta" title="${esc(c.description||c.personality||'')}">${esc(c.description||c.personality||'')}</div>
+      </div>
+      <div class="ve-dd"></div>`;
+    wrap.appendChild(row);
+    const vdd=createDropdown(row.querySelector('.ve-dd'),VOICE_OPTS,c.voice||'Milo','voice');
+    voiceEditorDDs[c.key]=vdd;
+  });
+}
+document.getElementById('btnSaveVoices').onclick=async()=>{
+  if(!currentRealm)return;
+  let dirty=false;
+  (currentRealm.characters||[]).forEach(c=>{
+    if(voiceEditorDDs[c.key]){
+      const newVoice=voiceEditorDDs[c.key].value||c.voice;
+      if(newVoice!==c.voice){c.voice=newVoice;dirty=true;}
+    }
+  });
+  if(!dirty){toast('NO CHANGES');return;}
+  currentRealm.updatedAt=Date.now();
+  // also persist ttsModel inherited from realm if exists, otherwise keep settings default
+  await dbPut('realms',currentRealm);
+  toast('VOICES SAVED');
+  // refresh detail-character rows
+  const cList=document.getElementById('detailChars');cList.innerHTML='';
+  currentRealm.characters.forEach(c=>{
+    const row=document.createElement('div');row.className='char-row';
+    row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
+      <div class="char-info"><div class="char-name">${esc(c.name)}</div><div class="char-mini">${esc(c.voice||'Milo')} &middot; ${esc(c.personality)}</div></div>`;
+    cList.appendChild(row);
+  });
+};
+
 document.getElementById('detailBack').onclick=()=>{showScreen('screen-browse');renderBrowse();};
 document.getElementById('btnDeleteRealm').onclick=async()=>{
   if(!currentRealmId)return;
@@ -582,7 +646,7 @@ document.getElementById('btnStartSession').onclick=async()=>{
   const sess={
     id:'sess-'+Date.now(),realmId:currentRealmId,name:'Session '+(count+1),
     playerKey:(r.characters[0]?.key||''),history:[],activeTags:[],
-    createdAt:Date.now(),lastActiveAt:Date.now()
+    createdAt:Date.now(),lastActiveAt:Date.now(),renameDone:false
   };
   await dbPut('sessions',sess);
   openSession(sess.id);
@@ -591,6 +655,7 @@ document.getElementById('btnStartSession').onclick=async()=>{
 /* ====================== CHAT SESSION ====================== */
 let currentSession=null;
 let currentRealm=null;
+let chatTargetKey=''; // '' = auto (use router); char.key = direct addressing
 
 async function openSession(sessId){
   const sess=await dbGet('sessions',sessId);
@@ -598,6 +663,7 @@ async function openSession(sessId){
   const realm=await dbGet('realms',sess.realmId);
   if(!realm){toast('REALM NOT FOUND');return;}
   currentSession=sess;currentRealm=realm;
+  chatTargetKey=''; // reset direct target on every session open
 
   const hh=document.getElementById('chat-header');
   hh.style.display='flex';
@@ -606,8 +672,7 @@ async function openSession(sessId){
     ${renderPlayerBadgeHTML()}`;
   hh.querySelector('.back').onclick=()=>{showScreen('screen-detail');openRealmDetail(realm.id);};
   document.getElementById('chatMapToggle').onclick=()=>document.getElementById('chatMapWrap').classList.toggle('collapsed');
-  const pbBtn=document.getElementById('playerBadgeBtn');
-  if(pbBtn)pbBtn.onclick=(e)=>{e.stopPropagation();openPlayerSwitcher(e.currentTarget);};
+  bindPlayerBadge();
 
   const mapWrap=document.getElementById('chatMapWrap');
   mapWrap.innerHTML=`<div id="chatMap">${getMapSVG(realm.mapConfig?.mapType||'custom')}<div id="chatMapTokens"></div></div>`;
@@ -622,6 +687,10 @@ async function openSession(sessId){
     t.appendChild(lbl);tokContainer.appendChild(t);
     c._mapEl=t;
   });
+  highlightPlayerToken();
+
+  // Chat target dropdown
+  renderChatTarget();
 
   document.getElementById('chat-tags').style.display='flex';
   renderChatTags();
@@ -634,6 +703,8 @@ async function openSession(sessId){
   document.getElementById('chatInput').value='';
   document.getElementById('sendBtnChat').disabled=false;
   document.getElementById('micBtnChat').disabled=false;
+  document.getElementById('sendBtnChat').classList.remove('direct-mode');
+  document.getElementById('directBanner').style.display='none';
 
   showScreen('screen-chat');
 }
@@ -660,6 +731,34 @@ function renderPlayerBadgeHTML(){
     <div class="header-right" style="margin-left:auto"><button class="icon-btn" id="chatMapToggle" title="Toggle map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></button></div>
   `;
 }
+function bindPlayerBadge(){
+  const btn=document.getElementById('playerBadgeBtn');
+  if(btn)btn.onclick=(e)=>{e.stopPropagation();openPlayerSwitcher(btn);};
+  const mt=document.getElementById('chatMapToggle');
+  if(mt)mt.onclick=()=>document.getElementById('chatMapWrap').classList.toggle('collapsed');
+}
+/* BUG #2 FIX: re-render badge on switch so the visible name updates immediately */
+function refreshPlayerBadge(){
+  const btn=document.getElementById('playerBadgeBtn');
+  if(!btn)return;
+  const fresh=renderPlayerBadgeHTML().trim();
+  // extract only the player-badge button HTML (the rest is the chatMapToggle which we keep)
+  const tempWrap=document.createElement('div');
+  tempWrap.innerHTML=fresh;
+  const newBtn=tempWrap.querySelector('#playerBadgeBtn');
+  if(newBtn){
+    btn.outerHTML=newBtn.outerHTML;
+    bindPlayerBadge();
+  }
+  highlightPlayerToken();
+}
+function highlightPlayerToken(){
+  if(!currentRealm)return;
+  const pk=currentSession?.playerKey;
+  currentRealm.characters.forEach(c=>{
+    if(c._mapEl)c._mapEl.classList.toggle('is-player',c.key===pk);
+  });
+}
 function openPlayerSwitcher(anchor){
   document.querySelectorAll('.player-popover').forEach(p=>p.remove());
   const pop=document.createElement('div');
@@ -675,17 +774,13 @@ function openPlayerSwitcher(anchor){
       row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
         <div class="player-popover-meta">
           <div class="player-popover-name">${esc(c.name)}</div>
-          <div class="player-popover-detail" title="${esc(c.personality||'')}">${esc(c.description||c.personality||'')}</div>
+          <div class="player-popover-detail" title="${esc(c.description||'')}">${esc(c.description||c.personality||'')}</div>
         </div>`;
       row.onclick=()=>{
         if(c.key===currentSession.playerKey){pop.remove();return;}
         currentSession.playerKey=c.key;
         dbPut('sessions',currentSession);
-        hh.querySelector('.back').onclick=()=>{showScreen('screen-detail');openRealmDetail(currentRealm.id);};
-        const pbBtn=document.getElementById('playerBadgeBtn');
-        if(pbBtn)pbBtn.onclick=(e)=>{e.stopPropagation();openPlayerSwitcher(e.currentTarget);};
-        const mt=document.getElementById('chatMapToggle');
-        if(mt)mt.onclick=()=>document.getElementById('chatMapWrap').classList.toggle('collapsed');
+        refreshPlayerBadge();  // BUG #2 FIX: actually re-renders now
         pop.remove();
         toast('NOW PLAYING AS '+(c.name||'').toUpperCase());
       };
@@ -700,6 +795,76 @@ function openPlayerSwitcher(anchor){
   if(pr.right>window.innerWidth-8)pop.style.left=(window.scrollX+window.innerWidth-pr.width-8)+'px';
   if(pr.left<8)pop.style.left='8px';
 }
+
+/* ---- Chat target dropdown (NEW, BUG #4) ---- */
+function renderChatTarget(){
+  const wrap=document.getElementById('chatTargetWrap');
+  wrap.innerHTML=`
+    <div class="chat-target">
+      <div class="target-pill" id="targetPill" title="Choose who to talk to directly (AUTO = router decides)" aria-haspopup="listbox">
+        <span class="tp-icon">@</span>
+        <span class="tp-name" id="targetLabel">AUTO</span>
+        <span class="tp-arrow" style="color:var(--text-3);font-size:11px;margin-left:2px">&#9660;</span>
+      </div>
+      <div class="target-popover" id="targetPopover" role="listbox"></div>
+    </div>
+  `;
+  const pill=document.getElementById('targetPill');
+  const pop=document.getElementById('targetPopover');
+  const setTarget=()=>{
+    const label=document.getElementById('targetLabel');
+    const isDirect=!!chatTargetKey;
+    pill.classList.toggle('direct',isDirect);
+    document.getElementById('sendBtnChat').classList.toggle('direct-mode',isDirect);
+    const banner=document.getElementById('directBanner');
+    if(isDirect){
+      const c=currentRealm.characters.find(x=>x.key===chatTargetKey);
+      label.textContent=c?c.name.toUpperCase():'DIRECT';
+      pill.querySelector('.tp-icon').textContent='@';
+      document.getElementById('directToName').textContent=c?c.name:'character';
+      banner.style.display='flex';
+    }else{
+      label.textContent='AUTO';
+      pill.querySelector('.tp-icon').textContent='@';
+      banner.style.display='none';
+    }
+    // refresh popover active state
+    pop.querySelectorAll('.tp-row').forEach(r=>{
+      r.classList.toggle('active',(r.dataset.key||'')===chatTargetKey);
+    });
+  };
+
+  pill.onclick=(e)=>{
+    e.stopPropagation();
+    document.querySelectorAll('.player-popover').forEach(p=>p.remove());
+    pop.classList.toggle('open');
+  };
+
+  pop.innerHTML='';
+  // AUTO row
+  const autoRow=document.createElement('div');
+  autoRow.className='tp-row'+(chatTargetKey?'':' active');
+  autoRow.dataset.key='';
+  autoRow.innerHTML=`<div class="char-avatar" style="background:linear-gradient(135deg,var(--neon-1),var(--neon-2))">AI</div>
+    <div class="tp-row-meta"><div class="tp-row-name">AUTO (Router)</div><div class="tp-row-detail">AI decides who replies</div></div>`;
+  autoRow.onclick=()=>{chatTargetKey='';pop.classList.remove('open');setTarget();toast('AUTO MODE');};
+  pop.appendChild(autoRow);
+
+  (currentRealm.characters||[]).forEach(c=>{
+    const row=document.createElement('div');
+    row.className='tp-row'+(c.key===chatTargetKey?' active':'');
+    row.dataset.key=c.key;
+    row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
+      <div class="tp-row-meta"><div class="tp-row-name">${esc(c.name)}</div><div class="tp-row-detail">${esc(c.description||c.personality||'')}</div></div>`;
+    row.onclick=()=>{chatTargetKey=c.key;pop.classList.remove('open');setTarget();toast('TALKING TO '+(c.name||'').toUpperCase());};
+    pop.appendChild(row);
+  });
+  setTarget();
+}
+document.getElementById('clearDirect').onclick=()=>{
+  chatTargetKey='';
+  renderChatTarget();
+};
 
 function renderChatTags(){
   const bar=document.getElementById('chat-tags');
@@ -743,8 +908,6 @@ function addChatBubble(h){
 }
 
 function setMapSpeaking(key,on){
-  const m=document.getElementById('chatMapWrap');
-  if(m)m.classList.toggle('chat-map-speaking-extra',false);
   const c=(currentRealm?.characters||[]).find(x=>x.key===key);
   if(c?._mapEl)c._mapEl.classList.toggle('speaking',on);
 }
@@ -775,10 +938,20 @@ async function handleChatSend(){
   sess.lastActiveAt=Date.now();
   await dbPut('sessions',sess);
 
+  // Fire-and-forget auto-rename (BUG #1 FIX: fully isolated)
   maybeAutoRename(sess);
 
+  // BUG #4 FIX: pick responders — direct mode bypasses router
+  let responders;
+  if(chatTargetKey){
+    const target=realm.characters.find(c=>c.key===chatTargetKey);
+    if(target)responders=[chatTargetKey];
+    else responders=await routeMessage(text,playerKey,realm,sess);
+  }else{
+    responders=await routeMessage(text,playerKey,realm,sess);
+  }
+
   try{
-    const responders=await routeMessage(text,playerKey,realm,sess);
     const already=[];
     for(const rKey of responders){
       const c=realm.characters.find(x=>x.key===rKey);if(!c)continue;
@@ -940,27 +1113,64 @@ async function transcribe(blob){
   }catch(e){console.error('STT failed',e);return null;}
 }
 
-/* ---- Task controller: auto rename at exactly 10 messages ---- */
+/* ---- BUG #1 FIX: Task controller auto-rename ----
+   - Idempotent via per-session renameDone flag
+   - 8-second timeout via AbortController
+   - Defensive content parsing
+   - Triggers dashboard refresh on success
+*/
 async function maybeAutoRename(sess){
+  if(!sess)return;
+  if(sess.renameDone)return;
   if((sess.history||[]).length!==10)return;
+
+  // Mark immediately so duplicate sends can't double-trigger
+  sess.renameDone=true;
+  await dbPut('sessions',sess);
+
+  const ctl=new AbortController();
+  const timeoutId=setTimeout(()=>ctl.abort(),8000);
+
   try{
     const lines=sess.history.slice(0,10).map(h=>`${h.speaker}: ${h.text}`).join('\n');
     const{provider,model}=parseModel(settings.taskModel||DEFAULT_SETTINGS.taskModel);
     const p=PROVIDERS[provider];const key=settings[p.keyName];
     const prompt=`Summarize this conversation into a short, catchy session title (2-4 words). Output ONLY the title, no quotes.\n\n${lines}`;
     const res=await fetch(`${p.base}/chat/completions`,{
-      method:'POST',headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
-      body:JSON.stringify({model,messages:[{role:'user',content:prompt}],temperature:.7,max_tokens:20})
+      method:'POST',
+      headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
+      body:JSON.stringify({model,messages:[{role:'user',content:prompt}],temperature:.7,max_tokens:20}),
+      signal:ctl.signal
     });
+    clearTimeout(timeoutId);
+    if(!res.ok)throw new Error(`Rename API ${res.status}`);
     const data=await res.json();
-    const title=data.choices[0].message.content.trim().replace(/^["']|["']$/g,'');
-    if(title){
-      sess.name=title;
-      await dbPut('sessions',sess);
+
+    // DEFENSIVE content parsing — model might return tool_call only, etc.
+    let content=data?.choices?.[0]?.message?.content;
+    if(typeof content!=='string'||!content.trim())throw new Error('No text content in response');
+
+    const title=content.trim().replace(/^["']|["']$/g,'').slice(0,40);
+    if(!title)throw new Error('Empty title after trim');
+    if(title.toLowerCase()===sess.name.toLowerCase())return; // no-op rename
+
+    sess.name=title;
+    await dbPut('sessions',sess);
+
+    // Update visible UI only if this is still the active session
+    if(currentSession?.id===sess.id){
       const el=document.querySelector('#chat-header .session-name');
-      if(el&&currentSession?.id===sess.id)el.textContent=title;
+      if(el)el.textContent=title;
     }
-  }catch(e){console.warn('Auto rename failed',e);}
+    // Refresh dashboard's recent activity list so it shows new title
+    renderDashboard();
+  }catch(e){
+    // Always reset the flag on failure so a retry has a chance later
+    sess.renameDone=false;
+    await dbPut('sessions',sess).catch(()=>{});
+    // Silent — auto-rename is decoration, not critical
+    if(e.name!=='AbortError')console.warn('Auto rename failed:',e.message);
+  }
 }
 
 /* ====================== MODALS ====================== */
@@ -1024,6 +1234,7 @@ function renderThemePicker(){
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     document.querySelectorAll('.player-popover').forEach(p=>p.remove());
+    document.querySelectorAll('.target-popover.open').forEach(p=>p.classList.remove('open'));
     if(document.getElementById('overlay').classList.contains('open'))closeModal();
   }
 });
