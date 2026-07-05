@@ -1,7 +1,5 @@
 /* ===================================================================
    SUNNY DECK // RETRO  —  stylesheet
-   Synthwave / CRT / Arcade theme. All tokens live in :root and
-   the active theme swaps them at runtime (see app.js applyTheme).
    =================================================================== */
 
 :root{
@@ -46,7 +44,7 @@ input,textarea{font-family:'VT323',monospace;font-size:18px;background:none;bord
 .screen{flex:1;overflow-y:auto;display:none;flex-direction:column}
 .screen.active{display:flex}
 
-/* ===== HEADER ===== */
+/* ===== HEADER (top bar with logo + dashboard/setings) ===== */
 header{
   display:flex;align-items:center;gap:12px;padding:10px 16px;flex-shrink:0;z-index:30;
   background:linear-gradient(180deg,var(--surface),var(--bg));
@@ -54,9 +52,9 @@ header{
 }
 .brand{display:flex;align-items:center;gap:12px}
 .brand .logo{
-  width:36px;height:36px;background:#0d0221;
-  border:2px solid var(--text);box-shadow:var(--glow-1);
-  display:grid;place-items:center;overflow:hidden;flex-shrink:0;
+  width:38px;height:38px;background:#0d0221;
+  border:2px solid var(--neon-3);box-shadow:0 0 14px rgba(255,230,0,.45);
+  display:grid;place-items:center;overflow:hidden;flex-shrink:0;border-radius:50%;
 }
 .brand .logo svg{width:100%;height:100%;display:block}
 .brand .title{
@@ -75,6 +73,8 @@ header{
 .icon-btn.is-on{color:var(--neon-3);border-color:var(--neon-3);background:rgba(255,230,0,.1)}
 .icon-btn.is-on:hover{box-shadow:0 0 10px rgba(255,230,0,.5)}
 .icon-btn.is-off{opacity:0.65}
+.icon-btn.is-lock{color:var(--neon-1);border-color:var(--neon-1);background:rgba(255,46,151,.12);box-shadow:0 0 10px rgba(255,46,151,.55)}
+.icon-btn.is-lock:hover{color:var(--neon-2);border-color:var(--neon-2);box-shadow:0 0 10px rgba(0,240,255,.5)}
 
 /* ===== HORIZON DECOR (dashboard) ===== */
 .horizon{
@@ -144,6 +144,12 @@ header{
 .activity-title,.s-name{font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .activity-meta,.s-meta{font-size:15px;color:var(--text-3);margin-top:1px}
 .activity-empty{font-size:18px;color:var(--text-3);text-align:center;padding:18px;border:2px dashed var(--border)}
+.lock-pill{
+  display:inline-flex;align-items:center;gap:4px;font-family:'Press Start 2P',monospace;font-size:7px;
+  padding:3px 6px;background:rgba(255,46,151,.15);border:1px solid var(--neon-1);color:var(--neon-1);
+  letter-spacing:1px
+}
+.lock-pill svg{width:9px;height:9px}
 
 /* ===== BROWSE ===== */
 #region-search,
@@ -256,7 +262,6 @@ header{
 .detail-section h3{margin-bottom:12px}
 .detail-section p{font-size:17px;color:var(--text-2);line-height:1.5}
 
-/* Realm-detail character rows: avatar + name + meta + actions (mute pill inside) */
 .char-row{
   display:flex;align-items:center;gap:12px;padding:10px 12px;
   background:var(--surface);border:2px solid var(--border-soft);margin-bottom:6px
@@ -283,10 +288,14 @@ header{
 /* ===== CHAT ===== */
 #chat-header{
   display:flex;align-items:center;gap:10px;padding:8px 16px;flex-shrink:0;
-  background:linear-gradient(180deg,var(--surface),var(--bg));border-bottom:2px solid var(--neon-1)
+  background:linear-gradient(180deg,var(--surface),var(--bg));border-bottom:2px solid var(--neon-1);
+  flex-wrap:nowrap
 }
 .realm-tag{font-size:14px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px}
-.session-name{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--neon-2)}
+.session-name{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--neon-2);display:inline-flex;align-items:center;gap:6px}
+.session-name .lock-inline{color:var(--neon-1);display:inline-flex;align-items:center}
+.session-name .lock-inline svg{width:11px;height:11px}
+.chat-toolbar{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0}
 
 /* Player switcher badge */
 .player-badge{
@@ -301,6 +310,8 @@ header{
 .player-badge .pb-label{font-size:11px;color:var(--neon-2);text-transform:uppercase;letter-spacing:1px}
 .player-badge .pb-name{font-size:17px;color:var(--text);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .player-badge .pb-arrow{font-size:11px;color:var(--neon-2);margin-left:2px}
+.player-badge.whisper{border-color:var(--neon-1)}
+.player-badge.whisper .pb-label{color:var(--neon-1)}
 
 .player-popover{
   position:absolute;z-index:200;
@@ -321,7 +332,6 @@ header{
 .player-popover-name{font-size:18px;color:var(--neon-3);line-height:1.2}
 .player-popover-empty{padding:14px;font-size:15px;color:var(--text-3);text-align:center}
 
-/* NEW: eye (mute) button on player popover row */
 .pp-mute-btn{
   background:transparent;border:2px solid var(--border);color:var(--text-2);
   width:32px;height:32px;display:grid;place-items:center;flex-shrink:0;cursor:pointer;transition:.12s
@@ -384,6 +394,20 @@ header{
 }
 .direct-banner #clearDirect:hover{background:var(--neon-1);color:#0d0221}
 
+/* NEW: whisper banner */
+.whisper-banner{
+  display:flex;align-items:center;gap:10px;padding:7px 10px;margin-bottom:8px;
+  background:rgba(0,240,255,.08);border:2px solid var(--neon-2);
+  font-family:'Press Start 2P',monospace;font-size:9px;color:var(--neon-2);
+  text-transform:uppercase;letter-spacing:1px
+}
+.whisper-banner svg{width:11px;height:11px}
+.whisper-banner #exitWhisper{
+  margin-left:auto;background:transparent;border:1px solid var(--neon-2);
+  color:var(--neon-2);padding:3px 8px;font-family:'Press Start 2P',monospace;font-size:8px;cursor:pointer
+}
+.whisper-banner #exitWhisper:hover{background:var(--neon-2);color:#0d0221}
+
 .input-row{display:flex;gap:8px;align-items:flex-end}
 #chatInput{
   flex:1;background:var(--bg);border:2px solid var(--border);padding:11px 14px;color:var(--text);
@@ -400,6 +424,7 @@ header{
 #sendBtnChat{background:var(--neon-1);border-color:var(--neon-1);color:#0d0221;box-shadow:var(--glow-1)}
 #sendBtnChat:hover{background:var(--neon-2);border-color:var(--neon-2)}
 #sendBtnChat.direct-mode{border-color:var(--neon-1);box-shadow:var(--glow-1);animation:btmPulse 1.4s ease-in-out infinite}
+#sendBtnChat.whisper-mode{background:var(--neon-2);border-color:var(--neon-2);color:#0d0221;box-shadow:var(--glow-2);animation:btmPulse 1.4s ease-in-out infinite}
 @keyframes btmPulse{50%{box-shadow:0 0 14px rgba(255,46,151,.7)}}
 #micBtnChat.rec{background:var(--danger);border-color:var(--danger);color:#fff;animation:blinkDot .8s steps(2) infinite}
 
@@ -412,6 +437,7 @@ header{
 }
 .target-pill:hover{border-color:var(--neon-2);color:var(--neon-2)}
 .target-pill.direct{border-color:var(--neon-1);background:rgba(255,46,151,.1);box-shadow:var(--glow-1)}
+.target-pill.whisper-mode{border-color:var(--neon-2);background:rgba(0,240,255,.1);box-shadow:var(--glow-2)}
 .target-pill .tp-icon{
   font-family:'Press Start 2P',monospace;font-size:9px;color:var(--neon-2);
   letter-spacing:1px;flex-shrink:0
@@ -436,6 +462,10 @@ header{
 .target-popover .tp-row:hover{background:var(--surface-2);color:var(--neon-2)}
 .target-popover .tp-row.active{background:rgba(0,240,255,.1);color:var(--neon-2);border-left:3px solid var(--neon-2);padding-left:9px}
 .target-popover .tp-row .char-avatar{width:26px;height:26px;font-size:8px}
+.target-popover .tp-row .tp-lock-badge{
+  margin-left:auto;font-family:'Press Start 2P',monospace;font-size:7px;color:var(--neon-3);
+  border:1px solid var(--neon-3);padding:2px 5px;letter-spacing:1px
+}
 .target-popover .tp-empty{padding:14px;font-size:15px;color:var(--text-3);text-align:center}
 
 /* Minimap */
@@ -460,10 +490,9 @@ header{
   background:var(--neon-1);color:#0d0221;font-family:'Press Start 2P',monospace;
   font-size:6px;padding:1px 4px;letter-spacing:1px;white-space:nowrap
 }
-.map-token.muted{
-  opacity:0.32;filter:grayscale(0.85);
-}
-.map-token.muted::before{display:none}
+.map-token.muted{opacity:0.32;filter:grayscale(0.85)}
+.map-token.is-player.muted::after{display:none}
+.map-token.whisper-only{border-color:var(--neon-2);box-shadow:0 0 0 2px rgba(0,240,255,.4)}
 .map-token .mt-label{
   position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);
   background:var(--bg);border:1px solid var(--neon-2);color:var(--neon-2);

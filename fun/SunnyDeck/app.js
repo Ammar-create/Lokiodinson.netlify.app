@@ -225,6 +225,15 @@ function toast(msg){
 /* ====================== HTML SAFETY ====================== */
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
+/* ====================== ICON LIBRARY ====================== */
+const SOUND_ON_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>`;
+const SOUND_OFF_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>`;
+const EYE_ON_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const EYE_OFF_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+const LOCK_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+const LOCK_OPEN_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>`;
+const MAP_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>`;
+
 /* ====================== NAVIGATION ====================== */
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -339,14 +348,15 @@ async function renderDashboard(){
   document.getElementById('statSessions').textContent=sessions.length;
   document.getElementById('statChars').textContent=chars;
 
-  const recent=sessions.sort((a,b)=>(b.lastActiveAt||0)-(a.lastActiveAt||0)).slice(0,5);
+  // Recent activity: separate whispers from regular
+  const regular=sessions.filter(s=>!s.isWhisper).sort((a,b)=>(b.lastActiveAt||0)-(a.lastActiveAt||0)).slice(0,5);
   const list=document.getElementById('recentList');
   list.innerHTML='';
-  if(recent.length===0){
+  if(regular.length===0){
     list.innerHTML='<div class="activity-empty">NO SESSIONS YET. CREATE A REALM AND START CHATTING.</div>';return;
   }
   const realmMap={};realms.forEach(r=>realmMap[r.id]=r);
-  recent.forEach(s=>{
+  regular.forEach(s=>{
     const r=realmMap[s.realmId];
     const div=document.createElement('div');div.className='activity';div.style.cursor='pointer';
     div.onclick=()=>openSession(s.id);
@@ -435,7 +445,6 @@ async function generateRealmWithAI(name,description,modelStr){
   if(!p)throw new Error('Unknown provider');
   const key=settings[p.keyName];
   if(!key)throw new Error(`Missing API key for ${provider}`);
-
   const sys=`You are a world-building assistant for a roleplay chat platform. Given a realm name and description, output ONLY valid JSON matching this exact schema:
 {"overview":"2-3 sentence scene description","mapType":"ship|apartment|tower|custom","characters":[{"key":"lowercase_unique","name":"Character Name","description":"Role/appearance (1 sentence)","personality":"Core traits (1 sentence)","keywords":["topic1","topic2"],"voice":"Mia|Chloe|Milo|Dean|mimo_default","color":"#hexcolor","pos":{"x":0-100,"y":0-100}}]}
 Include 3-10 characters appropriate to the world. Be authentic. Output ONLY JSON.`;
@@ -547,37 +556,47 @@ async function openRealmDetail(id){
   document.getElementById('detailCharCount').textContent=(r.characters||[]).length;
   document.getElementById('detailModel').textContent=parseModel(r.creativeModel||'').model||'AI';
   document.getElementById('detailVisual').innerHTML=getMapSVG(r.mapConfig?.mapType||'custom');
-
   renderDetailChars();
 
   const sessions=await dbGetAll('sessions');
-  const mine=sessions.filter(s=>s.realmId===id).sort((a,b)=>(b.lastActiveAt||0)-(a.lastActiveAt||0));
-  document.getElementById('detailSessCount').textContent=mine.length;
+  // Whisper sessions are private — list them in a separate section
+  const whispers=sessions.filter(s=>s.realmId===id&&s.isWhisper).sort((a,b)=>(b.lastActiveAt||0)-(a.lastActiveAt||0));
+  const regular=sessions.filter(s=>s.realmId===id&&!s.isWhisper).sort((a,b)=>(b.lastActiveAt||0)-(a.lastActiveAt||0));
+
+  document.getElementById('detailSessCount').textContent=regular.length;
   const sList=document.getElementById('detailSessions');
   sList.innerHTML='';
-  if(mine.length===0){
-    sList.innerHTML='<div class="activity-empty">NO SESSIONS YET. START ONE TO CHAT.</div>';
-  }else{
-    mine.forEach(s=>{
-      const rc=currentRealm.characters.filter(c=>!isCharDisabled(s,c.key)).length;
-      const totalC=currentRealm.characters.length;
-      const p=currentRealm.characters.find(c=>c.key===s.playerKey);
-      const playerLabel=p?`as ${esc(p.name)}`:'(no player)';
-      const muteNote=rc<totalC?` &middot; <span style="color:var(--danger)">${rc}/${totalC}</span>`:'';
-      const row=document.createElement('div');row.className='session-row';
-      row.innerHTML=`<div class="s-name">${esc(s.name)}</div><div class="s-meta">${playerLabel}${muteNote} &middot; ${new Date(s.lastActiveAt||Date.now()).toLocaleDateString()} &middot; ${(s.history||[]).length} MSGS</div>`;
-      const go=document.createElement('button');go.className='s-btn';go.textContent='OPEN';go.onclick=()=>openSession(s.id);
-      const del=document.createElement('button');del.className='s-btn danger';del.textContent='DEL';
-      del.onclick=async()=>{if(confirm('Delete session?')){await dbDelete('sessions',s.id);openRealmDetail(id);}};
-      row.append(go,del);
-      sList.appendChild(row);
-    });
+  const renderSessRow=(s)=>{
+    const rc=currentRealm.characters.filter(c=>!isCharDisabled(s,c.key)).length;
+    const totalC=currentRealm.characters.length;
+    const p=currentRealm.characters.find(c=>c.key===s.playerKey);
+    const playerLabel=p?`as ${esc(p.name)}`:'(no player)';
+    const muteNote=rc<totalC?` &middot; <span style="color:var(--danger)">${rc}/${totalC}</span>`:'';
+    const row=document.createElement('div');row.className='session-row';
+    const titleHTML=s.isWhisper
+      ? `<span class="lock-pill" title="Whisper session">${LOCK_SVG} PRIVATE</span> ${esc(s.name)}`
+      : esc(s.name);
+    row.innerHTML=`<div class="s-name">${titleHTML}</div><div class="s-meta">${playerLabel}${muteNote} &middot; ${new Date(s.lastActiveAt||Date.now()).toLocaleDateString()} &middot; ${(s.history||[]).length} MSGS</div>`;
+    const go=document.createElement('button');go.className='s-btn';go.textContent='OPEN';go.onclick=()=>openSession(s.id);
+    const del=document.createElement('button');del.className='s-btn danger';del.textContent='DEL';
+    del.onclick=async()=>{if(confirm('Delete session?')){await dbDelete('sessions',s.id);openRealmDetail(id);}};
+    row.append(go,del);
+    return row;
+  };
+  regular.forEach(s=>sList.appendChild(renderSessRow(s)));
+  if(regular.length===0)sList.innerHTML='<div class="activity-empty">NO SESSIONS YET. START ONE TO CHAT.</div>';
+  if(whispers.length){
+    sList.appendChild((()=>{
+      const h=document.createElement('div');
+      h.style.cssText='margin-top:14px;padding-top:10px;border-top:2px dashed var(--border);font-family:"Press Start 2P",monospace;font-size:9px;color:var(--neon-1);text-transform:uppercase;letter-spacing:1px';
+      h.innerHTML=`PRIVATE WHISPERS (${whispers.length})`;
+      sList.appendChild(h);
+      whispers.forEach(s=>sList.appendChild(renderSessRow(s)));
+    })());
   }
   showScreen('screen-detail');
 }
 
-/* NEW: compact character rows in Realm Detail. Each row has a single EDIT button
-   that opens a comprehensive modal covering voice + personality + system prompt. */
 function renderDetailChars(){
   const cList=document.getElementById('detailChars');
   cList.innerHTML='';
@@ -585,16 +604,13 @@ function renderDetailChars(){
     const row=document.createElement('div');row.className='char-row';
     row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
       <div class="char-info"><div class="char-name">${esc(c.name)}</div><div class="char-mini" title="${esc(c.personality||c.description||'')}">${esc(c.personality||c.description||'')}</div></div>
-      <div class="char-actions">
-        <button data-i="${i}" class="edit-realm-char">EDIT</button>
-      </div>`;
+      <div class="char-actions"><button data-i="${i}" class="edit-realm-char">EDIT</button></div>`;
     cList.appendChild(row);
   });
   cList.querySelectorAll('.edit-realm-char').forEach(btn=>{
     btn.onclick=e=>editRealmCharacter(+e.target.dataset.i);
   });
 }
-/* Comprehensive edit modal for a character in currentRealm (NOT draft) */
 function editRealmCharacter(idx){
   const c=currentRealm.characters[idx];
   openModal('EDIT '+c.name.toUpperCase(),`
@@ -642,6 +658,8 @@ document.getElementById('btnDeleteRealm').onclick=async()=>{
   await dbDelete('realms',currentRealmId);
   toast('REALM DELETED');showScreen('screen-browse');renderBrowse();
 };
+
+/* Build two kinds of session now: regular and whisper */
 document.getElementById('btnStartSession').onclick=async()=>{
   if(!currentRealmId)return;
   const r=await dbGet('realms',currentRealmId);if(!r)return;
@@ -650,45 +668,57 @@ document.getElementById('btnStartSession').onclick=async()=>{
   const sess={
     id:'sess-'+Date.now(),realmId:currentRealmId,name:'Session '+(count+1),
     playerKey:(r.characters[0]?.key||''),history:[],activeTags:[],
-    disabledCharacters:[],createdAt:Date.now(),lastActiveAt:Date.now(),renameDone:false
+    disabledCharacters:[],isWhisper:false,createdAt:Date.now(),lastActiveAt:Date.now(),renameDone:false
   };
   await dbPut('sessions',sess);
   openSession(sess.id);
 };
+/* Whisper session creation: launched from chat header */
+function startWhisperSession(){
+  if(!currentRealm||!currentSession)return;
+  // Clone current session as a whisper twin
+  const twin={
+    ...JSON.parse(JSON.stringify(currentSession)),
+    id:'sess-'+Date.now()+'-w',
+    isWhisper:true,createdAt:Date.now(),lastActiveAt:Date.now(),
+    renameDone:false,disabledCharacters:[]
+  };
+  dbPut('sessions',twin).then(()=>openSession(twin.id));
+}
 
 /* ====================== CHAT SESSION ====================== */
 let currentSession=null;
 let currentRealm=null;
-let chatTargetKey=''; // '' = AUTO (use router); char.key = direct
+let chatTargetKey='';
 
-/* helper: is this character muted in the current session? */
-function isCharDisabled(sess,charKey){
-  return (sess?.disabledCharacters||[]).includes(charKey);
-}
-/* enabled count for display */
-function enabledCount(sess,realm){
-  if(!sess||!realm)return 0;
-  return (realm.characters||[]).filter(c=>!isCharDisabled(sess,c.key)).length;
-}
+function isCharDisabled(sess,charKey){return(sess?.disabledCharacters||[]).includes(charKey);}
+function isWhisperActive(){return !!currentSession?.isWhisper;}
 
 async function openSession(sessId){
   const sess=await dbGet('sessions',sessId);
   if(!sess){toast('SESSION NOT FOUND');return;}
   const realm=await dbGet('realms',sess.realmId);
   if(!realm){toast('REALM NOT FOUND');return;}
-  // backfill fields on legacy sessions
   if(!Array.isArray(sess.disabledCharacters))sess.disabledCharacters=[];
   await dbPut('sessions',sess);
   currentSession=sess;currentRealm=realm;
   chatTargetKey='';
+  // If whisper mode is on and there's exactly one enabled non-self char, pre-select them
+  if(sess.isWhisper){
+    const candidates=realm.characters.filter(c=>c.key!==sess.playerKey&&!isCharDisabled(sess,c.key));
+    if(candidates.length===1)chatTargetKey=candidates[0].key;
+  }
 
+  /* BUG FIX: header layout now keeps back button outside .chat-toolbar so refreshing
+     the toolbar (player switch / sound toggle / whisper toggle / map toggle) cannot
+     nuke the back button. */
   const hh=document.getElementById('chat-header');
   hh.style.display='flex';
   hh.innerHTML=`<button class="back" style="margin:0">&lt;&lt;</button>
-    <div><div class="realm-tag">${esc(realm.name)}</div><div class="session-name">${esc(sess.name)}</div></div>
-    ${renderPlayerBadgeHTML()}`;
+    <div>${renderSessionTitle()}</div>
+    <div class="chat-toolbar">${renderChatToolbarHTML()}</div>`;
   hh.querySelector('.back').onclick=()=>{showScreen('screen-detail');openRealmDetail(realm.id);};
-  bindPlayerBadge();
+  bindChatToolbar();
 
   const mapWrap=document.getElementById('chatMapWrap');
   mapWrap.innerHTML=`<div id="chatMap">${getMapSVG(realm.mapConfig?.mapType||'custom')}<div id="chatMapTokens"></div></div>`;
@@ -718,61 +748,83 @@ async function openSession(sessId){
   document.getElementById('chatInput').value='';
   document.getElementById('sendBtnChat').disabled=false;
   document.getElementById('micBtnChat').disabled=false;
-  document.getElementById('sendBtnChat').classList.remove('direct-mode');
+  document.getElementById('sendBtnChat').classList.remove('direct-mode','whisper-mode');
   document.getElementById('directBanner').style.display='none';
+  document.getElementById('whisperBanner').style.display=sess.isWhisper?'flex':'none';
 
   showScreen('screen-chat');
 }
 
-/* ---- Player switcher ---- */
-function currentPlayer(){
-  if(!currentSession||!currentRealm)return null;
-  return currentRealm.characters.find(c=>c.key===currentSession.playerKey)||currentRealm.characters[0]||null;
+function renderSessionTitle(){
+  const lockIcon=currentSession?.isWhisper?`<span class="lock-inline" title="Private whisper session" aria-hidden="true">${LOCK_SVG}</span>`:'';
+  return `<div class="realm-tag">${esc(currentRealm.name)}</div><div class="session-name">${lockIcon}${esc(currentSession.name)}</div>`;
 }
-function renderPlayerBadgeHTML(){
+
+/* Toolbar returns BADGE + ICONS — back button lives outside */
+function renderChatToolbarHTML(){
   const p=currentPlayer();
   const soundOn=!!settings.ttsEnabled;
+  const whisperOn=!!currentSession?.isWhisper;
   return `
-    <button class="player-badge" id="playerBadgeBtn" title="Switch character & toggle mute" aria-haspopup="listbox">
+    <button class="player-badge ${whisperOn?'whisper':''}" id="playerBadgeBtn" title="Switch character & toggle mute" aria-haspopup="listbox">
       <div class="char-avatar pb-avatar" style="background:${esc(p?p.color:'#888')}">${esc((p?(p.name.slice(0,2).toUpperCase()):'??'))}</div>
       <div class="pb-meta">
-        <div class="pb-label">YOU ARE</div>
+        <div class="pb-label">${whisperOn?'WHISPER AS':'YOU ARE'}</div>
         <div class="pb-name">${esc(p?p.name:'—')}</div>
       </div>
       <span class="pb-arrow">&#9660;</span>
     </button>
-    <div class="header-right" style="margin-left:auto">
+    <div class="header-right">
       <button class="icon-btn ${soundOn?'is-on':'is-off'}" id="soundToggle" title="${soundOn?'Voice auto-play ON':'Voice auto-play OFF'}">
         ${soundOn?SOUND_ON_SVG:SOUND_OFF_SVG}
       </button>
+      <button class="icon-btn ${whisperOn?'is-lock':''}" id="whisperToggle" title="${whisperOn?'Whisper mode ON — only your selected character can hear you':'Start a private whisper session'}">
+        ${whisperOn?LOCK_SVG:LOCK_OPEN_SVG}
+      </button>
       <button class="icon-btn" id="chatMapToggle" title="Toggle map">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+        ${MAP_SVG}
       </button>
     </div>
   `;
 }
 
-const SOUND_ON_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>`;
-const SOUND_OFF_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>`;
-const EYE_ON_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
-const EYE_OFF_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
-
-function bindPlayerBadge(){
+function bindChatToolbar(){
   const pb=document.getElementById('playerBadgeBtn');
   if(pb)pb.onclick=(e)=>{e.stopPropagation();openPlayerSwitcher(pb);};
   const mt=document.getElementById('chatMapToggle');
   if(mt)mt.onclick=()=>document.getElementById('chatMapWrap').classList.toggle('collapsed');
   const sb=document.getElementById('soundToggle');
   if(sb)sb.onclick=()=>setSoundEnabled(!settings.ttsEnabled);
+  const wt=document.getElementById('whisperToggle');
+  if(wt)wt.onclick=()=>toggleWhisper();
 }
-/* Refresh badge in place (used after player switch or sound toggle) */
-function refreshPlayerBadge(){
-  const wrap=document.querySelector('#chat-header .player-badge')?.parentElement;
-  const pb=document.getElementById('playerBadgeBtn');
-  if(!wrap||!pb)return;
-  wrap.innerHTML=renderPlayerBadgeHTML().trim();
-  bindPlayerBadge();
+
+/* Refresh entire header (title + toolbar) safely without killing the back button */
+function refreshChatHeader(){
+  const hh=document.getElementById('chat-header');
+  if(!hh)return;
+  const back=hh.querySelector('.back');
+  const titleBlock=hh.querySelector(':scope > div:not(.chat-toolbar)');
+  const toolbar=hh.querySelector('.chat-toolbar');
+  if(titleBlock)titleBlock.innerHTML=currentSession&&currentRealm?renderSessionTitle():'';
+  if(toolbar)toolbar.innerHTML=renderChatToolbarHTML();
+  bindChatToolbar();
   highlightPlayerToken();
+  // Show/hide whisper banner
+  const banner=document.getElementById('whisperBanner');
+  if(banner)banner.style.display=isWhisperActive()?'flex':'none';
+}
+function refreshPlayerBadgeOnly(){
+  const wrap=document.querySelector('#chat-header .chat-toolbar');
+  if(!wrap)return;
+  wrap.innerHTML=renderChatToolbarHTML();
+  bindChatToolbar();
+  highlightPlayerToken();
+}
+
+function currentPlayer(){
+  if(!currentSession||!currentRealm)return null;
+  return currentRealm.characters.find(c=>c.key===currentSession.playerKey)||currentRealm.characters[0]||null;
 }
 function highlightPlayerToken(){
   if(!currentRealm||!currentSession)return;
@@ -784,7 +836,6 @@ function highlightPlayerToken(){
   });
 }
 
-/* BUG #2 FIX REINFORCED: re-render on every switch */
 function openPlayerSwitcher(anchor){
   document.querySelectorAll('.player-popover').forEach(p=>p.remove());
   const pop=document.createElement('div');
@@ -801,13 +852,13 @@ function openPlayerSwitcher(anchor){
       row.setAttribute('role','option');
       row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
         <div class="player-popover-meta"><div class="player-popover-name">${esc(c.name)}</div></div>
-        <button class="pp-mute-btn ${muted?'is-muted':''}" data-key="${esc(c.key)}" title="${muted?'Unmute (include in this session)':'Mute (exclude from this session)'}">${muted?EYE_OFF_SVG:EYE_ON_SVG}</button>`;
+        <button class="pp-mute-btn ${muted?'is-muted':''}" data-key="${esc(c.key)}" title="${muted?'Unmute':'Mute'}">${muted?EYE_OFF_SVG:EYE_ON_SVG}</button>`;
       row.onclick=(e)=>{
         if(e.target.closest('.pp-mute-btn'))return;
         if(c.key===currentSession.playerKey){pop.remove();return;}
         currentSession.playerKey=c.key;
         dbPut('sessions',currentSession);
-        refreshPlayerBadge();
+        refreshChatHeader(); // refresh whole chip + label
         pop.remove();
         toast('NOW PLAYING AS '+(c.name||'').toUpperCase());
       };
@@ -828,7 +879,7 @@ function openPlayerSwitcher(anchor){
   if(pr.left<8)pop.style.left='8px';
 }
 
-/* BUG #8: toggle character enabled/disabled in current session */
+/* Mute toggle (session.disabledCharacters) */
 async function toggleCharEnabled(key){
   if(!currentSession)return;
   const dc=currentSession.disabledCharacters||(currentSession.disabledCharacters=[]);
@@ -841,36 +892,60 @@ async function toggleCharEnabled(key){
     toast(name+' MUTED');
   }
   await dbPut('sessions',currentSession);
-  // clear chatTarget if it referred to the muted one
-  if(chatTargetKey===key){chatTargetKey='';}
-  // refresh dependent UI
+  if(chatTargetKey===key){
+    chatTargetKey='';
+    // If whisper mode is on and toggle removed our last non-self char, exit whisper gracefully
+    if(isWhisperActive()&&chatTargetCandidates().length===0){
+      currentSession.isWhisper=false;
+      await dbPut('sessions',currentSession);
+      toast('WHISPER EXITED — NO PARTICIPANTS LEFT');
+    }
+  }
   renderChatTarget();
   highlightPlayerToken();
-  // re-open popover if it was anchored — handled by caller when user clicks again
 }
 
-/* BUG #2 FIX REINFORCED: autoplay toggle */
+/* Sound autoplay toggle */
 async function setSoundEnabled(on){
   settings.ttsEnabled=!!on;
   await saveSettings();
-  refreshPlayerBadge();
+  refreshPlayerBadgeOnly();
   toast(settings.ttsEnabled?'VOICE AUTOPLAY ON':'VOICE AUTOPLAY OFF');
 }
 
-/* BUG #1 FIX REINFORCED + #4: chat target dropdown */
+/* NEW: Whisper mode toggle (lock button) */
+async function toggleWhisper(){
+  if(!currentSession)return;
+  currentSession.isWhisper=!currentSession.isWhisper;
+  await dbPut('sessions',currentSession);
+  if(currentSession.isWhisper){
+    // pick the only enabled non-self if there's exactly one
+    const candidates=chatTargetCandidates();
+    if(candidates.length===0){toast('UNMUTE A CHARACTER FIRST');currentSession.isWhisper=false;await dbPut('sessions',currentSession);refreshChatHeader();return;}
+    if(candidates.length===1)chatTargetKey=candidates[0].key;
+    toast('WHISPER MODE — PRIVATE CHANNEL');
+  }else{
+    toast('WHISPER MODE OFF');
+  }
+  refreshChatHeader();
+  renderChatTarget();
+}
+
+document.getElementById('exitWhisper').onclick=()=>{toggleWhisper();};
+
 function chatTargetCandidates(){
-  // Exclude self + muted characters
   return (currentRealm?.characters||[])
     .filter(c=>c.key!==currentSession?.playerKey)
     .filter(c=>!isCharDisabled(currentSession,c.key));
 }
 function renderChatTarget(){
   const wrap=document.getElementById('chatTargetWrap');
+  const whisper=isWhisperActive();
   wrap.innerHTML=`
     <div class="chat-target">
-      <div class="target-pill" id="targetPill" title="Auto: router decides; Pick: talk directly to that character" aria-haspopup="listbox">
-        <span class="tp-icon">@</span>
-        <span class="tp-name" id="targetLabel">AUTO</span>
+      <div class="target-pill ${whisper?'whisper-mode':''} ${chatTargetKey?'direct':''}" id="targetPill" title="${whisper?'Whisper mode: pick one to address directly':'Auto: router decides. Pick: address directly'}" aria-haspopup="listbox">
+        <span class="tp-icon">${whisper?'🔒':'@'}</span>
+        <span class="tp-name" id="targetLabel">${chatTargetKey?'PICKED':'AUTO'}</span>
         <span style="color:var(--text-3);font-size:11px;margin-left:2px">&#9660;</span>
       </div>
       <div class="target-popover" id="targetPopover" role="listbox"></div>
@@ -881,8 +956,10 @@ function renderChatTarget(){
   const setTarget=()=>{
     const label=document.getElementById('targetLabel');
     const isDirect=!!chatTargetKey;
-    pill.classList.toggle('direct',isDirect);
-    document.getElementById('sendBtnChat').classList.toggle('direct-mode',isDirect);
+    pill.classList.toggle('direct',isDirect&&!whisper);
+    pill.classList.toggle('whisper-mode',whisper&&isDirect);
+    document.getElementById('sendBtnChat').classList.toggle('direct-mode',isDirect&&!whisper);
+    document.getElementById('sendBtnChat').classList.toggle('whisper-mode',whisper);
     const banner=document.getElementById('directBanner');
     if(isDirect){
       const c=currentRealm.characters.find(x=>x.key===chatTargetKey);
@@ -908,20 +985,28 @@ function renderChatTarget(){
   pop.innerHTML='';
   const candidates=chatTargetCandidates();
 
-  // BUG #7 FIX: in a session where only 1 person can reply, routes are pointless.
-  // AUTO still appears (lets user release direct mode), but won't actively run router.
-  const autoRow=document.createElement('div');
-  autoRow.className='tp-row'+(chatTargetKey?'':' active');
-  autoRow.dataset.key='';
-  autoRow.innerHTML=`<div class="char-avatar" style="background:linear-gradient(135deg,var(--neon-1),var(--neon-2))">AI</div>
-    <div class="tp-row-meta"><div class="tp-row-name">AUTO ${candidates.length<=1?'(forced direct)':'(router decides)'}</div></div>`;
-  autoRow.onclick=()=>{chatTargetKey='';pop.classList.remove('open');setTarget();toast('AUTO MODE');};
-  pop.appendChild(autoRow);
+  // WHISPER MODE: hide AUTO entirely — user MUST pick a target
+  if(!whisper){
+    const autoRow=document.createElement('div');
+    autoRow.className='tp-row'+(chatTargetKey?'':' active');
+    autoRow.dataset.key='';
+    const desc=candidates.length<=1?'FORCED DIRECT':'ROUTER DECIDES';
+    autoRow.innerHTML=`<div class="char-avatar" style="background:linear-gradient(135deg,var(--neon-1),var(--neon-2))">AI</div>
+      <div class="tp-row-meta"><div class="tp-row-name">AUTO (${desc})</div></div>`;
+    autoRow.onclick=()=>{chatTargetKey='';pop.classList.remove('open');setTarget();toast('AUTO MODE');};
+    pop.appendChild(autoRow);
+  }else{
+    // Whisper mode opener: title + explainer
+    const head=document.createElement('div');
+    head.className='tp-empty';
+    head.innerHTML='PRIVATE WHISPER &mdash; PICK ONE:';
+    pop.appendChild(head);
+  }
 
   if(candidates.length===0){
     const empty=document.createElement('div');
     empty.className='tp-empty';
-    empty.textContent='No other characters enabled. Unmute one in the roster.';
+    empty.textContent=whisper?'No partners enabled. Unmute one first.':'No other characters enabled.';
     pop.appendChild(empty);
   }else{
     candidates.forEach(c=>{
@@ -929,8 +1014,9 @@ function renderChatTarget(){
       row.className='tp-row'+(c.key===chatTargetKey?' active':'');
       row.dataset.key=c.key;
       row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
-        <div class="tp-row-meta"><div class="tp-row-name">${esc(c.name)}</div></div>`;
-      row.onclick=()=>{chatTargetKey=c.key;pop.classList.remove('open');setTarget();toast('TALKING TO '+(c.name||'').toUpperCase());};
+        <div class="tp-row-meta"><div class="tp-row-name">${esc(c.name)}</div></div>
+        ${whisper?'<span class="tp-lock-badge">LOCK</span>':''}`;
+      row.onclick=()=>{chatTargetKey=c.key;pop.classList.remove('open');setTarget();toast(whisper?'WHISPERING TO '+(c.name||'').toUpperCase():'TALKING TO '+(c.name||'').toUpperCase());};
       pop.appendChild(row);
     });
   }
@@ -966,356 +1052,4 @@ function renderChatTags(){
 }
 
 function addChatBubble(h){
-  const chat=document.getElementById('chat');
-  const key=h.speakerKey||'';
-  const name=h.speaker||'?';
-  const text=h.text||'';
-  const isMe=!!h.isPlayer;
-  const c=(currentRealm?.characters||[]).find(x=>x.key===key)||{color:'#888',name};
-  const div=document.createElement('div');div.className='msg'+(isMe?' me':'');
-  div.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(name.slice(0,2).toUpperCase())}</div>
-    <div class="bubble"><div class="who" style="color:${esc(c.color)}">${esc(name)}${!isMe?'<button class="replay" title="Replay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>':''}</div><div>${esc(text)}</div></div>`;
-  if(!isMe)div.querySelector('.replay').onclick=()=>speakChat(text,key);
-  chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
-}
-
-function setMapSpeaking(key,on){
-  const c=(currentRealm?.characters||[]).find(x=>x.key===key);
-  if(c?._mapEl)c._mapEl.classList.toggle('speaking',on);
-}
-
-/* ---- Send flow ---- */
-document.getElementById('sendBtnChat').onclick=handleChatSend;
-document.getElementById('chatInput').addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();handleChatSend();}
-});
-
-let chatBusy=false;
-async function handleChatSend(){
-  const text=document.getElementById('chatInput').value.trim();
-  if(!text||chatBusy)return;
-  if(!hasApiKeys()){toast('ADD YOUR AQUA API KEY IN SETTINGS');return;}
-  chatBusy=true;
-  document.getElementById('sendBtnChat').disabled=true;
-  document.getElementById('chatInput').value='';
-
-  const sess=currentSession;const realm=currentRealm;
-  const playerKey=sess.playerKey||realm.characters[0]?.key;
-  const player=realm.characters.find(c=>c.key===playerKey)||realm.characters[0];
-  const playerName=player?player.name:'You';
-
-  const h={speakerKey:playerKey,speaker:playerName,text,timestamp:Date.now(),isPlayer:true};
-  addChatBubble(h);
-  sess.history.push(h);
-  sess.lastActiveAt=Date.now();
-  await dbPut('sessions',sess);
-
-  maybeAutoRename(sess);
-
-  // BUG #4 + #7 FIX: build responder list smartly
-  const responders=await pickResponders(text,playerKey,realm,sess);
-
-  try{
-    const already=[];
-    for(const rKey of responders){
-      const c=realm.characters.find(x=>x.key===rKey);if(!c)continue;
-      showTyping(c.name);
-      setMapSpeaking(rKey,true);
-      let reply;
-      try{reply=await getReply(rKey,text,already,sess,realm);}
-      finally{hideTyping();setMapSpeaking(rKey,false);}
-      const replyH={speakerKey:rKey,speaker:c.name,text:reply,timestamp:Date.now(),isPlayer:false};
-      addChatBubble(replyH);
-      sess.history.push(replyH);
-      sess.lastActiveAt=Date.now();
-      await dbPut('sessions',sess);
-      already.push(rKey);
-      await speakChat(reply,rKey);
-    }
-  }catch(e){
-    console.error(e);toast(e.message||'CHAT FAILED');
-  }
-
-  chatBusy=false;
-  document.getElementById('sendBtnChat').disabled=false;
-  document.getElementById('chatInput').focus();
-}
-
-/* Responder selection rule
-   - Direct target chosen AND target enabled → just that one
-   - 1 enabled non-player candidate → forced direct (no router call)
-   - Otherwise → router decides
-*/
-async function pickResponders(text,playerKey,realm,sess){
-  // explicit direct
-  if(chatTargetKey){
-    const target=realm.characters.find(c=>c.key===chatTargetKey);
-    if(target && !isCharDisabled(sess,target.key))return [chatTargetKey];
-    chatTargetKey='';
-  }
-  const candidates=realm.characters.filter(c=>c.key!==playerKey&&!isCharDisabled(sess,c.key)).map(c=>c.key);
-  if(candidates.length===0)return [];
-  if(candidates.length===1)return candidates;
-  return await routeMessage(text,playerKey,realm,sess);
-}
-
-function showTyping(name){
-  const chat=document.getElementById('chat');
-  const div=document.createElement('div');div.className='typing';div.id='typingInd';
-  div.innerHTML=`${esc(name.toUpperCase())} IS TYPING <span class="cursor"></span>`;
-  chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
-}
-function hideTyping(){document.getElementById('typingInd')?.remove();}
-
-/* ---- Router ---- */
-async function routeMessage(text,playerKey,realm,sess){
-  const candidates=realm.characters
-    .filter(c=>c.key!==playerKey&&!isCharDisabled(sess,c.key))
-    .map(c=>c.key);
-  if(candidates.length===0)return[];
-  if(candidates.length===1)return candidates;
-  const recent=sess.history.slice(-8).map(h=>`${h.speaker}: ${h.text}`).join('\n');
-  const{provider,model}=parseModel(settings.routerModel||DEFAULT_SETTINGS.routerModel);
-  const p=PROVIDERS[provider];const key=settings[p.keyName];
-  const prompt=`You are the conversation director in ${realm.name}.
-The speaker is ${realm.characters.find(c=>c.key===playerKey)?.name}.
-Message: "${text}"
-Recent: ${recent||'(none)'}
-Decide who naturally responds (1 or 2 names if the message clearly involves/provokes two people).
-Output ONLY JSON: {"responders":["key1"]} or {"responders":["key1","key2"]}
-Options: ${candidates.join(', ')}`;
-  try{
-    const res=await fetch(`${p.base}/chat/completions`,{
-      method:'POST',headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
-      body:JSON.stringify({model,messages:[{role:'user',content:prompt}],max_tokens:60,temperature:0})
-    });
-    const data=await res.json();
-    const m=data.choices[0].message.content.match(/\{[\s\S]*\}/);
-    if(!m)throw new Error('no json');
-    const parsed=JSON.parse(m[0]);
-    const picks=(parsed.responders||[]).map(n=>String(n).toLowerCase().trim()).filter(n=>candidates.includes(n)).slice(0,2);
-    if(picks.length)return picks;
-  }catch(e){console.warn('Router failed',e);}
-  return[candidates[Math.floor(Math.random()*candidates.length)]];
-}
-
-/* ---- Character reply ---- */
-async function getReply(responderKey,userText,alreadyReplied,sess,realm){
-  const c=realm.characters.find(x=>x.key===responderKey);
-  const player=realm.characters.find(x=>x.key===sess.playerKey);
-  const recent=sess.history.slice(-20).map(h=>`${h.speaker}: ${h.text}`).join('\n');
-  const tags=(sess.activeTags||[]).join(', ');
-  const repliedNote=alreadyReplied.length?`\n${alreadyReplied.map(k=>realm.characters.find(x=>x.key===k)?.name).join(' and ')} already replied; react to what they said.`:'';
-  const tagNote=tags?`\nActive tone tags: ${tags}. Apply their natural meaning. Do not mention the tags.`:'';
-  const extra=c.system?`\n${c.system}`:'';
-  const sys=`You are ${c.name} in ${realm.name}. ${c.description}. Personality: ${c.personality}.${extra}
-Talking to ${player?.name||'the user'}.${repliedNote}${tagNote}
-RULES:
-- Output SPOKEN DIALOGUE ONLY. No asterisks, no narration, no actions. These words become audio.
-- Stay fully in character. 1-3 sentences, natural conversational length.
-- Never mention being an AI.
-
-Conversation so far:
-${recent||'(just started)'}`;
-
-  const{provider,model}=parseModel(settings.chatModel||DEFAULT_SETTINGS.chatModel);
-  const p=PROVIDERS[provider];const key=settings[p.keyName];
-  const res=await fetch(`${p.base}/chat/completions`,{
-    method:'POST',headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
-    body:JSON.stringify({model,messages:[{role:'system',content:sys},{role:'user',content:`${player?.name||'User'} says: "${userText}"`}],temperature:.9,max_tokens:200})
-  });
-  if(!res.ok)throw new Error(`Chat ${res.status}`);
-  const data=await res.json();
-  return data.choices[0].message.content.trim();
-}
-
-/* ---- TTS ---- */
-let currentAudio=null;
-async function speakChat(text,speakerKey){
-  if(!settings.ttsEnabled)return;
-  if(!settings.aquaKey)return;
-  const{model}=parseModel(settings.ttsModel||DEFAULT_SETTINGS.ttsModel);
-  const c=(currentRealm?.characters||[]).find(x=>x.key===speakerKey);if(!c)return;
-  const voiceId=c.voice||'mimo_default';
-  try{
-    setMapSpeaking(speakerKey,true);
-    const res=await fetch(`${PROVIDERS.aqua.base}/audio/speech`,{
-      method:'POST',headers:{'Authorization':`Bearer ${settings.aquaKey}`,'Content-Type':'application/json'},
-      body:JSON.stringify({model,input:text,audio:{voice:voiceId}})
-    });
-    if(!res.ok)throw new Error(`TTS ${res.status}`);
-    const data=await res.json();
-    if(!data.success||!data.url)throw new Error('No audio URL');
-    const audioRes=await fetch(data.url);
-    if(!audioRes.ok)throw new Error('Audio fetch failed');
-    const blob=await audioRes.blob();
-    const url=URL.createObjectURL(blob);
-    if(currentAudio){currentAudio.pause();currentAudio=null;}
-    currentAudio=new Audio(url);
-    await new Promise(done=>{
-      currentAudio.onended=()=>{URL.revokeObjectURL(url);done();};
-      currentAudio.onerror=()=>{URL.revokeObjectURL(url);done();};
-      currentAudio.play().catch(done);
-    });
-  }catch(e){console.error('TTS failed',e);}
-  finally{setMapSpeaking(speakerKey,false);}
-}
-
-/* ---- STT (Groq Whisper) ---- */
-let mediaRecorder=null;
-let audioChunks=[];
-document.getElementById('micBtnChat').onclick=async()=>{
-  if(mediaRecorder&&mediaRecorder.state==='recording'){mediaRecorder.stop();return;}
-  try{
-    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-    mediaRecorder=new MediaRecorder(stream);audioChunks=[];
-    mediaRecorder.ondataavailable=e=>audioChunks.push(e.data);
-    mediaRecorder.onstop=async()=>{
-      stream.getTracks().forEach(t=>t.stop());
-      document.getElementById('micBtnChat').classList.remove('rec');
-      const blob=new Blob(audioChunks,{type:'audio/webm'});
-      const txt=await transcribe(blob);
-      if(txt){document.getElementById('chatInput').value=txt;handleChatSend();}
-      else toast('COULD NOT TRANSCRIBE');
-    };
-    mediaRecorder.start();
-    document.getElementById('micBtnChat').classList.add('rec');
-  }catch{toast('MIC ACCESS DENIED');}
-};
-
-async function transcribe(blob){
-  if(!settings.groqKey){toast('GROQ KEY MISSING FOR SPEECH');return null;}
-  try{
-    const{model}=parseModel(settings.sttModel||DEFAULT_SETTINGS.sttModel);
-    const fd=new FormData();
-    fd.append('file',blob,'audio.webm');
-    fd.append('model',model||'whisper-large-v3');
-    const res=await fetch(`${PROVIDERS.groq.base}/audio/transcriptions`,{
-      method:'POST',headers:{'Authorization':`Bearer ${settings.groqKey}`},body:fd
-    });
-    const data=await res.json();
-    return(data.text||'').trim();
-  }catch(e){console.error('STT failed',e);return null;}
-}
-
-/* ---- BUG #1 FIX REINFORCED: idempotent + timeout + defensive parsing ---- */
-async function maybeAutoRename(sess){
-  if(!sess)return;
-  if(sess.renameDone)return;
-  if((sess.history||[]).length!==10)return;
-  sess.renameDone=true;
-  await dbPut('sessions',sess);
-
-  const ctl=new AbortController();
-  const timeoutId=setTimeout(()=>ctl.abort(),8000);
-
-  try{
-    const lines=sess.history.slice(0,10).map(h=>`${h.speaker}: ${h.text}`).join('\n');
-    const{provider,model}=parseModel(settings.taskModel||DEFAULT_SETTINGS.taskModel);
-    const p=PROVIDERS[provider];const key=settings[p.keyName];
-    const prompt=`Summarize this conversation into a short, catchy session title (2-4 words). Output ONLY the title, no quotes.\n\n${lines}`;
-    const res=await fetch(`${p.base}/chat/completions`,{
-      method:'POST',
-      headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
-      body:JSON.stringify({model,messages:[{role:'user',content:prompt}],temperature:.7,max_tokens:20}),
-      signal:ctl.signal
-    });
-    clearTimeout(timeoutId);
-    if(!res.ok)throw new Error(`Rename API ${res.status}`);
-    const data=await res.json();
-    let content=data?.choices?.[0]?.message?.content;
-    if(typeof content!=='string'||!content.trim())throw new Error('No text content');
-    const title=content.trim().replace(/^["']|["']$/g,'').slice(0,40);
-    if(!title)throw new Error('Empty title');
-    if(title.toLowerCase()===sess.name.toLowerCase())return;
-    sess.name=title;
-    await dbPut('sessions',sess);
-    if(currentSession?.id===sess.id){
-      const el=document.querySelector('#chat-header .session-name');
-      if(el)el.textContent=title;
-    }
-    renderDashboard();
-  }catch(e){
-    sess.renameDone=false;
-    await dbPut('sessions',sess).catch(()=>{});
-    if(e.name!=='AbortError')console.warn('Auto rename failed:',e.message);
-  }
-}
-
-/* ====================== MODALS ====================== */
-function openModal(title,html,sizeCls){
-  document.getElementById('modalTitle').textContent=title;
-  document.getElementById('modalBody').innerHTML=html;
-  const box=document.getElementById('modalBox');
-  box.classList.toggle('wide',sizeCls==='wide');
-  document.getElementById('overlay').classList.add('open');
-}
-function closeModal(){document.getElementById('overlay').classList.remove('open');}
-document.getElementById('modalClose').onclick=closeModal;
-document.getElementById('overlay').onclick=e=>{if(e.target===document.getElementById('overlay'))closeModal();};
-
-/* ====================== SETTINGS UI ====================== */
-function fillSettings(){
-  document.getElementById('sAquaKey').value=settings.aquaKey;
-  document.getElementById('sGroqKey').value=settings.groqKey;
-  dd.creative.value=settings.creativeModel;
-  dd.task.value=settings.taskModel;
-  dd.router.value=settings.routerModel;
-  dd.chat.value=settings.chatModel;
-  dd.tts.value=settings.ttsModel;
-  dd.stt.value=settings.sttModel;
-  document.getElementById('sTtsOn').checked=settings.ttsEnabled;
-  renderThemePicker();
-}
-document.getElementById('sSave').onclick=async()=>{
-  settings.aquaKey=document.getElementById('sAquaKey').value.trim();
-  settings.groqKey=document.getElementById('sGroqKey').value.trim();
-  settings.creativeModel=dd.creative.value||DEFAULT_SETTINGS.creativeModel;
-  settings.taskModel=dd.task.value||DEFAULT_SETTINGS.taskModel;
-  settings.routerModel=dd.router.value||DEFAULT_SETTINGS.routerModel;
-  settings.chatModel=dd.chat.value||DEFAULT_SETTINGS.chatModel;
-  settings.ttsModel=dd.tts.value||DEFAULT_SETTINGS.ttsModel;
-  settings.sttModel=dd.stt.value||DEFAULT_SETTINGS.sttModel;
-  settings.ttsEnabled=document.getElementById('sTtsOn').checked;
-  await saveSettings();
-  toast('SETTINGS SAVED');
-  showScreen('screen-dash');renderDashboard();
-};
-document.getElementById('sReset').onclick=async()=>{
-  settings={...DEFAULT_SETTINGS};
-  await saveSettings();
-  applyTheme(settings.theme);
-  fillSettings();
-  toast('DEFAULTS RESTORED');
-};
-
-function renderThemePicker(){
-  const wrap=document.getElementById('themePicker');
-  wrap.innerHTML='';
-  Object.entries(THEMES).forEach(([name,vars])=>{
-    const dot=document.createElement('div');
-    dot.className='theme-opt'+(name===settings.theme?' active':'');
-    dot.style.background=`linear-gradient(135deg, ${vars['--neon-1']} 0 50%, ${vars['--bg']} 50% 100%)`;
-    dot.dataset.theme=name;dot.title=name;
-    dot.onclick=()=>{settings.theme=name;applyTheme(name);saveSettings();};
-    wrap.appendChild(dot);
-  });
-}
-
-document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){
-    document.querySelectorAll('.player-popover').forEach(p=>p.remove());
-    document.querySelectorAll('.target-popover.open').forEach(p=>p.classList.remove('open'));
-    if(document.getElementById('overlay').classList.contains('open'))closeModal();
-  }
-});
-
-/* ====================== INIT ====================== */
-(async()=>{
-  await loadSettings();
-  initSettingsDropdowns();
-  await ensurePremades();
-  renderDashboard();
-  renderBrowse();
-  if(!settings.aquaKey)setTimeout(()=>toast('ADD YOUR AQUA API KEY IN SETTINGS'),700);
-})();
+  const chat=document.getElementById('chat-
