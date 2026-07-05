@@ -14,7 +14,6 @@
 </head>
 <body>
 
-<!-- ===== OVERLAY / MODAL ===== -->
 <div id="overlay">
   <div class="modal" id="modalBox">
     <div class="modal-head">
@@ -27,14 +26,11 @@
   </div>
 </div>
 
-<!-- ===== TOAST ===== -->
 <div id="toast"></div>
 
-<!-- ===== HEADER ===== -->
 <header id="mainHeader">
   <div class="brand">
     <div class="logo" aria-label="Sunny Deck">
-      <!-- Detailed retro sun-over-horizon emblem. Inline so it stays crisp at any size. -->
       <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <defs>
           <linearGradient id="sunG" x1="0" y1="0" x2="0" y2="1">
@@ -47,24 +43,14 @@
             <stop offset="1" stop-color="#ffe600" stop-opacity="0"/>
           </radialGradient>
         </defs>
-        <!-- base -->
         <rect width="40" height="40" fill="#0d0221"/>
-        <!-- starfield -->
         <g fill="#fdf3ff">
-          <circle cx="5"  cy="5"  r="0.5"/>
-          <circle cx="14" cy="10" r="0.4"/>
-          <circle cx="25" cy="3"  r="0.4"/>
-          <circle cx="32" cy="8"  r="0.5"/>
-          <circle cx="2"  cy="14" r="0.3"/>
-          <circle cx="38" cy="13" r="0.3"/>
-          <circle cx="36" cy="17" r="0.4"/>
-          <circle cx="3"  cy="20" r="0.4"/>
-          <circle cx="38" cy="26" r="0.3"/>
+          <circle cx="5"  cy="5"  r="0.5"/><circle cx="14" cy="10" r="0.4"/><circle cx="25" cy="3"  r="0.4"/>
+          <circle cx="32" cy="8"  r="0.5"/><circle cx="2"  cy="14" r="0.3"/><circle cx="38" cy="13" r="0.3"/>
+          <circle cx="36" cy="17" r="0.4"/><circle cx="3"  cy="20" r="0.4"/><circle cx="38" cy="26" r="0.3"/>
           <circle cx="4"  cy="28" r="0.3"/>
         </g>
-        <!-- halo -->
         <circle cx="20" cy="20" r="14" fill="url(#haloG)"/>
-        <!-- rays -->
         <g stroke="#ffe600" stroke-width="0.7" opacity="0.65" stroke-linecap="round">
           <line x1="20" y1="2"  x2="20" y2="5"/>
           <line x1="9"  y1="20" x2="6"  y2="20"/>
@@ -74,18 +60,14 @@
           <line x1="11.5" y1="28.5" x2="9.5"  y2="30.5"/>
           <line x1="28.5" y1="28.5" x2="30.5" y2="30.5"/>
         </g>
-        <!-- main disc -->
         <circle cx="20" cy="20" r="11" fill="url(#sunG)"/>
-        <!-- setting bands -->
         <g fill="#0d0221">
           <rect x="9"  y="22"   width="22" height="1.3"/>
           <rect x="10" y="24.5" width="20" height="1.3"/>
           <rect x="11" y="27"   width="18" height="1.3"/>
           <rect x="12" y="29"   width="16" height="1.3"/>
         </g>
-        <!-- horizon line -->
         <line x1="0" y1="31" x2="40" y2="31" stroke="#ff2e97" stroke-width="1.4"/>
-        <!-- perspective grid -->
         <g stroke="#ff2e97" stroke-width="0.5" opacity="0.9">
           <line x1="20" y1="31" x2="0"  y2="40"/>
           <line x1="20" y1="31" x2="9"  y2="40"/>
@@ -93,12 +75,10 @@
           <line x1="20" y1="31" x2="31" y2="40"/>
           <line x1="20" y1="31" x2="40" y2="40"/>
         </g>
-        <!-- depth horizontals -->
         <g stroke="#ff2e97" stroke-width="0.35" opacity="0.55">
           <line x1="0" y1="34.5" x2="40" y2="34.5"/>
           <line x1="0" y1="37.5" x2="40" y2="37.5"/>
         </g>
-        <!-- highlight pin on sun -->
         <circle cx="16" cy="16" r="2" fill="#ffffaa" opacity="0.55"/>
       </svg>
     </div>
@@ -114,7 +94,6 @@
   </div>
 </header>
 
-<!-- ===== DASHBOARD ===== -->
 <section class="screen active" id="screen-dash">
   <div class="horizon"><div class="grid-floor"></div><div class="sun"></div></div>
   <div id="dash">
@@ -141,7 +120,6 @@
   </div>
 </section>
 
-<!-- ===== BROWSE ===== -->
 <section class="screen" id="screen-browse">
   <div id="browse">
     <div class="browse-bar">
@@ -152,45 +130,28 @@
   </div>
 </section>
 
-<!-- ===== CREATE REALM ===== -->
 <section class="screen" id="screen-create">
   <div id="create">
     <button class="back" id="createBack">&lt;&lt; BACK</button>
-
     <div class="step active" id="step-info">
       <h2>CREATE A REALM</h2>
-      <div class="field">
-        <label>Realm Name</label>
-        <input type="text" id="crName" placeholder="e.g. Central Perk Apartment">
-      </div>
-      <div class="field">
-        <label>Description</label>
-        <textarea id="crDesc" placeholder="Describe the world, situation, and atmosphere..."></textarea>
-      </div>
-      <div class="field">
-        <label>Creative Controller</label>
-        <div id="crControllerDD"></div>
-        <div class="hint">Aqua model that builds this world. Groq is STT only.</div>
-      </div>
+      <div class="field"><label>Realm Name</label><input type="text" id="crName" placeholder="e.g. Central Perk Apartment"></div>
+      <div class="field"><label>Description</label><textarea id="crDesc" placeholder="Describe the world, situation, and atmosphere..."></textarea></div>
+      <div class="field"><label>Creative Controller</label><div id="crControllerDD"></div><div class="hint">Aqua model that builds this world. Groq is STT only.</div></div>
       <div class="btn-row">
         <button class="btn btn-ghost" id="crCancel">Cancel</button>
         <button class="btn btn-primary" id="crGenerate">Generate</button>
       </div>
     </div>
-
     <div class="step" id="step-gen">
       <div class="gen-status">
         <div class="loader-bar"><i></i></div>
         <p id="genText">GENERATING WORLD... PLEASE WAIT</p>
       </div>
     </div>
-
     <div class="step" id="step-review">
       <h2>REVIEW REALM</h2>
-      <div class="field">
-        <label>Overview</label>
-        <textarea id="crOverview" placeholder="Scene overview..."></textarea>
-      </div>
+      <div class="field"><label>Overview</label><textarea id="crOverview" placeholder="Scene overview..."></textarea></div>
       <div class="detail-section"><h3>Characters</h3></div>
       <div class="char-grid" id="reviewChars"></div>
       <button class="btn btn-ghost" id="crAddChar" style="margin-bottom:16px">+ ADD CHARACTER</button>
@@ -224,7 +185,6 @@
   </div>
 </section>
 
-<!-- ===== REALM DETAIL ===== -->
 <section class="screen" id="screen-detail">
   <div id="realm-detail">
     <button class="back" id="detailBack">&lt;&lt; BROWSE</button>
@@ -241,9 +201,7 @@
       </div>
     </div>
     <div class="detail-section"><h3>Overview</h3><p id="detailOverview"></p></div>
-
     <div class="detail-section"><h3>Characters</h3><div id="detailChars"></div></div>
-
     <div class="detail-section">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
         <h3 style="margin:0">Sessions</h3>
@@ -257,7 +215,6 @@
   </div>
 </section>
 
-<!-- ===== CHAT ===== -->
 <section class="screen" id="screen-chat">
   <div id="chatMapWrap"></div>
   <div id="chat-header" style="display:none"></div>
@@ -287,25 +244,15 @@
   </div>
 </section>
 
-<!-- ===== SETTINGS ===== -->
 <section class="screen" id="screen-settings">
   <div id="settings-screen">
     <div class="settings-card">
       <h2>SETTINGS</h2>
-
       <div class="detail-section"><h3>Appearance</h3></div>
       <div class="theme-picker" id="themePicker"></div>
-
       <div class="detail-section"><h3>API Keys</h3></div>
-      <div class="field">
-        <label>Aqua API Key</label>
-        <input type="password" id="sAquaKey" placeholder="aqua_sk_..." autocomplete="new-password">
-      </div>
-      <div class="field">
-        <label>Groq API Key</label>
-        <input type="password" id="sGroqKey" placeholder="gsk_..." autocomplete="new-password">
-      </div>
-
+      <div class="field"><label>Aqua API Key</label><input type="password" id="sAquaKey" placeholder="aqua_sk_..." autocomplete="new-password"></div>
+      <div class="field"><label>Groq API Key</label><input type="password" id="sGroqKey" placeholder="gsk_..." autocomplete="new-password"></div>
       <div class="detail-section"><h3>Models (provider:model)</h3></div>
       <div class="field"><label>Creative Controller</label><div id="ddCreative"></div><div class="hint">Builds realms and characters.</div></div>
       <div class="field"><label>Task Controller</label><div id="ddTask"></div><div class="hint">Names sessions. Fast Aqua model.</div></div>
@@ -313,13 +260,11 @@
       <div class="field"><label>Chat Model</label><div id="ddChat"></div><div class="hint">Generates in-character replies.</div></div>
       <div class="field"><label>TTS Model</label><div id="ddTts"></div><div class="hint">MiMo TTS with built-in voice IDs.</div></div>
       <div class="field"><label>STT Model</label><div id="ddStt"></div><div class="hint">Groq Whisper only.</div></div>
-
       <div class="detail-section"><h3>Defaults</h3></div>
       <div class="field" style="display:flex;align-items:center;gap:10px">
         <input type="checkbox" id="sTtsOn" style="width:auto;accent-color:var(--neon-1)" checked>
         <label style="margin:0">Voice replies enabled by default</label>
       </div>
-
       <div class="btn-row">
         <button class="btn btn-ghost" id="sReset">Reset</button>
         <button class="btn btn-primary" id="sSave">Save</button>
@@ -329,5 +274,6 @@
 </section>
 
 <script src="app.js" defer></script>
+<script src="app-ai.js" defer></script>
 </body>
 </html>
