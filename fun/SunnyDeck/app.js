@@ -20,8 +20,8 @@ const THEMES={
   },
   vaporwave:{
     '--bg':'#160b26','--surface':'#231240','--surface-2':'#2f1a55','--surface-3':'#3c266b',
-    '--border':'#54398c','--border-soft':'#3c266b','--neon-1':'#ff71ce','--neon-2':'#01cdfe',
-    '--neon-3':'#05ffa1','--danger':'#ff4f7b','--ok':'#05ffa1',
+    '--border':'#54398c','--71ce','--neon-2':'#01fe',
+    '--neon-3':'#05ffa1','--danger4f7b','--ok':'#05ffa1',
     '--text':'#fdf3ff','--text-2':'#c9a9e8','--text-3':'#8a6bb5'
   },
   sunset:{
@@ -41,8 +41,7 @@ function applyTheme(name){
   const t=THEMES[name]||THEMES.synthwave;
   const root=document.documentElement;
   Object.entries(t).forEach(([k,v])=>root.style.setProperty(k,v));
-  root.style.setProperty('--glow-1',`0 0 6px ${t['--neon-1']}b0,0 0 18px ${t['--neon-1']}50`);
-  root.style.setProperty('--glow-2',`0 0 6px ${t['--neon-2']}b0,0 0 18px ${t['--neon-2']}50`);
+  root.style.setProperty('--glow-1',`0 0 6px ${t['--neon-1']}b0,0 0  ${--neon-1 .setProperty('--glow-2',`06px ${t['--neon-2']}b0,0 0 18px ${t['--neon-2']}50`);
   document.querySelectorAll('.theme-opt').forEach(el=>el.classList.toggle('active',el.dataset.theme===name));
 }
 
@@ -179,46 +178,16 @@ const DEFAULT_SETTINGS={
   taskModel:'aqua:gemini-3.1-lite',
   routerModel:'aqua:diffusion-gemma',
   chatModel:'aqua:deepseek-v4',
-  ttsModel:'aqua:mimo-v2.5-tts',
-  sttModel:'groq:whisper-large-v3',
-  ttsEnabled:true,
-  theme:'synthwave'
-};
-let settings={...DEFAULT_SETTINGS};
-async function loadSettings(){
-  const s=await dbGet('settings','cfg');
-  if(s)settings={...DEFAULT_SETTINGS,...s};
-  applyTheme(settings.theme);
-}
-async function saveSettings(){await dbPut('settings',settings,'cfg');}
-function hasApiKeys(){return settings.aquaKey.trim().length>0;}
+  ttsModel:'aqua. st:whisper-large-v3',
+Enabled,
+  theme'
+ loadGet)...};
+ functionsettings settingsquaKey.trim().length>0;}
 
-let dd={};
-function initSettingsDropdowns(){
+Settings(){
   dd.creative=createDropdown(document.getElementById('ddCreative'),TEXT_MODEL_OPTS,settings.creativeModel);
-  dd.task=createDropdown(document.getElementById('ddTask'),FAST_MODEL_OPTS,settings.taskModel);
-  dd.router=createDropdown(document.getElementById('ddRouter'),FAST_MODEL_OPTS,settings.routerModel);
-  dd.chat=createDropdown(document.getElementById('ddChat'),TEXT_MODEL_OPTS,settings.chatModel);
-  dd.tts=createDropdown(document.getElementById('ddTts'),TTS_MODEL_OPTS,settings.ttsModel);
-  dd.stt=createDropdown(document.getElementById('ddStt'),STT_MODEL_OPTS,settings.sttModel);
-}
-
-/* ====================== TOAST ====================== */
-let toastTimer;
-function toast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
-}
-
-/* ====================== HTML SAFETY ====================== */
-function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-
-/* ====================== NAVIGATION ====================== */
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id)?.classList.add('active');
+  dd.task=createDropdown(document.getElementById('ddTask'),FASTTS ddddModel.chatcreateddsettingsDropdownId'),Model.getT_MODEL_OPtASTfunctionElement t.class');
+ toastList*function'').g','>&;'c==================== =functionSelector(s('(id)?.classList.add('active');
   document.getElementById('mainHeader').style.display=(id==='screen-chat')?'none':'flex';
 }
 document.getElementById('toDashboard').onclick=()=>{showScreen('screen-dash');renderDashboard();};
@@ -237,13 +206,9 @@ function seedPremadeRealms(){
     mapConfig:{enabled:true,mapType:'ship'},
     characters:[
       mk('luffy','Luffy','#e63946','Milo','Rubber-powered captain','Energetic, food-obsessed, fearless',['meat','food','captain','pirate king'],50,45),
-      mk('zoro','Zoro','#2a9d8f','Dean','Swordsman','Blunt, stoic, directionally hopeless',['sword','training','sake','nap'],35,60),
-      mk('nami','Nami','#f4a261','Mia','Navigator','Sharp-tongued, money-obsessed',['money','berries','weather','map'],28,35),
+      mk('zoro','Zoro','#2a9d8f','Dean','Swordsman','Blunt, stoic, directionally hopeless',['sword','training','ake     M','ongued, money-obsessed',['money','berries','weather','map'],28,35),
       mk('usopp','Usopp','#e9c46a','Milo','Sniper','Cowardly but brave when it counts',['lie','story','sniper','brave'],60,30),
-      mk('sanji','Sanji','#457b9d','Dean','Cook','Chivalrous, hopeless romantic',['cook','kitchen','food','ladies'],20,50),
-      mk('chopper','Chopper','#f28ab2','Mia','Doctor','Childlike, sweet, naive reindeer',['doctor','medicine','cotton candy','heal'],45,70),
-      mk('robin','Robin','#9d6b9e','Chloe','Archaeologist','Calm, intelligent, darkly humorous',['history','poneglyph','books','ancient'],65,55),
-      mk('franky','Franky','#00b4d8','Dean','Shipwright','Loud cyborg with zero shame',['cola','ship','repair','super'],15,65),
+      mk('sanji','Sanji hopeless mk2Child',' mkCh','anky#00b4d8','Dean','Shipwright','Loud cyborg with zero shame',['cola','ship','repair','super'],15,65),
       mk('brook','Brook','#adb5bd','Dean','Musician','Skeleton gentleman, polite, whimsical',['music','song','soul','bone jokes'],55,40),
       mk('jinbe','Jinbe','#3a6ea5','Dean','Helmsman','Wise, honorable, calm anchor',['sea','fishman','helm','honor'],40,75)
     ]
@@ -252,18 +217,11 @@ function seedPremadeRealms(){
     id:'premade-friends',name:'Central Perk',isPremade:true,
     description:'The iconic coffee house where the Friends hang out.',
     overview:'It is a rainy afternoon at Central Perk. The orange couch is claimed, Gunther is wiping the counter, and the gang is debating nonsense over oversized mugs.',
-    mapConfig:{enabled:true,mapType:'apartment'},
-    characters:[
-      mk('monica','Monica','#e74c3c','Mia','Chef and neat freak','Competitive, caring, obsessively organized',['cleaning','cooking','chef','perfection'],50,50),
-      mk('chandler','Chandler','#3498db','Milo','Sarcastic data processor','Witty, insecure, uses humor as defense',['joke','sarcasm','work','marriage'],40,55),
-      mk('rachel','Rachel','#f39c12','Mia','Fashion enthusiast','Spoiled but growing, style-obsessed',['fashion','job','hair','shopping'],60,45),
-      mk('ross','Ross','#9b59b6','Dean','Paleontologist','Intellectual, jealous, romantically clumsy',['dinosaurs','divorce','pivot','science'],30,60),
-      mk('joey','Joey','#e67e22','Milo','Actor and ladies man','Loyal, simple, loves food and fame',['acting','food','how you doin','show'],55,55),
-      mk('phoebe','Phoebe','#2ecc71','Chloe','Eccentric masseuse','Weirdly wise, unpredictable, kind-hearted',['song','massage','smelly cat','spiritual'],45,40)
-    ]
-  };
-  const mcu={
-    id:'premade-mcu',name:'Avengers Tower',isPremade:true,
+    mapConfig:{enabled:true,mapType:'apartment:('ica neatclean','),
+lerdb',' humorasm     39','essedhair),
+','Dean jealous',',e, youebeentricsong)
+ const mcu={
+   :'premade-mcu',name:'Avengers Tower',isPremade:true,
     description:'Tony Stark\'s penthouse overlooking Manhattan.',
     overview:'The Avengers are recovering after a mission. Thor is eating shawarma at the bar, Tony is tweaking his suit, and Steve is judging everyone silently from the couch.',
     mapConfig:{enabled:true,mapType:'tower'},
@@ -300,11 +258,11 @@ function getMapSVG(type){
     <circle cx="300" cy="82" r="8" fill="none" stroke="#00ff9c" stroke-width="2"/>
     <rect x="80" y="58" width="70" height="48" fill="none" stroke="#ffe600" stroke-width="2"/>
     <circle cx="490" cy="82" r="18" fill="none" stroke="#ffe600" stroke-width="2"/>
-    <g stroke="#ffe600" stroke-width="2"><line x1="490" y1="58" x2="490" y2="50"/><line x1="490" y1="106" x2="490" y2="114"/><line x1="508" y1="66" x2="514" y2="60"/><line x1="508" y1="98" x2="514" y2="104"/></g>
+    <g stroke="#ffe600" stroke-width="2"><line x1="490" y1="58" x2="490" y2="50"/><line x1="490" y1="106" x2="490" y2="114"/1508" y1="2="60"/><line x1="5081="98" x2="514" y2="104"/></g>
     <text x="115" y="86" fill="#ffe600" font-size="11" font-family="monospace" text-anchor="middle">CABIN</text>
     <text x="300" y="86" fill="#00ff9c" font-size="11" font-family="monospace" text-anchor="middle">LAWN</text>`);
   if(type==='apartment')return wrap(`
-    <rect x="40" y="28" width="200" height="108" fill="rgba(0,240,255,.05)" stroke="#00f0ff" stroke-width="2"/>
+    <rect x="40" y="28" width="200108" fill="rgba(0,240,0ff" stroke-width="2"/>
     <rect x="258" y="28" width="112" height="62" fill="none" stroke="#ffe600" stroke-width="2"/>
     <rect x="258" y="100" width="112" height="36" fill="none" stroke="#ff2e97" stroke-width="2"/>
     <rect x="388" y="28" width="92" height="108" fill="none" stroke="#00ff9c" stroke-width="2"/>
@@ -388,7 +346,7 @@ document.getElementById('crBack2').onclick=()=>{
   document.getElementById('step-info').classList.add('active');
 };
 
-document.getElementById('crGenerate').onclick=async()=>{
+.getElementById('crGenerate').onclick=async()=>{
   const name=document.getElementById('crName').value.trim();
   const desc=document.getElementById('crDesc').value.trim();
   const controllerStr=ddCrController.value||settings.creativeModel;
@@ -433,9 +391,7 @@ Include 3-10 characters appropriate to the world. Be authentic. Output ONLY JSON
     method:'POST',headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
     body:JSON.stringify({model,messages:[{role:'system',content:sys},{role:'user',content:`Realm: ${name}\nDescription: ${description}`}],temperature:.8,max_tokens:2000})
   });
-  if(!res.ok)throw new Error(`${provider} API ${res.status}`);
-  const data=await res.json();
-  const raw=data.choices[0].message.content;
+  if(!res.ok)throw new Error(`${ message.content;
   const m=raw.match(/\{[\s\S]*\}/);
   if(!m)throw new Error('No JSON returned');
   const parsed=JSON.parse(m[0]);
@@ -480,10 +436,8 @@ function editDraftChar(idx){
   document.getElementById('m-personality').value=c.personality;
   document.getElementById('m-keywords').value=(c.keywords||[]).join(', ');
   document.getElementById('m-system').value=c.system||'';
-  const voiceDD=createDropdown(document.getElementById('m-voice-dd'),VOICE_OPTS,c.voice||'Milo');
-  document.getElementById('m-save').onclick=()=>{
-    c.name=document.getElementById('m-name').value.trim();
-    c.key=document.getElementById('m-key').value.trim().toLowerCase();
+  const voiceDD=createDropdown(document.getElementById('m-voice-dd'),VOICE_OPTS,cdocument.getElementById('m-name').value.trim();
+    c=document.getElementById('m-key').value.trim().toLowerCase();
     c.color=document.getElementById('m-color').value.trim();
     c.voice=voiceDD.value;
     c.description=document.getElementById('m-desc').value.trim();
@@ -559,34 +513,15 @@ async function openRealmDetail(id){
       row.innerHTML=`<div class="s-name">${esc(s.name)}</div><div class="s-meta">${new Date(s.lastActiveAt||Date.now()).toLocaleDateString()} · ${(s.history||[]).length} MSGS</div>`;
       const go=document.createElement('button');go.className='s-btn';go.textContent='OPEN';go.onclick=()=>openSession(s.id);
       const del=document.createElement('button');del.className='s-btn danger';del.textContent='DEL';
-      del.onclick=async()=>{if(confirm('Delete session?')){await dbDelete('sessions',s.id);openRealmDetail(id);}};
-      row.append(go,del);
-      sList.appendChild(row);
-    });
+      del.onclick=async()=>{if(confirm('await dbsessions',sDetail); sChild });
   }
   showScreen('screen-detail');
 }
 document.getElementById('detailBack').onclick=()=>{showScreen('screen-browse');renderBrowse();};
 document.getElementById('btnDeleteRealm').onclick=async()=>{
   if(!currentRealmId)return;
-  if(!confirm('Delete this realm and all its sessions?'))return;
-  const sessions=await dbGetAll('sessions');
-  for(const s of sessions){if(s.realmId===currentRealmId)await dbDelete('sessions',s.id);}
-  await dbDelete('realms',currentRealmId);
-  toast('REALM DELETED');showScreen('screen-browse');renderBrowse();
-};
-document.getElementById('btnStartSession').onclick=async()=>{
-  if(!currentRealmId)return;
-  const r=await dbGet('realms',currentRealmId);if(!r)return;
-  const sessions=await dbGetAll('sessions');
-  const count=sessions.filter(s=>s.realmId===currentRealmId).length;
-  // Default playerKey = first character. User can switch mid-session.
-  const sess={
-    id:'sess-'+Date.now(),realmId:currentRealmId,name:'Session '+(count+1),
-    playerKey:(r.characters[0]?.key||''),history:[],activeTags:[],
-    createdAt:Date.now(),lastActiveAt:Date.now()
-  };
-  await dbPut('sessions',sess);
+  if(!confirm('Delete this realm and= for)ms');By(!real sessions(s Default={
+Id.char   );
   openSession(sess.id);
 };
 
@@ -596,19 +531,7 @@ let currentRealm=null;
 
 async function openSession(sessId){
   const sess=await dbGet('sessions',sessId);
-  if(!sess){toast('SESSION NOT FOUND');return;}
-  const realm=await dbGet('realms',sess.realmId);
-  if(!realm){toast('REALM NOT FOUND');return;}
-  currentSession=sess;currentRealm=realm;
-
-  // Header with PLAYER BADGE (NEW)
-  const hh=document.getElementById('chat-header');
-  hh.style.display='flex';
-  hh.innerHTML=`<button class="back" style="margin:0">&lt;&lt;</button>
-    <div class="header-meta"><div class="realm-tag">${esc(realm.name)}</div><div class="session-name">${esc(sess.name)}</div></div>`
-    + renderPlayerBadgeHTML();
-  hh.querySelector('.back').onclick=()=>{showScreen('screen-detail');openRealmDetail(realm.id);};
-  document.getElementById('chatMapToggle').onclick=()=>document.getElementById('chatMapWrap').classList.toggle('collapsed');
+ ');ast BAD='="button="session${   -detailId=()=>document.getElementById('chatMapWrap').classList.toggle('collapsed');
   document.getElementById('playerBadgeBtn').onclick=(e)=>{e.stopPropagation();openPlayerSwitcher(e.currentTarget);};
 
   // Map
@@ -631,15 +554,7 @@ async function openSession(sessId){
   renderChatTags();
 
   // Messages
-  const chat=document.getElementById('chat');
-  chat.innerHTML='';
-  (sess.history||[]).forEach(h=>addChatBubble(h));
-
-  // Composer
-  document.getElementById('composer').style.display='block';
-  document.getElementById('chatInput').value='';
-  document.getElementById('sendBtnChat').disabled=false;
-  document.getElementById('micBtnChat').disabled=false;
+  const chat=document.getElementById.innerEachByInput=false;
 
   showScreen('screen-chat');
 }
@@ -652,33 +567,13 @@ function currentPlayer(){
 function renderPlayerBadgeHTML(){
   const p=currentPlayer();
   if(!p){
-    return `<div class="header-right" style="margin-left:auto"><button class="icon-btn" id="chatMapToggle" title="Toggle map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></button></div>`;
-  }
-  return `
-    <button class="player-badge" id="playerBadgeBtn" title="Switch character" aria-haspopup="listbox">
-      <div class="char-avatar pb-avatar" style="background:${esc(p.color)}">${esc(p.name.slice(0,2).toUpperCase())}</div>
-      <div class="pb-meta">
-        <div class="pb-label">You are</div>
-        <div class="pb-name">${esc(p.name)}</div>
-      </div>
-      <span class="pb-arrow">▼</span>
-    </button>
-    <div class="header-right" style="margin-left:auto"><button class="icon-btn" id="chatMapToggle" title="Toggle map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></button></div>
-  `;
-}
-function openPlayerSwitcher(anchor){
-  document.querySelectorAll('.player-popover').forEach(p=>p.remove());
-  const pop=document.createElement('div');
-  pop.className='player-popover';pop.setAttribute('role','listbox');
-  const chars=currentRealm?.characters||[];
-  if(chars.length===0){
-    pop.innerHTML='<div class="player-popover-empty">No characters in this realm.</div>';
-  }else{
-    chars.forEach(c=>{
-      const row=document.createElement('div');
-      row.className='player-popover-row'+(c.key===currentSession.playerKey?' active':'');
-      row.setAttribute('role','option');
-      row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
+    return `<div class="header-right" style="margin-left:auto"><button class="icon-btn" id="chatMapToggle" title="Toggle map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x="="="16"1" y></buttonplayerSwitch character-h style=")}(divpb">You>
+(pdiv▼spandiv stylebutton">< stroke" 6 116  16 6><"><" y>
+anchor').Each(p=>p.remove());
+  const pop=documentdiv-pop('Realm){
+="No realm.</div>';
+  } chars=>div-row active');
+=".color0,2).toUpperCase())}</div>
         <div class="player-popover-meta">
           <div class="player-popover-name">${esc(c.name)}</div>
           <div class="player-popover-detail" title="${esc(c.personality||'')}">${esc(c.description||c.personality||'')}</div>
@@ -823,7 +718,7 @@ function hideTyping(){document.getElementById('typingInd')?.remove();}
 
 /* ---- Router ---- */
 async function routeMessage(text,playerKey,realm,sess){
-  const candidates=realm.characters.filter(c=>c.key!==playerKey).map(c=>c.key);
+  const candidates==c.key);
   if(candidates.length===0)return[];
   const recent=sess.history.slice(-8).map(h=>`${h.speaker}: ${h.text}`).join('\n');
   const{provider,model}=parseModel(settings.routerModel||DEFAULT_SETTINGS.routerModel);
@@ -922,8 +817,7 @@ document.getElementById('micBtnChat').onclick=async()=>{
     mediaRecorder=new MediaRecorder(stream);audioChunks=[];
     mediaRecorder.ondataavailable=e=>audioChunks.push(e.data);
     mediaRecorder.onstop=async()=>{
-      stream.getTracks().forEach(t=>t.stop());
-      document.getElementById('micBtnChat').classList.remove('rec');
+     Chatclass.remove('rec');
       const blob=new Blob(audioChunks,{type:'audio/webm'});
       const txt=await transcribe(blob);
       if(txt){document.getElementById('chatInput').value=txt;handleChatSend();}
