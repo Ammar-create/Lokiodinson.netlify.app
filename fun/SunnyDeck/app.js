@@ -77,7 +77,7 @@ function createDropdown(container,options,value,placeholder){
   dd.append(face,list);
   container.appendChild(dd);
   arrow.onclick=()=>toggleDropdown(dd,list,input);
-  input.onfocus=()=>{closeAllDropdowns(dd);};
+  input.onfocus=()=>closeAllDropdowns(dd);
   return{
     get value(){return input.value.trim();},
     set value(v){input.value=v;},
@@ -86,12 +86,11 @@ function createDropdown(container,options,value,placeholder){
 }
 function toggleDropdown(self,list,input){
   document.querySelectorAll('.dd.open').forEach(d=>{if(d!==self)d.classList.remove('open');});
+  document.querySelectorAll('.target-popover.open').forEach(p=>p.classList.remove('open'));
   self.classList.toggle('open');
   list.querySelectorAll('.dd-item').forEach(it=>it.classList.toggle('sel',it.textContent.startsWith(input.value)));
 }
-function closeAllDropdowns(except){
-  document.querySelectorAll('.dd.open').forEach(d=>{if(d!==except)d.classList.remove('open');});
-}
+function closeAllDropdowns(except){document.querySelectorAll('.dd.open').forEach(d=>{if(d!==except)d.classList.remove('open');});}
 document.addEventListener('click',e=>{
   if(!e.target.closest('.dd')&&!e.target.closest('.target-popover')&&!e.target.closest('.target-pill')&&!e.target.closest('.player-popover')&&!e.target.closest('.player-badge')){
     closeAllDropdowns(null);
@@ -115,8 +114,8 @@ const FAST_MODEL_OPTS=[
   {value:'aqua:mercury',note:'diffusion'}
 ];
 const TTS_MODEL_OPTS=[
-  {value:'aqua:mimo-v2.5-tts',note:'voice IDs'},
   {value:'aqua:mimo-v2.5-tts-voicedesign',note:'described'},
+  {value:'aqua:mimo-v2.5-tts',note:'voice IDs'},
   {value:'aqua:mimo-v2.5-tts-voiceclone',note:'clone'}
 ];
 const STT_MODEL_OPTS=[
@@ -210,7 +209,6 @@ function initSettingsDropdowns(){
   dd.task=createDropdown(document.getElementById('ddTask'),FAST_MODEL_OPTS,settings.taskModel);
   dd.router=createDropdown(document.getElementById('ddRouter'),FAST_MODEL_OPTS,settings.routerModel);
   dd.chat=createDropdown(document.getElementById('ddChat'),TEXT_MODEL_OPTS,settings.chatModel);
-  // TTS dropdown now includes voice-design + voice-clone options
   dd.tts=createDropdown(document.getElementById('ddTts'),TTS_MODEL_OPTS,settings.ttsModel);
   dd.stt=createDropdown(document.getElementById('ddStt'),STT_MODEL_OPTS,settings.sttModel);
 }
@@ -482,9 +480,9 @@ function editDraftChar(idx){
     <div class="field"><label>Description</label><input id="m-desc"></div>
     <div class="field"><label>Personality</label><input id="m-personality"></div>
     <div class="field"><label>Keywords (comma)</label><input id="m-keywords"></div>
-    <div class="field"><label>System Prompt (optional)</label><input id="m-system" placeholder="Extra persona instructions..."></div>
+    <div class="field"><label>System Prompt (optional)</label><textarea id="m-system" placeholder="Extra persona instructions..." style="min-height:80px"></textarea></div>
     <div class="btn-row"><button class="btn btn-primary" id="m-save">SAVE</button></div>
-  `);
+  `,'wide');
   document.getElementById('m-name').value=c.name;
   document.getElementById('m-key').value=c.key;
   document.getElementById('m-color').value=c.color;
@@ -550,17 +548,7 @@ async function openRealmDetail(id){
   document.getElementById('detailModel').textContent=parseModel(r.creativeModel||'').model||'AI';
   document.getElementById('detailVisual').innerHTML=getMapSVG(r.mapConfig?.mapType||'custom');
 
-  const cList=document.getElementById('detailChars');
-  cList.innerHTML='';
-  (r.characters||[]).forEach(c=>{
-    const row=document.createElement('div');row.className='char-row';
-    row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
-      <div class="char-info"><div class="char-name">${esc(c.name)}</div><div class="char-mini">${esc(c.voice||'Milo')} &middot; ${esc(c.personality)}</div></div>`;
-    cList.appendChild(row);
-  });
-
-  // VOICE EDITOR
-  renderVoiceEditor();
+  renderDetailChars();
 
   const sessions=await dbGetAll('sessions');
   const mine=sessions.filter(s=>s.realmId===id).sort((a,b)=>(b.lastActiveAt||0)-(a.lastActiveAt||0));
@@ -571,10 +559,13 @@ async function openRealmDetail(id){
     sList.innerHTML='<div class="activity-empty">NO SESSIONS YET. START ONE TO CHAT.</div>';
   }else{
     mine.forEach(s=>{
+      const rc=currentRealm.characters.filter(c=>!isCharDisabled(s,c.key)).length;
+      const totalC=currentRealm.characters.length;
+      const p=currentRealm.characters.find(c=>c.key===s.playerKey);
+      const playerLabel=p?`as ${esc(p.name)}`:'(no player)';
+      const muteNote=rc<totalC?` &middot; <span style="color:var(--danger)">${rc}/${totalC}</span>`:'';
       const row=document.createElement('div');row.className='session-row';
-      const player=currentRealm.characters.find(c=>c.key===s.playerKey);
-      const playerLabel=player?`as <span style="color:var(--neon-3)">${esc(player.name)}</span>`:'no player set';
-      row.innerHTML=`<div class="s-name">${esc(s.name)}</div><div class="s-meta">${playerLabel} &middot; ${new Date(s.lastActiveAt||Date.now()).toLocaleDateString()} &middot; ${(s.history||[]).length} MSGS</div>`;
+      row.innerHTML=`<div class="s-name">${esc(s.name)}</div><div class="s-meta">${playerLabel}${muteNote} &middot; ${new Date(s.lastActiveAt||Date.now()).toLocaleDateString()} &middot; ${(s.history||[]).length} MSGS</div>`;
       const go=document.createElement('button');go.className='s-btn';go.textContent='OPEN';go.onclick=()=>openSession(s.id);
       const del=document.createElement('button');del.className='s-btn danger';del.textContent='DEL';
       del.onclick=async()=>{if(confirm('Delete session?')){await dbDelete('sessions',s.id);openRealmDetail(id);}};
@@ -585,49 +576,62 @@ async function openRealmDetail(id){
   showScreen('screen-detail');
 }
 
-/* ---- Voice editor (NEW) ---- */
-let voiceEditorDDs={};
-function renderVoiceEditor(){
-  voiceEditorDDs={};
-  const wrap=document.getElementById('voiceEditor');
-  wrap.innerHTML='';
-  (currentRealm.characters||[]).forEach(c=>{
-    const row=document.createElement('div');row.className='voice-edit-row';
-    row.dataset.charKey=c.key;
-    row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
-      <div class="ve-info">
-        <div class="ve-name">${esc(c.name)}</div>
-        <div class="ve-meta" title="${esc(c.description||c.personality||'')}">${esc(c.description||c.personality||'')}</div>
-      </div>
-      <div class="ve-dd"></div>`;
-    wrap.appendChild(row);
-    const vdd=createDropdown(row.querySelector('.ve-dd'),VOICE_OPTS,c.voice||'Milo','voice');
-    voiceEditorDDs[c.key]=vdd;
-  });
-}
-document.getElementById('btnSaveVoices').onclick=async()=>{
-  if(!currentRealm)return;
-  let dirty=false;
-  (currentRealm.characters||[]).forEach(c=>{
-    if(voiceEditorDDs[c.key]){
-      const newVoice=voiceEditorDDs[c.key].value||c.voice;
-      if(newVoice!==c.voice){c.voice=newVoice;dirty=true;}
-    }
-  });
-  if(!dirty){toast('NO CHANGES');return;}
-  currentRealm.updatedAt=Date.now();
-  // also persist ttsModel inherited from realm if exists, otherwise keep settings default
-  await dbPut('realms',currentRealm);
-  toast('VOICES SAVED');
-  // refresh detail-character rows
-  const cList=document.getElementById('detailChars');cList.innerHTML='';
-  currentRealm.characters.forEach(c=>{
+/* NEW: compact character rows in Realm Detail. Each row has a single EDIT button
+   that opens a comprehensive modal covering voice + personality + system prompt. */
+function renderDetailChars(){
+  const cList=document.getElementById('detailChars');
+  cList.innerHTML='';
+  (currentRealm.characters||[]).forEach((c,i)=>{
     const row=document.createElement('div');row.className='char-row';
     row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
-      <div class="char-info"><div class="char-name">${esc(c.name)}</div><div class="char-mini">${esc(c.voice||'Milo')} &middot; ${esc(c.personality)}</div></div>`;
+      <div class="char-info"><div class="char-name">${esc(c.name)}</div><div class="char-mini" title="${esc(c.personality||c.description||'')}">${esc(c.personality||c.description||'')}</div></div>
+      <div class="char-actions">
+        <button data-i="${i}" class="edit-realm-char">EDIT</button>
+      </div>`;
     cList.appendChild(row);
   });
-};
+  cList.querySelectorAll('.edit-realm-char').forEach(btn=>{
+    btn.onclick=e=>editRealmCharacter(+e.target.dataset.i);
+  });
+}
+/* Comprehensive edit modal for a character in currentRealm (NOT draft) */
+function editRealmCharacter(idx){
+  const c=currentRealm.characters[idx];
+  openModal('EDIT '+c.name.toUpperCase(),`
+    <div class="field"><label>Name</label><input id="m-name"></div>
+    <div class="field"><label>Key</label><input id="m-key"></div>
+    <div class="field"><label>Color</label><input id="m-color"></div>
+    <div class="field"><label>Voice ID</label><div id="m-voice-dd"></div></div>
+    <div class="field"><label>Description</label><input id="m-desc"></div>
+    <div class="field"><label>Personality</label><input id="m-personality"></div>
+    <div class="field"><label>Keywords (comma)</label><input id="m-keywords"></div>
+    <div class="field"><label>System Prompt (optional)</label><textarea id="m-system" placeholder="Extra persona instructions — runtime hint overrides personality for replies" style="min-height:90px"></textarea></div>
+    <div class="btn-row"><button class="btn btn-primary" id="m-save">SAVE</button></div>
+  `,'wide');
+  document.getElementById('m-name').value=c.name;
+  document.getElementById('m-key').value=c.key;
+  document.getElementById('m-color').value=c.color;
+  document.getElementById('m-desc').value=c.description||'';
+  document.getElementById('m-personality').value=c.personality||'';
+  document.getElementById('m-keywords').value=(c.keywords||[]).join(', ');
+  document.getElementById('m-system').value=c.system||'';
+  const voiceDD=createDropdown(document.getElementById('m-voice-dd'),VOICE_OPTS,c.voice||'Milo');
+  document.getElementById('m-save').onclick=async()=>{
+    c.name=document.getElementById('m-name').value.trim();
+    c.key=document.getElementById('m-key').value.trim().toLowerCase();
+    c.color=document.getElementById('m-color').value.trim();
+    c.voice=voiceDD.value;
+    c.description=document.getElementById('m-desc').value.trim();
+    c.personality=document.getElementById('m-personality').value.trim();
+    c.keywords=document.getElementById('m-keywords').value.split(',').map(x=>x.trim()).filter(Boolean);
+    c.system=document.getElementById('m-system').value.trim();
+    currentRealm.updatedAt=Date.now();
+    await dbPut('realms',currentRealm);
+    closeModal();
+    renderDetailChars();
+    toast(esc(c.name)+' UPDATED');
+  };
+}
 
 document.getElementById('detailBack').onclick=()=>{showScreen('screen-browse');renderBrowse();};
 document.getElementById('btnDeleteRealm').onclick=async()=>{
@@ -646,7 +650,7 @@ document.getElementById('btnStartSession').onclick=async()=>{
   const sess={
     id:'sess-'+Date.now(),realmId:currentRealmId,name:'Session '+(count+1),
     playerKey:(r.characters[0]?.key||''),history:[],activeTags:[],
-    createdAt:Date.now(),lastActiveAt:Date.now(),renameDone:false
+    disabledCharacters:[],createdAt:Date.now(),lastActiveAt:Date.now(),renameDone:false
   };
   await dbPut('sessions',sess);
   openSession(sess.id);
@@ -655,15 +659,28 @@ document.getElementById('btnStartSession').onclick=async()=>{
 /* ====================== CHAT SESSION ====================== */
 let currentSession=null;
 let currentRealm=null;
-let chatTargetKey=''; // '' = auto (use router); char.key = direct addressing
+let chatTargetKey=''; // '' = AUTO (use router); char.key = direct
+
+/* helper: is this character muted in the current session? */
+function isCharDisabled(sess,charKey){
+  return (sess?.disabledCharacters||[]).includes(charKey);
+}
+/* enabled count for display */
+function enabledCount(sess,realm){
+  if(!sess||!realm)return 0;
+  return (realm.characters||[]).filter(c=>!isCharDisabled(sess,c.key)).length;
+}
 
 async function openSession(sessId){
   const sess=await dbGet('sessions',sessId);
   if(!sess){toast('SESSION NOT FOUND');return;}
   const realm=await dbGet('realms',sess.realmId);
   if(!realm){toast('REALM NOT FOUND');return;}
+  // backfill fields on legacy sessions
+  if(!Array.isArray(sess.disabledCharacters))sess.disabledCharacters=[];
+  await dbPut('sessions',sess);
   currentSession=sess;currentRealm=realm;
-  chatTargetKey=''; // reset direct target on every session open
+  chatTargetKey='';
 
   const hh=document.getElementById('chat-header');
   hh.style.display='flex';
@@ -671,7 +688,6 @@ async function openSession(sessId){
     <div><div class="realm-tag">${esc(realm.name)}</div><div class="session-name">${esc(sess.name)}</div></div>
     ${renderPlayerBadgeHTML()}`;
   hh.querySelector('.back').onclick=()=>{showScreen('screen-detail');openRealmDetail(realm.id);};
-  document.getElementById('chatMapToggle').onclick=()=>document.getElementById('chatMapWrap').classList.toggle('collapsed');
   bindPlayerBadge();
 
   const mapWrap=document.getElementById('chatMapWrap');
@@ -680,7 +696,7 @@ async function openSession(sessId){
 
   const tokContainer=document.getElementById('chatMapTokens');
   (realm.characters||[]).forEach(c=>{
-    const t=document.createElement('div');t.className='map-token';t.style.background=c.color;
+    const t=document.createElement('div');t.className='map-token';t.dataset.key=c.key;t.style.background=c.color;
     t.style.left=(c.pos?.x||50)+'%';t.style.top=(c.pos?.y||50)+'%';
     t.textContent=c.name.slice(0,2).toUpperCase();
     const lbl=document.createElement('span');lbl.className='mt-label';lbl.textContent=c.name;
@@ -689,7 +705,6 @@ async function openSession(sessId){
   });
   highlightPlayerToken();
 
-  // Chat target dropdown
   renderChatTarget();
 
   document.getElementById('chat-tags').style.display='flex';
@@ -716,49 +731,60 @@ function currentPlayer(){
 }
 function renderPlayerBadgeHTML(){
   const p=currentPlayer();
-  if(!p){
-    return `<div class="header-right" style="margin-left:auto"><button class="icon-btn" id="chatMapToggle" title="Toggle map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></button></div>`;
-  }
+  const soundOn=!!settings.ttsEnabled;
   return `
-    <button class="player-badge" id="playerBadgeBtn" title="Switch character" aria-haspopup="listbox">
-      <div class="char-avatar pb-avatar" style="background:${esc(p.color)}">${esc(p.name.slice(0,2).toUpperCase())}</div>
+    <button class="player-badge" id="playerBadgeBtn" title="Switch character & toggle mute" aria-haspopup="listbox">
+      <div class="char-avatar pb-avatar" style="background:${esc(p?p.color:'#888')}">${esc((p?(p.name.slice(0,2).toUpperCase()):'??'))}</div>
       <div class="pb-meta">
         <div class="pb-label">YOU ARE</div>
-        <div class="pb-name">${esc(p.name)}</div>
+        <div class="pb-name">${esc(p?p.name:'—')}</div>
       </div>
       <span class="pb-arrow">&#9660;</span>
     </button>
-    <div class="header-right" style="margin-left:auto"><button class="icon-btn" id="chatMapToggle" title="Toggle map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></button></div>
+    <div class="header-right" style="margin-left:auto">
+      <button class="icon-btn ${soundOn?'is-on':'is-off'}" id="soundToggle" title="${soundOn?'Voice auto-play ON':'Voice auto-play OFF'}">
+        ${soundOn?SOUND_ON_SVG:SOUND_OFF_SVG}
+      </button>
+      <button class="icon-btn" id="chatMapToggle" title="Toggle map">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      </button>
+    </div>
   `;
 }
+
+const SOUND_ON_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>`;
+const SOUND_OFF_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>`;
+const EYE_ON_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const EYE_OFF_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+
 function bindPlayerBadge(){
-  const btn=document.getElementById('playerBadgeBtn');
-  if(btn)btn.onclick=(e)=>{e.stopPropagation();openPlayerSwitcher(btn);};
+  const pb=document.getElementById('playerBadgeBtn');
+  if(pb)pb.onclick=(e)=>{e.stopPropagation();openPlayerSwitcher(pb);};
   const mt=document.getElementById('chatMapToggle');
   if(mt)mt.onclick=()=>document.getElementById('chatMapWrap').classList.toggle('collapsed');
+  const sb=document.getElementById('soundToggle');
+  if(sb)sb.onclick=()=>setSoundEnabled(!settings.ttsEnabled);
 }
-/* BUG #2 FIX: re-render badge on switch so the visible name updates immediately */
+/* Refresh badge in place (used after player switch or sound toggle) */
 function refreshPlayerBadge(){
-  const btn=document.getElementById('playerBadgeBtn');
-  if(!btn)return;
-  const fresh=renderPlayerBadgeHTML().trim();
-  // extract only the player-badge button HTML (the rest is the chatMapToggle which we keep)
-  const tempWrap=document.createElement('div');
-  tempWrap.innerHTML=fresh;
-  const newBtn=tempWrap.querySelector('#playerBadgeBtn');
-  if(newBtn){
-    btn.outerHTML=newBtn.outerHTML;
-    bindPlayerBadge();
-  }
+  const wrap=document.querySelector('#chat-header .player-badge')?.parentElement;
+  const pb=document.getElementById('playerBadgeBtn');
+  if(!wrap||!pb)return;
+  wrap.innerHTML=renderPlayerBadgeHTML().trim();
+  bindPlayerBadge();
   highlightPlayerToken();
 }
 function highlightPlayerToken(){
-  if(!currentRealm)return;
-  const pk=currentSession?.playerKey;
+  if(!currentRealm||!currentSession)return;
+  const pk=currentSession.playerKey;
   currentRealm.characters.forEach(c=>{
-    if(c._mapEl)c._mapEl.classList.toggle('is-player',c.key===pk);
+    if(!c._mapEl)return;
+    c._mapEl.classList.toggle('is-player',c.key===pk);
+    c._mapEl.classList.toggle('muted',isCharDisabled(currentSession,c.key));
   });
 }
+
+/* BUG #2 FIX REINFORCED: re-render on every switch */
 function openPlayerSwitcher(anchor){
   document.querySelectorAll('.player-popover').forEach(p=>p.remove());
   const pop=document.createElement('div');
@@ -768,21 +794,27 @@ function openPlayerSwitcher(anchor){
     pop.innerHTML='<div class="player-popover-empty">No characters in this realm.</div>';
   }else{
     chars.forEach(c=>{
+      const muted=isCharDisabled(currentSession,c.key);
+      const active=c.key===currentSession.playerKey;
       const row=document.createElement('div');
-      row.className='player-popover-row'+(c.key===currentSession.playerKey?' active':'');
+      row.className='player-popover-row'+(muted?' muted':'')+(active?' active':'');
       row.setAttribute('role','option');
       row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
-        <div class="player-popover-meta">
-          <div class="player-popover-name">${esc(c.name)}</div>
-          <div class="player-popover-detail" title="${esc(c.description||'')}">${esc(c.description||c.personality||'')}</div>
-        </div>`;
-      row.onclick=()=>{
+        <div class="player-popover-meta"><div class="player-popover-name">${esc(c.name)}</div></div>
+        <button class="pp-mute-btn ${muted?'is-muted':''}" data-key="${esc(c.key)}" title="${muted?'Unmute (include in this session)':'Mute (exclude from this session)'}">${muted?EYE_OFF_SVG:EYE_ON_SVG}</button>`;
+      row.onclick=(e)=>{
+        if(e.target.closest('.pp-mute-btn'))return;
         if(c.key===currentSession.playerKey){pop.remove();return;}
         currentSession.playerKey=c.key;
         dbPut('sessions',currentSession);
-        refreshPlayerBadge();  // BUG #2 FIX: actually re-renders now
+        refreshPlayerBadge();
         pop.remove();
         toast('NOW PLAYING AS '+(c.name||'').toUpperCase());
+      };
+      row.querySelector('.pp-mute-btn').onclick=(e)=>{
+        e.stopPropagation();
+        toggleCharEnabled(c.key);
+        pop.remove();
       };
       pop.appendChild(row);
     });
@@ -796,15 +828,50 @@ function openPlayerSwitcher(anchor){
   if(pr.left<8)pop.style.left='8px';
 }
 
-/* ---- Chat target dropdown (NEW, BUG #4) ---- */
+/* BUG #8: toggle character enabled/disabled in current session */
+async function toggleCharEnabled(key){
+  if(!currentSession)return;
+  const dc=currentSession.disabledCharacters||(currentSession.disabledCharacters=[]);
+  const name=(currentRealm.characters.find(c=>c.key===key)||{}).name||key;
+  if(dc.includes(key)){
+    currentSession.disabledCharacters=dc.filter(k=>k!==key);
+    toast(name+' UNMUTED');
+  }else{
+    currentSession.disabledCharacters=[...dc,key];
+    toast(name+' MUTED');
+  }
+  await dbPut('sessions',currentSession);
+  // clear chatTarget if it referred to the muted one
+  if(chatTargetKey===key){chatTargetKey='';}
+  // refresh dependent UI
+  renderChatTarget();
+  highlightPlayerToken();
+  // re-open popover if it was anchored — handled by caller when user clicks again
+}
+
+/* BUG #2 FIX REINFORCED: autoplay toggle */
+async function setSoundEnabled(on){
+  settings.ttsEnabled=!!on;
+  await saveSettings();
+  refreshPlayerBadge();
+  toast(settings.ttsEnabled?'VOICE AUTOPLAY ON':'VOICE AUTOPLAY OFF');
+}
+
+/* BUG #1 FIX REINFORCED + #4: chat target dropdown */
+function chatTargetCandidates(){
+  // Exclude self + muted characters
+  return (currentRealm?.characters||[])
+    .filter(c=>c.key!==currentSession?.playerKey)
+    .filter(c=>!isCharDisabled(currentSession,c.key));
+}
 function renderChatTarget(){
   const wrap=document.getElementById('chatTargetWrap');
   wrap.innerHTML=`
     <div class="chat-target">
-      <div class="target-pill" id="targetPill" title="Choose who to talk to directly (AUTO = router decides)" aria-haspopup="listbox">
+      <div class="target-pill" id="targetPill" title="Auto: router decides; Pick: talk directly to that character" aria-haspopup="listbox">
         <span class="tp-icon">@</span>
         <span class="tp-name" id="targetLabel">AUTO</span>
-        <span class="tp-arrow" style="color:var(--text-3);font-size:11px;margin-left:2px">&#9660;</span>
+        <span style="color:var(--text-3);font-size:11px;margin-left:2px">&#9660;</span>
       </div>
       <div class="target-popover" id="targetPopover" role="listbox"></div>
     </div>
@@ -820,51 +887,56 @@ function renderChatTarget(){
     if(isDirect){
       const c=currentRealm.characters.find(x=>x.key===chatTargetKey);
       label.textContent=c?c.name.toUpperCase():'DIRECT';
-      pill.querySelector('.tp-icon').textContent='@';
       document.getElementById('directToName').textContent=c?c.name:'character';
       banner.style.display='flex';
     }else{
       label.textContent='AUTO';
-      pill.querySelector('.tp-icon').textContent='@';
       banner.style.display='none';
     }
-    // refresh popover active state
-    pop.querySelectorAll('.tp-row').forEach(r=>{
-      r.classList.toggle('active',(r.dataset.key||'')===chatTargetKey);
+    pop.querySelectorAll('.tp-row[data-key]').forEach(r=>{
+      r.classList.toggle('active',r.dataset.key===chatTargetKey);
     });
   };
 
   pill.onclick=(e)=>{
     e.stopPropagation();
     document.querySelectorAll('.player-popover').forEach(p=>p.remove());
+    document.querySelectorAll('.dd.open').forEach(d=>d.classList.remove('open'));
     pop.classList.toggle('open');
   };
 
   pop.innerHTML='';
-  // AUTO row
+  const candidates=chatTargetCandidates();
+
+  // BUG #7 FIX: in a session where only 1 person can reply, routes are pointless.
+  // AUTO still appears (lets user release direct mode), but won't actively run router.
   const autoRow=document.createElement('div');
   autoRow.className='tp-row'+(chatTargetKey?'':' active');
   autoRow.dataset.key='';
   autoRow.innerHTML=`<div class="char-avatar" style="background:linear-gradient(135deg,var(--neon-1),var(--neon-2))">AI</div>
-    <div class="tp-row-meta"><div class="tp-row-name">AUTO (Router)</div><div class="tp-row-detail">AI decides who replies</div></div>`;
+    <div class="tp-row-meta"><div class="tp-row-name">AUTO ${candidates.length<=1?'(forced direct)':'(router decides)'}</div></div>`;
   autoRow.onclick=()=>{chatTargetKey='';pop.classList.remove('open');setTarget();toast('AUTO MODE');};
   pop.appendChild(autoRow);
 
-  (currentRealm.characters||[]).forEach(c=>{
-    const row=document.createElement('div');
-    row.className='tp-row'+(c.key===chatTargetKey?' active':'');
-    row.dataset.key=c.key;
-    row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
-      <div class="tp-row-meta"><div class="tp-row-name">${esc(c.name)}</div><div class="tp-row-detail">${esc(c.description||c.personality||'')}</div></div>`;
-    row.onclick=()=>{chatTargetKey=c.key;pop.classList.remove('open');setTarget();toast('TALKING TO '+(c.name||'').toUpperCase());};
-    pop.appendChild(row);
-  });
+  if(candidates.length===0){
+    const empty=document.createElement('div');
+    empty.className='tp-empty';
+    empty.textContent='No other characters enabled. Unmute one in the roster.';
+    pop.appendChild(empty);
+  }else{
+    candidates.forEach(c=>{
+      const row=document.createElement('div');
+      row.className='tp-row'+(c.key===chatTargetKey?' active':'');
+      row.dataset.key=c.key;
+      row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
+        <div class="tp-row-meta"><div class="tp-row-name">${esc(c.name)}</div></div>`;
+      row.onclick=()=>{chatTargetKey=c.key;pop.classList.remove('open');setTarget();toast('TALKING TO '+(c.name||'').toUpperCase());};
+      pop.appendChild(row);
+    });
+  }
   setTarget();
 }
-document.getElementById('clearDirect').onclick=()=>{
-  chatTargetKey='';
-  renderChatTarget();
-};
+document.getElementById('clearDirect').onclick=()=>{chatTargetKey='';renderChatTarget();};
 
 function renderChatTags(){
   const bar=document.getElementById('chat-tags');
@@ -938,18 +1010,10 @@ async function handleChatSend(){
   sess.lastActiveAt=Date.now();
   await dbPut('sessions',sess);
 
-  // Fire-and-forget auto-rename (BUG #1 FIX: fully isolated)
   maybeAutoRename(sess);
 
-  // BUG #4 FIX: pick responders — direct mode bypasses router
-  let responders;
-  if(chatTargetKey){
-    const target=realm.characters.find(c=>c.key===chatTargetKey);
-    if(target)responders=[chatTargetKey];
-    else responders=await routeMessage(text,playerKey,realm,sess);
-  }else{
-    responders=await routeMessage(text,playerKey,realm,sess);
-  }
+  // BUG #4 + #7 FIX: build responder list smartly
+  const responders=await pickResponders(text,playerKey,realm,sess);
 
   try{
     const already=[];
@@ -977,6 +1041,24 @@ async function handleChatSend(){
   document.getElementById('chatInput').focus();
 }
 
+/* Responder selection rule
+   - Direct target chosen AND target enabled → just that one
+   - 1 enabled non-player candidate → forced direct (no router call)
+   - Otherwise → router decides
+*/
+async function pickResponders(text,playerKey,realm,sess){
+  // explicit direct
+  if(chatTargetKey){
+    const target=realm.characters.find(c=>c.key===chatTargetKey);
+    if(target && !isCharDisabled(sess,target.key))return [chatTargetKey];
+    chatTargetKey='';
+  }
+  const candidates=realm.characters.filter(c=>c.key!==playerKey&&!isCharDisabled(sess,c.key)).map(c=>c.key);
+  if(candidates.length===0)return [];
+  if(candidates.length===1)return candidates;
+  return await routeMessage(text,playerKey,realm,sess);
+}
+
 function showTyping(name){
   const chat=document.getElementById('chat');
   const div=document.createElement('div');div.className='typing';div.id='typingInd';
@@ -987,8 +1069,11 @@ function hideTyping(){document.getElementById('typingInd')?.remove();}
 
 /* ---- Router ---- */
 async function routeMessage(text,playerKey,realm,sess){
-  const candidates=realm.characters.filter(c=>c.key!==playerKey).map(c=>c.key);
+  const candidates=realm.characters
+    .filter(c=>c.key!==playerKey&&!isCharDisabled(sess,c.key))
+    .map(c=>c.key);
   if(candidates.length===0)return[];
+  if(candidates.length===1)return candidates;
   const recent=sess.history.slice(-8).map(h=>`${h.speaker}: ${h.text}`).join('\n');
   const{provider,model}=parseModel(settings.routerModel||DEFAULT_SETTINGS.routerModel);
   const p=PROVIDERS[provider];const key=settings[p.keyName];
@@ -1113,18 +1198,11 @@ async function transcribe(blob){
   }catch(e){console.error('STT failed',e);return null;}
 }
 
-/* ---- BUG #1 FIX: Task controller auto-rename ----
-   - Idempotent via per-session renameDone flag
-   - 8-second timeout via AbortController
-   - Defensive content parsing
-   - Triggers dashboard refresh on success
-*/
+/* ---- BUG #1 FIX REINFORCED: idempotent + timeout + defensive parsing ---- */
 async function maybeAutoRename(sess){
   if(!sess)return;
   if(sess.renameDone)return;
   if((sess.history||[]).length!==10)return;
-
-  // Mark immediately so duplicate sends can't double-trigger
   sess.renameDone=true;
   await dbPut('sessions',sess);
 
@@ -1145,38 +1223,31 @@ async function maybeAutoRename(sess){
     clearTimeout(timeoutId);
     if(!res.ok)throw new Error(`Rename API ${res.status}`);
     const data=await res.json();
-
-    // DEFENSIVE content parsing — model might return tool_call only, etc.
     let content=data?.choices?.[0]?.message?.content;
-    if(typeof content!=='string'||!content.trim())throw new Error('No text content in response');
-
+    if(typeof content!=='string'||!content.trim())throw new Error('No text content');
     const title=content.trim().replace(/^["']|["']$/g,'').slice(0,40);
-    if(!title)throw new Error('Empty title after trim');
-    if(title.toLowerCase()===sess.name.toLowerCase())return; // no-op rename
-
+    if(!title)throw new Error('Empty title');
+    if(title.toLowerCase()===sess.name.toLowerCase())return;
     sess.name=title;
     await dbPut('sessions',sess);
-
-    // Update visible UI only if this is still the active session
     if(currentSession?.id===sess.id){
       const el=document.querySelector('#chat-header .session-name');
       if(el)el.textContent=title;
     }
-    // Refresh dashboard's recent activity list so it shows new title
     renderDashboard();
   }catch(e){
-    // Always reset the flag on failure so a retry has a chance later
     sess.renameDone=false;
     await dbPut('sessions',sess).catch(()=>{});
-    // Silent — auto-rename is decoration, not critical
     if(e.name!=='AbortError')console.warn('Auto rename failed:',e.message);
   }
 }
 
 /* ====================== MODALS ====================== */
-function openModal(title,html){
+function openModal(title,html,sizeCls){
   document.getElementById('modalTitle').textContent=title;
   document.getElementById('modalBody').innerHTML=html;
+  const box=document.getElementById('modalBox');
+  box.classList.toggle('wide',sizeCls==='wide');
   document.getElementById('overlay').classList.add('open');
 }
 function closeModal(){document.getElementById('overlay').classList.remove('open');}
