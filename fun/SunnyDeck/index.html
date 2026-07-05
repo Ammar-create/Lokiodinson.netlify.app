@@ -52,19 +52,9 @@
   <div id="dash">
     <div class="dash-welcome">
       <strong>WELCOME TO SUNNY DECK.</strong> Insert coin. Create worlds, assemble characters, and have conversations that feel alive.
-    </div>
-    <div class="dash-stats">
-      <div class="stat-card"><div class="stat-val" id="statRealms">0</div><div class="stat-label">Realms</div></div>
+    </ <div class="stat-card"><div class="stat-val" id="statRealms">0</div><div class="stat-label">Realms</div></div>
       <div class="stat-card"><div class="stat-val" id="statSessions">0</div><div class="stat-label">Sessions</div></div>
-      <div class="stat-card"><div class="stat-val" id="statChars">0</div><div class="stat-label">Characters</div></div>
-    </div>
-    <div class="dash-cta">
-      <div class="cta-btn" id="btnCreateRealm" role="button" tabindex="0">
-        <span class="cta-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>
-        <span><div class="cta-title">CREATE REALM</div><div class="cta-meta">Build a new world with AI or by hand</div></span>
-      </div>
-      <div class="cta-btn" id="btnBrowseRealms" role="button" tabindex="0">
-        <span class="cta-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></span>
+      <div class="stat-card"><"divindex stroke x ycta-btn view2261="16" y1="6" x2="16" y2="22"/></svg></span>
         <span><div class="cta-title">BROWSE REALMS</div><div class="cta-meta">Visit worlds, start or resume sessions</div></span>
       </div>
     </div>
@@ -120,50 +110,17 @@
     <div class="step" id="step-review">
       <h2>REVIEW REALM</h2>
       <div class="field">
-        <label>Overview</label>
-        <textarea id="crOverview" placeholder="Scene overview..."></textarea>
-      </div>
-      <div class="detail-section"><h3>Characters</h3></div>
-      <div class="char-grid" id="reviewChars"></div>
-      <button class="btn btn-ghost" id="crAddChar" style="margin-bottom:16px">+ ADD CHARACTER</button>
-      <div class="add-char-form" id="addCharForm">
-        <div class="row">
-          <input id="acKey" placeholder="key (lowercase)">
-          <input id="acName" placeholder="Name">
-        </div>
-        <div class="row">
-          <input id="acColor" placeholder="Color #hex" value="#00f0ff">
-          <input id="acVoice" placeholder="Voice ID" value="Milo">
-        </div>
-        <div class="row">
-          <input id="acPosX" placeholder="Pos X" value="50">
-          <input id="acPosY" placeholder="Pos Y" value="50">
-        </div>
-        <input id="acDesc" placeholder="Description" style="margin-bottom:10px">
-        <input id="acPersonality" placeholder="Personality" style="margin-bottom:10px">
-        <input id="acKeywords" placeholder="Keywords (comma separated)" style="margin-bottom:10px">
-        <input id="acSystem" placeholder="System prompt / persona prompt" style="margin-bottom:10px">
-        <div class="btn-row">
-          <button class="btn btn-ghost" id="acCancel">Cancel</button>
-          <button class="btn btn-primary" id="acSave">Save</button>
-        </div>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-ghost" id="crBack2">Back</button>
-        <button class="btn btn-primary" id="crFinish">Save Realm</button>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ===== REALM DETAIL ===== -->
-<section class="screen" id="screen-detail">
-  <div id="realm-detail">
-    <button class="back" id="detailBack">&lt;&lt; BROWSE</button>
-    <div class="detail-head">
-      <div class="detail-visual" id="detailVisual"></div>
-      <div class="detail-info">
-        <div class="detail-name" id="detailName">REALM</div>
+        <label>Overview</label idOverview></divh>>
+>
+     =""="px"></button>
+"div="key=" placeholder        </div          <inputColor <"Mdiv <inputX" placeholder="Pos value id="acPos">
+inputacDesc placeholderDescription="px">
+       ="="margin">
+acKeywords)" style="-bottominput="="">
+-rowbtnCancelbtn>
+div btnhost" id="crBack">button>
+        btn="button </  </<!-- -->
+"divbuttonROW      < classdetaildiv <detail-name" id="detailName">REALM</div>
         <div class="detail-desc" id="detailDesc"></div>
         <div class="detail-actions">
           <span class="pill"><span id="detailCharCount">0</span> CHARS</span>
@@ -197,7 +154,7 @@
     <div id="composerInner">
       <div class="input-row">
         <button class="comp-btn" id="micBtnChat" title="Record">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          <svg viewBox="0 0 24 24"="12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
         </button>
         <textarea id="chatInput" rows="1" placeholder="TALK TO THE CREW..."></textarea>
         <button class="comp-btn" id="sendBtnChat" title="Send">
