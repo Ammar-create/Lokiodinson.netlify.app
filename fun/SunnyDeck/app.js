@@ -178,12 +178,15 @@ const EYE_OFF_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const LOCK_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
 const LOCK_OPEN_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>`;
 const MAP_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>`;
+const SPARKLE_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg>`;
+const EXPAND_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`;
 
 /* ====================== NAVIGATION ====================== */
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id)?.classList.add('active');
   document.getElementById('mainHeader').style.display=(id==='screen-chat')?'none':'flex';
+  if(typeof directorOnScreenChange==='function')directorOnScreenChange(id);
 }
 document.getElementById('toDashboard').onclick=()=>{showScreen('screen-dash');renderDashboard();};
 document.getElementById('btnCreateRealm').onclick=()=>openCreateRealm();
@@ -197,7 +200,12 @@ function seedPremadeRealms(){
   const onePiece={id:'premade-onepiece',name:'Thousand Sunny',isPremade:true,
     description:'The Straw Hat crew relaxing on the Sunny deck between islands.',
     overview:'The sun is warm, the sea is calm, and the Straw Hats are scattered across the deck. Luffy is starving, Zoro is napping against the mast, and Sanji is prepping lunch.',
-    mapConfig:{enabled:true,mapType:'ship'},
+    mapConfig:{enabled:true,mapType:'ship',zones:[
+      {key:'cabin',name:'CABIN',x:13,y:32,w:17,h:33},
+      {key:'galley',name:'GALLEY',x:30,y:58,w:14,h:30},
+      {key:'lawn',name:'LAWN',x:40,y:28,w:34,h:44},
+      {key:'mast',name:'MAST',x:52,y:42,w:11,h:17},
+      {key:'helm',name:'HELM',x:85,y:26,w:13,h:48}]},
     characters:[
       mk('luffy','Luffy','#e63946','Milo','Rubber-powered captain','Energetic, food-obsessed, fearless',['meat','food','captain','pirate king'],50,45),
       mk('zoro','Zoro','#2a9d8f','Dean','Swordsman','Blunt, stoic, directionally hopeless',['sword','training','sake','nap'],35,60),
@@ -212,7 +220,11 @@ function seedPremadeRealms(){
   const friends={id:'premade-friends',name:'Central Perk',isPremade:true,
     description:'The iconic coffee house where the Friends hang out.',
     overview:'It is a rainy afternoon at Central Perk. The orange couch is claimed, Gunther is wiping the counter, and the gang is debating nonsense over oversized mugs.',
-    mapConfig:{enabled:true,mapType:'apartment'},
+    mapConfig:{enabled:true,mapType:'apartment',zones:[
+      {key:'couch',name:'COUCH',x:8,y:17,w:38,h:65},
+      {key:'counter',name:'COUNTER',x:50,y:17,w:21,h:38},
+      {key:'stage',name:'STAGE',x:50,y:60,w:21,h:22},
+      {key:'door',name:'DOOR',x:75,y:17,w:17,h:65}]},
     characters:[
       mk('monica','Monica','#e74c3c','Mia','Chef and neat freak','Competitive, caring, obsessively organized',['cleaning','cooking','chef','perfection'],50,50),
       mk('chandler','Chandler','#3498db','Milo','Sarcastic data processor','Witty, insecure, uses humor as defense',['joke','sarcasm','work','marriage'],40,55),
@@ -223,7 +235,10 @@ function seedPremadeRealms(){
   const mcu={id:'premade-mcu',name:'Avengers Tower',isPremade:true,
     description:'Tony Stark\'s penthouse overlooking Manhattan.',
     overview:'The Avengers are recovering after a mission. Thor is eating shawarma at the bar, Tony is tweaking his suit, and Steve is judging everyone silently from the couch.',
-    mapConfig:{enabled:true,mapType:'tower'},
+    mapConfig:{enabled:true,mapType:'tower',zones:[
+      {key:'lounge',name:'LOUNGE',x:16,y:38,w:33,h:46},
+      {key:'bar',name:'BAR',x:51,y:38,w:33,h:46},
+      {key:'window',name:'WINDOW',x:8,y:10,w:84,h:22}]},
     characters:[
       mk('tony','Tony Stark','#c0392b','Dean','Iron Man, billionaire genius','Sarcastic, guilt-driven, protective',['suit','tech','money','whiskey'],50,50),
       mk('steve','Steve Rogers','#2980b9','Dean','Captain America','Idealistic, awkward, old-fashioned',['shield','honor','war','righteous'],35,55),
@@ -342,7 +357,8 @@ document.getElementById('crGenerate').onclick=async()=>{
       ...result,id:'realm-'+Date.now(),name,description:desc,
       creativeModel:controllerStr,chatModel:settings.chatModel,
       routerModel:settings.routerModel,ttsModel:settings.ttsModel,
-      isPremade:false,mapConfig:{enabled:true,mapType:result.mapType||'custom'}};
+      isPremade:false,mapConfig:{enabled:true,mapType:result.mapType||'custom',
+        zones:(Array.isArray(result.zones)?result.zones:[]).filter(z=>z&&z.key&&[z.x,z.y,z.w,z.h].every(n=>typeof n==='number')).map(z=>({key:String(z.key),name:String(z.name||z.key).toUpperCase().slice(0,14),x:z.x,y:z.y,w:z.w,h:z.h}))}};
     document.getElementById('crOverview').value=draftRealm.overview||'';
     renderReviewChars();
     document.getElementById('step-gen').classList.remove('active');
@@ -355,7 +371,8 @@ async function generateRealmWithAI(name,description,modelStr){
   const p=PROVIDERS[provider];if(!p)throw new Error('Unknown provider');
   const key=settings[p.keyName];if(!key)throw new Error(`Missing API key for ${provider}`);
   const sys=`You are a world-building assistant for a roleplay chat platform. Given a realm name and description, output ONLY valid JSON matching this exact schema:
-{"overview":"2-3 sentence scene description","mapType":"ship|apartment|tower|custom","characters":[{"key":"lowercase_unique","name":"Character Name","description":"Role/appearance (1 sentence)","personality":"Core traits (1 sentence)","keywords":["topic1","topic2"],"voice":"Mia|Chloe|Milo|Dean|mimo_default","color":"#hexcolor","pos":{"x":0-100,"y":0-100}}]}
+{"overview":"2-3 sentence scene description","mapType":"ship|apartment|tower|custom","zones":[{"key":"lowercase_unique","name":"SHORT LABEL","x":0-100,"y":0-100,"w":10-90,"h":10-90}],"characters":[{"key":"lowercase_unique","name":"Character Name","description":"Role/appearance (1 sentence)","personality":"Core traits (1 sentence)","keywords":["topic1","topic2"],"voice":"Mia|Chloe|Milo|Dean|mimo_default","color":"#hexcolor","pos":{"x":0-100,"y":0-100}}]}
+Zones are 3-6 named areas of the location laid out on a 100x100 map (x,y = top-left corner, w,h = size); they must not extend past 100. Place each character's pos inside a fitting zone.
 Include 3-10 characters appropriate to the world. Be authentic. Output ONLY JSON.`;
   const res=await fetch(`${p.base}/chat/completions`,{
     method:'POST',headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
@@ -456,6 +473,7 @@ async function openRealmDetail(id){
   document.getElementById('detailModel').textContent=parseModel(r.creativeModel||'').model||'AI';
   document.getElementById('detailVisual').innerHTML=getMapSVG(r.mapConfig?.mapType||'custom');
   renderDetailChars();
+  if(typeof renderRealmMemories==='function')renderRealmMemories(r);
 
   const sessions=await dbGetAll('sessions');
   const whispers=sessions.filter(s=>s.realmId===id&&s.isWhisper).sort((a,b)=>(b.lastActiveAt||0)-(a.lastActiveAt||0));
@@ -562,6 +580,7 @@ document.getElementById('btnStartSession').onclick=async()=>{
 /* ====================== CHAT SESSION (UI only) ====================== */
 let currentSession=null;
 let chatTargetKey='';
+let shoutNext=false;
 
 function isCharDisabled(sess,charKey){return(sess?.disabledCharacters||[]).includes(charKey);}
 function isWhisperActive(){return !!currentSession?.isWhisper;}
@@ -586,22 +605,15 @@ async function openSession(sessId){
   hh.innerHTML=`<button class="back" style="margin:0">&lt;&lt;</button>
     <div>${renderSessionTitle()}</div>
     <div class="chat-toolbar">${renderChatToolbarHTML()}</div>`;
-  hh.querySelector('.back').onclick=()=>{showScreen('screen-detail');openRealmDetail(realm.id);};
+  hh.querySelector('.back').onclick=()=>{
+    if(typeof distillSession==='function')distillSession(sess,realm);
+    showScreen('screen-detail');openRealmDetail(realm.id);
+  };
   bindChatToolbar();
 
-  const mapWrap=document.getElementById('chatMapWrap');
-  mapWrap.innerHTML=`<div id="chatMap">${getMapSVG(realm.mapConfig?.mapType||'custom')}<div id="chatMapTokens"></div></div>`;
-  mapWrap.classList.toggle('collapsed',realm.mapConfig?.enabled===false);
-  const tokContainer=document.getElementById('chatMapTokens');
-  (realm.characters||[]).forEach(c=>{
-    const t=document.createElement('div');t.className='map-token';t.dataset.key=c.key;t.style.background=c.color;
-    t.style.left=(c.pos?.x||50)+'%';t.style.top=(c.pos?.y||50)+'%';
-    t.textContent=c.name.slice(0,2).toUpperCase();
-    const lbl=document.createElement('span');lbl.className='mt-label';lbl.textContent=c.name;
-    t.appendChild(lbl);tokContainer.appendChild(t);
-    c._mapEl=t;
-  });
+  initSessionMap(realm,sess);
   highlightPlayerToken();
+  if(typeof startAmbient==='function')startAmbient();
 
   renderChatTarget();
   document.getElementById('chat-tags').style.display='flex';
@@ -630,6 +642,7 @@ function renderChatToolbarHTML(){
   const p=currentPlayer();
   const soundOn=!!settings.ttsEnabled;
   const whisperOn=!!currentSession?.isWhisper;
+  const ambientOn=currentSession?.ambientEnabled!==false;
   return `
     <button class="player-badge ${whisperOn?'whisper':''}" id="playerBadgeBtn" title="Switch character & toggle mute" aria-haspopup="listbox">
       <div class="char-avatar pb-avatar" style="background:${esc(p?p.color:'#888')}">${esc((p?(p.name.slice(0,2).toUpperCase()):'??'))}</div>
@@ -646,6 +659,8 @@ function renderChatToolbarHTML(){
       <button class="icon-btn ${whisperOn?'is-lock':''}" id="whisperToggle" title="${whisperOn?'Whisper mode ON':'Start a private whisper session'}">
         ${whisperOn?LOCK_SVG:LOCK_OPEN_SVG}
       </button>
+      <button class="icon-btn ${ambientOn?'is-on':'is-off'}" id="ambientToggle" title="${ambientOn?'Ambient life ON — characters act on their own':'Ambient life OFF'}">${SPARKLE_SVG}</button>
+      <button class="icon-btn" id="chatMapExpand" title="Expand map">${EXPAND_SVG}</button>
       <button class="icon-btn" id="chatMapToggle" title="Toggle map">${MAP_SVG}</button>
     </div>
   `;
@@ -660,6 +675,20 @@ function bindChatToolbar(){
   if(sb)sb.onclick=()=>setSoundEnabled(!settings.ttsEnabled);
   const wt=document.getElementById('whisperToggle');
   if(wt)wt.onclick=()=>toggleWhisper();
+  const at=document.getElementById('ambientToggle');
+  if(at)at.onclick=()=>toggleAmbientLife();
+  const me=document.getElementById('chatMapExpand');
+  if(me)me.onclick=()=>toggleMapExpand();
+}
+
+async function toggleAmbientLife(){
+  if(!currentSession)return;
+  currentSession.ambientEnabled=currentSession.ambientEnabled===false;
+  await dbPut('sessions',currentSession);
+  if(currentSession.ambientEnabled){if(typeof startAmbient==='function')startAmbient();}
+  else if(typeof stopAmbient==='function')stopAmbient();
+  refreshPlayerBadgeOnly();
+  toast(currentSession.ambientEnabled?'AMBIENT LIFE ON':'AMBIENT LIFE OFF');
 }
 
 function refreshChatHeader(){
@@ -669,6 +698,7 @@ function refreshChatHeader(){
   if(titleBlock)titleBlock.innerHTML=currentSession&&currentRealm?renderSessionTitle():'';
   if(toolbar)toolbar.innerHTML=renderChatToolbarHTML();
   bindChatToolbar();highlightPlayerToken();
+  if(typeof updateEarshotUI==='function')updateEarshotUI();
   const banner=document.getElementById('whisperBanner');
   if(banner)banner.style.display=isWhisperActive()?'flex':'none';
 }
@@ -745,6 +775,7 @@ async function toggleCharEnabled(key){
     }
   }
   renderChatTarget();highlightPlayerToken();
+  if(typeof updateEarshotUI==='function')updateEarshotUI();
 }
 
 async function setSoundEnabled(on){
@@ -791,6 +822,7 @@ function renderChatTarget(){
     const isDirect=!!chatTargetKey;
     pill.classList.toggle('direct',isDirect&&!whisper);
     pill.classList.toggle('whisper-mode',whisper&&isDirect);
+    pill.classList.toggle('shout',shoutNext&&!isDirect&&!whisper);
     document.getElementById('sendBtnChat').classList.toggle('direct-mode',isDirect&&!whisper);
     document.getElementById('sendBtnChat').classList.toggle('whisper-mode',whisper);
     const banner=document.getElementById('directBanner');
@@ -799,7 +831,7 @@ function renderChatTarget(){
       label.textContent=c?c.name.toUpperCase():'DIRECT';
       document.getElementById('directToName').textContent=c?c.name:'character';
       banner.style.display='flex';
-    }else{label.textContent='AUTO';banner.style.display='none';}
+    }else{label.textContent=shoutNext?'SHOUT':'AUTO';banner.style.display='none';}
     pop.querySelectorAll('.tp-row[data-key]').forEach(r=>{r.classList.toggle('active',r.dataset.key===chatTargetKey);});
   };
   pill.onclick=(e)=>{
@@ -814,11 +846,17 @@ function renderChatTarget(){
     const autoRow=document.createElement('div');
     autoRow.className='tp-row'+(chatTargetKey?'':' active');
     autoRow.dataset.key='';
-    const desc=candidates.length<=1?'FORCED DIRECT':'ROUTER DECIDES';
+    const desc=candidates.length<=1?'FORCED DIRECT':'NEARBY + ROUTER';
     autoRow.innerHTML=`<div class="char-avatar" style="background:linear-gradient(135deg,var(--neon-1),var(--neon-2))">AI</div>
       <div class="tp-row-meta"><div class="tp-row-name">AUTO (${desc})</div></div>`;
-    autoRow.onclick=()=>{chatTargetKey='';pop.classList.remove('open');setTarget();toast('AUTO MODE');};
+    autoRow.onclick=()=>{chatTargetKey='';shoutNext=false;pop.classList.remove('open');setTarget();toast('AUTO MODE');};
     pop.appendChild(autoRow);
+    const shoutRow=document.createElement('div');
+    shoutRow.className='tp-row shout-row'+(shoutNext?' active':'');
+    shoutRow.innerHTML=`<div class="char-avatar" style="background:var(--neon-3);color:#0d0221">!!</div>
+      <div class="tp-row-meta"><div class="tp-row-name">SHOUT (EVERYONE HEARS)</div></div>`;
+    shoutRow.onclick=()=>{shoutNext=true;chatTargetKey='';pop.classList.remove('open');setTarget();toast('NEXT MESSAGE IS A SHOUT');};
+    pop.appendChild(shoutRow);
   }else{
     const head=document.createElement('div');
     head.className='tp-empty';
@@ -838,7 +876,7 @@ function renderChatTarget(){
       row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
         <div class="tp-row-meta"><div class="tp-row-name">${esc(c.name)}</div></div>
         ${whisper?'<span class="tp-lock-badge">LOCK</span>':''}`;
-      row.onclick=()=>{chatTargetKey=c.key;pop.classList.remove('open');setTarget();toast(whisper?'WHISPERING TO '+(c.name||'').toUpperCase():'TALKING TO '+(c.name||'').toUpperCase());};
+      row.onclick=()=>{chatTargetKey=c.key;shoutNext=false;pop.classList.remove('open');setTarget();toast(whisper?'WHISPERING TO '+(c.name||'').toUpperCase():'TALKING TO '+(c.name||'').toUpperCase());};
       pop.appendChild(row);
     });
   }
@@ -869,11 +907,18 @@ function renderChatTags(){
 function addChatBubble(h){
   const chat=document.getElementById('chat');
   const key=h.speakerKey||'',name=h.speaker||'?',text=h.text||'';
+  if(h.kind==='event'||h.kind==='system'){
+    const line=document.createElement('div');
+    line.className='narration-line'+(h.kind==='system'?' system':'');
+    line.textContent=(h.kind==='event'?'☀ ':'')+text;
+    chat.appendChild(line);chat.scrollTop=chat.scrollHeight;
+    return;
+  }
   const isMe=!!h.isPlayer;
   const c=(currentRealm?.characters||[]).find(x=>x.key===key)||{color:'#888',name};
-  const div=document.createElement('div');div.className='msg'+(isMe?' me':'');
+  const div=document.createElement('div');div.className='msg'+(isMe?' me':'')+(h.kind==='ambient'?' ambient':'');
   div.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(name.slice(0,2).toUpperCase())}</div>
-    <div class="bubble"><div class="who" style="color:${esc(c.color)}">${esc(name)}${!isMe?'<button class="replay" title="Replay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>':''}</div><div>${esc(text)}</div></div>`;
+    <div class="bubble"><div class="who" style="color:${esc(c.color)}">${h.shout?'📢 ':''}${esc(name)}${!isMe?'<button class="replay" title="Replay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>':''}</div><div>${esc(text)}</div></div>`;
   if(!isMe)div.querySelector('.replay').onclick=()=>speakChat(text,key);
   chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
 }
