@@ -18,35 +18,42 @@ function showTyping(name){
 }
 function hideTyping(){document.getElementById('typingInd')?.remove();}
 
-/* ===== Selection rule: direct > forced-single > router ===== */
-async function pickResponders(text,playerKey,realm,sess){
+/* ===== Selection rule: direct > earshot filter > forced-single > router ===== */
+async function pickResponders(text,playerKey,realm,sess,shout){
   if(chatTargetKey){
     const target=realm.characters.find(c=>c.key===chatTargetKey);
     if(target&&!isCharDisabled(sess,target.key))return [chatTargetKey];
     chatTargetKey='';
   }
-  const candidates=realm.characters
+  let candidates=realm.characters
     .filter(c=>c.key!==playerKey&&!isCharDisabled(sess,c.key))
     .map(c=>c.key);
   if(candidates.length===0)return [];
+  if(!sess.isWhisper&&!shout&&typeof inEarshot==='function'){
+    const near=candidates.filter(k=>inEarshot(k));
+    if(near.length===0)return{outOfRange:true};
+    candidates=near;
+  }
   if(candidates.length===1)return candidates;
-  return await routeMessage(text,playerKey,realm,sess);
+  return await routeMessage(text,playerKey,realm,sess,candidates,shout);
 }
 
-async function routeMessage(text,playerKey,realm,sess){
-  const candidates=realm.characters
-    .filter(c=>c.key!==playerKey&&!isCharDisabled(sess,c.key))
-    .map(c=>c.key);
+async function routeMessage(text,playerKey,realm,sess,candidates,shout){
   if(candidates.length===0)return[];
   if(candidates.length===1)return candidates;
-  const recent=sess.history.slice(-8).map(h=>`${h.speaker}: ${h.text}`).join('\n');
+  const recent=sess.history.slice(-8).filter(h=>h.kind!=='system').map(h=>`${h.kind==='event'?'Narrator':h.speaker}: ${h.text}`).join('\n');
   const{provider,model}=parseModel(settings.routerModel||DEFAULT_SETTINGS.routerModel);
   const p=PROVIDERS[provider];const key=settings[p.keyName];
+  const where=typeof zoneOf==='function'
+    ?candidates.map(k=>{const c=realm.characters.find(x=>x.key===k);const z=zoneOf(k);const a=sess.activities?.[k];return`${k} (${c?.name}${z?', at the '+z.name:''}${a?', '+a.label:''})`;}).join('; ')
+    :candidates.join(', ');
   const prompt=`You are the conversation director in ${realm.name}.
 The speaker is ${realm.characters.find(c=>c.key===playerKey)?.name}.
+${shout?'The speaker SHOUTS across the whole place, so everyone hears.':'Only the characters listed below are close enough to hear.'}
 Message: "${text}"
 Recent: ${recent||'(none)'}
-Decide who naturally responds (1 or 2 names if the message clearly involves/provokes two people).
+Who can hear: ${where}
+Decide who naturally responds (1 or 2 keys if the message clearly involves/provokes two people).
 Output ONLY JSON: {"responders":["key1"]} or {"responders":["key1","key2"]}
 Options: ${candidates.join(', ')}`;
   try{
@@ -66,13 +73,19 @@ Options: ${candidates.join(', ')}`;
 async function getReply(responderKey,userText,alreadyReplied,sess,realm){
   const c=realm.characters.find(x=>x.key===responderKey);
   const player=realm.characters.find(x=>x.key===sess.playerKey);
-  const recent=sess.history.slice(-20).map(h=>`${h.speaker}: ${h.text}`).join('\n');
+  const recent=sess.history.slice(-20).filter(h=>h.kind!=='system').map(h=>`${h.kind==='event'?'Narrator':h.speaker}: ${h.text}`).join('\n');
   const tags=(sess.activeTags||[]).join(', ');
   const repliedNote=alreadyReplied.length?`\n${alreadyReplied.map(k=>realm.characters.find(x=>x.key===k)?.name).join(' and ')} already replied; react to what they said.`:'';
   const tagNote=tags?`\nActive tone tags: ${tags}. Apply their natural meaning. Do not mention the tags.`:'';
   const extra=c.system?`\n${c.system}`:'';
+  const spatial=typeof spatialSummary==='function'?spatialSummary(realm,sess,responderKey):'';
+  const act=sess.activities?.[responderKey];
+  const mem=typeof memoryNotes==='function'?memoryNotes(responderKey,realm):'';
+  const sceneNote=spatial?`\n${spatial}`:'';
+  const actNote=act?`\nYou were just ${act.label}.`:'';
+  const memNote=mem?`\nYou remember from before: ${mem}`:'';
   const sys=`You are ${c.name} in ${realm.name}. ${c.description}. Personality: ${c.personality}.${extra}
-Talking to ${player?.name||'the user'}.${repliedNote}${tagNote}
+Talking to ${player?.name||'the user'}.${repliedNote}${tagNote}${sceneNote}${actNote}${memNote}
 RULES:
 - Output SPOKEN DIALOGUE ONLY. No asterisks, no narration, no actions. These words become audio.
 - Stay fully in character. 1-3 sentences, natural conversational length.
@@ -174,33 +187,54 @@ async function handleChatSend(){
   const player=realm.characters.find(c=>c.key===playerKey)||realm.characters[0];
   const playerName=player?player.name:'You';
 
-  const h={speakerKey:playerKey,speaker:playerName,text,timestamp:Date.now(),isPlayer:true};
+  const shout=!!shoutNext;
+  shoutNext=false;
+
+  const h={kind:'dialogue',speakerKey:playerKey,speaker:playerName,text,timestamp:Date.now(),isPlayer:true,shout};
   addChatBubble(h);
   sess.history.push(h);
   sess.lastActiveAt=Date.now();
   await dbPut('sessions',sess);
+  if(shout)renderChatTarget();
 
   maybeAutoRename(sess);
 
-  const responders=await pickResponders(text,playerKey,realm,sess);
-  try{
-    const already=[];
-    for(const rKey of responders){
-      const c=realm.characters.find(x=>x.key===rKey);if(!c)continue;
-      showTyping(c.name);
-      setMapSpeaking(rKey,true);
-      let reply;
-      try{reply=await getReply(rKey,text,already,sess,realm);}
-      finally{hideTyping();setMapSpeaking(rKey,false);}
-      const replyH={speakerKey:rKey,speaker:c.name,text:reply,timestamp:Date.now(),isPlayer:false};
-      addChatBubble(replyH);
-      sess.history.push(replyH);
-      sess.lastActiveAt=Date.now();
-      await dbPut('sessions',sess);
-      already.push(rKey);
-      await speakChat(reply,rKey);
-    }
-  }catch(e){console.error(e);toast(e.message||'CHAT FAILED');}
+  const picked=await pickResponders(text,playerKey,realm,sess,shout);
+  if(picked&&picked.outOfRange){
+    const sysH={kind:'system',speakerKey:'',speaker:'',text:'No one is close enough to hear you. Walk closer on the map, or use SHOUT.',timestamp:Date.now()};
+    addChatBubble(sysH);
+    sess.history.push(sysH);
+    await dbPut('sessions',sess);
+  }else{
+    const responders=Array.isArray(picked)?picked:[];
+    try{
+      const already=[];
+      for(const rKey of responders){
+        const c=realm.characters.find(x=>x.key===rKey);if(!c)continue;
+        // shouted-at characters walk over before answering
+        if(shout&&typeof inEarshot==='function'&&!inEarshot(rKey)){
+          const pp=sess.positions?.[playerKey];
+          if(pp){
+            moveCharacter(rKey,Math.min(97,Math.max(3,pp.x+(already.length?7:-7))),Math.min(92,Math.max(8,pp.y+4)));
+            await new Promise(r=>setTimeout(r,900));
+          }
+        }
+        showTyping(c.name);
+        setMapSpeaking(rKey,true);
+        let reply;
+        try{reply=await getReply(rKey,text,already,sess,realm);}
+        finally{hideTyping();setMapSpeaking(rKey,false);}
+        const replyH={kind:'dialogue',speakerKey:rKey,speaker:c.name,text:reply,timestamp:Date.now(),isPlayer:false};
+        addChatBubble(replyH);
+        sess.history.push(replyH);
+        sess.lastActiveAt=Date.now();
+        await dbPut('sessions',sess);
+        already.push(rKey);
+        await speakChat(reply,rKey);
+      }
+      if(responders.length&&typeof stageDirectionTick==='function')stageDirectionTick(sess,realm);
+    }catch(e){console.error(e);toast(e.message||'CHAT FAILED');}
+  }
 
   chatBusy=false;
   document.getElementById('sendBtnChat').disabled=false;
@@ -212,15 +246,17 @@ document.getElementById('chatInput').addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();handleChatSend();}
 });
 
-/* ===== Auto-rename at exactly 10 messages ===== */
+/* ===== Auto-rename once 10 dialogue messages exist (ambient/event lines don't count) ===== */
 async function maybeAutoRename(sess){
-  if(!sess||sess.renameDone||(sess.history||[]).length!==10)return;
+  if(!sess||sess.renameDone)return;
+  const dlg=(sess.history||[]).filter(h=>!h.kind||h.kind==='dialogue');
+  if(dlg.length<10)return;
   sess.renameDone=true;
   await dbPut('sessions',sess);
   const ctl=new AbortController();
   const timeoutId=setTimeout(()=>ctl.abort(),8000);
   try{
-    const lines=sess.history.slice(0,10).map(h=>`${h.speaker}: ${h.text}`).join('\n');
+    const lines=dlg.slice(0,10).map(h=>`${h.speaker}: ${h.text}`).join('\n');
     const{provider,model}=parseModel(settings.taskModel||DEFAULT_SETTINGS.taskModel);
     const p=PROVIDERS[provider];const key=settings[p.keyName];
     const prompt=`Summarize this conversation into a short, catchy session title (2-4 words). Output ONLY the title, no quotes.\n\n${lines}`;

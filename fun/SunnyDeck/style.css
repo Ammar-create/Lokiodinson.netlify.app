@@ -505,6 +505,75 @@ header{
 }
 @keyframes ring{from{transform:scale(.7);opacity:1}to{transform:scale(1.5);opacity:0}}
 
+/* ===== INTERACTIVE MAP ===== */
+#chatMap{cursor:crosshair}
+#chatMapWrap.expanded{max-height:340px}
+#chatMapWrap.expanded #chatMap{height:300px;max-width:900px}
+.map-zone{
+  position:absolute;border:1px dashed var(--neon-2);opacity:.22;
+  pointer-events:none;z-index:2;transition:opacity .3s
+}
+.map-zone .mz-label{
+  position:absolute;top:1px;left:4px;font-family:'VT323',monospace;font-size:12px;
+  color:var(--neon-2);letter-spacing:1px;opacity:0;transition:opacity .3s
+}
+#chatMapWrap.expanded .map-zone{opacity:.5}
+#chatMapWrap.expanded .mz-label{opacity:1}
+#earshotRing{
+  position:absolute;transform:translate(-50%,-50%);border:1px dashed var(--neon-1);
+  border-radius:50%;opacity:.35;pointer-events:none;z-index:3;
+  background:radial-gradient(ellipse at center,rgba(255,46,151,.07) 0 60%,transparent 75%);
+  transition:left .4s,top .4s,width .3s,height .3s
+}
+.map-token{cursor:pointer}
+.map-token.far:not(.muted){opacity:.55;filter:saturate(.35) brightness(.8)}
+.map-token.walking{animation:walkbob .3s ease-in-out infinite alternate}
+@keyframes walkbob{from{margin-top:-2px}to{margin-top:2px}}
+.mt-activity{
+  position:absolute;top:-9px;right:-10px;font-size:12px;line-height:1;
+  filter:drop-shadow(0 0 2px #000);pointer-events:none
+}
+.mt-chatter{
+  position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:12px;
+  opacity:0;transition:opacity .3s;pointer-events:none;filter:drop-shadow(0 0 2px #000)
+}
+.mt-chatter.show{opacity:1;animation:chatterbob .6s ease-in-out infinite alternate}
+@keyframes chatterbob{from{margin-top:0}to{margin-top:-3px}}
+
+/* ===== AMBIENT / NARRATION CHAT LINES ===== */
+.msg.ambient{opacity:.62}
+.msg.ambient .bubble{font-style:italic;font-size:16px}
+.msg.ambient .char-avatar{opacity:.8}
+.narration-line{
+  align-self:center;text-align:center;max-width:82%;margin:2px auto;
+  color:var(--text-2);font-style:italic;font-size:16px;font-family:'VT323',monospace;
+  border-top:1px dashed var(--border);border-bottom:1px dashed var(--border);
+  padding:5px 12px;animation:pop .2s ease
+}
+.narration-line.system{color:var(--danger);font-style:normal;border-color:var(--danger)}
+
+/* ===== SHOUT ===== */
+.target-pill.shout{border-color:var(--neon-3);box-shadow:0 0 8px rgba(255,230,0,.35)}
+.target-pill.shout .tp-name{color:var(--neon-3);font-weight:700}
+.tp-row.shout-row .tp-row-name{color:var(--neon-3)}
+.tp-row.shout-row.active{border-left:3px solid var(--neon-3);padding-left:9px;background:rgba(255,230,0,.08)}
+
+/* ===== MEMORIES (realm detail) ===== */
+.mem-row{margin-bottom:12px}
+.mem-head{display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.mem-head .char-avatar{width:26px;height:26px;font-size:8px}
+.mem-notes{display:flex;flex-wrap:wrap}
+.mem-note{
+  display:inline-flex;align-items:center;gap:7px;background:var(--surface-2);
+  border:1px solid var(--border);padding:3px 8px;margin:0 6px 6px 0;
+  font-family:'VT323',monospace;font-size:16px;color:var(--text-2)
+}
+.mem-note button{
+  background:none;border:none;color:var(--text-3);cursor:pointer;
+  font-size:15px;line-height:1;padding:0
+}
+.mem-note button:hover{color:var(--danger)}
+
 /* ===== SETTINGS ===== */
 #settings-screen{padding:20px 16px}
 .settings-card{max-width:580px;margin:0 auto;background:var(--surface);border:2px solid var(--border);padding:22px;position:relative}
