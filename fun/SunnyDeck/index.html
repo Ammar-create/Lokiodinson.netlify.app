@@ -5,12 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>SUNNY DECK // RETRO</title>
 <meta name="theme-color" content="#0d0221">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="features.css">
 </head>
 <body>
 
@@ -124,6 +126,8 @@
   <div id="browse">
     <div class="browse-bar">
       <input class="search" id="realmSearch" placeholder="SEARCH REALMS..." autocomplete="off">
+      <button class="btn btn-ghost" id="importRealmBtn" style="flex:0;padding:11px 16px;white-space:nowrap">IMPORT</button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
       <button class="btn btn-primary" id="newRealmBtn" style="flex:0;padding:11px 16px;white-space:nowrap">NEW</button>
     </div>
     <div class="realm-grid" id="realmGrid"></div>
@@ -203,6 +207,8 @@
     <div class="detail-section"><h3>Overview</h3><p id="detailOverview"></p></div>
     <div class="detail-section"><h3>Characters</h3><div id="detailChars"></div></div>
     <div class="detail-section"><h3>Memories</h3><div id="detailMemories"></div></div>
+    <div class="detail-section"><h3>Relationships</h3><div id="detailRelWeb"></div></div>
+    <div class="detail-section"><h3>Journal</h3><div id="detailJournal"></div></div>
     <div class="detail-section">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
         <h3 style="margin:0">Sessions</h3>
@@ -211,6 +217,7 @@
       <div id="detailSessions"></div>
     </div>
     <div class="btn-row" style="margin-top:6px">
+      <button class="btn btn-ghost" id="btnExportRealm">Export Realm</button>
       <button class="btn btn-ghost btn-danger-out" id="btnDeleteRealm">Delete Realm</button>
     </div>
   </div>
@@ -219,7 +226,9 @@
 <section class="screen" id="screen-chat">
   <div id="chatMapWrap"></div>
   <div id="chat-header" style="display:none"></div>
+  <div id="worldHud" style="display:none"></div>
   <div id="chat-tags" style="display:none"></div>
+  <div id="questPanel" style="display:none"></div>
   <div id="chat"></div>
   <div id="composer" style="display:none">
     <div id="composerInner">
@@ -236,6 +245,9 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
         </button>
         <textarea id="chatInput" rows="1" placeholder="TALK TO THE CREW..."></textarea>
+        <button class="comp-btn" id="diceBtnChat" title="Roll dice">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 21 7 21 17 12 22 3 17 3 7"/><line x1="12" y1="22" x2="12" y2="12"/><line x1="21" y1="7" x2="12" y2="12"/><line x1="3" y1="7" x2="12" y2="12"/></svg>
+        </button>
         <div id="chatTargetWrap"></div>
         <button class="comp-btn" id="sendBtnChat" title="Send">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -266,6 +278,21 @@
         <input type="checkbox" id="sTtsOn" style="width:auto;accent-color:var(--neon-1)" checked>
         <label style="margin:0">Voice replies enabled by default</label>
       </div>
+      <div class="detail-section"><h3>Sound &amp; World</h3></div>
+      <div class="field" style="display:flex;align-items:center;gap:10px">
+        <input type="checkbox" id="sSoundOn" style="width:auto;accent-color:var(--neon-1)" checked>
+        <label style="margin:0">Retro sound effects</label>
+      </div>
+      <div class="field"><label>SFX Volume</label><input type="range" id="sSoundVol" min="0" max="100" value="40"></div>
+      <div class="field" style="display:flex;align-items:center;gap:10px">
+        <input type="checkbox" id="sAmbientLoop" style="width:auto;accent-color:var(--neon-1)">
+        <label style="margin:0">Ambient chiptune loop in chat</label>
+      </div>
+      <div class="field" style="display:flex;align-items:center;gap:10px">
+        <input type="checkbox" id="sWeatherFx" style="width:auto;accent-color:var(--neon-1)" checked>
+        <label style="margin:0">Weather effects on map</label>
+      </div>
+      <div class="field"><label>World Clock</label><div id="ddWorldClock"></div><div class="hint">Off / advance per message / hybrid (also real time).</div></div>
       <div class="btn-row">
         <button class="btn btn-ghost" id="sReset">Reset</button>
         <button class="btn btn-primary" id="sSave">Save</button>
@@ -277,6 +304,14 @@
 <script src="app.js" defer></script>
 <script src="map.js" defer></script>
 <script src="memory.js" defer></script>
+<script src="sound.js" defer></script>
+<script src="world.js" defer></script>
+<script src="dice.js" defer></script>
+<script src="share.js" defer></script>
+<script src="social.js" defer></script>
+<script src="quests.js" defer></script>
+<script src="journal.js" defer></script>
+<script src="rewind.js" defer></script>
 <script src="director.js" defer></script>
 <script src="app-ai.js" defer></script>
 </body>
