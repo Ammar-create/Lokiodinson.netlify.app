@@ -1,5 +1,5 @@
 /* ===================================================================
-   SUNNY DECK // RETRO  —  application logic
+   SUNNY DECK // RETRO  —  application logi
    app.js     UI/state/persistence/init/non-AI handlers
    app-ai.js AI firing (router/reply/TTS/STT/auto-rename)
    Both run as classic scripts so they share global scope.
