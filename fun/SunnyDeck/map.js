@@ -1,5 +1,5 @@
 /* ===================================================================
-   SUNNY DECK // RETRO  —  map.js
+   SUNNY DECK // RETRO  —  map.j
    Interactive map engine: zones, movement, proximity / earshot.
    Loaded after app.js as a classic script; shares its globals
    (currentRealm, currentSession, chatTargetKey, esc, dbPut, toast...).
