@@ -1,5 +1,5 @@
 /* ===================================================================
-   SUNNY DECK // RETRO  —  memory.j
+   SUNNY DECK // RETRO  —  memory.js
    Persistent realm memory: after a session, a cheap model distills
    what each character would remember; notes are injected into their
    prompts next time and editable from the realm detail screen.
