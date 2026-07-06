@@ -84,8 +84,16 @@ async function getReply(responderKey,userText,alreadyReplied,sess,realm){
   const sceneNote=spatial?`\n${spatial}`:'';
   const actNote=act?`\nYou were just ${act.label}.`:'';
   const memNote=mem?`\nYou remember from before: ${mem}`:'';
+  const world=typeof worldPromptNote==='function'?worldPromptNote():'';
+  const worldNote=world?`\n${world}`:'';
+  const social=typeof socialPromptNote==='function'?socialPromptNote(responderKey,realm,sess):'';
+  const socialNote=social?`\n${social}`:'';
+  const quest=typeof questPromptNote==='function'?questPromptNote(sess):'';
+  const questNote=quest?`\n${quest}`:'';
+  const roll=typeof rollPromptNote==='function'?rollPromptNote():'';
+  const rollNote=roll?`\n${roll}`:'';
   const sys=`You are ${c.name} in ${realm.name}. ${c.description}. Personality: ${c.personality}.${extra}
-Talking to ${player?.name||'the user'}.${repliedNote}${tagNote}${sceneNote}${actNote}${memNote}
+Talking to ${player?.name||'the user'}.${repliedNote}${tagNote}${sceneNote}${actNote}${memNote}${worldNote}${socialNote}${questNote}${rollNote}
 RULES:
 - Output SPOKEN DIALOGUE ONLY. No asterisks, no narration, no actions. These words become audio.
 - Stay fully in character. 1-3 sentences, natural conversational length.
@@ -177,6 +185,11 @@ let chatBusy=false;
 async function handleChatSend(){
   const text=document.getElementById('chatInput').value.trim();
   if(!text||chatBusy)return;
+  if(text.startsWith('/')&&typeof handleSlashCommand==='function'){
+    document.getElementById('chatInput').value='';
+    if(await handleSlashCommand(text))return;
+    document.getElementById('chatInput').value=text;
+  }
   if(!hasApiKeys()){toast('ADD YOUR AQUA API KEY IN SETTINGS');return;}
   chatBusy=true;
   document.getElementById('sendBtnChat').disabled=true;
@@ -196,6 +209,8 @@ async function handleChatSend(){
   sess.lastActiveAt=Date.now();
   await dbPut('sessions',sess);
   if(shout)renderChatTarget();
+  if(typeof sfx==='function')sfx('send');
+  if(typeof worldOnExchange==='function')worldOnExchange();
 
   maybeAutoRename(sess);
 
@@ -226,6 +241,7 @@ async function handleChatSend(){
         finally{hideTyping();setMapSpeaking(rKey,false);}
         const replyH={kind:'dialogue',speakerKey:rKey,speaker:c.name,text:reply,timestamp:Date.now(),isPlayer:false};
         addChatBubble(replyH);
+        if(typeof sfx==='function')sfx('reply');
         sess.history.push(replyH);
         sess.lastActiveAt=Date.now();
         await dbPut('sessions',sess);
@@ -233,8 +249,11 @@ async function handleChatSend(){
         await speakChat(reply,rKey);
       }
       if(responders.length&&typeof stageDirectionTick==='function')stageDirectionTick(sess,realm);
+      if(responders.length&&typeof questCheckTick==='function')questCheckTick(sess,realm);
+      if(responders.length&&typeof socialAnalysisTick==='function')socialAnalysisTick(sess,realm);
     }catch(e){console.error(e);toast(e.message||'CHAT FAILED');}
   }
+  if(typeof clearRollNote==='function')clearRollNote();
 
   chatBusy=false;
   document.getElementById('sendBtnChat').disabled=false;

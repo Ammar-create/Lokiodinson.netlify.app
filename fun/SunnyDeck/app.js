@@ -109,8 +109,15 @@ function dbOpen(){
     r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);
   });
 }
+/* Strip transient underscore-prefixed props (e.g. character._mapEl DOM
+   refs) — IndexedDB's structured clone throws on DOM nodes. */
+function dbSanitize(data){
+  if(!data||typeof data!=='object')return data;
+  return JSON.parse(JSON.stringify(data,(k,v)=>k.startsWith('_')?undefined:v));
+}
 async function dbPut(store,data,key){
   const db=await dbOpen();
+  data=dbSanitize(data);
   return new Promise((res,rej)=>{
     const tx=db.transaction(store,'readwrite');
     if(key!==undefined)tx.objectStore(store).put(data,key);else tx.objectStore(store).put(data);
@@ -145,7 +152,9 @@ const DEFAULT_SETTINGS={
   creativeModel:'aqua:deepseek-v4',taskModel:'aqua:gemini-3.1-lite',
   routerModel:'aqua:diffusion-gemma',chatModel:'aqua:deepseek-v4',
   ttsModel:'aqua:mimo-v2.5-tts-voicedesign',sttModel:'groq:whisper-large-v3',
-  ttsEnabled:true
+  ttsEnabled:true,
+  soundEnabled:true,soundVolume:0.4,ambientLoopEnabled:false,
+  weatherFxEnabled:true,worldClockMode:'hybrid'
 };
 let settings={...DEFAULT_SETTINGS};
 async function loadSettings(){const s=await dbGet('settings','cfg');if(s)settings={...DEFAULT_SETTINGS,...s};applyTheme(settings.theme);}
@@ -159,6 +168,8 @@ function initSettingsDropdowns(){
   dd.chat=createDropdown(document.getElementById('ddChat'),TEXT_MODEL_OPTS,settings.chatModel);
   dd.tts=createDropdown(document.getElementById('ddTts'),TTS_MODEL_OPTS,settings.ttsModel);
   dd.stt=createDropdown(document.getElementById('ddStt'),STT_MODEL_OPTS,settings.sttModel);
+  dd.worldClock=createDropdown(document.getElementById('ddWorldClock'),
+    [{value:'off'},{value:'exchanges',note:'per message'},{value:'hybrid',note:'default'}],settings.worldClockMode);
 }
 
 /* ====================== TOAST ====================== */
@@ -180,6 +191,7 @@ const LOCK_OPEN_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 const MAP_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>`;
 const SPARKLE_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg>`;
 const EXPAND_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`;
+const SCROLL_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h13a3 3 0 0 1 3 3v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>`;
 
 /* ====================== NAVIGATION ====================== */
 function showScreen(id){
@@ -187,6 +199,9 @@ function showScreen(id){
   document.getElementById(id)?.classList.add('active');
   document.getElementById('mainHeader').style.display=(id==='screen-chat')?'none':'flex';
   if(typeof directorOnScreenChange==='function')directorOnScreenChange(id);
+  if(typeof worldOnScreenChange==='function')worldOnScreenChange(id);
+  if(typeof soundOnScreenChange==='function')soundOnScreenChange(id);
+  if(typeof sfx==='function')sfx('screen');
 }
 document.getElementById('toDashboard').onclick=()=>{showScreen('screen-dash');renderDashboard();};
 document.getElementById('btnCreateRealm').onclick=()=>openCreateRealm();
@@ -474,6 +489,8 @@ async function openRealmDetail(id){
   document.getElementById('detailVisual').innerHTML=getMapSVG(r.mapConfig?.mapType||'custom');
   renderDetailChars();
   if(typeof renderRealmMemories==='function')renderRealmMemories(r);
+  if(typeof renderRelationshipWeb==='function')renderRelationshipWeb(r);
+  if(typeof renderRealmJournal==='function')renderRealmJournal(r);
 
   const sessions=await dbGetAll('sessions');
   const whispers=sessions.filter(s=>s.realmId===id&&s.isWhisper).sort((a,b)=>(b.lastActiveAt||0)-(a.lastActiveAt||0));
@@ -487,14 +504,22 @@ async function openRealmDetail(id){
     const playerLabel=p?`as ${esc(p.name)}`:'(no player)';
     const muteNote=rc<totalC?` &middot; <span style="color:var(--danger)">${rc}/${totalC}</span>`:'';
     const row=document.createElement('div');row.className='session-row';
+    const branchMark=s.branchedFrom?'⑂ ':'';
     const titleHTML=s.isWhisper
-      ? `<span class="lock-pill" title="Whisper session">${LOCK_SVG} PRIVATE</span> ${esc(s.name)}`
-      : esc(s.name);
+      ? `<span class="lock-pill" title="Whisper session">${LOCK_SVG} PRIVATE</span> ${branchMark}${esc(s.name)}`
+      : branchMark+esc(s.name);
     row.innerHTML=`<div class="s-name">${titleHTML}</div><div class="s-meta">${playerLabel}${muteNote} &middot; ${new Date(s.lastActiveAt||Date.now()).toLocaleDateString()} &middot; ${(s.history||[]).length} MSGS</div>`;
     const go=document.createElement('button');go.className='s-btn';go.textContent='OPEN';go.onclick=()=>openSession(s.id);
+    row.appendChild(go);
+    if(typeof openTranscriptModal==='function'){
+      const ex=document.createElement('button');ex.className='s-btn';ex.textContent='STORY';
+      ex.title='Export as transcript / screenplay / AI story';
+      ex.onclick=()=>openTranscriptModal(s.id);
+      row.appendChild(ex);
+    }
     const del=document.createElement('button');del.className='s-btn danger';del.textContent='DEL';
     del.onclick=async()=>{if(confirm('Delete session?')){await dbDelete('sessions',s.id);openRealmDetail(id);}};
-    row.append(go,del);
+    row.appendChild(del);
     return row;
   };
   regular.forEach(s=>sList.appendChild(renderSessRow(s)));
@@ -607,6 +632,7 @@ async function openSession(sessId){
     <div class="chat-toolbar">${renderChatToolbarHTML()}</div>`;
   hh.querySelector('.back').onclick=()=>{
     if(typeof distillSession==='function')distillSession(sess,realm);
+    if(typeof journalChapterTick==='function')journalChapterTick(sess,realm);
     showScreen('screen-detail');openRealmDetail(realm.id);
   };
   bindChatToolbar();
@@ -614,12 +640,18 @@ async function openSession(sessId){
   initSessionMap(realm,sess);
   highlightPlayerToken();
   if(typeof startAmbient==='function')startAmbient();
+  if(typeof initWorldLayer==='function')initWorldLayer(realm,sess);
+  if(typeof startWorldClock==='function')startWorldClock();
+  if(typeof decayMoods==='function')decayMoods(sess);
+  if(typeof refreshMoodChips==='function')refreshMoodChips();
+  if(typeof renderQuestPanel==='function')renderQuestPanel();
 
   renderChatTarget();
   document.getElementById('chat-tags').style.display='flex';
   renderChatTags();
 
   const chat=document.getElementById('chat');chat.innerHTML='';
+  if(typeof renderBranchNote==='function')renderBranchNote(sess);
   (sess.history||[]).forEach(h=>addChatBubble(h));
 
   document.getElementById('composer').style.display='block';
@@ -653,6 +685,7 @@ function renderChatToolbarHTML(){
       <span class="pb-arrow">&#9660;</span>
     </button>
     <div class="header-right">
+      <button class="icon-btn ${currentSession?.quest?'is-on':''}" id="questBtn" title="${currentSession?.quest?'Quest active — toggle panel':'Start a quest'}">${SCROLL_SVG}</button>
       <button class="icon-btn ${soundOn?'is-on':'is-off'}" id="soundToggle" title="${soundOn?'Voice auto-play ON':'Voice auto-play OFF'}">
         ${soundOn?SOUND_ON_SVG:SOUND_OFF_SVG}
       </button>
@@ -669,6 +702,8 @@ function renderChatToolbarHTML(){
 function bindChatToolbar(){
   const pb=document.getElementById('playerBadgeBtn');
   if(pb)pb.onclick=(e)=>{e.stopPropagation();openPlayerSwitcher(pb);};
+  const qb=document.getElementById('questBtn');
+  if(qb)qb.onclick=()=>{if(typeof openQuestUI==='function')openQuestUI();};
   const mt=document.getElementById('chatMapToggle');
   if(mt)mt.onclick=()=>document.getElementById('chatMapWrap').classList.toggle('collapsed');
   const sb=document.getElementById('soundToggle');
@@ -907,6 +942,16 @@ function renderChatTags(){
 function addChatBubble(h){
   const chat=document.getElementById('chat');
   const key=h.speakerKey||'',name=h.speaker||'?',text=h.text||'';
+  if(h.kind==='roll'){
+    // dice.js renders live rolls itself (with animation); this path replays saved history
+    if(typeof renderRollBubble==='function')chat.appendChild(renderRollBubble(h,true));
+    else{
+      const line=document.createElement('div');line.className='narration-line';
+      line.textContent=text;chat.appendChild(line);
+    }
+    chat.scrollTop=chat.scrollHeight;
+    return;
+  }
   if(h.kind==='event'||h.kind==='system'){
     const line=document.createElement('div');
     line.className='narration-line'+(h.kind==='system'?' system':'');
@@ -917,9 +962,11 @@ function addChatBubble(h){
   const isMe=!!h.isPlayer;
   const c=(currentRealm?.characters||[]).find(x=>x.key===key)||{color:'#888',name};
   const div=document.createElement('div');div.className='msg'+(isMe?' me':'')+(h.kind==='ambient'?' ambient':'');
-  div.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(name.slice(0,2).toUpperCase())}</div>
+  const moodHTML=(!isMe&&typeof moodBadge==='function')?moodBadge(key):'';
+  div.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(name.slice(0,2).toUpperCase())}${moodHTML}</div>
     <div class="bubble"><div class="who" style="color:${esc(c.color)}">${h.shout?'📢 ':''}${esc(name)}${!isMe?'<button class="replay" title="Replay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>':''}</div><div>${esc(text)}</div></div>`;
   if(!isMe)div.querySelector('.replay').onclick=()=>speakChat(text,key);
+  if(typeof bindMessageActions==='function')bindMessageActions(div,h);
   chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
 }
 
@@ -945,8 +992,17 @@ function fillSettings(){
   dd.tts.value=settings.ttsModel;
   dd.stt.value=settings.sttModel;
   document.getElementById('sTtsOn').checked=settings.ttsEnabled;
+  document.getElementById('sSoundOn').checked=settings.soundEnabled!==false;
+  document.getElementById('sSoundVol').value=Math.round((settings.soundVolume??0.4)*100);
+  document.getElementById('sAmbientLoop').checked=!!settings.ambientLoopEnabled;
+  document.getElementById('sWeatherFx').checked=settings.weatherFxEnabled!==false;
+  if(dd.worldClock)dd.worldClock.value=settings.worldClockMode||'hybrid';
   renderThemePicker();
 }
+document.getElementById('sSoundVol').addEventListener('input',e=>{
+  if(typeof setSfxVolume==='function')setSfxVolume(e.target.value/100);
+  if(typeof sfx==='function')sfx('reply');
+});
 document.getElementById('sSave').onclick=async()=>{
   settings.aquaKey=document.getElementById('sAquaKey').value.trim();
   settings.groqKey=document.getElementById('sGroqKey').value.trim();
@@ -957,7 +1013,14 @@ document.getElementById('sSave').onclick=async()=>{
   settings.ttsModel=dd.tts.value||DEFAULT_SETTINGS.ttsModel;
   settings.sttModel=dd.stt.value||DEFAULT_SETTINGS.sttModel;
   settings.ttsEnabled=document.getElementById('sTtsOn').checked;
+  settings.soundEnabled=document.getElementById('sSoundOn').checked;
+  settings.soundVolume=Math.min(1,Math.max(0,(+document.getElementById('sSoundVol').value||0)/100));
+  settings.ambientLoopEnabled=document.getElementById('sAmbientLoop').checked;
+  settings.weatherFxEnabled=document.getElementById('sWeatherFx').checked;
+  const wc=dd.worldClock?dd.worldClock.value:'';
+  settings.worldClockMode=['off','exchanges','hybrid'].includes(wc)?wc:DEFAULT_SETTINGS.worldClockMode;
   await saveSettings();
+  if(typeof setSfxVolume==='function')setSfxVolume(settings.soundVolume);
   toast('SETTINGS SAVED');showScreen('screen-dash');renderDashboard();
 };
 document.getElementById('sReset').onclick=async()=>{

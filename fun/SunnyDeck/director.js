@@ -73,6 +73,8 @@ async function runAmbientBeat(){
     if(!document.getElementById('screen-chat')?.classList.contains('active'))return;
     const npcs=realm.characters.filter(c=>c.key!==sess.playerKey&&!isCharDisabled(sess,c.key));
     if(!npcs.length)return;
+    if(typeof decayMoods==='function')decayMoods(sess);
+    if(typeof weatherDirectorTick==='function')weatherDirectorTick();
     const roll=Math.random();
     if(roll<0.6||!hasApiKeys())visualBeat(npcs);
     else if(roll<0.95)await chatterBeat(npcs,realm,sess);
@@ -107,9 +109,10 @@ async function chatterBeat(npcs,realm,sess){
   const zone=zoneOf(a.key);
   const actA=sess.activities?.[a.key],actB=sess.activities?.[b.key];
   const recent=sess.history.slice(-4).filter(h=>h.kind!=='system').map(h=>`${h.speaker}: ${h.text}`).join('\n');
+  const worldCtx=typeof worldPromptNote==='function'?worldPromptNote():'';
   const prompt=`You write ambient background dialogue for ${realm.name}.
 ${a.name} (${a.personality})${actA?`, currently ${actA.label},`:''} and ${b.name} (${b.personality})${actB?`, currently ${actB.label},`:''} are hanging out${zone?` at the ${zone.name}`:''}.
-Main conversation nearby (for context, do not repeat it): ${recent||'(quiet so far)'}
+${worldCtx?worldCtx+'\n':''}Main conversation nearby (for context, do not repeat it): ${recent||'(quiet so far)'}
 Write a short, natural exchange between the two of them — spoken words only, one line each, fully in character.
 Output ONLY JSON: [{"key":"${a.key}","text":"..."},{"key":"${b.key}","text":"..."}]`;
   const lines=await aiJson(prompt,settings.chatModel,180);
@@ -147,8 +150,9 @@ async function eventBeat(npcs,realm,sess){
     const z=zoneOf(c.key),a=sess.activities?.[c.key];
     return`${c.key} (${c.name})${z?` at the ${z.name}`:''}${a?`, ${a.label}`:''}`;
   }).join('; ');
+  const worldCtx=typeof worldPromptNote==='function'?worldPromptNote():'';
   const prompt=`You are the scene narrator of ${realm.name}. ${realm.overview||''}
-Current scene: ${sceneLines}.
+Current scene: ${sceneLines}.${worldCtx?' '+worldCtx:''}
 Invent ONE small ambient event that just happens (1-2 sentences, present tense, no dialogue), then pick one character to react with one short spoken line.
 Output ONLY JSON: {"narration":"...","reaction":{"key":"one_of: ${npcs.map(c=>c.key).join(', ')}","text":"..."}}`;
   const parsed=await aiJson(prompt,settings.chatModel,200);
