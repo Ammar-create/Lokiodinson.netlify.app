@@ -1,5 +1,5 @@
 /* ===================================================================
-   SUNNY DECK // RETRO  —  app-ai.j
+   SUNNY DECK // RETRO  —  app-ai.js
    Chat-firing pipeline: send → router → character reply → TTS
    Loaded AFTER app.js so it can reference its globals.
    =================================================================== */
