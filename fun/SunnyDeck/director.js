@@ -1,5 +1,5 @@
 /* ===================================================================
-   SUNNY DECK // RETRO  —  director.js
+   SUNNY DECK // RETRO  —  director.j
    Ambient life: NPC wandering, activity states, background chatter,
    scene events, and the post-exchange stage-direction tick.
    Loaded after map.js / memory.js; before app-ai.js.
