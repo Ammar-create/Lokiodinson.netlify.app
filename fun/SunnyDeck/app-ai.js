@@ -41,7 +41,7 @@ async function pickResponders(text,playerKey,realm,sess,shout){
 async function routeMessage(text,playerKey,realm,sess,candidates,shout){
   if(candidates.length===0)return[];
   if(candidates.length===1)return candidates;
-  const recent=sess.history.slice(-8).filter(h=>h.kind!=='system').map(h=>`${h.kind==='event'?'Narrator':h.speaker}: ${h.text}`).join('\n');
+  const recent=buildHistoryFor(sess,null,-8);
   const{provider,model}=parseModel(settings.routerModel||DEFAULT_SETTINGS.routerModel);
   const p=PROVIDERS[provider];const key=settings[p.keyName];
   const where=typeof zoneOf==='function'
@@ -73,7 +73,7 @@ Options: ${candidates.join(', ')}`;
 async function getReply(responderKey,userText,alreadyReplied,sess,realm){
   const c=realm.characters.find(x=>x.key===responderKey);
   const player=realm.characters.find(x=>x.key===sess.playerKey);
-  const recent=sess.history.slice(-20).filter(h=>h.kind!=='system').map(h=>`${h.kind==='event'?'Narrator':h.speaker}: ${h.text}`).join('\n');
+  const recent=buildHistoryFor(sess,responderKey,null);
   const tags=(sess.activeTags||[]).join(', ');
   const repliedNote=alreadyReplied.length?`\n${alreadyReplied.map(k=>realm.characters.find(x=>x.key===k)?.name).join(' and ')} already replied; react to what they said.`:'';
   const tagNote=tags?`\nActive tone tags: ${tags}. Apply their natural meaning. Do not mention the tags.`:'';
@@ -95,7 +95,7 @@ async function getReply(responderKey,userText,alreadyReplied,sess,realm){
   const roll=typeof rollPromptNote==='function'?rollPromptNote():'';
   const rollNote=roll?`\n${roll}`:'';
   const sys=`You are ${c.name} in ${realm.name}. ${c.description}. Personality: ${c.personality}.${extra}
-Talking to ${player?.name||'the user'}.${repliedNote}${tagNote}${sceneNote}${actNote}${memNote}${worldNote}${socialNote}${questNote}${invNote}${rollNote}
+Talking to ${player?.name||'the user'}.${repliedNote}${tagNote}${sceneNote}${actNote}${memNote}${world}${questNote}${invNote}${rollNote}
 RULES:
 - Output SPOKEN DIALOGUE ONLY. No asterisks, no narration, no actions. These words become audio.
 - Stay fully in character. 1-3 sentences, natural conversational length.
@@ -205,7 +205,7 @@ async function handleChatSend(){
   const shout=!!shoutNext;
   shoutNext=false;
 
-  const h={kind:'dialogue',speakerKey:playerKey,speaker:playerName,text,timestamp:Date.now(),isPlayer:true,shout};
+  const h={kind:'dialogue',speakerKey:playerKey,speaker:playerName,text,timestamp:Date.now(),isPlayer:true,shout,whisperTo:(sess.isWhisper&&chatTargetKey)?chatTargetKey:null};
   addChatBubble(h);
   sess.history.push(h);
   sess.lastActiveAt=Date.now();
@@ -242,7 +242,7 @@ async function handleChatSend(){
         let reply;
         try{reply=await getReply(rKey,text,already,sess,realm);}
         finally{hideTyping();setMapSpeaking(rKey,false);}
-        const replyH={kind:'dialogue',speakerKey:rKey,speaker:c.name,text:reply,timestamp:Date.now(),isPlayer:false};
+        const replyH={kind:'dialogue',speakerKey:rKey,speaker:c.name,text:reply,timestamp:Date.now(),isPlayer:false,whisperTo:(sess.isWhisper&&chatTargetKey)?chatTargetKey:null};
         addChatBubble(replyH);
         if(typeof bumpStat==='function')bumpStat('repliesReceived',1,realm.id);
         if(typeof sfx==='function')sfx('reply');
@@ -294,7 +294,7 @@ async function maybeAutoRename(sess){
     const data=await res.json();
     let content=data?.choices?.[0]?.message?.content;
     if(typeof content!=='string'||!content.trim())throw new Error('No text content');
-    const title=content.trim().replace(/^["']|["']$/g,'').slice(0,40);
+    const title=content.trim().replace(/^[\"']|[\"']$/g,'').slice(0,40);
     if(!title||title.toLowerCase()===sess.name.toLowerCase())return;
     sess.name=title;
     await dbPut('sessions',sess);
