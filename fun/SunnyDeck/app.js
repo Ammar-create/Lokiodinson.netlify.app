@@ -657,6 +657,7 @@ async function openSession(sessId){
   if(typeof decayMoods==='function')decayMoods(sess);
   if(typeof refreshMoodChips==='function')refreshMoodChips();
   if(typeof renderQuestPanel==='function')renderQuestPanel();
+  if(typeof renderInvPanel==='function')renderInvPanel();
 
   renderChatTarget();
   document.getElementById('chat-tags').style.display='flex';
@@ -697,6 +698,7 @@ function renderChatToolbarHTML(){
       <span class="pb-arrow">&#9660;</span>
     </button>
     <div class="header-right">
+      ${typeof inventoryBtnHTML==='function'?inventoryBtnHTML():''}
       <button class="icon-btn ${currentSession?.quest?'is-on':''}" id="questBtn" title="${currentSession?.quest?'Quest active — toggle panel':'Start a quest'}">${SCROLL_SVG}</button>
       <button class="icon-btn ${soundOn?'is-on':'is-off'}" id="soundToggle" title="${soundOn?'Voice auto-play ON':'Voice auto-play OFF'}">
         ${soundOn?SOUND_ON_SVG:SOUND_OFF_SVG}
@@ -726,6 +728,7 @@ function bindChatToolbar(){
   if(at)at.onclick=()=>toggleAmbientLife();
   const me=document.getElementById('chatMapExpand');
   if(me)me.onclick=()=>toggleMapExpand();
+  if(typeof bindInventoryBtn==='function')bindInventoryBtn();
 }
 
 async function toggleAmbientLife(){
