@@ -189,6 +189,8 @@ body.bm-noscroll{overflow:hidden}
 .sr-row .sr-snippet{font-size:15px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sr-row mark{background:var(--neon-3);color:#0d0221;padding:0 1px}
 .sr-empty{padding:18px 14px;font-size:16px;color:var(--text-3);letter-spacing:1px;text-align:center}
+.search-flash{outline:2px solid var(--neon-3);box-shadow:0 0 14px var(--neon-3)}
+.msg.search-flash{outline:none;box-shadow:none}
 .msg.search-flash .bubble{outline:2px solid var(--neon-3);box-shadow:0 0 14px var(--neon-3)}
 
 /* ===== MAP EDITOR ===== */

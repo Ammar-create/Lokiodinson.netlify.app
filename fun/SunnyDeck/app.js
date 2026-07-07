@@ -964,9 +964,13 @@ function addChatBubble(h){
   const key=h.speakerKey||'',name=h.speaker||'?',text=h.text||'';
   if(h.kind==='roll'){
     // dice.js renders live rolls itself (with animation); this path replays saved history
-    if(typeof renderRollBubble==='function')chat.appendChild(renderRollBubble(h,true));
-    else{
+    if(typeof renderRollBubble==='function'){
+      const rb=renderRollBubble(h,true);
+      if(h.timestamp)rb.dataset.ts=h.timestamp;
+      chat.appendChild(rb);
+    }else{
       const line=document.createElement('div');line.className='narration-line';
+      if(h.timestamp)line.dataset.ts=h.timestamp;
       line.textContent=text;chat.appendChild(line);
     }
     chat.scrollTop=chat.scrollHeight;
@@ -975,6 +979,7 @@ function addChatBubble(h){
   if(h.kind==='event'||h.kind==='system'){
     const line=document.createElement('div');
     line.className='narration-line'+(h.kind==='system'?' system':'');
+    if(h.timestamp)line.dataset.ts=h.timestamp;
     line.textContent=(h.kind==='event'?'☀ ':'')+text;
     chat.appendChild(line);chat.scrollTop=chat.scrollHeight;
     return;
@@ -982,6 +987,7 @@ function addChatBubble(h){
   const isMe=!!h.isPlayer;
   const c=(currentRealm?.characters||[]).find(x=>x.key===key)||{color:'#888',name};
   const div=document.createElement('div');div.className='msg'+(isMe?' me':'')+(h.kind==='ambient'?' ambient':'');
+  if(h.timestamp)div.dataset.ts=h.timestamp;
   const moodHTML=(!isMe&&typeof moodBadge==='function')?moodBadge(key):'';
   div.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${c.key?avatarInnerHTML(c):esc(name.slice(0,2).toUpperCase())}${moodHTML}</div>
     <div class="bubble"><div class="who" style="color:${esc(c.color)}">${h.shout?'📢 ':''}${esc(name)}${!isMe?'<button class="replay" title="Replay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>':''}</div><div>${esc(text)}</div></div>`;
