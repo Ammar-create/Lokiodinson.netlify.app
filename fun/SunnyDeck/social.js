@@ -54,6 +54,7 @@ function refreshMoodChips(){
     chip.textContent=mood==='neutral'?'':moodEmoji(mood);
     chip.title=mood==='neutral'?'':mood;
   });
+  if(typeof updatePortraitStrip==='function')updatePortraitStrip();
 }
 function moodBadge(charKey){
   const mood=moodOf(currentSession,charKey);

@@ -198,6 +198,7 @@ function openTranscriptModal(sessId){
         downloadTextFile(base+'-story.md',`# ${realm.name} — ${sess.name}\n\n${story.trim()}\n`,'text/markdown');
       }
       closeModal();toast('STORY EXPORTED');
+      if(typeof bumpStat==='function')bumpStat('storiesExported',1,realm.id);
     }catch(e){console.warn('Transcript export failed',e);toast(String(e.message||'EXPORT FAILED').toUpperCase());}
   };
   document.getElementById('tr-md').onclick=()=>run('md');

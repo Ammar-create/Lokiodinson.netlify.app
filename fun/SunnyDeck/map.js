@@ -84,7 +84,8 @@ function initSessionMap(realm,sess){
     const p=sess.positions[c.key];
     const t=document.createElement('div');t.className='map-token';t.dataset.key=c.key;t.style.background=c.color;
     t.style.left=p.x+'%';t.style.top=p.y+'%';
-    t.textContent=c.name.slice(0,2).toUpperCase();
+    const av=typeof charAvatarInner==='function'?charAvatarInner(c):'';
+    if(av)t.innerHTML=av;else t.textContent=c.name.slice(0,2).toUpperCase();
     const lbl=document.createElement('span');lbl.className='mt-label';lbl.textContent=c.name;
     const act=document.createElement('span');act.className='mt-activity';
     t.append(lbl,act);
@@ -203,6 +204,7 @@ function updateEarshotUI(){
     if(!c._mapEl)return;
     c._mapEl.classList.toggle('far',c.key!==sess.playerKey&&!inEarshot(c.key));
   });
+  if(typeof updatePortraitStrip==='function')updatePortraitStrip();
 }
 
 /* ====================== ACTIVITY CHIPS ====================== */

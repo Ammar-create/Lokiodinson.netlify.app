@@ -35,6 +35,7 @@ Output ONLY JSON: {"title":"3-6 word chapter title","summary":"3-5 sentence past
       });
       while(realm.journal.length>JOURNAL_MAX_CHAPTERS)realm.journal.shift();
       await dbPut('realms',realm);
+      if(typeof bumpStat==='function')bumpStat('chaptersWritten',1,realm.id);
     }
     sess.lastJournaledCount=dlg.length;
     await dbPut('sessions',sess);

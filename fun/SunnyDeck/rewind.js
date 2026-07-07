@@ -109,6 +109,7 @@ async function branchFromMessage(h){
   branch.lastSocialCount=n;
   if(branch.quest)branch.quest.lastCheckedCount=n;
   await dbPut('sessions',branch);
+  if(typeof bumpStat==='function')bumpStat('branchesMade',1,branch.realmId);
   toast('BRANCH CREATED');
   openSession(branch.id);
 }

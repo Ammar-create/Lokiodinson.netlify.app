@@ -56,7 +56,7 @@ function renderRealmMemories(realm){
   }
   withNotes.forEach(c=>{
     const row=document.createElement('div');row.className='mem-row';
-    row.innerHTML=`<div class="mem-head"><div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div><div class="char-name">${esc(c.name)}</div></div>
+    row.innerHTML=`<div class="mem-head"><div class="char-avatar" style="background:${esc(c.color)}">${typeof avatarInnerHTML==='function'?avatarInnerHTML(c):esc(c.name.slice(0,2).toUpperCase())}</div><div class="char-name">${esc(c.name)}</div></div>
       <div class="mem-notes">${mem[c.key].map((n,i)=>`<span class="mem-note">${esc(n.text)}<button data-key="${esc(c.key)}" data-i="${i}" title="Forget">&times;</button></span>`).join('')}</div>`;
     wrap.appendChild(row);
   });

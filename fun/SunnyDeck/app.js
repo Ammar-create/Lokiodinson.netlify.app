@@ -17,10 +17,52 @@ const THEMES={
 function applyTheme(name){
   const t=THEMES[name]||THEMES.synthwave;
   const root=document.documentElement;
-  Object.entries(t).forEach(([k,v])=>root.style.setProperty(k,v));
-  root.style.setProperty('--glow-1',`0 0 6px ${t['--neon-1']}b0,0 0 18px ${t['--neon-1']}50`);
-  root.style.setProperty('--glow-2',`0 0 6px ${t['--neon-2']}b0,0 0 18px ${t['--neon-2']}50`);
+  if(typeof settings!=='undefined'&&settings.uiSkin==='modern'){
+    /* modern skin owns the palette via modern.css — clear the inline
+       retro variables so the stylesheet values win */
+    Object.keys(t).forEach(k=>root.style.removeProperty(k));
+    root.style.removeProperty('--glow-1');root.style.removeProperty('--glow-2');
+  }else{
+    Object.entries(t).forEach(([k,v])=>root.style.setProperty(k,v));
+    root.style.setProperty('--glow-1',`0 0 6px ${t['--neon-1']}b0,0 0 18px ${t['--neon-1']}50`);
+    root.style.setProperty('--glow-2',`0 0 6px ${t['--neon-2']}b0,0 0 18px ${t['--neon-2']}50`);
+  }
   document.querySelectorAll('.theme-opt').forEach(el=>el.classList.toggle('active',el.dataset.theme===name));
+}
+
+/* ====================== UI SKIN (modern | retro) ====================== */
+function applySkin(){
+  const root=document.documentElement;
+  root.dataset.skin=settings.uiSkin==='retro'?'retro':'modern';
+  root.dataset.mtheme=['light','dark'].includes(settings.modernTheme)?settings.modernTheme:'auto';
+  applyTheme(settings.theme);
+  updateSkinUI();
+}
+function updateSkinUI(){
+  const modern=settings.uiSkin!=='retro';
+  document.querySelectorAll('.skin-opt[data-skin]').forEach(b=>b.classList.toggle('active',(b.dataset.skin==='modern')===modern));
+  document.querySelectorAll('.skin-opt[data-mtheme]').forEach(b=>b.classList.toggle('active',b.dataset.mtheme===(settings.modernTheme||'auto')));
+  const mf=document.getElementById('modernThemeField');
+  if(mf)mf.style.display=modern?'':'none';
+  const tp=document.getElementById('themePickerField');
+  if(tp)tp.style.display=modern?'none':'';
+  const dt=document.getElementById('dashSkinToggle');
+  if(dt)dt.textContent=modern?'SKIN: MODERN — GO RETRO':'SKIN: RETRO — GO MODERN';
+}
+async function setUiSkin(skin){
+  settings.uiSkin=skin==='retro'?'retro':'modern';
+  await saveSettings();
+  applySkin();
+  toast(settings.uiSkin==='retro'?'RETRO MODE ENGAGED':'MODERN UI ON');
+}
+function bindSkinControls(){
+  document.querySelectorAll('.skin-opt[data-skin]').forEach(b=>b.onclick=()=>setUiSkin(b.dataset.skin));
+  document.querySelectorAll('.skin-opt[data-mtheme]').forEach(b=>b.onclick=async()=>{
+    settings.modernTheme=b.dataset.mtheme;
+    await saveSettings();applySkin();
+  });
+  const dt=document.getElementById('dashSkinToggle');
+  if(dt)dt.onclick=()=>setUiSkin(settings.uiSkin==='retro'?'modern':'retro');
 }
 
 /* ====================== PROVIDERS / HELPERS ====================== */
@@ -154,10 +196,33 @@ const DEFAULT_SETTINGS={
   ttsModel:'aqua:mimo-v2.5-tts-voicedesign',sttModel:'groq:whisper-large-v3',
   ttsEnabled:true,
   soundEnabled:true,soundVolume:0.4,ambientLoopEnabled:false,
-  weatherFxEnabled:true,worldClockMode:'hybrid'
+  weatherFxEnabled:true,worldClockMode:'hybrid',
+  pixelAvatarsEnabled:true,
+  uiSkin:'modern',modernTheme:'auto'
 };
+
+/* Inner HTML for a .char-avatar circle: pixel sprite when avatars.js
+   is loaded + enabled, otherwise the classic two-letter initials. */
+function avatarInnerHTML(c){
+  if(!c)return'??';
+  const av=typeof charAvatarInner==='function'?charAvatarInner(c):'';
+  return av||esc((c.name||'?').slice(0,2).toUpperCase());
+}
 let settings={...DEFAULT_SETTINGS};
-async function loadSettings(){const s=await dbGet('settings','cfg');if(s)settings={...DEFAULT_SETTINGS,...s};applyTheme(settings.theme);}
+async function loadSettings(){
+  const s=await dbGet('settings','cfg');
+  if(s){
+    settings={...DEFAULT_SETTINGS,...s};
+    if(s.uiSkin===undefined){
+      /* upgrading users keep the retro look they know; new installs
+         default to the modern skin */
+      settings.uiSkin='retro';
+      await saveSettings();
+      setTimeout(()=>toast('NEW MINIMAL UI AVAILABLE IN SETTINGS'),1500);
+    }
+  }
+  applySkin();
+}
 async function saveSettings(){await dbPut('settings',settings,'cfg');}
 
 let dd={};
@@ -201,6 +266,8 @@ function showScreen(id){
   if(typeof directorOnScreenChange==='function')directorOnScreenChange(id);
   if(typeof worldOnScreenChange==='function')worldOnScreenChange(id);
   if(typeof soundOnScreenChange==='function')soundOnScreenChange(id);
+  if(typeof bigmapOnScreenChange==='function')bigmapOnScreenChange(id);
+  if(typeof statsOnScreenChange==='function')statsOnScreenChange(id);
   if(typeof sfx==='function')sfx('screen');
 }
 document.getElementById('toDashboard').onclick=()=>{showScreen('screen-dash');renderDashboard();};
@@ -312,6 +379,7 @@ async function renderDashboard(){
   document.getElementById('statRealms').textContent=realms.length;
   document.getElementById('statSessions').textContent=sessions.length;
   document.getElementById('statChars').textContent=chars;
+  if(typeof renderStatsSection==='function')renderStatsSection();
   const regular=sessions.filter(s=>!s.isWhisper).sort((a,b)=>(b.lastActiveAt||0)-(a.lastActiveAt||0)).slice(0,5);
   const list=document.getElementById('recentList');list.innerHTML='';
   if(regular.length===0){list.innerHTML='<div class="activity-empty">NO SESSIONS YET. CREATE A REALM AND START CHATTING.</div>';return;}
@@ -406,7 +474,7 @@ function renderReviewChars(){
   if(!draftRealm?.characters)return;
   draftRealm.characters.forEach((c,i)=>{
     const card=document.createElement('div');card.className='char-card';
-    card.innerHTML=`<div class="top"><div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
+    card.innerHTML=`<div class="top"><div class="char-avatar" style="background:${esc(c.color)}">${avatarInnerHTML(c)}</div>
       <div><div class="nm">${esc(c.name)}</div><div class="per">${esc(c.personality)}</div></div></div>
       <div class="body">${esc(c.description)}</div>
       <div class="kws">${(c.keywords||[]).map(k=>`<span class="kw">${esc(k)}</span>`).join('')}</div>
@@ -472,6 +540,7 @@ document.getElementById('crFinish').onclick=async()=>{
   draftRealm.overview=document.getElementById('crOverview').value.trim();
   draftRealm.createdAt=Date.now();draftRealm.updatedAt=Date.now();
   await dbPut('realms',draftRealm);
+  if(typeof bumpStat==='function')bumpStat('realmsCreated',1,draftRealm.id);
   toast('REALM SAVED');showScreen('screen-dash');renderDashboard();
 };
 
@@ -538,7 +607,7 @@ function renderDetailChars(){
   const cList=document.getElementById('detailChars');cList.innerHTML='';
   (currentRealm.characters||[]).forEach((c,i)=>{
     const row=document.createElement('div');row.className='char-row';
-    row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
+    row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${avatarInnerHTML(c)}</div>
       <div class="char-info"><div class="char-name">${esc(c.name)}</div><div class="char-mini" title="${esc(c.personality||c.description||'')}">${esc(c.personality||c.description||'')}</div></div>
       <div class="char-actions"><button data-i="${i}" class="edit-realm-char">EDIT</button></div>`;
     cList.appendChild(row);
@@ -599,6 +668,7 @@ document.getElementById('btnStartSession').onclick=async()=>{
     playerKey:(r.characters[0]?.key||''),history:[],activeTags:[],
     disabledCharacters:[],isWhisper:false,createdAt:Date.now(),lastActiveAt:Date.now(),renameDone:false};
   await dbPut('sessions',sess);
+  if(typeof bumpStat==='function')bumpStat('sessionsStarted',1,currentRealmId);
   openSession(sess.id);
 };
 
@@ -638,6 +708,8 @@ async function openSession(sessId){
   bindChatToolbar();
 
   initSessionMap(realm,sess);
+  if(typeof initPortraitStrip==='function')initPortraitStrip();
+  if(typeof initBigMap==='function')initBigMap();
   highlightPlayerToken();
   if(typeof startAmbient==='function')startAmbient();
   if(typeof initWorldLayer==='function')initWorldLayer(realm,sess);
@@ -645,6 +717,7 @@ async function openSession(sessId){
   if(typeof decayMoods==='function')decayMoods(sess);
   if(typeof refreshMoodChips==='function')refreshMoodChips();
   if(typeof renderQuestPanel==='function')renderQuestPanel();
+  if(typeof renderInvPanel==='function')renderInvPanel();
 
   renderChatTarget();
   document.getElementById('chat-tags').style.display='flex';
@@ -677,7 +750,7 @@ function renderChatToolbarHTML(){
   const ambientOn=currentSession?.ambientEnabled!==false;
   return `
     <button class="player-badge ${whisperOn?'whisper':''}" id="playerBadgeBtn" title="Switch character & toggle mute" aria-haspopup="listbox">
-      <div class="char-avatar pb-avatar" style="background:${esc(p?p.color:'#888')}">${esc((p?(p.name.slice(0,2).toUpperCase()):'??'))}</div>
+      <div class="char-avatar pb-avatar" style="background:${esc(p?p.color:'#888')}">${p?avatarInnerHTML(p):'??'}</div>
       <div class="pb-meta">
         <div class="pb-label">${whisperOn?'WHISPER AS':'YOU ARE'}</div>
         <div class="pb-name">${esc(p?p.name:'—')}</div>
@@ -685,6 +758,7 @@ function renderChatToolbarHTML(){
       <span class="pb-arrow">&#9660;</span>
     </button>
     <div class="header-right">
+      ${typeof inventoryBtnHTML==='function'?inventoryBtnHTML():''}
       <button class="icon-btn ${currentSession?.quest?'is-on':''}" id="questBtn" title="${currentSession?.quest?'Quest active — toggle panel':'Start a quest'}">${SCROLL_SVG}</button>
       <button class="icon-btn ${soundOn?'is-on':'is-off'}" id="soundToggle" title="${soundOn?'Voice auto-play ON':'Voice auto-play OFF'}">
         ${soundOn?SOUND_ON_SVG:SOUND_OFF_SVG}
@@ -714,6 +788,7 @@ function bindChatToolbar(){
   if(at)at.onclick=()=>toggleAmbientLife();
   const me=document.getElementById('chatMapExpand');
   if(me)me.onclick=()=>toggleMapExpand();
+  if(typeof bindInventoryBtn==='function')bindInventoryBtn();
 }
 
 async function toggleAmbientLife(){
@@ -756,6 +831,7 @@ function highlightPlayerToken(){
     c._mapEl.classList.toggle('is-player',c.key===pk);
     c._mapEl.classList.toggle('muted',isCharDisabled(currentSession,c.key));
   });
+  if(typeof updatePortraitStrip==='function')updatePortraitStrip();
 }
 
 function openPlayerSwitcher(anchor){
@@ -770,7 +846,7 @@ function openPlayerSwitcher(anchor){
       const row=document.createElement('div');
       row.className='player-popover-row'+(muted?' muted':'')+(active?' active':'');
       row.setAttribute('role','option');
-      row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
+      row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${avatarInnerHTML(c)}</div>
         <div class="player-popover-meta"><div class="player-popover-name">${esc(c.name)}</div></div>
         <button class="pp-mute-btn ${muted?'is-muted':''}" data-key="${esc(c.key)}" title="${muted?'Unmute':'Mute'}">${muted?EYE_OFF_SVG:EYE_ON_SVG}</button>`;
       row.onclick=(e)=>{
@@ -908,7 +984,7 @@ function renderChatTarget(){
       const row=document.createElement('div');
       row.className='tp-row'+(c.key===chatTargetKey?' active':'');
       row.dataset.key=c.key;
-      row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
+      row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${avatarInnerHTML(c)}</div>
         <div class="tp-row-meta"><div class="tp-row-name">${esc(c.name)}</div></div>
         ${whisper?'<span class="tp-lock-badge">LOCK</span>':''}`;
       row.onclick=()=>{chatTargetKey=c.key;shoutNext=false;pop.classList.remove('open');setTarget();toast(whisper?'WHISPERING TO '+(c.name||'').toUpperCase():'TALKING TO '+(c.name||'').toUpperCase());};
@@ -944,9 +1020,13 @@ function addChatBubble(h){
   const key=h.speakerKey||'',name=h.speaker||'?',text=h.text||'';
   if(h.kind==='roll'){
     // dice.js renders live rolls itself (with animation); this path replays saved history
-    if(typeof renderRollBubble==='function')chat.appendChild(renderRollBubble(h,true));
-    else{
+    if(typeof renderRollBubble==='function'){
+      const rb=renderRollBubble(h,true);
+      if(h.timestamp)rb.dataset.ts=h.timestamp;
+      chat.appendChild(rb);
+    }else{
       const line=document.createElement('div');line.className='narration-line';
+      if(h.timestamp)line.dataset.ts=h.timestamp;
       line.textContent=text;chat.appendChild(line);
     }
     chat.scrollTop=chat.scrollHeight;
@@ -955,6 +1035,7 @@ function addChatBubble(h){
   if(h.kind==='event'||h.kind==='system'){
     const line=document.createElement('div');
     line.className='narration-line'+(h.kind==='system'?' system':'');
+    if(h.timestamp)line.dataset.ts=h.timestamp;
     line.textContent=(h.kind==='event'?'☀ ':'')+text;
     chat.appendChild(line);chat.scrollTop=chat.scrollHeight;
     return;
@@ -962,8 +1043,9 @@ function addChatBubble(h){
   const isMe=!!h.isPlayer;
   const c=(currentRealm?.characters||[]).find(x=>x.key===key)||{color:'#888',name};
   const div=document.createElement('div');div.className='msg'+(isMe?' me':'')+(h.kind==='ambient'?' ambient':'');
+  if(h.timestamp)div.dataset.ts=h.timestamp;
   const moodHTML=(!isMe&&typeof moodBadge==='function')?moodBadge(key):'';
-  div.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(name.slice(0,2).toUpperCase())}${moodHTML}</div>
+  div.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${c.key?avatarInnerHTML(c):esc(name.slice(0,2).toUpperCase())}${moodHTML}</div>
     <div class="bubble"><div class="who" style="color:${esc(c.color)}">${h.shout?'📢 ':''}${esc(name)}${!isMe?'<button class="replay" title="Replay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>':''}</div><div>${esc(text)}</div></div>`;
   if(!isMe)div.querySelector('.replay').onclick=()=>speakChat(text,key);
   if(typeof bindMessageActions==='function')bindMessageActions(div,h);
@@ -996,6 +1078,8 @@ function fillSettings(){
   document.getElementById('sSoundVol').value=Math.round((settings.soundVolume??0.4)*100);
   document.getElementById('sAmbientLoop').checked=!!settings.ambientLoopEnabled;
   document.getElementById('sWeatherFx').checked=settings.weatherFxEnabled!==false;
+  const pixEl=document.getElementById('sPixelAvatars');
+  if(pixEl)pixEl.checked=settings.pixelAvatarsEnabled!==false;
   if(dd.worldClock)dd.worldClock.value=settings.worldClockMode||'hybrid';
   renderThemePicker();
 }
@@ -1017,6 +1101,8 @@ document.getElementById('sSave').onclick=async()=>{
   settings.soundVolume=Math.min(1,Math.max(0,(+document.getElementById('sSoundVol').value||0)/100));
   settings.ambientLoopEnabled=document.getElementById('sAmbientLoop').checked;
   settings.weatherFxEnabled=document.getElementById('sWeatherFx').checked;
+  const pixEl=document.getElementById('sPixelAvatars');
+  if(pixEl)settings.pixelAvatarsEnabled=pixEl.checked;
   const wc=dd.worldClock?dd.worldClock.value:'';
   settings.worldClockMode=['off','exchanges','hybrid'].includes(wc)?wc:DEFAULT_SETTINGS.worldClockMode;
   await saveSettings();
@@ -1025,7 +1111,7 @@ document.getElementById('sSave').onclick=async()=>{
 };
 document.getElementById('sReset').onclick=async()=>{
   settings={...DEFAULT_SETTINGS};
-  await saveSettings();applyTheme(settings.theme);fillSettings();
+  await saveSettings();applySkin();fillSettings();
   toast('DEFAULTS RESTORED');
 };
 
@@ -1052,6 +1138,7 @@ document.addEventListener('keydown',e=>{
 /* ====================== INIT ====================== */
 (async()=>{
   await loadSettings();
+  bindSkinControls();
   initSettingsDropdowns();
   await ensurePremades();
   renderDashboard();
