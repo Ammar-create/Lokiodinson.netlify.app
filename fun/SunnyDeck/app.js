@@ -17,10 +17,52 @@ const THEMES={
 function applyTheme(name){
   const t=THEMES[name]||THEMES.synthwave;
   const root=document.documentElement;
-  Object.entries(t).forEach(([k,v])=>root.style.setProperty(k,v));
-  root.style.setProperty('--glow-1',`0 0 6px ${t['--neon-1']}b0,0 0 18px ${t['--neon-1']}50`);
-  root.style.setProperty('--glow-2',`0 0 6px ${t['--neon-2']}b0,0 0 18px ${t['--neon-2']}50`);
+  if(typeof settings!=='undefined'&&settings.uiSkin==='modern'){
+    /* modern skin owns the palette via modern.css — clear the inline
+       retro variables so the stylesheet values win */
+    Object.keys(t).forEach(k=>root.style.removeProperty(k));
+    root.style.removeProperty('--glow-1');root.style.removeProperty('--glow-2');
+  }else{
+    Object.entries(t).forEach(([k,v])=>root.style.setProperty(k,v));
+    root.style.setProperty('--glow-1',`0 0 6px ${t['--neon-1']}b0,0 0 18px ${t['--neon-1']}50`);
+    root.style.setProperty('--glow-2',`0 0 6px ${t['--neon-2']}b0,0 0 18px ${t['--neon-2']}50`);
+  }
   document.querySelectorAll('.theme-opt').forEach(el=>el.classList.toggle('active',el.dataset.theme===name));
+}
+
+/* ====================== UI SKIN (modern | retro) ====================== */
+function applySkin(){
+  const root=document.documentElement;
+  root.dataset.skin=settings.uiSkin==='retro'?'retro':'modern';
+  root.dataset.mtheme=['light','dark'].includes(settings.modernTheme)?settings.modernTheme:'auto';
+  applyTheme(settings.theme);
+  updateSkinUI();
+}
+function updateSkinUI(){
+  const modern=settings.uiSkin!=='retro';
+  document.querySelectorAll('.skin-opt[data-skin]').forEach(b=>b.classList.toggle('active',(b.dataset.skin==='modern')===modern));
+  document.querySelectorAll('.skin-opt[data-mtheme]').forEach(b=>b.classList.toggle('active',b.dataset.mtheme===(settings.modernTheme||'auto')));
+  const mf=document.getElementById('modernThemeField');
+  if(mf)mf.style.display=modern?'':'none';
+  const tp=document.getElementById('themePickerField');
+  if(tp)tp.style.display=modern?'none':'';
+  const dt=document.getElementById('dashSkinToggle');
+  if(dt)dt.textContent=modern?'SKIN: MODERN — GO RETRO':'SKIN: RETRO — GO MODERN';
+}
+async function setUiSkin(skin){
+  settings.uiSkin=skin==='retro'?'retro':'modern';
+  await saveSettings();
+  applySkin();
+  toast(settings.uiSkin==='retro'?'RETRO MODE ENGAGED':'MODERN UI ON');
+}
+function bindSkinControls(){
+  document.querySelectorAll('.skin-opt[data-skin]').forEach(b=>b.onclick=()=>setUiSkin(b.dataset.skin));
+  document.querySelectorAll('.skin-opt[data-mtheme]').forEach(b=>b.onclick=async()=>{
+    settings.modernTheme=b.dataset.mtheme;
+    await saveSettings();applySkin();
+  });
+  const dt=document.getElementById('dashSkinToggle');
+  if(dt)dt.onclick=()=>setUiSkin(settings.uiSkin==='retro'?'modern':'retro');
 }
 
 /* ====================== PROVIDERS / HELPERS ====================== */
@@ -155,7 +197,8 @@ const DEFAULT_SETTINGS={
   ttsEnabled:true,
   soundEnabled:true,soundVolume:0.4,ambientLoopEnabled:false,
   weatherFxEnabled:true,worldClockMode:'hybrid',
-  pixelAvatarsEnabled:true
+  pixelAvatarsEnabled:true,
+  uiSkin:'modern',modernTheme:'auto'
 };
 
 /* Inner HTML for a .char-avatar circle: pixel sprite when avatars.js
@@ -166,7 +209,20 @@ function avatarInnerHTML(c){
   return av||esc((c.name||'?').slice(0,2).toUpperCase());
 }
 let settings={...DEFAULT_SETTINGS};
-async function loadSettings(){const s=await dbGet('settings','cfg');if(s)settings={...DEFAULT_SETTINGS,...s};applyTheme(settings.theme);}
+async function loadSettings(){
+  const s=await dbGet('settings','cfg');
+  if(s){
+    settings={...DEFAULT_SETTINGS,...s};
+    if(s.uiSkin===undefined){
+      /* upgrading users keep the retro look they know; new installs
+         default to the modern skin */
+      settings.uiSkin='retro';
+      await saveSettings();
+      setTimeout(()=>toast('NEW MINIMAL UI AVAILABLE IN SETTINGS'),1500);
+    }
+  }
+  applySkin();
+}
 async function saveSettings(){await dbPut('settings',settings,'cfg');}
 
 let dd={};
@@ -1055,7 +1111,7 @@ document.getElementById('sSave').onclick=async()=>{
 };
 document.getElementById('sReset').onclick=async()=>{
   settings={...DEFAULT_SETTINGS};
-  await saveSettings();applyTheme(settings.theme);fillSettings();
+  await saveSettings();applySkin();fillSettings();
   toast('DEFAULTS RESTORED');
 };
 
@@ -1082,6 +1138,7 @@ document.addEventListener('keydown',e=>{
 /* ====================== INIT ====================== */
 (async()=>{
   await loadSettings();
+  bindSkinControls();
   initSettingsDropdowns();
   await ensurePremades();
   renderDashboard();

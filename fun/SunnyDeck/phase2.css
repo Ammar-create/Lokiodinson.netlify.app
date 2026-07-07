@@ -233,6 +233,16 @@ body.bm-noscroll{overflow:hidden}
   letter-spacing:1px;background:var(--surface);border-top:1px solid var(--border-soft)
 }
 
+/* ===== SKIN TOGGLE (settings) ===== */
+.skin-toggle{display:flex;gap:8px;flex-wrap:wrap}
+.skin-opt{
+  background:var(--surface-2);border:2px solid var(--border);color:var(--text-2);
+  font-family:'Press Start 2P',monospace;font-size:8px;letter-spacing:1px;
+  padding:9px 14px;cursor:pointer
+}
+.skin-opt:hover{border-color:var(--neon-2);color:var(--neon-2)}
+.skin-opt.active{border-color:var(--neon-3);color:var(--neon-3);background:rgba(255,230,0,.08)}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width:600px){
   #bmDpad{right:10px;bottom:96px;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px)}

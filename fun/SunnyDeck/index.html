@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="features.css">
 <link rel="stylesheet" href="phase2.css">
+<link rel="stylesheet" href="modern.css">
 </head>
 <body>
 
@@ -105,6 +106,7 @@
   <div id="dash">
     <div class="dash-welcome">
       <strong>WELCOME TO SUNNY DECK.</strong> Insert coin. Create worlds, assemble characters, and have conversations that feel alive.
+      <div style="margin-top:10px"><button class="pill" id="dashSkinToggle" style="cursor:pointer" title="Switch between the modern and retro UI"></button></div>
     </div>
     <div class="dash-stats">
       <div class="stat-card"><div class="stat-val" id="statRealms">0</div><div class="stat-label">Realms</div></div>
@@ -271,7 +273,23 @@
     <div class="settings-card">
       <h2>SETTINGS</h2>
       <div class="detail-section"><h3>Appearance</h3></div>
-      <div class="theme-picker" id="themePicker"></div>
+      <div class="field"><label>UI Skin</label>
+        <div class="skin-toggle">
+          <button type="button" class="skin-opt" data-skin="modern">MODERN</button>
+          <button type="button" class="skin-opt" data-skin="retro">RETRO</button>
+        </div>
+        <div class="hint">Modern is a clean, minimal chat look. Retro is the classic synthwave arcade.</div>
+      </div>
+      <div class="field" id="modernThemeField"><label>Modern Theme</label>
+        <div class="skin-toggle">
+          <button type="button" class="skin-opt" data-mtheme="auto">AUTO</button>
+          <button type="button" class="skin-opt" data-mtheme="light">LIGHT</button>
+          <button type="button" class="skin-opt" data-mtheme="dark">DARK</button>
+        </div>
+      </div>
+      <div class="field" id="themePickerField"><label>Retro Theme</label>
+        <div class="theme-picker" id="themePicker"></div>
+      </div>
       <div class="detail-section"><h3>API Keys</h3></div>
       <div class="field"><label>Aqua API Key</label><input type="password" id="sAquaKey" placeholder="aqua_sk_..." autocomplete="new-password"></div>
       <div class="field"><label>Groq API Key</label><input type="password" id="sGroqKey" placeholder="gsk_..." autocomplete="new-password"></div>
