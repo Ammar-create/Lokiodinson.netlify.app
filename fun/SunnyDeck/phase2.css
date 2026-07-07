@@ -10,10 +10,11 @@
 /* ===== PIXEL AVATARS ===== */
 .pix-avatar{
   width:100%;height:100%;display:block;image-rendering:pixelated;
-  image-rendering:crisp-edges
+  border-radius:inherit;position:absolute;inset:0
 }
-.char-avatar{overflow:hidden}
-.map-token .pix-avatar{border-radius:0}
+.char-avatar{position:relative}
+.map-token .pix-avatar{z-index:0}
+.map-token .mt-label,.map-token .mt-activity,.map-token .mt-mood,.map-token .mt-chatter{z-index:2}
 
 /* ===== PORTRAIT STRIP ===== */
 #portraitStrip{

@@ -154,8 +154,17 @@ const DEFAULT_SETTINGS={
   ttsModel:'aqua:mimo-v2.5-tts-voicedesign',sttModel:'groq:whisper-large-v3',
   ttsEnabled:true,
   soundEnabled:true,soundVolume:0.4,ambientLoopEnabled:false,
-  weatherFxEnabled:true,worldClockMode:'hybrid'
+  weatherFxEnabled:true,worldClockMode:'hybrid',
+  pixelAvatarsEnabled:true
 };
+
+/* Inner HTML for a .char-avatar circle: pixel sprite when avatars.js
+   is loaded + enabled, otherwise the classic two-letter initials. */
+function avatarInnerHTML(c){
+  if(!c)return'??';
+  const av=typeof charAvatarInner==='function'?charAvatarInner(c):'';
+  return av||esc((c.name||'?').slice(0,2).toUpperCase());
+}
 let settings={...DEFAULT_SETTINGS};
 async function loadSettings(){const s=await dbGet('settings','cfg');if(s)settings={...DEFAULT_SETTINGS,...s};applyTheme(settings.theme);}
 async function saveSettings(){await dbPut('settings',settings,'cfg');}
@@ -406,7 +415,7 @@ function renderReviewChars(){
   if(!draftRealm?.characters)return;
   draftRealm.characters.forEach((c,i)=>{
     const card=document.createElement('div');card.className='char-card';
-    card.innerHTML=`<div class="top"><div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
+    card.innerHTML=`<div class="top"><div class="char-avatar" style="background:${esc(c.color)}">${avatarInnerHTML(c)}</div>
       <div><div class="nm">${esc(c.name)}</div><div class="per">${esc(c.personality)}</div></div></div>
       <div class="body">${esc(c.description)}</div>
       <div class="kws">${(c.keywords||[]).map(k=>`<span class="kw">${esc(k)}</span>`).join('')}</div>
@@ -538,7 +547,7 @@ function renderDetailChars(){
   const cList=document.getElementById('detailChars');cList.innerHTML='';
   (currentRealm.characters||[]).forEach((c,i)=>{
     const row=document.createElement('div');row.className='char-row';
-    row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
+    row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${avatarInnerHTML(c)}</div>
       <div class="char-info"><div class="char-name">${esc(c.name)}</div><div class="char-mini" title="${esc(c.personality||c.description||'')}">${esc(c.personality||c.description||'')}</div></div>
       <div class="char-actions"><button data-i="${i}" class="edit-realm-char">EDIT</button></div>`;
     cList.appendChild(row);
@@ -638,6 +647,8 @@ async function openSession(sessId){
   bindChatToolbar();
 
   initSessionMap(realm,sess);
+  if(typeof initPortraitStrip==='function')initPortraitStrip();
+  if(typeof initBigMap==='function')initBigMap();
   highlightPlayerToken();
   if(typeof startAmbient==='function')startAmbient();
   if(typeof initWorldLayer==='function')initWorldLayer(realm,sess);
@@ -677,7 +688,7 @@ function renderChatToolbarHTML(){
   const ambientOn=currentSession?.ambientEnabled!==false;
   return `
     <button class="player-badge ${whisperOn?'whisper':''}" id="playerBadgeBtn" title="Switch character & toggle mute" aria-haspopup="listbox">
-      <div class="char-avatar pb-avatar" style="background:${esc(p?p.color:'#888')}">${esc((p?(p.name.slice(0,2).toUpperCase()):'??'))}</div>
+      <div class="char-avatar pb-avatar" style="background:${esc(p?p.color:'#888')}">${p?avatarInnerHTML(p):'??'}</div>
       <div class="pb-meta">
         <div class="pb-label">${whisperOn?'WHISPER AS':'YOU ARE'}</div>
         <div class="pb-name">${esc(p?p.name:'—')}</div>
@@ -756,6 +767,7 @@ function highlightPlayerToken(){
     c._mapEl.classList.toggle('is-player',c.key===pk);
     c._mapEl.classList.toggle('muted',isCharDisabled(currentSession,c.key));
   });
+  if(typeof updatePortraitStrip==='function')updatePortraitStrip();
 }
 
 function openPlayerSwitcher(anchor){
@@ -770,7 +782,7 @@ function openPlayerSwitcher(anchor){
       const row=document.createElement('div');
       row.className='player-popover-row'+(muted?' muted':'')+(active?' active':'');
       row.setAttribute('role','option');
-      row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
+      row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${avatarInnerHTML(c)}</div>
         <div class="player-popover-meta"><div class="player-popover-name">${esc(c.name)}</div></div>
         <button class="pp-mute-btn ${muted?'is-muted':''}" data-key="${esc(c.key)}" title="${muted?'Unmute':'Mute'}">${muted?EYE_OFF_SVG:EYE_ON_SVG}</button>`;
       row.onclick=(e)=>{
@@ -908,7 +920,7 @@ function renderChatTarget(){
       const row=document.createElement('div');
       row.className='tp-row'+(c.key===chatTargetKey?' active':'');
       row.dataset.key=c.key;
-      row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(c.name.slice(0,2).toUpperCase())}</div>
+      row.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${avatarInnerHTML(c)}</div>
         <div class="tp-row-meta"><div class="tp-row-name">${esc(c.name)}</div></div>
         ${whisper?'<span class="tp-lock-badge">LOCK</span>':''}`;
       row.onclick=()=>{chatTargetKey=c.key;shoutNext=false;pop.classList.remove('open');setTarget();toast(whisper?'WHISPERING TO '+(c.name||'').toUpperCase():'TALKING TO '+(c.name||'').toUpperCase());};
@@ -963,7 +975,7 @@ function addChatBubble(h){
   const c=(currentRealm?.characters||[]).find(x=>x.key===key)||{color:'#888',name};
   const div=document.createElement('div');div.className='msg'+(isMe?' me':'')+(h.kind==='ambient'?' ambient':'');
   const moodHTML=(!isMe&&typeof moodBadge==='function')?moodBadge(key):'';
-  div.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${esc(name.slice(0,2).toUpperCase())}${moodHTML}</div>
+  div.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${c.key?avatarInnerHTML(c):esc(name.slice(0,2).toUpperCase())}${moodHTML}</div>
     <div class="bubble"><div class="who" style="color:${esc(c.color)}">${h.shout?'📢 ':''}${esc(name)}${!isMe?'<button class="replay" title="Replay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>':''}</div><div>${esc(text)}</div></div>`;
   if(!isMe)div.querySelector('.replay').onclick=()=>speakChat(text,key);
   if(typeof bindMessageActions==='function')bindMessageActions(div,h);
@@ -996,6 +1008,8 @@ function fillSettings(){
   document.getElementById('sSoundVol').value=Math.round((settings.soundVolume??0.4)*100);
   document.getElementById('sAmbientLoop').checked=!!settings.ambientLoopEnabled;
   document.getElementById('sWeatherFx').checked=settings.weatherFxEnabled!==false;
+  const pixEl=document.getElementById('sPixelAvatars');
+  if(pixEl)pixEl.checked=settings.pixelAvatarsEnabled!==false;
   if(dd.worldClock)dd.worldClock.value=settings.worldClockMode||'hybrid';
   renderThemePicker();
 }
@@ -1017,6 +1031,8 @@ document.getElementById('sSave').onclick=async()=>{
   settings.soundVolume=Math.min(1,Math.max(0,(+document.getElementById('sSoundVol').value||0)/100));
   settings.ambientLoopEnabled=document.getElementById('sAmbientLoop').checked;
   settings.weatherFxEnabled=document.getElementById('sWeatherFx').checked;
+  const pixEl=document.getElementById('sPixelAvatars');
+  if(pixEl)settings.pixelAvatarsEnabled=pixEl.checked;
   const wc=dd.worldClock?dd.worldClock.value:'';
   settings.worldClockMode=['off','exchanges','hybrid'].includes(wc)?wc:DEFAULT_SETTINGS.worldClockMode;
   await saveSettings();

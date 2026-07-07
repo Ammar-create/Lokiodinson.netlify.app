@@ -228,6 +228,7 @@
   <div id="chatMapWrap"></div>
   <div id="chat-header" style="display:none"></div>
   <div id="worldHud" style="display:none"></div>
+  <div id="portraitStrip"></div>
   <div id="chat-tags" style="display:none"></div>
   <div id="questPanel" style="display:none"></div>
   <div id="chat"></div>
@@ -293,6 +294,10 @@
         <input type="checkbox" id="sWeatherFx" style="width:auto;accent-color:var(--neon-1)" checked>
         <label style="margin:0">Weather effects on map</label>
       </div>
+      <div class="field" style="display:flex;align-items:center;gap:10px">
+        <input type="checkbox" id="sPixelAvatars" style="width:auto;accent-color:var(--neon-1)" checked>
+        <label style="margin:0">Pixel avatars for characters</label>
+      </div>
       <div class="field"><label>World Clock</label><div id="ddWorldClock"></div><div class="hint">Off / advance per message / hybrid (also real time).</div></div>
       <div class="btn-row">
         <button class="btn btn-ghost" id="sReset">Reset</button>
@@ -303,6 +308,7 @@
 </section>
 
 <script src="app.js" defer></script>
+<script src="avatars.js" defer></script>
 <script src="map.js" defer></script>
 <script src="memory.js" defer></script>
 <script src="sound.js" defer></script>
