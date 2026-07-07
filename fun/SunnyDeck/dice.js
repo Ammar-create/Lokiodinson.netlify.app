@@ -91,6 +91,13 @@ async function pushRollEntry(roll,action){
   sess.history.push(h);
   sess.lastActiveAt=Date.now();
   await dbPut('sessions',sess);
+  if(typeof bumpStat==='function'){
+    bumpStat('rollsMade',1,realm.id);
+    if(roll.sides===20&&roll.n===1){
+      if(roll.rolls[0]===20)bumpStat('crits',1,realm.id);
+      if(roll.rolls[0]===1)bumpStat('fumbles',1,realm.id);
+    }
+  }
   return h;
 }
 

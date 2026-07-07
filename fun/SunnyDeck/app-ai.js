@@ -211,6 +211,7 @@ async function handleChatSend(){
   sess.lastActiveAt=Date.now();
   await dbPut('sessions',sess);
   if(shout)renderChatTarget();
+  if(typeof bumpStat==='function')bumpStat('messagesSent',1,realm.id);
   if(typeof sfx==='function')sfx('send');
   if(typeof worldOnExchange==='function')worldOnExchange();
 
@@ -243,6 +244,7 @@ async function handleChatSend(){
         finally{hideTyping();setMapSpeaking(rKey,false);}
         const replyH={kind:'dialogue',speakerKey:rKey,speaker:c.name,text:reply,timestamp:Date.now(),isPlayer:false};
         addChatBubble(replyH);
+        if(typeof bumpStat==='function')bumpStat('repliesReceived',1,realm.id);
         if(typeof sfx==='function')sfx('reply');
         sess.history.push(replyH);
         sess.lastActiveAt=Date.now();

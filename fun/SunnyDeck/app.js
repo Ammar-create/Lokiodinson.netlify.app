@@ -211,6 +211,7 @@ function showScreen(id){
   if(typeof worldOnScreenChange==='function')worldOnScreenChange(id);
   if(typeof soundOnScreenChange==='function')soundOnScreenChange(id);
   if(typeof bigmapOnScreenChange==='function')bigmapOnScreenChange(id);
+  if(typeof statsOnScreenChange==='function')statsOnScreenChange(id);
   if(typeof sfx==='function')sfx('screen');
 }
 document.getElementById('toDashboard').onclick=()=>{showScreen('screen-dash');renderDashboard();};
@@ -322,6 +323,7 @@ async function renderDashboard(){
   document.getElementById('statRealms').textContent=realms.length;
   document.getElementById('statSessions').textContent=sessions.length;
   document.getElementById('statChars').textContent=chars;
+  if(typeof renderStatsSection==='function')renderStatsSection();
   const regular=sessions.filter(s=>!s.isWhisper).sort((a,b)=>(b.lastActiveAt||0)-(a.lastActiveAt||0)).slice(0,5);
   const list=document.getElementById('recentList');list.innerHTML='';
   if(regular.length===0){list.innerHTML='<div class="activity-empty">NO SESSIONS YET. CREATE A REALM AND START CHATTING.</div>';return;}
@@ -482,6 +484,7 @@ document.getElementById('crFinish').onclick=async()=>{
   draftRealm.overview=document.getElementById('crOverview').value.trim();
   draftRealm.createdAt=Date.now();draftRealm.updatedAt=Date.now();
   await dbPut('realms',draftRealm);
+  if(typeof bumpStat==='function')bumpStat('realmsCreated',1,draftRealm.id);
   toast('REALM SAVED');showScreen('screen-dash');renderDashboard();
 };
 
@@ -609,6 +612,7 @@ document.getElementById('btnStartSession').onclick=async()=>{
     playerKey:(r.characters[0]?.key||''),history:[],activeTags:[],
     disabledCharacters:[],isWhisper:false,createdAt:Date.now(),lastActiveAt:Date.now(),renameDone:false};
   await dbPut('sessions',sess);
+  if(typeof bumpStat==='function')bumpStat('sessionsStarted',1,currentRealmId);
   openSession(sess.id);
 };
 

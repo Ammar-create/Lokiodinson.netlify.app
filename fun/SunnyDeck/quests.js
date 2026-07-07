@@ -123,6 +123,7 @@ Write a 2-4 sentence finale narration, present tense, no dialogue, no quotes.`,s
   addChatBubble(h);sess.history.push(h);
   await dbPut('sessions',sess);
   renderQuestPanel();
+  if(typeof bumpStat==='function')bumpStat('questsCompleted',1,realm.id);
   if(typeof sfx==='function')sfx('questDone');
   toast('QUEST COMPLETE!');
 }

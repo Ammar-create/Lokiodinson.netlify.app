@@ -146,6 +146,7 @@ body.bm-noscroll{overflow:hidden}
 .ach-card.locked{opacity:.45;filter:grayscale(.8)}
 .ach-emoji{font-size:20px;flex-shrink:0}
 .ach-meta{min-width:0}
+.ach-name,.ach-desc{display:block}
 .ach-name{
   font-family:'Press Start 2P',monospace;font-size:7px;color:var(--text);
   letter-spacing:1px;margin-bottom:4px
