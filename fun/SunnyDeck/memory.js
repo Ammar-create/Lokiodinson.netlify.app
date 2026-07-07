@@ -19,18 +19,42 @@ async function distillSession(sess,realm){
   if(dlg.length-(sess.lastDistilledCount||0)<6)return;
   distillBusy=true;
   try{
-    const lines=dlg.slice(-30).map(h=>`${h.speaker}: ${h.text}`).join('\n');
     const keys=realm.characters.map(c=>c.key).join(', ');
+
+    /* Build per-character history so whisper privacy is respected:
+       each character only distills memories from conversations they
+       were actually part of. */
+    const perCharLines={};
+    realm.characters.forEach(function(c){
+      /* buildHistoryFor filters out whispers this character wasn't in;
+         -30 limit matches the original window; null key not used here
+         because we want character-specific views. */
+      var hist=typeof buildHistoryFor==='function'
+        ? buildHistoryFor(sess,c.key,-30)
+        : dlg.slice(-30).map(h=>`${h.speaker}: ${h.text}`).join('\n');
+      if(hist.trim())perCharLines[c.key]=hist;
+    });
+
+    /* If no character has any visible history, skip distill */
+    if(!Object.keys(perCharLines).length)return;
+
+    /* Build a prompt that includes each character's view separately */
+    const charViews=Object.entries(perCharLines)
+      .map(([k,lines])=>`[${k} sees]:\n${lines}`)
+      .join('\n---\n');
+
     const prompt=`These characters just talked in ${realm.name}. For each character who learned or experienced something worth remembering later, write ONE short first-person memory sentence. Skip characters with nothing memorable.
 Character keys: ${keys}
-Conversation:
-${lines}
+Each character only saw parts of the conversation they were present for:
+${charViews}
 Output ONLY JSON like {"zoro":["I promised the captain a rematch."]} or {} if nothing is memorable.`;
     const parsed=await aiJson(prompt,settings.taskModel,300);
     if(!realm.memories)realm.memories={};
     let changed=false;
     Object.entries(parsed||{}).forEach(([k,arr])=>{
       if(!realm.characters.some(c=>c.key===k)||!Array.isArray(arr))return;
+      /* Only accept memories for characters who had visible history */
+      if(!perCharLines[k])return;
       const list=realm.memories[k]||(realm.memories[k]=[]);
       arr.slice(0,2).forEach(t=>{
         if(typeof t==='string'&&t.trim()){list.push({text:t.trim().slice(0,160),ts:Date.now()});changed=true;}
