@@ -58,7 +58,7 @@
         <g stroke="#ffe600" stroke-width="0.7" opacity="0.65" stroke-linecap="round">
           <line x1="20" y1="2"  x2="20" y2="5"/>
           <line x1="9"  y1="20" x2="6"  y2="20"/>
-          <line x1="31" y1="20" x2="34" y2="20"/>
+          <line x1="31" x2="34" y2="20"/>
           <line x1="11.5" y1="11.5" x2="9.5"  y2="9.5"/>
           <line x1="28.5" y1="11.5" x2="30.5" y2="9.5"/>
           <line x1="11.5" y1="28.5" x2="9.5"  y2="30.5"/>
@@ -157,7 +157,7 @@
     </div>
     <div class="step" id="step-gen">
       <div class="gen-status">
-        <"<i></i></div>
+        <div class="loader-bar"><i></i></div>
         <p id="genText">GENERATING WORLD... PLEASE WAIT</p>
       </div>
     </div>
@@ -302,7 +302,8 @@
       <div class="field"><label>STT Model</label><div id="ddStt"></div><div class="hint">Groq Whisper only.</div></div>
       <div class="detail-section"><h3>Defaults</h3></div>
       <div class="field" style="display:flex;align-items:center;gap:10px">
-        <width:auto;accent-color:var(--neon-1)<"/label>
+        <input type="checkbox" id="sTtsOn" style="width:auto;accent-color:var(--neon-1)" checked>
+        <label style="margin:0">Voice replies enabled by default</label>
       </div>
       <div class="detail-section"><h3>Sound &amp; World</h3></div>
       <div class="field" style="display:flex;align-items:center;gap:10px">
