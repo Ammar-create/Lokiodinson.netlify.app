@@ -210,6 +210,7 @@ function showScreen(id){
   if(typeof directorOnScreenChange==='function')directorOnScreenChange(id);
   if(typeof worldOnScreenChange==='function')worldOnScreenChange(id);
   if(typeof soundOnScreenChange==='function')soundOnScreenChange(id);
+  if(typeof bigmapOnScreenChange==='function')bigmapOnScreenChange(id);
   if(typeof sfx==='function')sfx('screen');
 }
 document.getElementById('toDashboard').onclick=()=>{showScreen('screen-dash');renderDashboard();};
