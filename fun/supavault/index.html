@@ -706,23 +706,25 @@
     let currentUser = null;
     let currentNoteId = null;
     let notesSubscription = null;
+
+    // Default Supabase credentials
+    const DEFAULT_SUPABASE_URL = 'https://lycjamvdwaofjfcbeiev.supabase.co';
+    const DEFAULT_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5Y2phbXZkd2FvZmpmY2JlaWV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3MzkzMzQsImV4cCI6MjA5NjMxNTMzNH0.q7MFysi0AsPETP1277M2EHFgfwFZluYuNi7hcoHSPnQ';
     
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
       loadConfig();
-      checkAuth();
       setupEventListeners();
     });
     
     function loadConfig() {
-      const url = localStorage.getItem('supabase_url');
-      const key = localStorage.getItem('supabase_key');
+      const url = localStorage.getItem('supabase_url') || DEFAULT_SUPABASE_URL;
+      const key = localStorage.getItem('supabase_key') || DEFAULT_SUPABASE_KEY;
       
-      if (url && key) {
-        document.getElementById('supabase-url').value = url;
-        document.getElementById('supabase-key').value = key;
-        initSupabase(url, key);
-      }
+      document.getElementById('supabase-url').value = url;
+      document.getElementById('supabase-key').value = key;
+      initSupabase(url, key);
+      checkAuth();
     }
     
     function initSupabase(url, key) {
