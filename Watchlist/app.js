@@ -12,6 +12,7 @@
       deleteTarget: null,
       editingId: null,
       heroEntryId: null,
+      renamingCategory: null,
     };
 
     window._botPosters = [];
@@ -89,6 +90,22 @@
     function capitalize(s){ if(!s)return''; return s.charAt(0).toUpperCase()+s.slice(1); }
     function escapeHtml(t){ if(!t)return''; const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
     function normalizeTitle(t){ return t.trim().toLowerCase().replace(/[^a-z0-9]+/g,""); }
+    function parseProgressText(text,totalSeasons,totalEpisodes) {
+      if(!text) return 0;
+      const n=parseInt(text); if(!isNaN(n)&&n>0&&n<=100) return n;
+      let curSeason=0,curEp=0;
+      const sm=text.match(/season\s*(\d+)/i); if(sm) curSeason=parseInt(sm[1]);
+      const em=text.match(/episode\s*(\d+)/i); if(em) curEp=parseInt(em[1]);
+      if(!curSeason&&!curEp) return 0;
+      const ts=parseInt(totalSeasons)||0,te=parseInt(totalEpisodes)||0;
+      if(ts>0&&te>0&&curSeason>0){
+        const epsPerSeason=te/ts;
+        const watched=(curSeason-1)*epsPerSeason+(curEp||0);
+        return Math.min(100,Math.round(watched/te*100));
+      }
+      if(te>0&&curEp>0) return Math.min(100,Math.round(curEp/te*100));
+      return 0;
+    }
     function parseYear(dateStr) {
       if (!dateStr || dateStr === 'N/A') return null;
       const parts = dateStr.trim().split(' ');
@@ -436,7 +453,7 @@
       document.body.appendChild(menu);
       const close=()=>{menu.remove();document.removeEventListener('click',close);};
       setTimeout(()=>document.addEventListener('click',close),0);
-      menu.querySelector('#ctxRename').addEventListener('click',()=>{ menu.remove(); const newName=prompt(`Rename "${capitalize(cat)}" to:`,cat); if(newName&&newName.trim()&&newName.trim().toLowerCase()!==cat) renameCategory(cat,newName.trim().toLowerCase()); });
+      menu.querySelector('#ctxRename').addEventListener('click',()=>{ menu.remove(); state.renamingCategory=cat; els.categoryNameInput.value=cat; els.categoryModal.querySelector('.modal-title').textContent='Rename Category'; openModal(els.categoryModal); els.categoryNameInput.select(); });
       menu.querySelector('#ctxDelete').addEventListener('click',()=>{ menu.remove(); showDeleteModal('category',cat); });
     }
     async function renameCategory(oldName,newName){
@@ -524,7 +541,7 @@
       els.statTotal.textContent=total; els.statCompleted.textContent=completed; els.statWatchTime.textContent=hoursDisplay;
       els.barTotal.style.width=total>0?'100%':'0%';
       els.barCompleted.style.width=total>0?`${Math.round((completed/Math.max(1,total))*100)}%`:'0%';
-      els.barWatchTime.style.width=`${Math.min(100,totalHours/10*100)}%`;
+      els.barWatchTime.style.width=`${Math.min(100,totalHours/Math.max(10,totalHours)*100)}%`;
     }
 
     // ============================================================
@@ -570,7 +587,7 @@
         runtime:els.entryRuntime.value.trim(), totalWatchTime:els.entryWatchTime.value.trim(), genre:els.entryGenre.value.trim(),
         plot:els.entryPlot.value.trim(), imdbLink:els.entryImdb.value.trim(), progress:els.entryProgress.value.trim(),
         notes:els.entryNotes.value.trim(), isCompleted:els.entryCompleted.checked,
-        progressPercent:els.entryCompleted.checked?100:(parseInt(els.entryProgress.value)||0)
+        progressPercent:els.entryCompleted.checked?100:parseProgressText(els.entryProgress.value,els.entrySeasons.value,els.entryEpisodes.value)
       };
       const tempPoster=els.entryForm.dataset.tempPoster;
       if(tempPoster) data.poster=tempPoster;
@@ -940,6 +957,11 @@ Rules:
     }
     function hideChatError(){ els.chatErrorBanner.classList.remove('visible'); }
 
+    function filterActionTags(text) {
+      return text.replace(/<Action>[\s\S]*?<\/Action>/gi, '')
+                 .replace(/<Action>[\s\S]*$/gi, '');
+    }
+
     function extractAllActions(text) {
       const actions = [];
       const regex = /<Action>([\s\S]*?)<\/Action>/gi;
@@ -1045,6 +1067,15 @@ Rules:
       els.chatInput.value='';
       hideChatError();
 
+      // Show thinking animation
+      const thinkingDiv = document.createElement('div');
+      thinkingDiv.className = 'chat-message assistant';
+      thinkingDiv.style.alignSelf = 'flex-start';
+      thinkingDiv.innerHTML = `<div class="chat-avatar"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6a4 4 0 1 0 4 4 4 4 0 0 0-4-4zm0 6a2 2 0 1 1 2-2 2 2 0 0 1-2 2z"/></svg></div>
+        <div class="thinking-bubble"><span class="thinking-label">Thinking</span><div class="thinking-dots"><span></span><span></span><span></span></div></div>`;
+      els.chatBody.appendChild(thinkingDiv);
+      els.chatBody.scrollTop = els.chatBody.scrollHeight;
+
       const categories = state.categories.join(', ');
       const allEntries = await getAll('entries');
       const entriesSummary = allEntries.map(e => {
@@ -1071,8 +1102,10 @@ Rules:
       const assistantEls = appendMessageBubble('assistant', '');
       const bubble = assistantEls.bubble;
       bubble.textContent = '';
+      bubble.style.display = 'none';
 
       let fullContent = '';
+      let gotFirstContent = false;
 
       try {
         const url = buildApiUrl(settings.apiUrl);
@@ -1110,30 +1143,58 @@ Rules:
               const delta = json.choices?.[0]?.delta?.content || '';
               if(delta){
                 fullContent += delta;
-                bubble.textContent = fullContent;
+                if(!gotFirstContent){
+                  gotFirstContent = true;
+                  thinkingDiv.remove();
+                  bubble.style.display = '';
+                }
+                bubble.textContent = filterActionTags(fullContent);
                 els.chatBody.scrollTop = els.chatBody.scrollHeight;
               }
             }catch(e){}
           }
         }
 
+        if(!gotFirstContent) thinkingDiv.remove();
+        bubble.style.display = '';
+
         const actions = extractAllActions(fullContent);
         if(actions.length > 0){
           const cleanText = fullContent.replace(/<Action>[\s\S]*?<\/Action>/gi, '').trim();
-          bubble.textContent = cleanText || '…';
+          bubble.textContent = cleanText || 'Done.';
 
-          const statusDiv = document.createElement('div');
-          statusDiv.className = 'chat-action-status';
-          statusDiv.innerHTML = `<span class="chat-spinner"></span> Executing action${actions.length>1?'s':''}…`;
-          assistantEls.inner.appendChild(statusDiv);
+          const cardsDiv = document.createElement('div');
+          cardsDiv.className = 'action-cards';
+          assistantEls.inner.insertBefore(cardsDiv, assistantEls.inner.querySelector('.chat-meta'));
 
-          const results = [];
-          for(const action of actions){ results.push(await executeAIAction(action)); }
-          statusDiv.innerHTML = `<span style="color:var(--success);font-size:.8rem;">✓ ${results.join(' • ')}</span>`;
-          setTimeout(() => statusDiv.remove(), 3000);
+          for(const action of actions){
+            const label = getActionLabel(action);
+            const card = document.createElement('div');
+            card.className = 'action-card';
+            card.innerHTML = `<div class="ac-spinner spinner" style="width:16px;height:16px;border-width:2px"></div>
+              <span class="ac-name">${escapeHtml(label)}</span>
+              <span class="ac-result" style="color:#94a3b8;font-size:.72rem">Running...</span>`;
+            cardsDiv.appendChild(card);
+            els.chatBody.scrollTop = els.chatBody.scrollHeight;
 
+            try {
+              const result = await executeAIAction(action);
+              card.classList.add('done');
+              card.querySelector('.ac-spinner').replaceWith(Object.assign(document.createElement('div'),{className:'ac-icon',textContent:'✓'}));
+              card.querySelector('.ac-result').textContent = result;
+              card.querySelector('.ac-result').className = 'ac-result';
+            } catch(err) {
+              card.classList.add('error');
+              card.querySelector('.ac-spinner').replaceWith(Object.assign(document.createElement('div'),{className:'ac-icon err',textContent:'✕'}));
+              card.querySelector('.ac-result').textContent = 'Failed';
+              card.querySelector('.ac-result').className = 'ac-result err';
+            }
+            els.chatBody.scrollTop = els.chatBody.scrollHeight;
+          }
+
+          const resultSummary = Array.from(cardsDiv.querySelectorAll('.ac-result')).map(r => r.textContent).join('; ');
           session.messages.push({role:'assistant', content: cleanText});
-          session.messages.push({role:'system', content: `System execution results: ${results.join('; ')}`});
+          session.messages.push({role:'system', content: `Action results: ${resultSummary}`});
         } else {
           session.messages.push({role:'assistant', content: fullContent});
         }
@@ -1141,13 +1202,32 @@ Rules:
 
       }catch(err){
         console.error(err);
-        bubble.textContent = '…';
+        thinkingDiv.remove();
+        bubble.style.display = '';
+        if(!fullContent) bubble.textContent = '...';
         showChatError(err.message || 'Network error. Check your API base URL and key.');
         showToast('Chat request failed','error');
       }finally{
         isSending = false;
         els.chatSendBtn.disabled = false;
         abortController = null;
+      }
+    }
+
+    function getActionLabel(action){
+      if(!action) return 'Unknown action';
+      switch(action.action){
+        case 'add_entries': {
+          const count = Array.isArray(action.entries) ? action.entries.length : 0;
+          const titles = Array.isArray(action.entries) ? action.entries.map(e => e.title).filter(Boolean) : [];
+          if(titles.length === 1) return `Adding "${titles[0]}"`;
+          if(titles.length > 1) return `Adding ${titles.length} entries`;
+          return 'Adding entries';
+        }
+        case 'delete_entry': return `Deleting "${action.title || 'entry'}"`;
+        case 'update_entry': return `Updating "${action.title || 'entry'}"`;
+        case 'create_category': return `Creating category "${action.category || ''}"`;
+        default: return action.action || 'Running action';
       }
     }
 
@@ -1161,8 +1241,10 @@ Rules:
     (async function start(){
       await initDB(); await initApp();
 
-      els.searchBtn.addEventListener('click',()=>searchMovieBot());
-      els.searchInput.addEventListener('keydown',e=>{ if(e.key==='Enter') searchMovieBot(); });
+      let searchTimer = null;
+      function debouncedSearch(){ clearTimeout(searchTimer); searchTimer = setTimeout(()=>searchMovieBot(), 300); }
+      els.searchBtn.addEventListener('click',debouncedSearch);
+      els.searchInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); debouncedSearch(); } });
       els.closeBot.addEventListener('click',()=>els.botResults.classList.remove('visible'));
 
       els.addEntryBtn.addEventListener('click',()=>openEntryModal('add'));
@@ -1173,15 +1255,22 @@ Rules:
       els.cancelEntryBtn.addEventListener('click',()=>closeModal(els.entryModal));
       els.entryForm.addEventListener('submit',saveEntry);
 
-      els.addCategoryBtn.addEventListener('click',()=>{ els.categoryForm.reset(); openModal(els.categoryModal); });
+      els.addCategoryBtn.addEventListener('click',()=>{ state.renamingCategory=null; els.categoryForm.reset(); els.categoryModal.querySelector('.modal-title').textContent='Add Category'; openModal(els.categoryModal); });
       els.closeCatModal.addEventListener('click',()=>closeModal(els.categoryModal));
       els.cancelCatBtn.addEventListener('click',()=>closeModal(els.categoryModal));
       els.categoryForm.addEventListener('submit',async(e)=>{
         e.preventDefault(); const name=els.categoryNameInput.value.trim().toLowerCase();
         if(!name){ showToast('Name is required','error'); return; }
-        if(state.categories.includes(name)){ showToast('Category already exists','error'); return; }
-        await addItem('categories',{name,createdAt:Date.now()}); state.categories.push(name); state.categories.sort((a,b)=>a.localeCompare(b));
-        closeModal(els.categoryModal); renderCategories(); showToast('Category added','success');
+        if(state.renamingCategory){
+          if(name===state.renamingCategory){ closeModal(els.categoryModal); state.renamingCategory=null; return; }
+          if(state.categories.includes(name)){ showToast('Category already exists','error'); return; }
+          await renameCategory(state.renamingCategory,name);
+          state.renamingCategory=null; closeModal(els.categoryModal);
+        } else {
+          if(state.categories.includes(name)){ showToast('Category already exists','error'); return; }
+          await addItem('categories',{name,createdAt:Date.now()}); state.categories.push(name); state.categories.sort((a,b)=>a.localeCompare(b));
+          closeModal(els.categoryModal); renderCategories(); showToast('Category added','success');
+        }
       });
 
       els.closeDeleteModal.addEventListener('click',()=>closeModal(els.deleteModal));
