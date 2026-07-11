@@ -493,7 +493,20 @@ function updateStats(entries){
 // ============================================================
 // MODALS
 // ============================================================
-function openModal(m){ if(!m){ console.warn('openModal called with null'); return; } m.classList.add('open'); document.body.style.overflow='hidden'; }
+function syncVisualViewport() {
+  const viewport = window.visualViewport;
+  const root = document.documentElement;
+  root.style.setProperty('--viewport-height', `${Math.round(viewport?.height || window.innerHeight)}px`);
+  root.style.setProperty('--viewport-width', `${Math.round(viewport?.width || window.innerWidth)}px`);
+  root.style.setProperty('--viewport-top', `${Math.round(viewport?.offsetTop || 0)}px`);
+  root.style.setProperty('--viewport-left', `${Math.round(viewport?.offsetLeft || 0)}px`);
+}
+function openModal(m){
+  if(!m){ console.warn('openModal called with null'); return; }
+  syncVisualViewport();
+  m.classList.add('open');
+  document.body.style.overflow='hidden';
+}
 function closeModal(m){ if(!m) return; m.classList.remove('open'); document.body.style.overflow=''; }
 function openEntryModal(mode,data){
   state.editingId=null; els.entryForm.reset(); document.getElementById('entryType').value='series'; document.getElementById('entryCategoryInput').value=state.currentCategory;
@@ -1204,6 +1217,11 @@ async function initApp(){
 }
 
 (async function start(){
+  syncVisualViewport();
+  window.addEventListener('resize', syncVisualViewport, { passive:true });
+  window.visualViewport?.addEventListener('resize', syncVisualViewport, { passive:true });
+  window.visualViewport?.addEventListener('scroll', syncVisualViewport, { passive:true });
+
   await initDB(); await initApp();
 
   els.searchBtn.addEventListener('click',()=>searchMovieBot());
