@@ -652,7 +652,7 @@ function renderDiscoverResults(candidates, recommendations) {
     const item = candidates[rec.index];
     if (!item) continue;
 
-    const posterUrl = item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : null;
+    const posterUrl = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null;
     const icon = item.media_type === 'movie' ? '🎬' : '📺';
     const typeLabel = item.media_type === 'movie' ? 'Movie' : 'TV';
 
@@ -684,16 +684,32 @@ function renderDiscoverResults(candidates, recommendations) {
         </button>
       </div>`;
 
-    card.querySelector('.discover-add-btn').addEventListener('click', () => {
-      const poster = posterUrl || '';
-      openEntryModal('add', {
-        title: item.title,
-        type: item.media_type === 'movie' ? 'movie' : 'series',
-        year: item.year !== 'N/A' ? item.year : '',
-        genre: '',
-        plot: item.overview || '',
-        poster
-      });
+    card.querySelector('.discover-add-btn').addEventListener('click', async (btn) => {
+      const target = btn.currentTarget;
+      target.disabled = true;
+      target.innerHTML = `<div class="spinner" style="width:14px;height:14px;"></div> Fetching details...`;
+      try {
+        const enriched = await enrichEntry({
+          title: item.title,
+          type: item.media_type === 'movie' ? 'movie' : 'series',
+          year: item.year !== 'N/A' ? item.year : '',
+          plot: item.overview || '',
+          poster: posterUrl || ''
+        });
+        openEntryModal('add', enriched);
+      } catch (e) {
+        console.error('Enrich failed:', e);
+        openEntryModal('add', {
+          title: item.title,
+          type: item.media_type === 'movie' ? 'movie' : 'series',
+          year: item.year !== 'N/A' ? item.year : '',
+          plot: item.overview || '',
+          poster: posterUrl || ''
+        });
+      } finally {
+        target.disabled = false;
+        target.innerHTML = `<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add to Watchlist`;
+      }
     });
 
     grid.appendChild(card);
