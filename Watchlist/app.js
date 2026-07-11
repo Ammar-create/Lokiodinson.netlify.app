@@ -369,6 +369,355 @@ window.addBotToWatchlist=function(){
 };
 
 // ============================================================
+// DISCOVER (MoodFlix) SYSTEM
+// ============================================================
+let discoverMode = 'search'; // 'search' or 'discover'
+
+const TMDB_GENRE_MAP = {
+  movie: {
+    "Action":28,"Adventure":12,"Animation":16,"Comedy":35,"Crime":80,"Documentary":99,
+    "Drama":18,"Family":10751,"Fantasy":14,"History":36,"Horror":27,"Music":10402,
+    "Mystery":9648,"Romance":10749,"Science Fiction":878,"Thriller":53,"War":10752,"Western":37
+  },
+  tv: {
+    "Action & Adventure":10759,"Animation":16,"Comedy":35,"Crime":80,"Documentary":99,
+    "Drama":18,"Family":10751,"Kids":10762,"Mystery":9648,"Sci-Fi & Fantasy":10765,
+    "Soap":10766,"Talk":10767,"War & Politics":10768,"Romance":10749,"Horror":27
+  }
+};
+
+const DISCOVER_TOOLS = [
+  {
+    type: "function",
+    function: {
+      name: "discover",
+      description: "Browse TMDB by genre, rating, and sort order. Use this when the user wants something in a specific genre or mood.",
+      parameters: {
+        type: "object",
+        properties: {
+          media_type: { type: "string", enum: ["movie","tv"], description: "movie or tv" },
+          genres: { type: "array", items: { type: "string" }, description: "Genre names from the TMDB genre map" },
+          min_rating: { type: "number", description: "Minimum TMDB rating 1-10" },
+          sort_by: { type: "string", enum: ["popularity.desc","vote_average.desc","first_air_date.desc","release_date.desc"] }
+        },
+        required: ["media_type","genres"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_by_title",
+      description: "Search TMDB by exact or partial title. Use when the user mentions specific titles or wants something similar to a named show/movie.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "The title to search for" },
+          type: { type: "string", enum: ["movie","tv","both"] }
+        },
+        required: ["query"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "find_similar",
+      description: "Find recommendations similar to a specific title. Use when user says 'something like X' or 'similar to Y'.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "The reference title" },
+          media_type: { type: "string", enum: ["movie","tv"] }
+        },
+        required: ["title","media_type"]
+      }
+    }
+  }
+];
+
+function tmdbFetch(path, extra) {
+  let sep = path.includes('?') ? '&' : '?';
+  let url = `https://api.themoviedb.org/3${path}${sep}language=en-US`;
+  if (extra) url += '&' + extra;
+  return fetch(url, { headers: { 'Content-Type': 'application/json;charset=utf-8' } });
+}
+
+function normDiscover(item, mediaType) {
+  return {
+    id: item.id,
+    media_type: mediaType,
+    title: item.title || item.name || 'Unknown',
+    overview: item.overview || '',
+    rating: item.vote_average ? item.vote_average.toFixed(1) : '0.0',
+    year: (item.release_date || item.first_air_date || '').split('-')[0] || 'N/A',
+    poster_path: item.poster_path
+  };
+}
+
+async function execDiscover(args) {
+  const { media_type, genres, min_rating, sort_by } = typeof args === 'string' ? JSON.parse(args) : args;
+  const map = TMDB_GENRE_MAP[media_type] || {};
+  const ids = (genres || []).map(g => map[g]).filter(Boolean);
+  let extra = `sort_by=${encodeURIComponent(sort_by || 'popularity.desc')}`;
+  if (ids.length) extra += `&with_genres=${ids.join(',')}`;
+  if (min_rating) extra += `&vote_average.gte=${min_rating}&vote_count.gte=20`;
+  extra += `&api_key=${TMDB_KEY}`;
+  const res = await tmdbFetch(`/discover/${media_type}`, extra);
+  if (!res.ok) throw new Error('TMDB discover failed');
+  const data = await res.json();
+  return (data.results || []).slice(0, 8).map(item => normDiscover(item, media_type));
+}
+
+async function execSearchByTitle(args) {
+  const { query, type = 'both' } = typeof args === 'string' ? JSON.parse(args) : args;
+  const results = [];
+  if (type !== 'tv') {
+    const res = await tmdbFetch('/search/movie', `query=${encodeURIComponent(query)}&api_key=${TMDB_KEY}`);
+    const d = await res.json();
+    results.push(...(d.results || []).slice(0, 5).map(item => normDiscover(item, 'movie')));
+  }
+  if (type !== 'movie') {
+    const res = await tmdbFetch('/search/tv', `query=${encodeURIComponent(query)}&api_key=${TMDB_KEY}`);
+    const d = await res.json();
+    results.push(...(d.results || []).slice(0, 5).map(item => normDiscover(item, 'tv')));
+  }
+  return results;
+}
+
+async function execFindSimilar(args) {
+  const { title, media_type } = typeof args === 'string' ? JSON.parse(args) : args;
+  const s = await tmdbFetch(`/search/${media_type}`, `query=${encodeURIComponent(title)}&api_key=${TMDB_KEY}`);
+  const sd = await s.json();
+  if (!sd.results || !sd.results.length) return [];
+  const r = await tmdbFetch(`/${media_type}/${sd.results[0].id}/recommendations`, `api_key=${TMDB_KEY}`);
+  const d = await r.json();
+  return (d.results || []).slice(0, 8).map(item => normDiscover(item, media_type));
+}
+
+function buildWatchlistContext() {
+  return new Promise(async (resolve) => {
+    try {
+      const entries = await getAll('entries');
+      const cats = state.categories.join(', ');
+      const summary = entries.map(e => {
+        const status = e.isCompleted ? 'Completed' : (e.progress || 'Not started');
+        return `- "${e.title}" (${e.type}, ${e.category}, rating: ${e.rating || 'N/A'}, genre: ${e.genre || 'N/A'}, ${status})`;
+      }).join('\n');
+      const completed = entries.filter(e => e.isCompleted).map(e => `"${e.title}" (${e.genre || e.type})`).join(', ');
+      const genres = [...new Set(entries.flatMap(e => (e.genre || '').split(',').map(g => g.trim()).filter(Boolean)))].join(', ');
+      resolve({ cats, summary, completed, genres, totalEntries: entries.length });
+    } catch {
+      resolve({ cats: '', summary: 'None', completed: '', genres: '', totalEntries: 0 });
+    }
+  });
+}
+
+async function runDiscoverFlow(mood) {
+  const settings = loadSettings();
+  if (!settings.apiUrl || !settings.apiKey || !settings.modelId) {
+    showToast('Configure AI in Settings first', 'error');
+    return;
+  }
+
+  els.botResults.classList.add('visible');
+  els.botResultContent.innerHTML = `
+    <div class="discover-loading">
+      <div class="spinner"></div>
+      <div>
+        <div class="discover-loading-text">Analyzing your taste profile...</div>
+        <div class="discover-loading-sub">Consulting the cosmic curator</div>
+      </div>
+    </div>`;
+
+  const ctx = await buildWatchlistContext();
+
+  const moodLine = mood ? `\nUser's current mood/request: "${mood}"` : '\nNo specific mood given. Recommend based purely on taste profile.';
+  const discoverSystemPrompt = `You are a movie and TV curator AI embedded in a watchlist app. Your job is to recommend content the user will love.
+
+USER'S WATCHLIST CONTEXT:
+Categories: ${ctx.cats}
+Total entries: ${ctx.totalEntries}
+Completed and enjoyed: ${ctx.completed || 'None yet'}
+Preferred genres: ${ctx.genres || 'Unknown'}
+${moodLine}
+
+Current entries:
+${ctx.summary}
+
+INSTRUCTIONS:
+- Analyze the user's watchlist to understand their taste.
+- Call up to 3 TMDB tools to find candidates. Be strategic: use "discover" for genre/mood browsing, "search_by_title" for specific titles, "find_similar" for recommendations based on something they already like.
+- Consider what they've completed (enjoyed) vs what they haven't started.
+- Avoid recommending things already in their watchlist.
+- Genre names for the discover tool: Action, Adventure, Animation, Comedy, Crime, Documentary, Drama, Family, Fantasy, History, Horror, Music, Mystery, Romance, Science Fiction, Thriller, War, Western (for movies); Action & Adventure, Animation, Comedy, Crime, Documentary, Drama, Family, Kids, Mystery, Sci-Fi & Fantasy, Romance, Horror (for TV).`;
+
+  try {
+    const url = buildApiUrl(settings.apiUrl);
+    const payloadMsgs = [
+      { role: 'system', content: discoverSystemPrompt },
+      { role: 'user', content: mood || 'Recommend something I would love based on my watchlist.' }
+    ];
+
+    const res1 = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` },
+      body: JSON.stringify({ model: settings.modelId, messages: payloadMsgs, tools: DISCOVER_TOOLS, tool_choice: 'auto', temperature: 0.3 })
+    });
+    const data1 = await res1.json();
+    if (data1.error) throw new Error(data1.error.message || 'AI API error');
+
+    const calls = data1.choices?.[0]?.message?.tool_calls;
+    if (!calls || !calls.length) {
+      els.botResultContent.innerHTML = '<p style="padding:1rem;color:var(--text-secondary);">AI did not use any search tools. Try a different mood or rephrase.</p>';
+      return;
+    }
+
+    // Update loading
+    const loadSub = els.botResultContent.querySelector('.discover-loading-sub');
+    if (loadSub) loadSub.textContent = 'Fetching from TMDB...';
+
+    const all = [];
+    const toolMessages = [];
+    for (const call of calls) {
+      const name = call.function.name;
+      const args = call.function.arguments;
+      let result = [];
+      try {
+        if (name === 'discover') result = await execDiscover(args);
+        else if (name === 'search_by_title') result = await execSearchByTitle(args);
+        else if (name === 'find_similar') result = await execFindSimilar(args);
+      } catch (e) { console.warn('Discover tool error:', name, e); }
+      all.push(...result);
+      toolMessages.push({ tool_call_id: call.id, role: 'tool', content: JSON.stringify(result) });
+    }
+
+    const seen = new Set();
+    const unique = all.filter(x => {
+      const k = x.media_type + '-' + x.id;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    }).slice(0, 14);
+
+    if (!unique.length) {
+      els.botResultContent.innerHTML = '<p style="padding:1rem;color:var(--text-secondary);">No results found on TMDB. Try a different mood or rephrase.</p>';
+      return;
+    }
+
+    // Phase 2: Rank with AI
+    if (loadSub) loadSub.textContent = 'Ranking recommendations...';
+
+    const res2 = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` },
+      body: JSON.stringify({
+        model: settings.modelId,
+        messages: [
+          { role: 'system', content: `You are ranking TMDB candidates for a user whose watchlist context is:\nCompleted: ${ctx.completed || 'None'}\nPreferred genres: ${ctx.genres || 'Unknown'}\n${moodLine}\n\nReturn ONLY a JSON object: {"recommendations":[{"index":0,"reason":"1-2 sentences on why this fits their taste and mood"},{"index":3,"reason":"..."}]}. Pick 3-5 items that best match. No markdown, no extra keys.` },
+          { role: 'user', content: `Candidates:\n${JSON.stringify(unique, null, 2)}` }
+        ],
+        temperature: 0.7,
+        max_tokens: 1000
+      })
+    });
+    const data2 = await res2.json();
+    if (data2.error) throw new Error(data2.error.message);
+
+    const content = data2.choices?.[0]?.message?.content || '';
+    const m = content.match(/\{[\s\S]*\}/);
+    if (!m) {
+      els.botResultContent.innerHTML = '<p style="padding:1rem;color:var(--text-secondary);">AI did not return valid rankings. Try again.</p>';
+      return;
+    }
+    const parsed = JSON.parse(m[0]);
+    if (!parsed.recommendations || !parsed.recommendations.length) {
+      els.botResultContent.innerHTML = '<p style="padding:1rem;color:var(--text-secondary);">No recommendations returned. Try again.</p>';
+      return;
+    }
+
+    renderDiscoverResults(unique, parsed.recommendations);
+
+  } catch (err) {
+    console.error('Discover error:', err);
+    els.botResultContent.innerHTML = `<p style="padding:1rem;color:var(--danger);">Error: ${escapeHtml(err.message || 'Something went wrong')}</p>`;
+  }
+}
+
+function renderDiscoverResults(candidates, recommendations) {
+  const grid = document.createElement('div');
+  grid.className = 'discover-grid';
+
+  for (const rec of recommendations) {
+    const item = candidates[rec.index];
+    if (!item) continue;
+
+    const posterUrl = item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : null;
+    const icon = item.media_type === 'movie' ? '🎬' : '📺';
+    const typeLabel = item.media_type === 'movie' ? 'Movie' : 'TV';
+
+    const card = document.createElement('div');
+    card.className = 'discover-card';
+    card.innerHTML = `
+      <div class="discover-card-header">
+        <div class="discover-poster">
+          ${posterUrl ? `<img src="${posterUrl}" alt="" loading="lazy">` : icon}
+        </div>
+        <div class="discover-card-info">
+          <div class="discover-card-title">${escapeHtml(item.title)}</div>
+          <div class="discover-card-meta">
+            <span class="meta-tag type-${item.media_type === 'movie' ? 'movie' : 'series'}">${typeLabel}</span>
+            <span class="meta-tag">${item.year}</span>
+            <span class="meta-tag imdb">⭐ ${item.rating}</span>
+          </div>
+          <div class="discover-card-overview">${escapeHtml(item.overview)}</div>
+        </div>
+      </div>
+      <div class="discover-card-reason">
+        <div class="discover-reason-label">Why this fits</div>
+        <div class="discover-reason-text">${escapeHtml(rec.reason)}</div>
+      </div>
+      <div class="discover-card-actions">
+        <button class="discover-add-btn" data-index="${rec.index}">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add to Watchlist
+        </button>
+      </div>`;
+
+    card.querySelector('.discover-add-btn').addEventListener('click', () => {
+      const poster = posterUrl || '';
+      openEntryModal('add', {
+        title: item.title,
+        type: item.media_type === 'movie' ? 'movie' : 'series',
+        year: item.year !== 'N/A' ? item.year : '',
+        genre: '',
+        plot: item.overview || '',
+        poster
+      });
+    });
+
+    grid.appendChild(card);
+  }
+
+  els.botResultContent.innerHTML = '';
+  els.botResultContent.appendChild(grid);
+}
+
+function setDiscoverMode(mode) {
+  discoverMode = mode;
+  const btns = document.querySelectorAll('.search-mode-btn');
+  btns.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+
+  if (mode === 'discover') {
+    els.searchInput.placeholder = 'Describe your mood, or leave blank for taste-based picks...';
+    els.searchBtn.innerHTML = `<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6a4 4 0 1 0 4 4 4 4 0 0 0-4-4z"/></svg> Discover`;
+  } else {
+    els.searchInput.placeholder = 'Search for a movie, show, or anime...';
+    els.searchBtn.innerHTML = `<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Search`;
+  }
+}
+
+// ============================================================
 // RENDERING
 // ============================================================
 async function loadCategories(){
@@ -1224,9 +1573,21 @@ async function initApp(){
 
   await initDB(); await initApp();
 
-  els.searchBtn.addEventListener('click',()=>searchMovieBot());
-  els.searchInput.addEventListener('keydown',e=>{ if(e.key==='Enter') searchMovieBot(); });
-  els.closeBot.addEventListener('click',()=>els.botResults.classList.remove('visible'));
+  function handleSearchAction() {
+    if (discoverMode === 'discover') {
+      runDiscoverFlow(els.searchInput.value.trim());
+    } else {
+      searchMovieBot();
+    }
+  }
+  els.searchBtn.addEventListener('click', handleSearchAction);
+  els.searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleSearchAction(); });
+  els.closeBot.addEventListener('click', () => els.botResults.classList.remove('visible'));
+
+  // Discover mode toggle
+  document.querySelectorAll('.search-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => setDiscoverMode(btn.dataset.mode));
+  });
 
   els.addEntryBtn.addEventListener('click',()=>openEntryModal('add'));
   els.closeEntryModal.addEventListener('click',()=>closeModal(els.entryModal));

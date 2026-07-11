@@ -83,10 +83,37 @@ body {
 .search-input { width:100%; background:rgba(255,255,255,.04); border:1px solid var(--glass-border); border-radius:14px; padding:.85rem 1rem .85rem 2.75rem; color:var(--text-primary); font-family:inherit; font-size:.95rem; outline:none; transition:all .3s; }
 .search-input::placeholder { color:var(--text-secondary); }
 .search-input:focus { border-color:rgba(0,240,255,.45); box-shadow:0 0 0 3px rgba(0,240,255,.1); }
+.search-mode-toggle { display:flex; background:rgba(255,255,255,.04); border:1px solid var(--glass-border); border-radius:12px; overflow:hidden; flex-shrink:0; }
+.search-mode-btn { padding:.65rem 1rem; border:none; background:transparent; color:var(--text-secondary); font-family:inherit; font-size:.82rem; font-weight:600; cursor:pointer; transition:all .25s; position:relative; }
+.search-mode-btn.active { color:var(--deep-space); background:var(--cyan-glow); }
+.search-mode-btn:not(.active):hover { color:var(--text-primary); background:rgba(255,255,255,.06); }
 .btn-primary { display:inline-flex; align-items:center; justify-content:center; gap:.5rem; padding:.85rem 1.4rem; border:none; border-radius:14px; background:var(--cyan-glow); color:var(--deep-space); font-family:inherit; font-weight:700; font-size:.9rem; cursor:pointer; transition:all .3s; white-space:nowrap; }
 .btn-primary:hover { transform:translateY(-2px); box-shadow:0 10px 30px rgba(0,240,255,.25); }
 .btn-primary:disabled { opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
 .btn-primary svg { width:18px; height:18px; stroke:currentColor; stroke-width:2.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+
+/* Discover Cards */
+.discover-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:1rem; margin-top:1rem; }
+.discover-card { background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:16px; overflow:hidden; transition:transform .2s, box-shadow .2s; }
+.discover-card:hover { transform:translateY(-3px); box-shadow:0 12px 32px rgba(0,0,0,.4); }
+.discover-card-header { display:flex; gap:1rem; padding:1rem; }
+.discover-poster { width:80px; height:120px; border-radius:10px; object-fit:cover; flex-shrink:0; background:rgba(255,255,255,.06); display:flex; align-items:center; justify-content:center; font-size:2rem; }
+.discover-poster img { width:100%; height:100%; object-fit:cover; border-radius:10px; }
+.discover-card-info { flex:1; min-width:0; }
+.discover-card-title { font-size:.95rem; font-weight:600; margin-bottom:.3rem; line-height:1.3; }
+.discover-card-meta { display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:.4rem; }
+.discover-card-overview { font-size:.8rem; color:var(--text-secondary); line-height:1.45; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.discover-card-reason { padding:.75rem 1rem; border-top:1px solid var(--glass-border); background:rgba(0,240,255,.03); }
+.discover-reason-label { font-size:.7rem; font-weight:700; color:var(--cyan-glow); text-transform:uppercase; letter-spacing:.06em; margin-bottom:.25rem; }
+.discover-reason-text { font-size:.82rem; color:var(--text-secondary); line-height:1.45; }
+.discover-card-actions { padding:0 1rem 1rem; display:flex; gap:.5rem; }
+.discover-add-btn { display:inline-flex; align-items:center; gap:.35rem; padding:.55rem .9rem; border:none; border-radius:10px; background:var(--cyan-glow); color:var(--deep-space); font-family:inherit; font-weight:700; font-size:.8rem; cursor:pointer; transition:all .2s; }
+.discover-add-btn:hover { transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,240,255,.2); }
+.discover-add-btn svg { width:14px; height:14px; stroke:currentColor; stroke-width:2.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+.discover-loading { display:flex; align-items:center; gap:.75rem; padding:1.5rem; color:var(--text-secondary); }
+.discover-loading .spinner { flex-shrink:0; }
+.discover-loading-text { font-size:.9rem; }
+.discover-loading-sub { font-size:.78rem; color:var(--text-secondary); opacity:.7; margin-top:.25rem; }
 
 .bot-results { margin-top:1.25rem; display:none; }
 .bot-results.visible { display:block; animation:fade-up .4s ease; }
@@ -362,6 +389,8 @@ footer { margin-top:4rem; padding:2rem 0; text-align:center; border-top:1px soli
   .brand-area { text-align:center; }
   .header-actions { justify-content:center; }
   .search-row { flex-direction:column; align-items:stretch; }
+  .search-mode-toggle { align-self:center; }
+  .discover-grid { grid-template-columns:1fr; }
   .cards-grid { grid-template-columns:repeat(2, 1fr); gap:.9rem; }
   .form-row { grid-template-columns:1fr; }
   .chat-modal .modal-header { gap:.5rem; }
