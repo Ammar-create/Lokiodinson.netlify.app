@@ -392,34 +392,6 @@ function renderCategories(){
     els.categoryList.appendChild(div);
   });
 }
-async function updateHero(entries){
-  const all = entries || await getAll('entries');
-  const cat = all.filter(e => e.category === state.currentCategory);
-  const pick = cat.find(e => !e.isCompleted && e.poster) || cat.find(e => e.poster) || all.find(e => e.poster) || cat[0] || all[0];
-  const heroTitle = document.getElementById('heroTitle');
-  const heroMeta = document.getElementById('heroMeta');
-  const heroBg = document.getElementById('heroBg');
-  const heroProgressPill = document.getElementById('heroProgressPill');
-  const tileA = document.getElementById('heroTileA');
-  const tileB = document.getElementById('heroTileB');
-  if(!heroTitle || !heroMeta || !heroBg) return;
-  if(pick){
-    const pct = pick.isCompleted ? 100 : (pick.progressPercent || 0);
-    heroTitle.textContent = pick.title || 'The Watchlist';
-    heroMeta.textContent = [pick.genre, pick.seasons ? `${pick.seasons} seasons` : '', pick.episodes ? `${pick.episodes} episodes` : ''].filter(Boolean).join('  •  ') || (pick.plot || 'Ready when you are.');
-    heroProgressPill.textContent = pct ? `${pct}% / episode` : (pick.year || '1080p');
-    heroBg.style.backgroundImage = pick.poster ? `url("${pick.poster}")` : 'linear-gradient(120deg,#1f2937,#64748b)';
-  } else {
-    heroTitle.textContent = 'The Watchlist';
-    heroMeta.textContent = 'Search, discover, and track your universe of stories.';
-    heroProgressPill.textContent = '1080p / episode';
-    heroBg.style.backgroundImage = 'linear-gradient(120deg,#263142,#64748b)';
-  }
-  const posters = all.filter(e=>e.poster).slice(0,2).map(e=>e.poster);
-  if(tileA) tileA.innerHTML = posters[0] ? `<img src="${posters[0]}" alt="">` : '';
-  if(tileB) tileB.innerHTML = posters[1] ? `<img src="${posters[1]}" alt="">` : '';
-}
-
 function showCategoryContextMenu(e,cat){
   const existing=document.querySelector('.context-menu'); if(existing)existing.remove();
   const menu=document.createElement('div'); menu.className='context-menu';
@@ -455,7 +427,6 @@ async function renderWatchlist(){
     const c=entries.filter(e=>e.category===cat).length;
     if(counts[i]) counts[i].textContent=c;
   });
-  await updateHero(entries);
   if(!catEntries.length){
     els.cardsGrid.innerHTML=''; els.emptyState.classList.add('is-visible');
     updateStats(entries); return;
@@ -1158,7 +1129,6 @@ async function initApp(){
   els.closeBot.addEventListener('click',()=>els.botResults.classList.remove('visible'));
 
   els.addEntryBtn.addEventListener('click',()=>openEntryModal('add'));
-  ['sidebarAddBtn','railAddBtn','heroAddBtn','heroWatchBtn'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>openEntryModal('add')); });
   els.closeEntryModal.addEventListener('click',()=>closeModal(els.entryModal));
   els.cancelEntryBtn.addEventListener('click',()=>closeModal(els.entryModal));
   els.entryForm.addEventListener('submit',saveEntry);
