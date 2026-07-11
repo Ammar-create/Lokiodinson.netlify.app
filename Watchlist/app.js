@@ -728,6 +728,22 @@ function loadSettings(){
 }
 function saveSettings(s){ localStorage.setItem('cosmicSettings', JSON.stringify(s)); }
 
+const ACTION_PROTOCOL = `
+
+ACTION PROTOCOL (required when changing the watchlist):
+- Never claim that an item or category was added, updated, or deleted unless you include an executable action.
+- Put each action in exactly one <Action>...</Action> block containing valid JSON. Do not use Markdown fences around the action.
+- You may include a short user-facing sentence before the action.
+- Supported actions and exact shapes:
+  <Action>{"action":"create_category","category":"anime"}</Action>
+  <Action>{"action":"add_entries","entries":[{"title":"Spirited Away","category":"anime","type":"anime","notes":"","isCompleted":false}]}</Action>
+  <Action>{"action":"update_entry","title":"Old title","new_title":"Canonical title","refresh_metadata":true,"updates":{"progress":"Season 1 Episode 3","isCompleted":false}}</Action>
+  <Action>{"action":"delete_entry","title":"Exact title"}</Action>
+- Allowed entry types are series, movie, anime, and franchise.
+- For add_entries, title is required. Use an existing category when possible. If the requested category does not exist, emit create_category before add_entries.
+- JSON must use double quotes, no trailing commas, and no comments.
+- If the user only asks a question, do not emit an action.`;
+
 const DEFAULT_SYSTEM_PROMPT = `You are Cosmic AI, the watchlist manager assistant.
 
 TODAY: {{TODAY}}
@@ -738,16 +754,11 @@ Current Entries:
 
 Rules:
 1. Be concise, friendly, and helpful.
-2. To add items, you ONLY need to provide "title", "category", "type", "notes", and "isCompleted" if specified. The app will auto-fetch real poster, year, runtime, genre, and plot from TMDB/OMDb using your title. Do NOT hallucinate metadata.
-3. If user asks for a franchise or collection (e.g. "Harry Potter films", "Arrowverse", "MCU"), add it as ONE single entry with type "franchise". Include film/show count and rough total runtime in the "plot" or "notes". Do NOT create separate entries for each film unless explicitly asked.
-4. When a user wants to correct a title so it matches TMDB, use update_entry with "title" (current bad name) and "new_title" (canonical name). The app will automatically fetch the poster and metadata from TMDB.
+2. To add items, provide the title, category, type, notes, and completion state. The app auto-fetches poster, year, runtime, genre, and plot from TMDB/OMDb. Do not invent metadata.
+3. If the user asks for a franchise or collection, add it as one franchise entry unless they explicitly request separate entries.
+4. Use update_entry to correct a title or change progress/completion state.
 5. {{SEARCH_INSTRUCTION}}
-6. Available actions:
-   - update_entry: rename + re-fetch metadata. Use {"action":"update_entry","title":"OLD","new_title":"NEW","refresh_metadata":true}
-   - add_entries: add one or more items
-   - delete_entry: remove matching item(s)
-   - create_category: add a new category
-7. Do NOT ask for confirmation. When the user asks you to change something, output the <Action> immediately. The app will execute it automatically and show a small loading spinner.`;
+6. When the user requests a watchlist change, follow the mandatory action protocol appended below.`;
 
 function populateSettings(){
   const s=loadSettings();
@@ -903,14 +914,57 @@ function showChatError(text){
 }
 function hideChatError(){ els.chatErrorBanner.classList.remove('visible'); }
 
+function stripCodeFence(text) {
+  return String(text || '').trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+}
+
+function parseActionCandidate(candidate) {
+  const cleaned = stripCodeFence(candidate);
+  if (!cleaned) return null;
+  try {
+    const parsed = JSON.parse(cleaned);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 function extractAllActions(text) {
   const actions = [];
-  const regex = /<Action>([\s\S]*?)<\/Action>/gi;
-  let m;
-  while ((m = regex.exec(text)) !== null) {
-    try { actions.push(JSON.parse(m[1].trim())); } catch(e){}
-  }
+  const seen = new Set();
+  const add = candidate => {
+    const parsed = parseActionCandidate(candidate);
+    if (!parsed) return;
+    const list = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.actions) ? parsed.actions : [parsed]);
+    list.forEach(action => {
+      if (!action || typeof action !== 'object' || typeof action.action !== 'string') return;
+      const key = JSON.stringify(action);
+      if (!seen.has(key)) { seen.add(key); actions.push(action); }
+    });
+  };
+
+  const tagged = /<Action>\s*([\s\S]*?)\s*<\/Action>/gi;
+  let match;
+  while ((match = tagged.exec(text)) !== null) add(match[1]);
+  if (actions.length) return actions;
+
+  const fenced = /```(?:json)?\s*([\s\S]*?)```/gi;
+  while ((match = fenced.exec(text)) !== null) add(match[1]);
+  if (actions.length) return actions;
+
+  add(text);
   return actions;
+}
+
+function filterActionTags(text) {
+  return String(text || '')
+    .replace(/<Action>[\s\S]*?<\/Action>/gi, '')
+    .replace(/<Action>[\s\S]*$/gi, '')
+    .replace(/```(?:json)?\s*[\[{][\s\S]*?```/gi, '')
+    .trim();
 }
 
 async function executeAIAction(action) {
@@ -920,9 +974,19 @@ async function executeAIAction(action) {
     const all = await getAll('entries');
     all.forEach(e => { const o = e.order !== undefined ? e.order : e.id; if (o > nextOrder) nextOrder = o; });
     let added = 0;
-    for (const ent of action.entries) {
+    const validTypes = new Set(['series', 'movie', 'anime', 'franchise']);
+    const existingTitles = new Set(all.map(e => normalizeTitle(e.title || '')));
+    const knownCategories = new Set(state.categories);
+    for (const ent of action.entries.slice(0, 50)) {
+      const title = String(ent?.title || '').trim();
+      if (!title || existingTitles.has(normalizeTitle(title))) continue;
+      const category = String(ent.category || 'watchlist').trim().toLowerCase() || 'watchlist';
+      if (!knownCategories.has(category)) {
+        try { await addItem('categories', { name: category, createdAt: Date.now() }); } catch (e) {}
+        knownCategories.add(category);
+      }
       const clean = {
-        title: ent.title || 'Untitled', type: ent.type || 'series', category: ent.category || 'watchlist',
+        title, type: validTypes.has(ent.type) ? ent.type : 'series', category,
         year: String(ent.year || ''), seasons: String(ent.seasons || ''), episodes: String(ent.episodes || ''),
         runtime: String(ent.runtime || ''), totalWatchTime: String(ent.totalWatchTime || ''),
         genre: String(ent.genre || ''), plot: String(ent.plot || ''), imdbLink: String(ent.imdbLink || ''),
@@ -934,10 +998,12 @@ async function executeAIAction(action) {
       let enriched;
       try { enriched = await enrichEntry({ ...clean }); } catch(e){ enriched = clean; }
       await addItem('entries', enriched);
+      existingTitles.add(normalizeTitle(title));
       added++;
     }
     await initApp();
-    return `Added ${added} item(s)`;
+    if (!added) throw new Error('No new entries were added. The action was empty or all titles already exist.');
+    return `Added ${added} item${added === 1 ? '' : 's'}`;
   }
   if (action.action === 'delete_entry' && action.title) {
     const entries = await getAll('entries');
@@ -985,7 +1051,7 @@ async function executeAIAction(action) {
     }
     return 'Category already exists';
   }
-  return 'Done';
+  throw new Error(`Unsupported AI action: ${String(action.action)}`);
 }
 
 let isSending = false;
@@ -1024,6 +1090,7 @@ async function sendChat(){
     ? 'You have access to real-time web search. Use it to verify release dates, runtimes, episode counts, and filmographies before responding. Cite sources if possible.'
     : 'You do NOT have access to real-time web search. Rely on your training data only. Do not claim to browse the internet.';
   sys = sys.replace(/{{SEARCH_INSTRUCTION}}/g, searchInstr);
+  sys += ACTION_PROTOCOL;
 
   const payloadMsgs = [{role:'system',content:sys}, ...session.messages.slice(-20)];
 
@@ -1073,7 +1140,7 @@ async function sendChat(){
           const delta = json.choices?.[0]?.delta?.content || '';
           if(delta){
             fullContent += delta;
-            bubble.textContent = fullContent;
+            bubble.textContent = filterActionTags(fullContent);
             els.chatBody.scrollTop = els.chatBody.scrollHeight;
           }
         }catch(e){}
@@ -1082,8 +1149,8 @@ async function sendChat(){
 
     const actions = extractAllActions(fullContent);
     if(actions.length > 0){
-      const cleanText = fullContent.replace(/<Action>[\s\S]*?<\/Action>/gi, '').trim();
-      bubble.textContent = cleanText || '…';
+      const cleanText = filterActionTags(fullContent);
+      bubble.textContent = cleanText || 'Applying the requested changes…';
 
       const statusDiv = document.createElement('div');
       statusDiv.className = 'chat-action-status';
@@ -1091,14 +1158,29 @@ async function sendChat(){
       assistantEls.inner.appendChild(statusDiv);
 
       const results = [];
-      for(const action of actions){ results.push(await executeAIAction(action)); }
-      statusDiv.innerHTML = `<span style="color:var(--success);font-size:.8rem;">✓ ${results.join(' • ')}</span>`;
+      const failures = [];
+      for(const action of actions){
+        try { results.push(await executeAIAction(action)); }
+        catch (error) { failures.push(error.message || 'Action failed'); }
+      }
+      if (failures.length) {
+        statusDiv.innerHTML = `<span style="color:var(--danger);font-size:.8rem;">✕ ${escapeHtml(failures.join(' • '))}</span>`;
+        showChatError(failures.join(' • '));
+      } else {
+        statusDiv.innerHTML = `<span style="color:var(--success);font-size:.8rem;">✓ ${escapeHtml(results.join(' • '))}</span>`;
+      }
       setTimeout(() => statusDiv.remove(), 3000);
 
-      session.messages.push({role:'assistant', content: cleanText});
-      session.messages.push({role:'system', content: `System execution results: ${results.join('; ')}`});
+      session.messages.push({role:'assistant', content: cleanText || 'Requested changes processed.'});
+      session.messages.push({role:'system', content: `System execution results: ${[...results, ...failures].join('; ')}`});
     } else {
-      session.messages.push({role:'assistant', content: fullContent});
+      const claimedMutation = /\b(add(?:ed)?|creat(?:e|ed)|updat(?:e|ed)|delet(?:e|ed)|remov(?:e|ed))\b/i.test(fullContent);
+      if (claimedMutation) {
+        const warning = 'The AI described a change but did not send a valid action, so nothing was modified. Please retry the request.';
+        bubble.textContent = `${fullContent.trim()}\n\n${warning}`;
+        showChatError(warning);
+      }
+      session.messages.push({role:'assistant', content: bubble.textContent || fullContent});
     }
     updateSessionMessages(session.id, session.messages);
 
