@@ -604,9 +604,10 @@
             <div class="action-stack">
               <button class="action-button" id="pngButton" type="button" disabled>Current frame / PNG</button>
               <button class="action-button" id="stripButton" type="button" disabled>Frame strip / PNG</button>
-              <button class="action-button danger" id="webmButton" type="button" disabled>Animation / WebM</button>
+              <button class="action-button danger" id="gifButton" type="button" disabled>Animation / GIF</button>
+              <button class="action-button" id="webmButton" type="button" disabled>Animation / WebM</button>
             </div>
-            <p class="unit-note">WebM records one complete cycle at the selected speed and direction.</p>
+            <p class="unit-note">GIF and WebM exports follow the selected speed, direction, and loop setting.</p>
           </section>
 
           <section class="unit">
@@ -637,7 +638,7 @@
         frameSlider: $('#frameSlider'), previous: $('#previousButton'), play: $('#playButton'), next: $('#nextButton'), loop: $('#loopButton'),
         currentFrame: $('#currentFrame'), totalFrames: $('#totalFrames'), sourceSize: $('#sourceSize'), frameSize: $('#frameSize'),
         matrixSize: $('#matrixSize'), frameCount: $('#frameCount'), stageResolution: $('#stageResolution'), systemStatus: $('#systemStatus'),
-        operationStatus: $('#operationStatus'), png: $('#pngButton'), strip: $('#stripButton'), webm: $('#webmButton'), toast: $('#toast')
+        operationStatus: $('#operationStatus'), png: $('#pngButton'), strip: $('#stripButton'), gif: $('#gifButton'), webm: $('#webmButton'), toast: $('#toast')
       };
       const animationContext = elements.animationCanvas.getContext('2d', { alpha: true });
       const sheetContext = elements.sheetCanvas.getContext('2d', { alpha: true });
@@ -773,7 +774,7 @@
       }
 
       function setControlsEnabled(enabled) {
-        [elements.frameSlider, elements.previous, elements.play, elements.next, elements.png, elements.strip, elements.webm].forEach((control) => { control.disabled = !enabled; });
+        [elements.frameSlider, elements.previous, elements.play, elements.next, elements.png, elements.strip, elements.gif, elements.webm].forEach((control) => { control.disabled = !enabled; });
       }
 
       function showToast(message, type = 'success') {
@@ -953,6 +954,189 @@
         return forward;
       }
 
+      class ByteSink {
+        constructor(chunkSize = 65536) {
+          this.chunkSize = chunkSize;
+          this.buffer = new Uint8Array(chunkSize);
+          this.offset = 0;
+          this.chunks = [];
+        }
+        flush() {
+          if (!this.offset) return;
+          this.chunks.push(this.buffer.slice(0, this.offset));
+          this.buffer = new Uint8Array(this.chunkSize);
+          this.offset = 0;
+        }
+        byte(value) {
+          if (this.offset === this.buffer.length) this.flush();
+          this.buffer[this.offset++] = value & 255;
+        }
+        word(value) {
+          this.byte(value);
+          this.byte(value >> 8);
+        }
+        bytes(values) {
+          let position = 0;
+          while (position < values.length) {
+            if (this.offset === this.buffer.length) this.flush();
+            const count = Math.min(values.length - position, this.buffer.length - this.offset);
+            this.buffer.set(values.subarray(position, position + count), this.offset);
+            this.offset += count;
+            position += count;
+          }
+        }
+        text(value) {
+          for (let index = 0; index < value.length; index++) this.byte(value.charCodeAt(index));
+        }
+        blob(type) {
+          this.flush();
+          return new Blob(this.chunks, { type });
+        }
+      }
+
+      function createGifPalette() {
+        const palette = new Uint8Array(256 * 3);
+        let index = 1;
+        for (let red = 0; red < 6; red++) {
+          for (let green = 0; green < 7; green++) {
+            for (let blue = 0; blue < 6; blue++) {
+              palette[index * 3] = Math.round(red * 255 / 5);
+              palette[index * 3 + 1] = Math.round(green * 255 / 6);
+              palette[index * 3 + 2] = Math.round(blue * 255 / 5);
+              index++;
+            }
+          }
+        }
+        return palette;
+      }
+
+      function quantizeGifFrame(imageData) {
+        const source = imageData.data;
+        const indexed = new Uint8Array(imageData.width * imageData.height);
+        for (let sourceIndex = 0, pixelIndex = 0; sourceIndex < source.length; sourceIndex += 4, pixelIndex++) {
+          if (source[sourceIndex + 3] < 128) {
+            indexed[pixelIndex] = 0;
+            continue;
+          }
+          const red = Math.min(5, Math.round(source[sourceIndex] * 5 / 255));
+          const green = Math.min(6, Math.round(source[sourceIndex + 1] * 6 / 255));
+          const blue = Math.min(5, Math.round(source[sourceIndex + 2] * 5 / 255));
+          indexed[pixelIndex] = 1 + (red * 7 + green) * 6 + blue;
+        }
+        return indexed;
+      }
+
+      function encodeGifLzw(indexedPixels) {
+        const clearCode = 256;
+        const endCode = 257;
+        const codesPerClear = 250;
+        const clearCount = Math.ceil(indexedPixels.length / codesPerClear);
+        const output = new Uint8Array(Math.ceil((indexedPixels.length + clearCount + 1) * 9 / 8));
+        let outputIndex = 0;
+        let bitBuffer = 0;
+        let bitCount = 0;
+        function writeCode(code) {
+          bitBuffer |= code << bitCount;
+          bitCount += 9;
+          while (bitCount >= 8) {
+            output[outputIndex++] = bitBuffer & 255;
+            bitBuffer >>>= 8;
+            bitCount -= 8;
+          }
+        }
+        let sinceClear = 0;
+        writeCode(clearCode);
+        for (let index = 0; index < indexedPixels.length; index++) {
+          if (sinceClear === codesPerClear) {
+            writeCode(clearCode);
+            sinceClear = 0;
+          }
+          writeCode(indexedPixels[index]);
+          sinceClear++;
+        }
+        writeCode(endCode);
+        if (bitCount) output[outputIndex++] = bitBuffer & 255;
+        return output.subarray(0, outputIndex);
+      }
+
+      function writeGifSubBlocks(writer, data) {
+        for (let offset = 0; offset < data.length; offset += 255) {
+          const block = data.subarray(offset, Math.min(offset + 255, data.length));
+          writer.byte(block.length);
+          writer.bytes(block);
+        }
+        writer.byte(0);
+      }
+
+      async function exportGif() {
+        if (!state.image || state.recording) return;
+        const width = elements.animationCanvas.width;
+        const height = elements.animationCanvas.height;
+        const order = playbackOrder();
+        const totalPixels = width * height * order.length;
+        if (width > 65535 || height > 65535 || totalPixels > 80000000) {
+          showToast('This animation is too large for a safe in-browser GIF export.', 'error');
+          return;
+        }
+        stopPlayback();
+        state.recording = true;
+        elements.gif.disabled = true;
+        elements.webm.disabled = true;
+        elements.gif.classList.add('recording');
+        elements.gif.textContent = 'Encoding GIF…';
+        elements.operationStatus.textContent = 'Encoding GIF';
+        const originalFrame = state.currentFrame;
+        const writer = new ByteSink();
+        try {
+          writer.text('GIF89a');
+          writer.word(width);
+          writer.word(height);
+          writer.byte(0xF7);
+          writer.byte(0);
+          writer.byte(0);
+          writer.bytes(createGifPalette());
+          if (state.loop) {
+            writer.bytes(new Uint8Array([0x21, 0xFF, 0x0B]));
+            writer.text('NETSCAPE2.0');
+            writer.bytes(new Uint8Array([0x03, 0x01, 0x00, 0x00, 0x00]));
+          }
+          const delay = Math.max(2, Math.round(100 / state.fps));
+          for (let position = 0; position < order.length; position++) {
+            state.currentFrame = order[position];
+            drawFrame();
+            const indexed = quantizeGifFrame(animationContext.getImageData(0, 0, width, height));
+            writer.bytes(new Uint8Array([0x21, 0xF9, 0x04, 0x09]));
+            writer.word(delay);
+            writer.bytes(new Uint8Array([0x00, 0x00]));
+            writer.byte(0x2C);
+            writer.word(0);
+            writer.word(0);
+            writer.word(width);
+            writer.word(height);
+            writer.byte(0);
+            writer.byte(8);
+            writeGifSubBlocks(writer, encodeGifLzw(indexed));
+            elements.gif.textContent = `Encoding ${position + 1} / ${order.length}`;
+            if (position % 2 === 1) await new Promise((resolve) => window.setTimeout(resolve, 0));
+          }
+          writer.byte(0x3B);
+          downloadBlob(writer.blob('image/gif'), `${state.fileBase}-${state.columns}x${state.rows}-${state.fps}fps.gif`);
+          showToast(`${order.length}-frame animation exported as GIF.`);
+        } catch (error) {
+          console.error(error);
+          showToast('GIF encoding failed in this browser.', 'error');
+        } finally {
+          state.currentFrame = originalFrame;
+          updateFrameUI();
+          state.recording = false;
+          elements.gif.disabled = false;
+          elements.webm.disabled = false;
+          elements.gif.classList.remove('recording');
+          elements.gif.textContent = 'Animation / GIF';
+          elements.operationStatus.textContent = `${frameTotal()} frames armed`;
+        }
+      }
+
       function wait(milliseconds) { return new Promise((resolve) => window.setTimeout(resolve, milliseconds)); }
 
       async function exportWebM() {
@@ -966,6 +1150,7 @@
         if (!mimeType) { showToast('No supported WebM codec was found.', 'error'); return; }
         stopPlayback();
         state.recording = true;
+        elements.gif.disabled = true;
         elements.webm.disabled = true;
         elements.webm.classList.add('recording');
         elements.webm.textContent = 'Recording cycle…';
@@ -1006,6 +1191,7 @@
           state.currentFrame = originalFrame;
           updateFrameUI();
           state.recording = false;
+          elements.gif.disabled = false;
           elements.webm.disabled = false;
           elements.webm.classList.remove('recording');
           elements.webm.textContent = 'Animation / WebM';
@@ -1079,6 +1265,7 @@
       });
       elements.png.addEventListener('click', exportCurrentFrame);
       elements.strip.addEventListener('click', exportStrip);
+      elements.gif.addEventListener('click', exportGif);
       elements.webm.addEventListener('click', exportWebM);
 
       setupSelect($('#gridSelect'), (value) => {
