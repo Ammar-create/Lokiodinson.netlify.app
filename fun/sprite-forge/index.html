@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0c0d0c">
+  <meta name="description" content="Slice square and rectangular sprite sheets into frame-by-frame animations directly in your browser.">
+  <title>Sprite Forge — Sprite Sheet Animator</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+    :root {
+      --ink: #0c0d0c;
+      --panel: #131513;
+      --panel-2: #191b19;
+      --line: #3b3f3a;
+      --line-hot: #72786f;
+      --paper: #e9ece5;
+      --muted: #9ca298;
+      --hazard: #ff332b;
+      --hazard-dark: #b51e19;
+      --signal: #78f05f;
+      --focus: #f7d047;
+      --mono: "IBM Plex Mono", "Courier New", monospace;
+      --display: "Archivo Black", Impact, sans-serif;
+      --ease: cubic-bezier(.22, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { color-scheme: dark; background: var(--ink); }
+    body {
+      margin: 0;
+      min-width: 300px;
+      min-height: 100dvh;
+      background:
+        repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,.15) 3px 4px),
+        var(--ink);
+      color: var(--paper);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      pointer-events: none;
+      opacity: .035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
+    }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 3px;
+    }
+    button:disabled { cursor: not-allowed; opacity: .38; }
+
+    .app-shell { min-height: 100dvh; padding: 18px; }
+    .frame {
+      width: min(1560px, 100%);
+      min-height: calc(100dvh - 36px);
+      margin: 0 auto;
+      border: 1px solid var(--line-hot);
+      background: var(--panel);
+      box-shadow: 8px 8px 0 #050505;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .masthead {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      border-bottom: 1px solid var(--line-hot);
+      min-height: 118px;
+    }
+    .brand { position: relative; padding: 18px 22px 15px; overflow: hidden; }
+    .brand::after {
+      content: "SPRITE";
+      position: absolute;
+      right: -7px;
+      bottom: -31px;
+      color: rgba(255,255,255,.025);
+      font: 100px/.8 var(--display);
+      letter-spacing: -.08em;
+      pointer-events: none;
+    }
+    .eyebrow, .unit-label, .readout-label {
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .eyebrow { color: var(--hazard); margin: 0 0 7px; }
+    h1 {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      font: clamp(32px, 5vw, 74px)/.85 var(--display);
+      text-transform: uppercase;
+      letter-spacing: -.055em;
+    }
+    h1 span { color: var(--hazard); }
+    .mast-status {
+      min-width: 286px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-left: 1px solid var(--line-hot);
+    }
+    .status-cell { padding: 16px; border-left: 1px solid var(--line); }
+    .status-cell:first-child { border-left: 0; }
+    .status-value { display: block; margin-top: 22px; font-size: 12px; color: var(--muted); }
+    .status-value.live { color: var(--signal); }
+    .status-value.live::before {
+      content: "";
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      margin-right: 8px;
+      background: currentColor;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .workspace {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(270px, 340px) minmax(0, 1fr) minmax(260px, 320px);
+    }
+    .control-rail, .export-rail { min-width: 0; background: var(--panel); }
+    .control-rail { border-right: 1px solid var(--line-hot); }
+    .export-rail { border-left: 1px solid var(--line-hot); }
+    .unit { border-bottom: 1px solid var(--line); padding: 17px; }
+    .unit:last-child { border-bottom: 0; }
+    .unit-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 13px; }
+    .unit-index { color: var(--hazard); font-size: 10px; }
+    .unit-label { margin: 0; color: var(--paper); }
+    .unit-note { margin: 8px 0 0; color: var(--muted); font-size: 11px; }
+
+    .drop-zone {
+      position: relative;
+      display: grid;
+      min-height: 158px;
+      place-items: center;
+      padding: 18px;
+      border: 1px dashed var(--line-hot);
+      background:
+        linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0/16px 16px,
+        linear-gradient(var(--line) 1px, transparent 1px) 0 0/16px 16px,
+        #101210;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 220ms var(--ease), background-color 220ms var(--ease);
+    }
+    .drop-zone:hover, .drop-zone.is-over { border-color: var(--hazard); background-color: #18110f; }
+    .drop-zone input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .upload-mark {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 11px;
+      border: 1px solid var(--paper);
+      display: grid;
+      place-items: center;
+      font-size: 25px;
+      background: var(--panel);
+    }
+    .drop-primary { display: block; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+    .drop-secondary { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; text-transform: uppercase; }
+    .file-name { margin-top: 10px; color: var(--signal); font-size: 10px; overflow-wrap: anywhere; }
+
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .field { min-width: 0; }
+    .field > label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+    .number-wrap { position: relative; }
+    .number-wrap input {
+      width: 100%;
+      height: 45px;
+      border: 1px solid var(--line-hot);
+      border-radius: 0;
+      background: #0e100e;
+      color: var(--paper);
+      padding: 0 34px 0 12px;
+      appearance: textfield;
+    }
+    .number-wrap input::-webkit-inner-spin-button { appearance: none; }
+    .stepper { position: absolute; top: 0; right: 0; bottom: 0; width: 28px; display: grid; grid-template-rows: 1fr 1fr; border-left: 1px solid var(--line); }
+    .stepper button { border: 0; background: transparent; padding: 0; cursor: pointer; font-size: 9px; }
+    .stepper button + button { border-top: 1px solid var(--line); }
+    .stepper button:hover { background: var(--hazard); }
+
+    .select { position: relative; }
+    .select-trigger {
+      width: 100%;
+      min-height: 43px;
+      border: 1px solid var(--line-hot);
+      background: #0e100e;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 0 11px;
+      cursor: pointer;
+      text-align: left;
+    }
+    .select-trigger::after { content: "▾"; color: var(--hazard); transition: transform 180ms var(--ease); }
+    .select.open .select-trigger::after { transform: rotate(180deg); }
+    .select-menu {
+      position: absolute;
+      z-index: 10;
+      left: 0;
+      right: 0;
+      top: calc(100% + 4px);
+      display: none;
+      max-height: 220px;
+      overflow-y: auto;
+      border: 1px solid var(--line-hot);
+      background: #0b0c0b;
+      box-shadow: 5px 5px 0 #050505;
+    }
+    .select.open .select-menu { display: block; }
+    .select-option {
+      width: 100%;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      background: transparent;
+      padding: 10px 11px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .select-option:last-child { border-bottom: 0; }
+    .select-option:hover, .select-option[aria-selected="true"] { background: var(--hazard); color: #fff; }
+
+    .range-row { display: grid; grid-template-columns: 1fr 62px; gap: 10px; align-items: center; }
+    input[type="range"] {
+      width: 100%;
+      height: 28px;
+      margin: 0;
+      accent-color: var(--hazard);
+      cursor: ew-resize;
+    }
+    .fps-readout { border: 1px solid var(--line-hot); padding: 8px 5px; text-align: center; color: var(--hazard); font-weight: 600; }
+
+    .stage-column { min-width: 0; display: grid; grid-template-rows: minmax(390px, 1fr) auto; background: #090a09; }
+    .stage {
+      position: relative;
+      min-width: 0;
+      min-height: 430px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background-color: #111311;
+      background-image:
+        linear-gradient(45deg, #191c19 25%, transparent 25%),
+        linear-gradient(-45deg, #191c19 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #191c19 75%),
+        linear-gradient(-45deg, transparent 75%, #191c19 75%);
+      background-size: 24px 24px;
+      background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+    }
+    .stage::before, .stage::after { content: "+"; position: absolute; color: var(--line-hot); font-size: 18px; }
+    .stage::before { left: 8px; top: 4px; }
+    .stage::after { right: 8px; bottom: 4px; }
+    .stage[data-background="black"] { background: #050505; }
+    .stage[data-background="white"] { background: #e7e8e2; }
+    #animationCanvas {
+      display: none;
+      width: min(58%, 520px);
+      max-width: min(74%, 680px);
+      max-height: 66vh;
+      height: auto;
+      object-fit: contain;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      filter: drop-shadow(12px 12px 0 rgba(0,0,0,.42));
+    }
+    .stage.has-image #animationCanvas { display: block; }
+    .empty-state { width: min(500px, 78%); text-align: center; color: var(--muted); }
+    .stage.has-image .empty-state { display: none; }
+    .empty-glyph {
+      width: 112px;
+      height: 112px;
+      margin: 0 auto 22px;
+      border: 1px solid var(--line-hot);
+      background:
+        linear-gradient(90deg, transparent 49%, var(--line-hot) 49% 51%, transparent 51%),
+        linear-gradient(transparent 49%, var(--line-hot) 49% 51%, transparent 51%);
+      position: relative;
+    }
+    .empty-glyph::before, .empty-glyph::after { content: ""; position: absolute; inset: 14px; border: 1px dashed var(--line); }
+    .empty-glyph::after { inset: 34px; border-style: solid; background: var(--hazard); }
+    .empty-title { margin: 0 0 7px; color: var(--paper); font: 20px var(--display); text-transform: uppercase; }
+    .empty-copy { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+    .stage-data {
+      position: absolute;
+      inset: 12px 14px auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      pointer-events: none;
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .transport { border-top: 1px solid var(--line-hot); background: var(--panel); }
+    .timeline { position: relative; height: 48px; padding: 10px 16px; display: flex; align-items: center; }
+    .timeline input { width: 100%; }
+    .transport-row { display: grid; grid-template-columns: auto 1fr auto; border-top: 1px solid var(--line); }
+    .transport-buttons { display: flex; }
+    .transport-button {
+      width: 56px;
+      height: 52px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: transparent;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .transport-button:hover:not(:disabled) { background: var(--paper); color: var(--ink); }
+    .transport-button.primary { width: 72px; background: var(--hazard); color: #fff; }
+    .transport-button.primary:hover:not(:disabled) { background: #fff; color: var(--ink); }
+    .frame-counter { display: grid; place-items: center; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+    .frame-counter strong { color: var(--paper); font-size: 14px; }
+    .loop-toggle {
+      min-width: 84px;
+      border: 0;
+      border-left: 1px solid var(--line);
+      background: transparent;
+      cursor: pointer;
+      color: var(--muted);
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: .08em;
+    }
+    .loop-toggle[aria-pressed="true"] { color: var(--signal); background: rgba(120,240,95,.06); }
+
+    .sheet-view {
+      position: relative;
+      min-height: 145px;
+      border: 1px solid var(--line);
+      background: #090a09;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+    #sheetCanvas { display: none; max-width: 100%; max-height: 250px; image-rendering: pixelated; }
+    .sheet-view.has-image #sheetCanvas { display: block; }
+    .sheet-placeholder { color: var(--line-hot); font-size: 10px; text-transform: uppercase; }
+    .sheet-view.has-image .sheet-placeholder { display: none; }
+    .telemetry { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-top: 0; }
+    .telemetry > div { padding: 10px; border-right: 1px solid var(--line); }
+    .telemetry > div:nth-child(even) { border-right: 0; }
+    .telemetry > div:nth-child(n+3) { border-top: 1px solid var(--line); }
+    .readout-label { display: block; color: var(--muted); margin-bottom: 4px; }
+    .readout-value { color: var(--paper); font-size: 12px; }
+
+    .action-stack { display: grid; gap: 8px; }
+    .action-button {
+      min-height: 48px;
+      border: 1px solid var(--line-hot);
+      background: transparent;
+      padding: 0 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      font-size: 11px;
+      transition: background 180ms var(--ease), color 180ms var(--ease), border-color 180ms var(--ease);
+    }
+    .action-button::after { content: "↘"; font-size: 16px; color: var(--hazard); }
+    .action-button:hover:not(:disabled) { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+    .action-button.danger { background: var(--hazard); border-color: var(--hazard); color: #fff; }
+    .action-button.danger::after { color: #fff; }
+    .action-button.danger:hover:not(:disabled) { background: #fff; color: var(--ink); }
+    .recording { color: var(--hazard); animation: blink 800ms steps(1) infinite; }
+    @keyframes blink { 50% { opacity: .35; } }
+
+    .warning { display: none; margin-top: 10px; border-left: 3px solid var(--focus); padding: 8px 9px; background: rgba(247,208,71,.07); color: #e5d58d; font-size: 10px; }
+    .warning.visible { display: block; }
+    .privacy { color: var(--muted); font-size: 10px; line-height: 1.55; }
+    .privacy strong { color: var(--signal); font-weight: 500; }
+
+    .footer-strip {
+      min-height: 35px;
+      border-top: 1px solid var(--line-hot);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      padding: 0 14px;
+      color: var(--muted);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+    }
+    .footer-strip a { color: var(--paper); text-decoration: none; }
+    .footer-strip a:hover { color: var(--hazard); }
+
+    .toast {
+      position: fixed;
+      z-index: 30;
+      right: max(20px, env(safe-area-inset-right));
+      bottom: max(20px, env(safe-area-inset-bottom));
+      max-width: min(360px, calc(100vw - 40px));
+      border: 1px solid var(--line-hot);
+      border-left: 5px solid var(--signal);
+      background: #0b0c0b;
+      color: var(--paper);
+      padding: 13px 15px;
+      box-shadow: 7px 7px 0 #000;
+      transform: translateY(25px);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 280ms var(--ease), opacity 280ms var(--ease);
+    }
+    .toast.visible { transform: translateY(0); opacity: 1; }
+    .toast.error { border-left-color: var(--hazard); }
+
+    @media (max-width: 1120px) {
+      .workspace { grid-template-columns: 300px minmax(0, 1fr); }
+      .export-rail { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--line-hot); display: grid; grid-template-columns: 1fr 1fr 1fr; }
+      .export-rail .unit { border-bottom: 0; border-right: 1px solid var(--line); }
+      .export-rail .unit:last-child { border-right: 0; }
+    }
+    @media (max-width: 760px) {
+      .app-shell { padding: 0; }
+      .frame { min-height: 100dvh; border-left: 0; border-right: 0; box-shadow: none; }
+      .masthead { grid-template-columns: 1fr; }
+      .brand { padding: 19px 16px 18px; }
+      .brand::after { font-size: 74px; }
+      h1 { font-size: clamp(34px, 13vw, 58px); }
+      .mast-status { min-width: 0; border-left: 0; border-top: 1px solid var(--line-hot); }
+      .status-cell { padding: 10px 14px; }
+      .status-value { margin-top: 8px; }
+      .workspace { display: flex; flex-direction: column; }
+      .control-rail { border-right: 0; }
+      .stage-column { order: -1; }
+      .stage { min-height: min(63dvh, 520px); }
+      #animationCanvas { max-width: 82%; max-height: 48dvh; }
+      .control-rail { display: grid; grid-template-columns: 1fr; }
+      .export-rail { display: grid; grid-template-columns: 1fr; }
+      .export-rail .unit, .control-rail .unit { border-right: 0; border-bottom: 1px solid var(--line); }
+      .transport-row { grid-template-columns: auto 1fr; }
+      .loop-toggle { grid-column: 1 / -1; min-height: 40px; border-left: 0; border-top: 1px solid var(--line); }
+      .footer-strip { min-height: 52px; align-items: flex-start; flex-direction: column; justify-content: center; gap: 3px; }
+    }
+    @media (max-width: 390px) {
+      .field-grid { grid-template-columns: 1fr; }
+      .transport-button { width: 48px; }
+      .transport-button.primary { width: 60px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <main class="frame">
+      <header class="masthead">
+        <div class="brand">
+          <p class="eyebrow">[ Browser Animation Utility / Unit 01 ]</p>
+          <h1>Sprite <span>Forge</span></h1>
+        </div>
+        <div class="mast-status" aria-label="Application status">
+          <div class="status-cell">
+            <span class="unit-label">System</span>
+            <span class="status-value live" id="systemStatus">Ready</span>
+          </div>
+          <div class="status-cell">
+            <span class="unit-label">Operation</span>
+            <span class="status-value" id="operationStatus">Awaiting sheet</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <aside class="control-rail" aria-label="Sprite controls">
+          <section class="unit">
+            <div class="unit-head"><h2 class="unit-label">Load architecture</h2><span class="unit-index">01 / INPUT</span></div>
+            <label class="drop-zone" id="dropZone" for="fileInput" tabindex="0">
+              <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+              <span>
+                <span class="upload-mark" aria-hidden="true">＋</span>
+                <span class="drop-primary">Drop sprite sheet</span>
+                <span class="drop-secondary">or click / paste an image</span>
+                <span class="file-name" id="fileName">PNG · JPG · WEBP · GIF</span>
+              </span>
+            </label>
+          </section>
+
+          <section class="unit">
+            <div class="unit-head"><h2 class="unit-label">Grid matrix</h2><span class="unit-index">02 / SLICE</span></div>
+            <div class="field" style="margin-bottom:9px">
+              <label id="presetLabel">Architecture preset</label>
+              <div class="select" data-select="grid" id="gridSelect">
+                <button class="select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="presetLabel gridPresetText"><span id="gridPresetText">4 × 4 / 16 frames</span></button>
+                <div class="select-menu" role="listbox" aria-labelledby="presetLabel">
+                  <button class="select-option" type="button" role="option" data-value="2" aria-selected="false">2 × 2 / 4 frames</button>
+                  <button class="select-option" type="button" role="option" data-value="3" aria-selected="false">3 × 3 / 9 frames</button>
+                  <button class="select-option" type="button" role="option" data-value="4" aria-selected="true">4 × 4 / 16 frames</button>
+                  <button class="select-option" type="button" role="option" data-value="5" aria-selected="false">5 × 5 / 25 frames</button>
+                  <button class="select-option" type="button" role="option" data-value="6" aria-selected="false">6 × 6 / 36 frames</button>
+                  <button class="select-option" type="button" role="option" data-value="8" aria-selected="false">8 × 8 / 64 frames</button>
+                  <button class="select-option" type="button" role="option" data-value="9" aria-selected="false">9 × 9 / 81 frames</button>
+                  <button class="select-option" type="button" role="option" data-value="10" aria-selected="false">10 × 10 / 100 frames</button>
+                  <button class="select-option" type="button" role="option" data-value="12" aria-selected="false">12 × 12 / 144 frames</button>
+                  <button class="select-option" type="button" role="option" data-value="16" aria-selected="false">16 × 16 / 256 frames</button>
+                </div>
+              </div>
+            </div>
+            <div class="field-grid">
+              <div class="field">
+                <label for="columnsInput">Columns / X</label>
+                <div class="number-wrap"><input id="columnsInput" type="number" min="1" max="64" value="4" inputmode="numeric"><span class="stepper"><button type="button" data-step="columnsInput" data-delta="1" aria-label="Increase columns">▲</button><button type="button" data-step="columnsInput" data-delta="-1" aria-label="Decrease columns">▼</button></span></div>
+              </div>
+              <div class="field">
+                <label for="rowsInput">Rows / Y</label>
+                <div class="number-wrap"><input id="rowsInput" type="number" min="1" max="64" value="4" inputmode="numeric"><span class="stepper"><button type="button" data-step="rowsInput" data-delta="1" aria-label="Increase rows">▲</button><button type="button" data-step="rowsInput" data-delta="-1" aria-label="Decrease rows">▼</button></span></div>
+              </div>
+            </div>
+            <p class="unit-note">Frames are read left → right, then top → bottom.</p>
+            <div class="warning" id="dimensionWarning" role="status"></div>
+          </section>
+
+          <section class="unit">
+            <div class="unit-head"><h2 class="unit-label">Motion rate</h2><span class="unit-index">03 / TIME</span></div>
+            <div class="range-row">
+              <input id="fpsInput" type="range" min="1" max="30" value="8" aria-label="Animation speed in frames per second">
+              <output class="fps-readout" id="fpsOutput" for="fpsInput">08 FPS</output>
+            </div>
+            <p class="unit-note"><span id="frameDuration">125</span> ms per frame · <span id="cycleDuration">2.00</span> sec cycle</p>
+          </section>
+
+          <section class="unit">
+            <div class="unit-head"><h2 class="unit-label">Playback mode</h2><span class="unit-index">04 / ORDER</span></div>
+            <div class="field" style="margin-bottom:9px">
+              <label id="directionLabel">Frame direction</label>
+              <div class="select" data-select="direction" id="directionSelect">
+                <button class="select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="directionLabel directionText"><span id="directionText">Forward</span></button>
+                <div class="select-menu" role="listbox" aria-labelledby="directionLabel">
+                  <button class="select-option" type="button" role="option" data-value="forward" aria-selected="true">Forward</button>
+                  <button class="select-option" type="button" role="option" data-value="reverse" aria-selected="false">Reverse</button>
+                  <button class="select-option" type="button" role="option" data-value="pingpong" aria-selected="false">Ping-pong</button>
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <label id="backgroundLabel">Preview substrate</label>
+              <div class="select" data-select="background" id="backgroundSelect">
+                <button class="select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="backgroundLabel backgroundText"><span id="backgroundText">Transparency grid</span></button>
+                <div class="select-menu" role="listbox" aria-labelledby="backgroundLabel">
+                  <button class="select-option" type="button" role="option" data-value="grid" aria-selected="true">Transparency grid</button>
+                  <button class="select-option" type="button" role="option" data-value="black" aria-selected="false">Solid black</button>
+                  <button class="select-option" type="button" role="option" data-value="white" aria-selected="false">Solid white</button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </aside>
+
+        <section class="stage-column" aria-label="Animation preview">
+          <div class="stage" id="stage" data-background="grid">
+            <div class="stage-data"><span id="stageResolution">FRAME / — × — PX</span><span id="stageZoom">PIXEL RENDER / AUTO</span></div>
+            <canvas id="animationCanvas" aria-label="Animated sprite preview"></canvas>
+            <div class="empty-state">
+              <div class="empty-glyph" aria-hidden="true"></div>
+              <h2 class="empty-title">No sheet mounted</h2>
+              <p class="empty-copy">Load an N × N sprite sheet to initialize frame extraction.</p>
+            </div>
+          </div>
+          <div class="transport">
+            <div class="timeline"><input id="frameSlider" type="range" min="0" max="15" value="0" disabled aria-label="Current frame"></div>
+            <div class="transport-row">
+              <div class="transport-buttons">
+                <button class="transport-button" id="previousButton" type="button" disabled aria-label="Previous frame">|◀</button>
+                <button class="transport-button primary" id="playButton" type="button" disabled aria-label="Play animation">▶</button>
+                <button class="transport-button" id="nextButton" type="button" disabled aria-label="Next frame">▶|</button>
+              </div>
+              <div class="frame-counter"><span>Frame <strong id="currentFrame">00</strong> / <span id="totalFrames">00</span></span></div>
+              <button class="loop-toggle" id="loopButton" type="button" aria-pressed="true">↻ Loop / On</button>
+            </div>
+          </div>
+        </section>
+
+        <aside class="export-rail" aria-label="Sheet data and exports">
+          <section class="unit">
+            <div class="unit-head"><h2 class="unit-label">Source map</h2><span class="unit-index">LIVE / GRID</span></div>
+            <div class="sheet-view" id="sheetView"><canvas id="sheetCanvas" aria-label="Sprite sheet grid map"></canvas><span class="sheet-placeholder">No source data</span></div>
+            <div class="telemetry">
+              <div><span class="readout-label">Source</span><span class="readout-value" id="sourceSize">— × —</span></div>
+              <div><span class="readout-label">Frame</span><span class="readout-value" id="frameSize">— × —</span></div>
+              <div><span class="readout-label">Matrix</span><span class="readout-value" id="matrixSize">4 × 4</span></div>
+              <div><span class="readout-label">Count</span><span class="readout-value" id="frameCount">16</span></div>
+            </div>
+          </section>
+
+          <section class="unit">
+            <div class="unit-head"><h2 class="unit-label">Output bay</h2><span class="unit-index">05 / EXPORT</span></div>
+            <div class="action-stack">
+              <button class="action-button" id="pngButton" type="button" disabled>Current frame / PNG</button>
+              <button class="action-button" id="stripButton" type="button" disabled>Frame strip / PNG</button>
+              <button class="action-button danger" id="webmButton" type="button" disabled>Animation / WebM</button>
+            </div>
+            <p class="unit-note">WebM records one complete cycle at the selected speed and direction.</p>
+          </section>
+
+          <section class="unit">
+            <div class="unit-head"><h2 class="unit-label">Local protocol</h2><span class="unit-index">SEC / 100</span></div>
+            <p class="privacy"><strong>All processing stays on this device.</strong> Your sprite sheet is decoded, sliced, animated, and exported inside the browser. No upload server, account, or API key is used.</p>
+          </section>
+        </aside>
+      </div>
+
+      <footer class="footer-strip">
+        <span>Sprite Forge / Revision 1.0 / Browser-native canvas engine</span>
+        <a href="../../index.html">Return to LokiOdinson universe ↗</a>
+      </footer>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const $ = (selector) => document.querySelector(selector);
+      const elements = {
+        fileInput: $('#fileInput'), dropZone: $('#dropZone'), fileName: $('#fileName'),
+        columns: $('#columnsInput'), rows: $('#rowsInput'), fps: $('#fpsInput'), fpsOutput: $('#fpsOutput'),
+        frameDuration: $('#frameDuration'), cycleDuration: $('#cycleDuration'), dimensionWarning: $('#dimensionWarning'),
+        stage: $('#stage'), animationCanvas: $('#animationCanvas'), sheetCanvas: $('#sheetCanvas'), sheetView: $('#sheetView'),
+        frameSlider: $('#frameSlider'), previous: $('#previousButton'), play: $('#playButton'), next: $('#nextButton'), loop: $('#loopButton'),
+        currentFrame: $('#currentFrame'), totalFrames: $('#totalFrames'), sourceSize: $('#sourceSize'), frameSize: $('#frameSize'),
+        matrixSize: $('#matrixSize'), frameCount: $('#frameCount'), stageResolution: $('#stageResolution'), systemStatus: $('#systemStatus'),
+        operationStatus: $('#operationStatus'), png: $('#pngButton'), strip: $('#stripButton'), webm: $('#webmButton'), toast: $('#toast')
+      };
+      const animationContext = elements.animationCanvas.getContext('2d', { alpha: true });
+      const sheetContext = elements.sheetCanvas.getContext('2d', { alpha: true });
+      const state = {
+        image: null, fileBase: 'sprite', columns: 4, rows: 4, fps: 8, currentFrame: 0,
+        playing: false, loop: true, direction: 'forward', background: 'grid',
+        lastTimestamp: 0, accumulator: 0, animationId: 0, pingDirection: 1, toastTimer: 0, recording: false
+      };
+
+      function clampInteger(value, min, max) {
+        const parsed = Number.parseInt(value, 10);
+        return Math.min(max, Math.max(min, Number.isFinite(parsed) ? parsed : min));
+      }
+
+      function frameTotal() { return state.columns * state.rows; }
+      function frameBounds(index) {
+        const column = index % state.columns;
+        const row = Math.floor(index / state.columns);
+        const x0 = Math.round(column * state.image.width / state.columns);
+        const x1 = Math.round((column + 1) * state.image.width / state.columns);
+        const y0 = Math.round(row * state.image.height / state.rows);
+        const y1 = Math.round((row + 1) * state.image.height / state.rows);
+        return { x: x0, y: y0, width: x1 - x0, height: y1 - y0, column, row };
+      }
+
+      function setCanvasDimensions() {
+        if (!state.image) return;
+        const width = Math.max(1, Math.round(state.image.width / state.columns));
+        const height = Math.max(1, Math.round(state.image.height / state.rows));
+        elements.animationCanvas.width = width;
+        elements.animationCanvas.height = height;
+      }
+
+      function drawFrame(index = state.currentFrame, context = animationContext, canvas = elements.animationCanvas) {
+        if (!state.image) return;
+        const safeIndex = Math.min(frameTotal() - 1, Math.max(0, index));
+        const bounds = frameBounds(safeIndex);
+        context.imageSmoothingEnabled = false;
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(state.image, bounds.x, bounds.y, bounds.width, bounds.height, 0, 0, canvas.width, canvas.height);
+      }
+
+      function drawSheetMap() {
+        if (!state.image) return;
+        const maxWidth = 560;
+        const maxHeight = 300;
+        const scale = Math.min(maxWidth / state.image.width, maxHeight / state.image.height, 1);
+        elements.sheetCanvas.width = Math.max(1, Math.round(state.image.width * scale));
+        elements.sheetCanvas.height = Math.max(1, Math.round(state.image.height * scale));
+        sheetContext.imageSmoothingEnabled = false;
+        sheetContext.clearRect(0, 0, elements.sheetCanvas.width, elements.sheetCanvas.height);
+        sheetContext.drawImage(state.image, 0, 0, elements.sheetCanvas.width, elements.sheetCanvas.height);
+        const cellWidth = elements.sheetCanvas.width / state.columns;
+        const cellHeight = elements.sheetCanvas.height / state.rows;
+        const activeColumn = state.currentFrame % state.columns;
+        const activeRow = Math.floor(state.currentFrame / state.columns);
+        sheetContext.fillStyle = 'rgba(255, 51, 43, .28)';
+        sheetContext.fillRect(activeColumn * cellWidth, activeRow * cellHeight, cellWidth, cellHeight);
+        sheetContext.strokeStyle = 'rgba(233, 236, 229, .68)';
+        sheetContext.lineWidth = 1;
+        sheetContext.beginPath();
+        for (let column = 1; column < state.columns; column++) {
+          const x = Math.round(column * cellWidth) + .5;
+          sheetContext.moveTo(x, 0); sheetContext.lineTo(x, elements.sheetCanvas.height);
+        }
+        for (let row = 1; row < state.rows; row++) {
+          const y = Math.round(row * cellHeight) + .5;
+          sheetContext.moveTo(0, y); sheetContext.lineTo(elements.sheetCanvas.width, y);
+        }
+        sheetContext.stroke();
+        sheetContext.strokeStyle = '#ff332b';
+        sheetContext.lineWidth = 2;
+        sheetContext.strokeRect(activeColumn * cellWidth + 1, activeRow * cellHeight + 1, Math.max(0, cellWidth - 2), Math.max(0, cellHeight - 2));
+      }
+
+      function updateFrameUI() {
+        const total = frameTotal();
+        const digits = Math.max(2, String(total).length);
+        elements.currentFrame.textContent = String(state.currentFrame + 1).padStart(digits, '0');
+        elements.totalFrames.textContent = String(total).padStart(digits, '0');
+        elements.frameSlider.max = String(Math.max(0, total - 1));
+        elements.frameSlider.value = String(state.currentFrame);
+        if (state.image) {
+          drawFrame();
+          drawSheetMap();
+        }
+      }
+
+      function updateTelemetry() {
+        const total = frameTotal();
+        const frameWidth = state.image ? Math.round(state.image.width / state.columns) : null;
+        const frameHeight = state.image ? Math.round(state.image.height / state.rows) : null;
+        elements.matrixSize.textContent = `${state.columns} × ${state.rows}`;
+        elements.frameCount.textContent = String(total);
+        elements.totalFrames.textContent = String(total).padStart(Math.max(2, String(total).length), '0');
+        elements.frameSlider.max = String(Math.max(0, total - 1));
+        elements.frameDuration.textContent = String(Math.round(1000 / state.fps));
+        const playbackCount = state.direction === 'pingpong' && total > 1 ? total * 2 - 2 : total;
+        elements.cycleDuration.textContent = (playbackCount / state.fps).toFixed(2);
+        if (state.image) {
+          elements.sourceSize.textContent = `${state.image.width} × ${state.image.height}`;
+          elements.frameSize.textContent = `${frameWidth} × ${frameHeight}`;
+          elements.stageResolution.textContent = `FRAME / ${frameWidth} × ${frameHeight} PX`;
+          const divisible = state.image.width % state.columns === 0 && state.image.height % state.rows === 0;
+          elements.dimensionWarning.classList.toggle('visible', !divisible);
+          elements.dimensionWarning.textContent = divisible ? '' : `Irregular cut: ${state.image.width} × ${state.image.height} is not evenly divisible by ${state.columns} × ${state.rows}. Edge boundaries will be proportionally rounded.`;
+        } else {
+          elements.sourceSize.textContent = '— × —';
+          elements.frameSize.textContent = '— × —';
+          elements.stageResolution.textContent = 'FRAME / — × — PX';
+          elements.dimensionWarning.classList.remove('visible');
+        }
+      }
+
+      function applyGridChange() {
+        state.columns = clampInteger(elements.columns.value, 1, 64);
+        state.rows = clampInteger(elements.rows.value, 1, 64);
+        elements.columns.value = state.columns;
+        elements.rows.value = state.rows;
+        state.currentFrame = Math.min(state.currentFrame, frameTotal() - 1);
+        state.pingDirection = 1;
+        setCanvasDimensions();
+        updateTelemetry();
+        updateFrameUI();
+        syncGridPreset();
+      }
+
+      function syncGridPreset() {
+        const square = state.columns === state.rows ? String(state.columns) : null;
+        const match = document.querySelector(`#gridSelect .select-option[data-value="${square}"]`);
+        document.querySelectorAll('#gridSelect .select-option').forEach((option) => option.setAttribute('aria-selected', String(option === match)));
+        $('#gridPresetText').textContent = match ? `${square} × ${square} / ${frameTotal()} frames` : `Custom / ${state.columns} × ${state.rows}`;
+      }
+
+      function setControlsEnabled(enabled) {
+        [elements.frameSlider, elements.previous, elements.play, elements.next, elements.png, elements.strip, elements.webm].forEach((control) => { control.disabled = !enabled; });
+      }
+
+      function showToast(message, type = 'success') {
+        clearTimeout(state.toastTimer);
+        elements.toast.textContent = message;
+        elements.toast.classList.toggle('error', type === 'error');
+        elements.toast.classList.add('visible');
+        state.toastTimer = window.setTimeout(() => elements.toast.classList.remove('visible'), 3200);
+      }
+
+      async function loadFile(file) {
+        if (!file || !file.type.startsWith('image/')) {
+          showToast('Select a valid PNG, JPG, WEBP, or GIF image.', 'error');
+          return;
+        }
+        if (file.size > 60 * 1024 * 1024) {
+          showToast('That file exceeds the 60 MB safety limit.', 'error');
+          return;
+        }
+        stopPlayback();
+        elements.systemStatus.textContent = 'Decoding';
+        elements.operationStatus.textContent = 'Reading pixels';
+        try {
+          const bitmap = await createImageBitmap(file);
+          if (state.image && typeof state.image.close === 'function') state.image.close();
+          state.image = bitmap;
+          state.fileBase = (file.name || 'sprite').replace(/\.[^.]+$/, '').replace(/[^a-z0-9_-]+/gi, '-').replace(/^-|-$/g, '') || 'sprite';
+          state.currentFrame = 0;
+          state.pingDirection = 1;
+          elements.fileName.textContent = `${file.name || 'Pasted image'} / ${(file.size / 1024).toFixed(1)} KB`;
+          elements.stage.classList.add('has-image');
+          elements.sheetView.classList.add('has-image');
+          setCanvasDimensions();
+          updateTelemetry();
+          updateFrameUI();
+          setControlsEnabled(true);
+          elements.systemStatus.textContent = 'Ready';
+          elements.operationStatus.textContent = `${frameTotal()} frames armed`;
+          showToast(`Sheet mounted. ${frameTotal()} frames extracted.`);
+          startPlayback();
+        } catch (error) {
+          console.error(error);
+          elements.systemStatus.textContent = 'Fault';
+          elements.operationStatus.textContent = 'Decode failed';
+          showToast('The browser could not decode this image.', 'error');
+        }
+      }
+
+      function advanceFrame(manualDirection = null) {
+        const total = frameTotal();
+        if (total <= 1) return false;
+        if (manualDirection) {
+          state.currentFrame = (state.currentFrame + manualDirection + total) % total;
+          updateFrameUI();
+          return true;
+        }
+        if (state.direction === 'reverse') {
+          if (state.currentFrame <= 0) {
+            if (!state.loop) return false;
+            state.currentFrame = total - 1;
+          } else state.currentFrame--;
+        } else if (state.direction === 'pingpong') {
+          const next = state.currentFrame + state.pingDirection;
+          if (next >= total) {
+            if (!state.loop && state.pingDirection === -1) return false;
+            state.pingDirection = -1;
+            state.currentFrame = Math.max(0, total - 2);
+          } else if (next < 0) {
+            if (!state.loop) return false;
+            state.pingDirection = 1;
+            state.currentFrame = Math.min(total - 1, 1);
+          } else state.currentFrame = next;
+        } else {
+          if (state.currentFrame >= total - 1) {
+            if (!state.loop) return false;
+            state.currentFrame = 0;
+          } else state.currentFrame++;
+        }
+        updateFrameUI();
+        return true;
+      }
+
+      function animationLoop(timestamp) {
+        if (!state.playing) return;
+        if (!state.lastTimestamp) state.lastTimestamp = timestamp;
+        state.accumulator += timestamp - state.lastTimestamp;
+        state.lastTimestamp = timestamp;
+        const frameTime = 1000 / state.fps;
+        while (state.accumulator >= frameTime) {
+          state.accumulator -= frameTime;
+          if (!advanceFrame()) { stopPlayback(); return; }
+        }
+        state.animationId = requestAnimationFrame(animationLoop);
+      }
+
+      function startPlayback() {
+        if (!state.image || state.playing || state.recording) return;
+        const total = frameTotal();
+        if (!state.loop) {
+          if (state.direction === 'forward' && state.currentFrame === total - 1) state.currentFrame = 0;
+          if (state.direction === 'reverse' && state.currentFrame === 0) state.currentFrame = total - 1;
+          if (state.direction === 'pingpong' && (state.currentFrame === 0 || state.currentFrame === total - 1)) { state.currentFrame = 0; state.pingDirection = 1; }
+        }
+        state.playing = true;
+        state.lastTimestamp = 0;
+        state.accumulator = 0;
+        elements.play.textContent = 'Ⅱ';
+        elements.play.setAttribute('aria-label', 'Pause animation');
+        elements.operationStatus.textContent = 'Playback active';
+        state.animationId = requestAnimationFrame(animationLoop);
+      }
+
+      function stopPlayback() {
+        state.playing = false;
+        cancelAnimationFrame(state.animationId);
+        elements.play.textContent = '▶';
+        elements.play.setAttribute('aria-label', 'Play animation');
+        if (state.image && !state.recording) elements.operationStatus.textContent = `${frameTotal()} frames armed`;
+      }
+
+      function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1200);
+      }
+
+      function canvasToBlob(canvas, type = 'image/png') {
+        return new Promise((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Canvas export failed')), type));
+      }
+
+      async function exportCurrentFrame() {
+        try {
+          const blob = await canvasToBlob(elements.animationCanvas);
+          downloadBlob(blob, `${state.fileBase}-frame-${String(state.currentFrame + 1).padStart(3, '0')}.png`);
+          showToast('Current frame exported as PNG.');
+        } catch (error) { showToast(error.message, 'error'); }
+      }
+
+      async function exportStrip() {
+        if (!state.image) return;
+        const total = frameTotal();
+        const frameWidth = elements.animationCanvas.width;
+        const frameHeight = elements.animationCanvas.height;
+        const horizontal = frameWidth * total <= 16384;
+        const columns = horizontal ? total : Math.max(1, Math.floor(16384 / frameWidth));
+        const rows = Math.ceil(total / columns);
+        const canvas = document.createElement('canvas');
+        canvas.width = frameWidth * columns;
+        canvas.height = frameHeight * rows;
+        if (canvas.width > 16384 || canvas.height > 16384 || canvas.width * canvas.height > 120000000) {
+          showToast('The packed frame strip is too large for a safe browser export.', 'error');
+          return;
+        }
+        const context = canvas.getContext('2d', { alpha: true });
+        context.imageSmoothingEnabled = false;
+        for (let index = 0; index < total; index++) {
+          const bounds = frameBounds(index);
+          context.drawImage(state.image, bounds.x, bounds.y, bounds.width, bounds.height, (index % columns) * frameWidth, Math.floor(index / columns) * frameHeight, frameWidth, frameHeight);
+        }
+        try {
+          const blob = await canvasToBlob(canvas);
+          downloadBlob(blob, `${state.fileBase}-${horizontal ? 'horizontal' : 'packed'}-strip.png`);
+          showToast(`${total}-frame strip exported as PNG.`);
+        } catch (error) { showToast(error.message, 'error'); }
+      }
+
+      function playbackOrder() {
+        const total = frameTotal();
+        const forward = Array.from({ length: total }, (_, index) => index);
+        if (state.direction === 'reverse') return forward.reverse();
+        if (state.direction === 'pingpong' && total > 1) return forward.concat(forward.slice(1, -1).reverse());
+        return forward;
+      }
+
+      function wait(milliseconds) { return new Promise((resolve) => window.setTimeout(resolve, milliseconds)); }
+
+      async function exportWebM() {
+        if (!state.image || state.recording) return;
+        if (!elements.animationCanvas.captureStream || typeof MediaRecorder === 'undefined') {
+          showToast('WebM recording is not supported in this browser.', 'error');
+          return;
+        }
+        const mimeTypes = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+        const mimeType = mimeTypes.find((type) => MediaRecorder.isTypeSupported(type));
+        if (!mimeType) { showToast('No supported WebM codec was found.', 'error'); return; }
+        stopPlayback();
+        state.recording = true;
+        elements.webm.disabled = true;
+        elements.webm.classList.add('recording');
+        elements.webm.textContent = 'Recording cycle…';
+        elements.operationStatus.textContent = 'Capturing WebM';
+        const originalFrame = state.currentFrame;
+        const order = playbackOrder();
+        const stream = elements.animationCanvas.captureStream(0);
+        const track = stream.getVideoTracks()[0];
+        const chunks = [];
+        const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 5000000 });
+        recorder.ondataavailable = (event) => { if (event.data.size) chunks.push(event.data); };
+        const stopped = new Promise((resolve, reject) => {
+          recorder.onstop = resolve;
+          recorder.onerror = () => reject(recorder.error || new Error('Recording failed'));
+        });
+        try {
+          recorder.start();
+          const frameDelay = 1000 / state.fps;
+          for (const index of order) {
+            state.currentFrame = index;
+            updateFrameUI();
+            if (track.requestFrame) track.requestFrame();
+            await wait(frameDelay);
+          }
+          if (track.requestFrame) track.requestFrame();
+          await wait(Math.min(120, frameDelay));
+          recorder.stop();
+          await stopped;
+          stream.getTracks().forEach((streamTrack) => streamTrack.stop());
+          downloadBlob(new Blob(chunks, { type: mimeType }), `${state.fileBase}-${state.columns}x${state.rows}-${state.fps}fps.webm`);
+          showToast('One animation cycle exported as WebM.');
+        } catch (error) {
+          console.error(error);
+          if (recorder.state !== 'inactive') recorder.stop();
+          stream.getTracks().forEach((streamTrack) => streamTrack.stop());
+          showToast('WebM recording failed in this browser.', 'error');
+        } finally {
+          state.currentFrame = originalFrame;
+          updateFrameUI();
+          state.recording = false;
+          elements.webm.disabled = false;
+          elements.webm.classList.remove('recording');
+          elements.webm.textContent = 'Animation / WebM';
+          elements.operationStatus.textContent = `${frameTotal()} frames armed`;
+        }
+      }
+
+      function setupSelect(select, onSelect) {
+        const trigger = select.querySelector('.select-trigger');
+        const options = [...select.querySelectorAll('.select-option')];
+        function close() { select.classList.remove('open'); trigger.setAttribute('aria-expanded', 'false'); }
+        function open() {
+          document.querySelectorAll('.select.open').forEach((other) => { if (other !== select) { other.classList.remove('open'); other.querySelector('.select-trigger').setAttribute('aria-expanded', 'false'); } });
+          select.classList.add('open'); trigger.setAttribute('aria-expanded', 'true');
+          (options.find((option) => option.getAttribute('aria-selected') === 'true') || options[0]).focus();
+        }
+        trigger.addEventListener('click', () => select.classList.contains('open') ? close() : open());
+        trigger.addEventListener('keydown', (event) => { if (['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); open(); } });
+        options.forEach((option, index) => {
+          option.addEventListener('click', () => {
+            options.forEach((item) => item.setAttribute('aria-selected', String(item === option)));
+            onSelect(option.dataset.value, option.textContent.trim());
+            close(); trigger.focus();
+          });
+          option.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') { event.preventDefault(); close(); trigger.focus(); }
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+              event.preventDefault();
+              options[(index + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length].focus();
+            }
+            if (event.key === 'Home') { event.preventDefault(); options[0].focus(); }
+            if (event.key === 'End') { event.preventDefault(); options[options.length - 1].focus(); }
+          });
+        });
+        document.addEventListener('pointerdown', (event) => { if (!select.contains(event.target)) close(); });
+      }
+
+      elements.fileInput.addEventListener('change', () => loadFile(elements.fileInput.files[0]));
+      elements.dropZone.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); elements.fileInput.click(); } });
+      ['dragenter', 'dragover'].forEach((type) => elements.dropZone.addEventListener(type, (event) => { event.preventDefault(); elements.dropZone.classList.add('is-over'); }));
+      ['dragleave', 'drop'].forEach((type) => elements.dropZone.addEventListener(type, (event) => { event.preventDefault(); elements.dropZone.classList.remove('is-over'); }));
+      elements.dropZone.addEventListener('drop', (event) => loadFile([...event.dataTransfer.files].find((file) => file.type.startsWith('image/'))));
+      document.addEventListener('paste', (event) => {
+        const file = [...(event.clipboardData?.files || [])].find((item) => item.type.startsWith('image/'));
+        if (file) { event.preventDefault(); loadFile(file); }
+      });
+
+      [elements.columns, elements.rows].forEach((input) => {
+        input.addEventListener('change', applyGridChange);
+        input.addEventListener('input', applyGridChange);
+      });
+      document.querySelectorAll('[data-step]').forEach((button) => button.addEventListener('click', () => {
+        const input = document.getElementById(button.dataset.step);
+        input.value = clampInteger(Number(input.value) + Number(button.dataset.delta), 1, 64);
+        applyGridChange();
+      }));
+
+      elements.fps.addEventListener('input', () => {
+        state.fps = clampInteger(elements.fps.value, 1, 30);
+        elements.fpsOutput.textContent = `${String(state.fps).padStart(2, '0')} FPS`;
+        updateTelemetry();
+      });
+      elements.frameSlider.addEventListener('input', () => { stopPlayback(); state.currentFrame = Number(elements.frameSlider.value); updateFrameUI(); });
+      elements.play.addEventListener('click', () => state.playing ? stopPlayback() : startPlayback());
+      elements.previous.addEventListener('click', () => { stopPlayback(); advanceFrame(-1); });
+      elements.next.addEventListener('click', () => { stopPlayback(); advanceFrame(1); });
+      elements.loop.addEventListener('click', () => {
+        state.loop = !state.loop;
+        elements.loop.setAttribute('aria-pressed', String(state.loop));
+        elements.loop.textContent = `↻ Loop / ${state.loop ? 'On' : 'Off'}`;
+      });
+      elements.png.addEventListener('click', exportCurrentFrame);
+      elements.strip.addEventListener('click', exportStrip);
+      elements.webm.addEventListener('click', exportWebM);
+
+      setupSelect($('#gridSelect'), (value) => {
+        elements.columns.value = value; elements.rows.value = value; applyGridChange();
+      });
+      setupSelect($('#directionSelect'), (value, label) => {
+        state.direction = value; state.pingDirection = 1; $('#directionText').textContent = label;
+        if (value === 'reverse' && state.image) state.currentFrame = frameTotal() - 1;
+        else state.currentFrame = 0;
+        updateTelemetry(); updateFrameUI();
+      });
+      setupSelect($('#backgroundSelect'), (value, label) => {
+        state.background = value; elements.stage.dataset.background = value; $('#backgroundText').textContent = label;
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (!state.image || /INPUT|BUTTON/.test(event.target.tagName) || event.target.closest('.select')) return;
+        if (event.code === 'Space') { event.preventDefault(); state.playing ? stopPlayback() : startPlayback(); }
+        if (event.key === 'ArrowLeft') { event.preventDefault(); stopPlayback(); advanceFrame(-1); }
+        if (event.key === 'ArrowRight') { event.preventDefault(); stopPlayback(); advanceFrame(1); }
+      });
+
+      window.addEventListener('beforeunload', () => {
+        cancelAnimationFrame(state.animationId);
+        if (state.image && typeof state.image.close === 'function') state.image.close();
+      });
+
+      updateTelemetry();
+      updateFrameUI();
+    })();
+  </script>
+</body>
+</html>
