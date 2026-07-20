@@ -147,7 +147,7 @@ All scripts use `defer`, execute in document order, and share classic-script glo
 ### Important globals in `app.js`
 
 - `settings` — merged persisted settings
-- `DEFAULT_SETTINGS` — defaults used for new users and missing properties
+- `DEFAULT_SETTINGS` — defaults used for new users and missing properties; includes `diceEnabled`, `questsEnabled`, and `inventoryEnabled` (all `false`)
 - `currentRealmId` — selected realm ID in realm/detail flows
 - `currentRealm` — currently loaded realm object
 - `currentSession` — currently loaded roleplay session
@@ -270,7 +270,26 @@ Key functions:
 - `fillSettings()` — copies current settings into form controls
 - `sSave` handler — validates/copies form values back into `settings`, saves, and returns to dashboard
 - `sReset` handler — restores defaults
+- `applyFeatureAvailability()` — applies dice/quests/inventory enablement to live UI after load/save/reset
 - `applyTheme()` and `applySkin()` — apply retro/modern appearance
+
+### Current optional feature settings
+
+These live in `DEFAULT_SETTINGS` and are all **disabled by default**:
+
+| Setting key | UI control | Default | Meaning when off |
+|---|---|---|---|
+| `diceEnabled` | `#sDiceEnabled` | `false` | Hide dice button, block `/roll` + `/check` + skill checks, clear pending roll notes |
+| `questsEnabled` | `#sQuestsEnabled` | `false` | Hide quest toolbar button/panel; block quest generation, progress ticks, and prompt notes |
+| `inventoryEnabled` | `#sInventoryEnabled` | `false` | Hide backpack toolbar button/panel; block inventory prompt notes and exchange ticks |
+
+Settings markup for these toggles is in the **Roleplay Features** section of `index.html`.
+
+Important semantics:
+
+- Disabled means full behavior off, not just hidden UI.
+- Existing `session.quest` and `session.inventory` data are preserved while disabled and become active again when re-enabled.
+- `renderChatToolbarHTML()` only emits quest/inventory buttons when their settings are enabled.
 
 ### Settings implementation requirements
 
@@ -439,6 +458,14 @@ If dice are disabled, address all of:
 - pending roll prompt note
 - background/stat side effects
 
+Current implementation:
+
+- Defaults off via `settings.diceEnabled === false`
+- `requireDice()` guards slash commands / skill checks / popover open
+- `rollPromptNote()` returns empty when dice are disabled
+- `#diceBtnChat` is hidden by `applyFeatureAvailability()` and `bindDiceUI()`
+- When enabled, skill checks still roll client-side and inject outcome notes into the normal roleplay reply pipeline
+
 ### Quests (`quests.js`)
 
 - Generates quest JSON using an AI controller
@@ -450,6 +477,8 @@ If dice are disabled, address all of:
 
 A quest toggle should preserve stored quest state while preventing new generation, progress checks, prompt injection, and visible quest UI when disabled.
 
+Toggle checkpoints are `startQuest()`, `questCheckTick()`, `questPromptNote()`, `renderQuestPanel()`, and `openQuestUI()`- each returns early unless enabled. Only new data-affecting AI calls and prompt injection are blocked when disabled; saved quest content remains on the session.
+
 ### Inventory/backpack (`inventory.js`)
 
 - Stores inventories per character under `session.inventory[characterKey]`
@@ -460,6 +489,8 @@ A quest toggle should preserve stored quest state while preventing new generatio
 - Panel renders into `#invPanel`
 
 A backpack toggle should preserve stored items while hiding UI and stopping inventory prompt/background exchange tracking.
+
+Toggle checkpoints are `inventoryBtnHTML()`, `bindInventoryBtn()`, `inventoryPromptNote()`, `inventoryTick()`, and `renderInvPanel()`- each returns early or hides the panel when disabled. Existing inventory objects are preserved across disable/re-enable.
 
 ### Social (`social.js`)
 
@@ -534,15 +565,24 @@ Inspect only:
 
 Expected invariant: after switching to character X, X is not the direct target, is not shown in the mention button, and is excluded from responder candidates.
 
+This is now enforced directly in `openPlayerSwitcher()` by clearing `chatTargetKey` when it equals the newly active player and rerendering the target control before removing the popover.
+
 ### Add a settings toggle
 
 Inspect only:
 
 - `index.html`: settings controls
-- `app.js`: `DEFAULT_SETTINGS`, `loadSettings()`, `fillSettings()`, save/reset handlers
+- `app.js`: `DEFAULT_SETTINGS`, `loadSettings()`, `fillSettings()`, save/reset handlers, `applyFeatureAvailability()`
 - relevant feature file
 - `app-ai.js` if the feature affects prompts/background ticks
 - relevant CSS only if UI changes
+
+For dice/quests/inventory specifically, also verify:
+
+1. default is off for new and upgraded users (missing key inherits `false` from `DEFAULT_SETTINGS`)
+2. UI entry points disappear when disabled
+3. slash commands / prompt notes / background ticks stop
+4. stored feature data remains recoverable after re-enable
 
 ### Whisper/privacy change
 
@@ -676,6 +716,8 @@ Never stage unrelated root files, temporary screenshots, generated artifacts, cr
 ---
 
 ## 17. Documentation maintenance
+
+When feature toggles, player-switch invariants, or settings keys change, update this file in the same commit as the code. Current feature flags that must stay documented: `diceEnabled`, `questsEnabled`, `inventoryEnabled`.
 
 Update this `agent.md` when a SunnyDeck change materially alters:
 
