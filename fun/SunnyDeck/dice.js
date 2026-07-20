@@ -103,8 +103,14 @@ async function pushRollEntry(roll,action){
 
 /* ====================== SKILL CHECKS ====================== */
 let pendingRollNote='';
-function rollPromptNote(){return pendingRollNote;}
+function rollPromptNote(){return settings.diceEnabled?pendingRollNote:'';}
 function clearRollNote(){pendingRollNote='';}
+function diceAvailable(){return !!settings.diceEnabled;}
+function requireDice(){
+  if(diceAvailable())return true;
+  toast('ENABLE DICE & SKILL CHECKS IN SETTINGS');
+  return false;
+}
 
 async function rateDifficulty(action){
   if(!hasApiKeys()||typeof aiJson!=='function')return{dc:12,reason:'default'};
@@ -123,6 +129,7 @@ Output ONLY JSON: {"dc":12,"reason":"3-5 words"}`;
 }
 
 async function skillCheck(action,dcOverride){
+  if(!requireDice())return;
   if(!currentSession||!currentRealm)return;
   action=String(action||'').trim();
   if(!action){toast('TYPE THE ACTION YOU ATTEMPT FIRST');return;}
@@ -157,17 +164,22 @@ async function handleSlashCommand(text){
   return true;
 }
 registerSlashCommand('roll',async(arg)=>{
+  if(!requireDice())return;
   if(!arg){await pushRollEntry(rollDice(1,20,0));return;}
   if(arg.toLowerCase().startsWith('check ')){await skillCheck(arg.slice(6));return;}
   const f=parseRollFormula(arg);
   if(!f){toast('USE /roll, /roll 3d6+2 OR /roll check <action>');return;}
   await pushRollEntry(rollDice(f.n,f.sides,f.mod));
 },'/roll [NdM+K | check <action>]');
-registerSlashCommand('check',async(arg)=>skillCheck(arg),'/check <action>');
+registerSlashCommand('check',async(arg)=>{
+  if(!requireDice())return;
+  await skillCheck(arg);
+},'/check <action>');
 
 /* ====================== POPOVER UI ====================== */
 (function bindDiceUI(){
   const btn=document.getElementById('diceBtnChat');if(!btn)return;
+  btn.hidden=!settings.diceEnabled;
   const pop=document.createElement('div');
   pop.className='dice-popover';
   pop.innerHTML=`
@@ -183,6 +195,7 @@ registerSlashCommand('check',async(arg)=>skillCheck(arg),'/check <action>');
   btn.parentElement.appendChild(pop);
   btn.onclick=e=>{
     e.stopPropagation();
+    if(!requireDice())return;
     document.querySelectorAll('.target-popover.open').forEach(p=>p.classList.remove('open'));
     document.querySelectorAll('.player-popover').forEach(p=>p.remove());
     pop.classList.toggle('open');

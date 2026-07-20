@@ -198,6 +198,7 @@ const DEFAULT_SETTINGS={
   soundEnabled:true,soundVolume:0.4,ambientLoopEnabled:false,
   weatherFxEnabled:true,worldClockMode:'hybrid',
   pixelAvatarsEnabled:true,
+  diceEnabled:false,questsEnabled:false,inventoryEnabled:false,
   uiSkin:'modern',modernTheme:'auto'
 };
 
@@ -758,8 +759,8 @@ function renderChatToolbarHTML(){
       <span class="pb-arrow">&#9660;</span>
     </button>
     <div class="header-right">
-      ${typeof inventoryBtnHTML==='function'?inventoryBtnHTML():''}
-      <button class="icon-btn ${currentSession?.quest?'is-on':''}" id="questBtn" title="${currentSession?.quest?'Quest active — toggle panel':'Start a quest'}">${SCROLL_SVG}</button>
+      ${settings.inventoryEnabled&&typeof inventoryBtnHTML==='function'?inventoryBtnHTML():''}
+      ${settings.questsEnabled?`<button class="icon-btn ${currentSession?.quest?'is-on':''}" id="questBtn" title="${currentSession?.quest?'Quest active — toggle panel':'Start a quest'}">${SCROLL_SVG}</button>`:''}
       <button class="icon-btn ${soundOn?'is-on':'is-off'}" id="soundToggle" title="${soundOn?'Voice auto-play ON':'Voice auto-play OFF'}">
         ${soundOn?SOUND_ON_SVG:SOUND_OFF_SVG}
       </button>
@@ -853,8 +854,9 @@ function openPlayerSwitcher(anchor){
         if(e.target.closest('.pp-mute-btn'))return;
         if(c.key===currentSession.playerKey){pop.remove();return;}
         currentSession.playerKey=c.key;
+        if(chatTargetKey===c.key)chatTargetKey='';
         dbPut('sessions',currentSession);
-        refreshChatHeader();pop.remove();
+        refreshChatHeader();renderChatTarget();pop.remove();
         toast('NOW PLAYING AS '+(c.name||'').toUpperCase());
       };
       row.querySelector('.pp-mute-btn').onclick=(e)=>{e.stopPropagation();toggleCharEnabled(c.key);pop.remove();};
@@ -1078,6 +1080,9 @@ function fillSettings(){
   document.getElementById('sSoundVol').value=Math.round((settings.soundVolume??0.4)*100);
   document.getElementById('sAmbientLoop').checked=!!settings.ambientLoopEnabled;
   document.getElementById('sWeatherFx').checked=settings.weatherFxEnabled!==false;
+  document.getElementById('sDiceEnabled').checked=!!settings.diceEnabled;
+  document.getElementById('sQuestsEnabled').checked=!!settings.questsEnabled;
+  document.getElementById('sInventoryEnabled').checked=!!settings.inventoryEnabled;
   const pixEl=document.getElementById('sPixelAvatars');
   if(pixEl)pixEl.checked=settings.pixelAvatarsEnabled!==false;
   if(dd.worldClock)dd.worldClock.value=settings.worldClockMode||'hybrid';
@@ -1101,19 +1106,42 @@ document.getElementById('sSave').onclick=async()=>{
   settings.soundVolume=Math.min(1,Math.max(0,(+document.getElementById('sSoundVol').value||0)/100));
   settings.ambientLoopEnabled=document.getElementById('sAmbientLoop').checked;
   settings.weatherFxEnabled=document.getElementById('sWeatherFx').checked;
+  settings.diceEnabled=document.getElementById('sDiceEnabled').checked;
+  settings.questsEnabled=document.getElementById('sQuestsEnabled').checked;
+  settings.inventoryEnabled=document.getElementById('sInventoryEnabled').checked;
   const pixEl=document.getElementById('sPixelAvatars');
   if(pixEl)settings.pixelAvatarsEnabled=pixEl.checked;
   const wc=dd.worldClock?dd.worldClock.value:'';
   settings.worldClockMode=['off','exchanges','hybrid'].includes(wc)?wc:DEFAULT_SETTINGS.worldClockMode;
   await saveSettings();
+  applyFeatureAvailability();
   if(typeof setSfxVolume==='function')setSfxVolume(settings.soundVolume);
   toast('SETTINGS SAVED');showScreen('screen-dash');renderDashboard();
 };
 document.getElementById('sReset').onclick=async()=>{
   settings={...DEFAULT_SETTINGS};
-  await saveSettings();applySkin();fillSettings();
+  await saveSettings();applySkin();applyFeatureAvailability();fillSettings();
   toast('DEFAULTS RESTORED');
 };
+
+function applyFeatureAvailability(){
+  const diceBtn=document.getElementById('diceBtnChat');
+  if(diceBtn)diceBtn.hidden=!settings.diceEnabled;
+  if(!settings.diceEnabled){
+    document.querySelectorAll('.dice-popover.open').forEach(p=>p.classList.remove('open'));
+    if(typeof clearRollNote==='function')clearRollNote();
+  }
+  if(!settings.questsEnabled){
+    const panel=document.getElementById('questPanel');
+    if(panel){panel.style.display='none';panel.innerHTML='';}
+  }else if(typeof renderQuestPanel==='function'&&currentSession)renderQuestPanel();
+  if(!settings.inventoryEnabled){
+    if(typeof invOpen!=='undefined')invOpen=false;
+    const panel=document.getElementById('invPanel');
+    if(panel){panel.style.display='none';panel.innerHTML='';}
+  }else if(typeof renderInvPanel==='function'&&currentSession)renderInvPanel();
+  if(currentSession)refreshPlayerBadgeOnly();
+}
 
 function renderThemePicker(){
   const wrap=document.getElementById('themePicker');wrap.innerHTML='';
@@ -1138,6 +1166,7 @@ document.addEventListener('keydown',e=>{
 /* ====================== INIT ====================== */
 (async()=>{
   await loadSettings();
+  applyFeatureAvailability();
   bindSkinControls();
   initSettingsDropdowns();
   await ensurePremades();

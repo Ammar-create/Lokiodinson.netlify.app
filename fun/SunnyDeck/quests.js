@@ -49,6 +49,7 @@ Output ONLY JSON:
 }
 
 async function startQuest(theme){
+  if(!settings.questsEnabled){toast('ENABLE QUESTS IN SETTINGS');return;}
   if(!hasApiKeys()){toast('ADD YOUR AQUA API KEY IN SETTINGS');return;}
   const sess=currentSession,realm=currentRealm;if(!sess||!realm)return;
   toast('DESIGNING QUEST...');
@@ -70,6 +71,7 @@ async function startQuest(theme){
 /* ====================== PROGRESS TICK ====================== */
 let questBusy=false;
 async function questCheckTick(sess,realm){
+  if(!settings.questsEnabled)return;
   const q=sess?.quest;
   if(questBusy||!q||q.status!=='active'||!hasApiKeys()||typeof aiJson!=='function')return;
   const dlg=(sess.history||[]).filter(h=>!h.kind||h.kind==='dialogue');
@@ -130,6 +132,7 @@ Write a 2-4 sentence finale narration, present tense, no dialogue, no quotes.`,s
 
 /* ====================== PROMPT NOTE ====================== */
 function questPromptNote(sess){
+  if(!settings.questsEnabled)return'';
   const q=sess?.quest;
   if(!q||q.status!=='active')return'';
   const open=q.objectives.filter(o=>!o.done).map(o=>o.text);
@@ -139,6 +142,7 @@ function questPromptNote(sess){
 /* ====================== UI ====================== */
 function renderQuestPanel(){
   const panel=document.getElementById('questPanel');if(!panel)return;
+  if(!settings.questsEnabled){panel.style.display='none';panel.innerHTML='';return;}
   const q=currentSession?.quest;
   if(!q){panel.style.display='none';panel.innerHTML='';return;}
   const done=q.objectives.filter(o=>o.done).length,total=q.objectives.length;
@@ -169,6 +173,7 @@ function renderQuestPanel(){
 }
 
 function openQuestUI(){
+  if(!settings.questsEnabled){toast('ENABLE QUESTS IN SETTINGS');return;}
   const sess=currentSession;if(!sess)return;
   if(sess.quest){
     const panel=document.getElementById('questPanel');

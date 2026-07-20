@@ -59,9 +59,11 @@ function invPushEvent(text){
 
 /* ====================== TOOLBAR HOOKS ====================== */
 function inventoryBtnHTML(){
+  if(!settings.inventoryEnabled)return'';
   return`<button class="icon-btn ${invOpen?'is-on':''}" id="invBtn" title="Inventory & props">🎒</button>`;
 }
 function bindInventoryBtn(){
+  if(!settings.inventoryEnabled)return;
   const b=document.getElementById('invBtn');
   if(b)b.onclick=()=>{invOpen=!invOpen;renderInvPanel();b.classList.toggle('is-on',invOpen);};
 }
@@ -69,6 +71,7 @@ function bindInventoryBtn(){
 /* ====================== PANEL ====================== */
 function renderInvPanel(){
   const panel=document.getElementById('invPanel');if(!panel)return;
+  if(!settings.inventoryEnabled){invOpen=false;panel.style.display='none';panel.innerHTML='';return;}
   const sess=currentSession,realm=currentRealm;
   if(!sess||!realm||!invOpen){panel.style.display='none';panel.innerHTML='';return;}
   const player=realm.characters.find(c=>c.key===sess.playerKey);
@@ -166,6 +169,7 @@ async function invItemAction(id,act){
 
 /* ====================== PROMPT NOTE (rides existing reply call) ====================== */
 function inventoryPromptNote(charKey,sess){
+  if(!settings.inventoryEnabled)return'';
   const items=sess?.inventory?.[charKey];
   if(!Array.isArray(items)||!items.length)return'';
   const names=items.slice(0,12).map(i=>`${i.name}${i.qty>1?' ×'+i.qty:''}`).join(', ');
@@ -178,6 +182,7 @@ function inventoryPromptNote(charKey,sess){
    return {} — mirrors stageDirectionTick exactly. */
 let invBusy=false;
 async function inventoryTick(sess,realm){
+  if(!settings.inventoryEnabled)return;
   if(invBusy||!sess||!realm||!hasApiKeys()||typeof aiJson!=='function')return;
   const dlg=(sess.history||[]).filter(h=>!h.kind||h.kind==='dialogue');
   if(dlg.length-(sess.lastInvCount||0)<INV_TICK_MIN_NEW)return;
