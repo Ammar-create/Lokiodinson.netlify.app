@@ -47,13 +47,13 @@ function updateSkinUI(){
   const tp=document.getElementById('themePickerField');
   if(tp)tp.style.display=modern?'none':'';
   const dt=document.getElementById('dashSkinToggle');
-  if(dt)dt.textContent=modern?'SKIN: MODERN — GO RETRO':'SKIN: RETRO — GO MODERN';
+  if(dt)dt.textContent=modern?'AFTER HOURS — GO RETRO':'RETRO — GO AFTER HOURS';
 }
 async function setUiSkin(skin){
   settings.uiSkin=skin==='retro'?'retro':'modern';
   await saveSettings();
   applySkin();
-  toast(settings.uiSkin==='retro'?'RETRO MODE ENGAGED':'MODERN UI ON');
+  toast(settings.uiSkin==='retro'?'RETRO MODE ENGAGED':'AFTER HOURS ON');
 }
 function bindSkinControls(){
   document.querySelectorAll('.skin-opt[data-skin]').forEach(b=>b.onclick=()=>setUiSkin(b.dataset.skin));

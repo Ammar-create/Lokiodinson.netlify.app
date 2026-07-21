@@ -1,98 +1,193 @@
 /* ===================================================================
    SUNNY DECK — modern.css
-   The "modern" UI skin: a clean, minimal, industry-standard chat look
-   (system font stack, soft radii, subtle borders and shadows, one
-   restrained accent) activated by <html data-skin="modern">. Every
-   selector is scoped under that attribute so the retro skin remains
-   byte-for-byte untouched. Ships light + dark: auto via
-   prefers-color-scheme, manual override via data-mtheme.
+   "After Hours" skin: late-night, intimate, low-chrome roleplay UI.
+   Activated by <html data-skin="modern">. Retro remains untouched.
+   Light + dark via data-mtheme (auto | light | dark).
    =================================================================== */
 
 /* ====================== PALETTE ====================== */
 html[data-skin="modern"]{
-  /* light */
-  --bg:#f6f6f8;--surface:#ffffff;--surface-2:#f1f1f5;--surface-3:#e8e8ee;
-  --border:#dcdce4;--border-soft:#e8e8ee;
-  --neon-1:#5b5bd6;--neon-2:#0e7490;--neon-3:#b45309;
-  --danger:#dc2626;--ok:#059669;
-  --text:#1b1b22;--text-2:#4b4b57;--text-3:#8f8f9d;
-  --glow-1:none;--glow-2:none;
-  --m-shadow:0 1px 2px rgba(16,16,24,.05),0 4px 14px rgba(16,16,24,.06);
-  --m-shadow-lg:0 8px 30px rgba(16,16,24,.14);
-  --m-ring:0 0 0 3px rgba(91,91,214,.22);
-  --m-accent-soft:rgba(91,91,214,.10);
+  /* light — secondary; still warm, not SaaS gray */
+  --bg:#f5f1f3;
+  --surface:#fffcfd;
+  --surface-2:#f0eaee;
+  --surface-3:#e5dde3;
+  --border:#d8cfd5;
+  --border-soft:#e8e1e6;
+  --neon-1:#b54d72;          /* rose — focus / you / active */
+  --neon-2:#6f5f8c;          /* hush lilac — whisper / secondary */
+  --neon-3:#9a6b3f;          /* warm amber — marks / unlocks */
+  --danger:#c43c4a;
+  --ok:#2f8a6a;
+  --text:#1a1418;
+  --text-2:#4d4349;
+  --text-3:#82767e;
+  --glow-1:none;
+  --glow-2:none;
+  --m-shadow:0 1px 2px rgba(40,20,30,.04);
+  --m-shadow-lg:0 10px 28px rgba(40,20,30,.10);
+  --m-ring:0 0 0 3px rgba(181,77,114,.20);
+  --m-accent-soft:rgba(181,77,114,.10);
+  --m-hush:rgba(111,95,140,.10);
+  --m-me-bubble:rgba(181,77,114,.09);
+  --m-stage:#ebe4e9;
+  --m-ink-soft:#2a2227;
+  --radius-sm:8px;
+  --radius:11px;
+  --radius-lg:14px;
+  --font-ui:'DM Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-story:'Source Serif 4',Georgia,'Times New Roman',serif;
 }
+
 html[data-skin="modern"][data-mtheme="dark"]{
-  --bg:#101014;--surface:#17171d;--surface-2:#1f1f27;--surface-3:#282832;
-  --border:#32323e;--border-soft:#282832;
-  --neon-1:#8f8ff0;--neon-2:#38bdf8;--neon-3:#fbbf24;
-  --danger:#f87171;--ok:#34d399;
-  --text:#ececf1;--text-2:#a6a6b2;--text-3:#6d6d7a;
-  --m-shadow:0 1px 2px rgba(0,0,0,.35),0 4px 14px rgba(0,0,0,.30);
-  --m-shadow-lg:0 8px 30px rgba(0,0,0,.5);
-  --m-ring:0 0 0 3px rgba(143,143,240,.28);
-  --m-accent-soft:rgba(143,143,240,.14);
+  --bg:#100e12;
+  --surface:#18151b;
+  --surface-2:#211d24;
+  --surface-3:#2b2630;
+  --border:#3a333f;
+  --border-soft:#2b2630;
+  --neon-1:#e08aa8;
+  --neon-2:#b0a0d4;
+  --neon-3:#e0b07a;
+  --danger:#f08088;
+  --ok:#6dba9a;
+  --text:#f3e9ef;
+  --text-2:#b7aab4;
+  --text-3:#7d727c;
+  --m-shadow:0 1px 2px rgba(0,0,0,.35);
+  --m-shadow-lg:0 12px 32px rgba(0,0,0,.45);
+  --m-ring:0 0 0 3px rgba(224,138,168,.26);
+  --m-accent-soft:rgba(224,138,168,.12);
+  --m-hush:rgba(176,160,212,.12);
+  --m-me-bubble:rgba(224,138,168,.11);
+  --m-stage:#141117;
+  --m-ink-soft:#efe4eb;
 }
+
 @media (prefers-color-scheme:dark){
   html[data-skin="modern"]:not([data-mtheme="light"]){
-    --bg:#101014;--surface:#17171d;--surface-2:#1f1f27;--surface-3:#282832;
-    --border:#32323e;--border-soft:#282832;
-    --neon-1:#8f8ff0;--neon-2:#38bdf8;--neon-3:#fbbf24;
-    --danger:#f87171;--ok:#34d399;
-    --text:#ececf1;--text-2:#a6a6b2;--text-3:#6d6d7a;
-    --m-shadow:0 1px 2px rgba(0,0,0,.35),0 4px 14px rgba(0,0,0,.30);
-    --m-shadow-lg:0 8px 30px rgba(0,0,0,.5);
-    --m-ring:0 0 0 3px rgba(143,143,240,.28);
-    --m-accent-soft:rgba(143,143,240,.14);
+    --bg:#100e12;
+    --surface:#18151b;
+    --surface-2:#211d24;
+    --surface-3:#2b2630;
+    --border:#3a333f;
+    --border-soft:#2b2630;
+    --neon-1:#e08aa8;
+    --neon-2:#b0a0d4;
+    --neon-3:#e0b07a;
+    --danger:#f08088;
+    --ok:#6dba9a;
+    --text:#f3e9ef;
+    --text-2:#b7aab4;
+    --text-3:#7d727c;
+    --m-shadow:0 1px 2px rgba(0,0,0,.35);
+    --m-shadow-lg:0 12px 32px rgba(0,0,0,.45);
+    --m-ring:0 0 0 3px rgba(224,138,168,.26);
+    --m-accent-soft:rgba(224,138,168,.12);
+    --m-hush:rgba(176,160,212,.12);
+    --m-me-bubble:rgba(224,138,168,.11);
+    --m-stage:#141117;
+    --m-ink-soft:#efe4eb;
   }
 }
 
 /* ====================== GLOBAL NEUTRALIZATION ====================== */
-html[data-skin="modern"] *,
-html[data-skin="modern"] *::before,
-html[data-skin="modern"] *::after{
-  font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif!important;
+html[data-skin="modern"],
+html[data-skin="modern"] body,
+html[data-skin="modern"] button,
+html[data-skin="modern"] input,
+html[data-skin="modern"] textarea{
+  font-family:var(--font-ui)!important;
   text-shadow:none!important;
 }
-html[data-skin="modern"] body{font-size:14.5px;line-height:1.5}
+html[data-skin="modern"] body{
+  font-size:14.5px;
+  line-height:1.55;
+  letter-spacing:-.005em;
+  background:var(--bg);
+  color:var(--text);
+}
 html[data-skin="modern"] body::before,
 html[data-skin="modern"] body::after{display:none}   /* scanlines + vignette */
 html[data-skin="modern"] ::selection{background:var(--neon-1);color:#fff}
-html[data-skin="modern"] ::-webkit-scrollbar{width:10px}
+html[data-skin="modern"] ::-webkit-scrollbar{width:9px}
 html[data-skin="modern"] ::-webkit-scrollbar-track{background:transparent}
-html[data-skin="modern"] ::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px;box-shadow:none}
+html[data-skin="modern"] ::-webkit-scrollbar-thumb{
+  background:var(--border);border-radius:99px;box-shadow:none;border:2px solid var(--bg)
+}
 html[data-skin="modern"] .horizon{display:none}      /* synthwave sun + grid floor */
+html[data-skin="modern"] .px{font-family:var(--font-ui)!important;letter-spacing:.02em}
+
+/* story type for names / titles */
+html[data-skin="modern"] .brand .title,
+html[data-skin="modern"] .detail-name,
+html[data-skin="modern"] .realm-name,
+html[data-skin="modern"] .session-name,
+html[data-skin="modern"] .bubble .who,
+html[data-skin="modern"] .player-badge .pb-name,
+html[data-skin="modern"] .player-popover-name,
+html[data-skin="modern"] .char-name,
+html[data-skin="modern"] .char-card .nm,
+html[data-skin="modern"] .cta-title,
+html[data-skin="modern"] .step h2,
+html[data-skin="modern"] .settings-card h2,
+html[data-skin="modern"] .jc-title{
+  font-family:var(--font-story)!important;
+  font-weight:600;
+  letter-spacing:-.015em;
+}
 
 /* ====================== HEADER ====================== */
 html[data-skin="modern"] header{
-  background:var(--surface);border-bottom:1px solid var(--border);box-shadow:none;
-  padding:10px 20px
+  background:color-mix(in srgb,var(--surface) 88%,transparent);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border-soft);
+  box-shadow:none;
+  padding:10px 18px
 }
-html[data-skin="modern"] .brand .logo{border:none;box-shadow:none}
-html[data-skin="modern"] .brand .title{font-size:15px;font-weight:700;letter-spacing:-.01em;color:var(--text)}
+html[data-skin="modern"] .brand .logo{
+  border:none;box-shadow:none;border-radius:10px;overflow:hidden
+}
+html[data-skin="modern"] .brand .title{
+  font-size:16px;font-weight:600;color:var(--text)
+}
 html[data-skin="modern"] .brand .title span{color:var(--neon-1)}
 html[data-skin="modern"] .icon-btn{
-  border:1px solid transparent;background:transparent;border-radius:9px;transition:.15s
+  border:1px solid transparent;background:transparent;border-radius:var(--radius-sm);
+  transition:background .15s ease,color .15s ease
 }
-html[data-skin="modern"] .icon-btn:hover{background:var(--surface-2);color:var(--text);border-color:transparent;box-shadow:none}
+html[data-skin="modern"] .icon-btn:hover{
+  background:var(--surface-2);color:var(--text);border-color:transparent;box-shadow:none
+}
 html[data-skin="modern"] .icon-btn:active{transform:none;background:var(--surface-3)}
-html[data-skin="modern"] .icon-btn.is-on{color:var(--neon-1);background:var(--m-accent-soft);border-color:transparent}
+html[data-skin="modern"] .icon-btn:focus-visible{
+  outline:none;box-shadow:var(--m-ring)
+}
+html[data-skin="modern"] .icon-btn.is-on{
+  color:var(--neon-1);background:var(--m-accent-soft);border-color:transparent
+}
 html[data-skin="modern"] .icon-btn.is-on:hover{box-shadow:none}
-html[data-skin="modern"] .icon-btn.is-lock{color:var(--neon-1);background:var(--m-accent-soft);border-color:transparent;box-shadow:none}
+html[data-skin="modern"] .icon-btn.is-lock{
+  color:var(--neon-1);background:var(--m-accent-soft);border-color:transparent;box-shadow:none
+}
 
 /* ====================== TYPOGRAPHY / HEADINGS ====================== */
 html[data-skin="modern"] .section-head h2,
 html[data-skin="modern"] .detail-section h3{
-  font-size:12px;font-weight:600;letter-spacing:.08em;color:var(--text-3)
+  font-size:11px;font-weight:650;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--text-3)
 }
 html[data-skin="modern"] .section-head h2::before,
 html[data-skin="modern"] .detail-section h3::before{content:''}
 html[data-skin="modern"] .step h2,
-html[data-skin="modern"] .settings-card h2{font-size:19px;font-weight:700;color:var(--text);letter-spacing:-.01em}
-html[data-skin="modern"] .detail-name{font-size:21px;font-weight:700;color:var(--text);letter-spacing:-.01em}
-html[data-skin="modern"] .realm-name{font-size:15px;font-weight:650;color:var(--text)}
-html[data-skin="modern"] .dash-welcome{font-size:15px}
-html[data-skin="modern"] .dash-welcome strong{color:var(--text);font-weight:700}
+html[data-skin="modern"] .settings-card h2{
+  font-size:20px;font-weight:600;color:var(--text)
+}
+html[data-skin="modern"] .detail-name{font-size:22px;font-weight:600;color:var(--text)}
+html[data-skin="modern"] .realm-name{font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px}
+html[data-skin="modern"] .dash-welcome{font-size:15px;color:var(--text-2);line-height:1.55}
+html[data-skin="modern"] .dash-welcome strong{color:var(--text);font-weight:650}
 
 /* ====================== CARDS / LISTS ====================== */
 html[data-skin="modern"] .stat-card,
@@ -106,52 +201,103 @@ html[data-skin="modern"] .settings-card,
 html[data-skin="modern"] .add-char-form,
 html[data-skin="modern"] .stat-tile,
 html[data-skin="modern"] .ach-card{
-  border:1px solid var(--border);border-radius:14px;box-shadow:var(--m-shadow)
+  border:1px solid var(--border-soft);
+  border-radius:var(--radius-lg);
+  box-shadow:none;
+  background:var(--surface)
 }
 html[data-skin="modern"] .stat-card::before,
 html[data-skin="modern"] .settings-card::before{display:none}
-html[data-skin="modern"] .stat-val{font-size:24px;font-weight:700;color:var(--text)}
+html[data-skin="modern"] .stat-val{
+  font-size:24px;font-weight:700;color:var(--text);font-family:var(--font-ui)!important
+}
 html[data-skin="modern"] .stat-label,
-html[data-skin="modern"] .st-label{font-size:11px;letter-spacing:.08em}
-html[data-skin="modern"] .st-val{font-size:19px;font-weight:700;color:var(--neon-1)}
-html[data-skin="modern"] .cta-btn:hover{transform:none;border-color:var(--neon-1);box-shadow:var(--m-shadow-lg)}
-html[data-skin="modern"] .cta-icon{border-radius:11px;border:none;background:var(--m-accent-soft)}
+html[data-skin="modern"] .st-label{
+  font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)
+}
+html[data-skin="modern"] .st-val{font-size:18px;font-weight:700;color:var(--neon-1)}
+html[data-skin="modern"] .cta-btn,
+html[data-skin="modern"] .realm-card,
+html[data-skin="modern"] .activity,
+html[data-skin="modern"] .session-row,
+html[data-skin="modern"] .char-row{
+  transition:border-color .15s ease,background .15s ease
+}
+html[data-skin="modern"] .cta-btn:hover,
+html[data-skin="modern"] .realm-card:hover,
+html[data-skin="modern"] .activity:hover,
+html[data-skin="modern"] .session-row:hover{
+  transform:none;border-color:var(--border);background:var(--surface-2);box-shadow:none
+}
+html[data-skin="modern"] .cta-icon{
+  border-radius:var(--radius);border:none;background:var(--m-accent-soft)
+}
 html[data-skin="modern"] .cta-icon svg{color:var(--neon-1)}
-html[data-skin="modern"] .cta-title{font-size:14px;font-weight:650;color:var(--text);margin-bottom:3px}
-html[data-skin="modern"] .realm-card:hover{transform:none;border-color:var(--neon-1);box-shadow:var(--m-shadow-lg)}
-html[data-skin="modern"] .realm-preview{border-radius:13px 13px 0 0}
-html[data-skin="modern"] .realm-badge{border-radius:99px;font-size:10px;font-weight:600;color:var(--neon-3);border-color:var(--border)}
-html[data-skin="modern"] .activity:hover{border-color:var(--neon-1)}
+html[data-skin="modern"] .cta-title{font-size:15px;margin-bottom:3px;color:var(--text)}
+html[data-skin="modern"] .cta-meta{font-size:13px;color:var(--text-3)}
+html[data-skin="modern"] .realm-preview{
+  border-radius:calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px) 0 0;
+  background:var(--m-stage)
+}
+html[data-skin="modern"] .realm-badge{
+  border-radius:99px;font-size:10px;font-weight:600;
+  color:var(--neon-3);border-color:var(--border);background:var(--surface)
+}
 html[data-skin="modern"] .activity .dot,
-html[data-skin="modern"] .session-row .dot{border-radius:50%;box-shadow:none;background:var(--ok);animation:none}
+html[data-skin="modern"] .session-row .dot{
+  border-radius:50%;box-shadow:none;background:var(--ok);animation:none
+}
 html[data-skin="modern"] .activity-title,
-html[data-skin="modern"] .s-name{font-size:14.5px}
+html[data-skin="modern"] .s-name{font-size:14.5px;font-weight:550;color:var(--text)}
 html[data-skin="modern"] .activity-meta,
-html[data-skin="modern"] .s-meta{font-size:12.5px}
-html[data-skin="modern"] .activity-empty{border-radius:14px;font-size:13.5px;border-width:1px}
+html[data-skin="modern"] .s-meta{font-size:12.5px;color:var(--text-3)}
+html[data-skin="modern"] .activity-empty{
+  border-radius:var(--radius-lg);font-size:13.5px;border-width:1px;border-style:dashed;
+  color:var(--text-3)
+}
 html[data-skin="modern"] .char-name,
-html[data-skin="modern"] .char-card .nm{color:var(--text);font-weight:600;font-size:14.5px}
-html[data-skin="modern"] .kw{border-radius:99px;font-size:11.5px;border-color:var(--border);color:var(--neon-1);background:var(--m-accent-soft)}
+html[data-skin="modern"] .char-card .nm{color:var(--text);font-size:15px}
+html[data-skin="modern"] .char-card .per,
+html[data-skin="modern"] .char-card .body{font-size:13px;color:var(--text-2);line-height:1.45}
+html[data-skin="modern"] .kw{
+  border-radius:99px;font-size:11.5px;border-color:transparent;
+  color:var(--neon-1);background:var(--m-accent-soft)
+}
 html[data-skin="modern"] .ach-name{font-size:11px;font-weight:650;letter-spacing:.02em}
-html[data-skin="modern"] .ach-card.unlocked{border-color:var(--neon-3)}
+html[data-skin="modern"] .ach-card.unlocked{border-color:color-mix(in srgb,var(--neon-3) 55%,var(--border))}
+html[data-skin="modern"] .ach-card.unlocked .ach-name{color:var(--neon-3)}
 html[data-skin="modern"] .lock-pill{border-radius:99px;font-size:9.5px;font-weight:600}
 
-/* avatars & tokens go round */
-html[data-skin="modern"] .char-avatar{border-radius:50%;border:none;font-size:11px;font-weight:700;color:#fff}
+/* avatars & tokens go soft-round */
+html[data-skin="modern"] .char-avatar{
+  border-radius:50%;border:none;font-size:11px;font-weight:700;color:#fff
+}
 html[data-skin="modern"] .map-token{border-radius:50%}
 html[data-skin="modern"] .theme-opt{border-radius:50%}
 
 /* ====================== BUTTONS ====================== */
 html[data-skin="modern"] .btn{
-  border-radius:10px;font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;
-  padding:10px 14px
+  border-radius:var(--radius);font-size:13px;font-weight:600;letter-spacing:0;
+  text-transform:none;padding:10px 14px;
+  transition:background .15s ease,filter .15s ease,border-color .15s ease
 }
-html[data-skin="modern"] .btn-primary{background:var(--neon-1);border-color:var(--neon-1);color:#fff;box-shadow:var(--m-shadow)}
-html[data-skin="modern"] .btn-primary:hover{background:var(--neon-1);border-color:var(--neon-1);filter:brightness(1.08);box-shadow:var(--m-shadow)}
+html[data-skin="modern"] .btn:focus-visible{outline:none;box-shadow:var(--m-ring)}
+html[data-skin="modern"] .btn-primary{
+  background:var(--neon-1);border-color:var(--neon-1);color:#fff;box-shadow:none
+}
+html[data-skin="modern"] .btn-primary:hover{
+  background:var(--neon-1);border-color:var(--neon-1);filter:brightness(1.07);box-shadow:none
+}
 html[data-skin="modern"] .btn-primary:active{transform:none;filter:brightness(.95)}
-html[data-skin="modern"] .btn-ghost{border:1px solid var(--border);color:var(--text-2);border-radius:10px}
-html[data-skin="modern"] .btn-ghost:hover{background:var(--surface-2);border-color:var(--border);color:var(--text)}
-html[data-skin="modern"] .btn-danger-out{border:1px solid var(--danger);border-radius:10px}
+html[data-skin="modern"] .btn-ghost{
+  border:1px solid var(--border);color:var(--text-2);border-radius:var(--radius)
+}
+html[data-skin="modern"] .btn-ghost:hover{
+  background:var(--surface-2);border-color:var(--border);color:var(--text)
+}
+html[data-skin="modern"] .btn-danger-out{
+  border:1px solid var(--danger);border-radius:var(--radius);color:var(--danger)
+}
 html[data-skin="modern"] .s-btn,
 html[data-skin="modern"] .card-actions button,
 html[data-skin="modern"] .char-actions button,
@@ -160,7 +306,7 @@ html[data-skin="modern"] .msg-actions button,
 html[data-skin="modern"] .inv-item button,
 html[data-skin="modern"] .bm-btn,
 html[data-skin="modern"] .skin-opt{
-  border:1px solid var(--border);border-radius:8px;background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);
   font-size:12px;font-weight:550;letter-spacing:0
 }
 html[data-skin="modern"] .s-btn:hover,
@@ -169,204 +315,411 @@ html[data-skin="modern"] .char-actions button:hover,
 html[data-skin="modern"] .quest-mini-btn:hover,
 html[data-skin="modern"] .msg-actions button:hover,
 html[data-skin="modern"] .inv-item button:hover,
-html[data-skin="modern"] .bm-btn:hover{color:var(--neon-1);border-color:var(--neon-1);background:var(--m-accent-soft)}
-html[data-skin="modern"] .skin-opt.active{color:var(--neon-1);border-color:var(--neon-1);background:var(--m-accent-soft)}
-html[data-skin="modern"] .bm-btn.active{color:var(--neon-1);border-color:var(--neon-1);background:var(--m-accent-soft);box-shadow:none}
+html[data-skin="modern"] .bm-btn:hover{
+  color:var(--neon-1);border-color:color-mix(in srgb,var(--neon-1) 45%,var(--border));
+  background:var(--m-accent-soft)
+}
+html[data-skin="modern"] .skin-opt.active{
+  color:var(--neon-1);border-color:color-mix(in srgb,var(--neon-1) 50%,var(--border));
+  background:var(--m-accent-soft)
+}
+html[data-skin="modern"] .bm-btn.active{
+  color:var(--neon-1);border-color:color-mix(in srgb,var(--neon-1) 50%,var(--border));
+  background:var(--m-accent-soft);box-shadow:none
+}
 html[data-skin="modern"] .back{font-size:13.5px;color:var(--text-3)}
 html[data-skin="modern"] .back:hover{color:var(--text)}
-html[data-skin="modern"] .pill{border:1px solid var(--border);border-radius:99px;font-size:12px;background:var(--surface)}
+html[data-skin="modern"] .pill{
+  border:1px solid var(--border);border-radius:99px;font-size:12px;background:var(--surface)
+}
 html[data-skin="modern"] .pill.accent{border-color:var(--border);color:var(--neon-3)}
 html[data-skin="modern"] .pill.ok{border-color:var(--border);color:var(--ok)}
 
 /* ====================== FORMS ====================== */
-html[data-skin="modern"] .field label{font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--text-2)}
+html[data-skin="modern"] .field label{
+  font-size:12px;font-weight:600;letter-spacing:.03em;color:var(--text-2);text-transform:none
+}
 html[data-skin="modern"] .field input,
 html[data-skin="modern"] .field textarea,
 html[data-skin="modern"] .search,
 html[data-skin="modern"] .add-char-form input,
 html[data-skin="modern"] #tagInput{
-  border:1px solid var(--border);border-radius:10px;font-size:14px;background:var(--surface)
+  border:1px solid var(--border);border-radius:var(--radius);font-size:14px;
+  background:var(--surface);color:var(--text)
 }
 html[data-skin="modern"] .field input:focus,
 html[data-skin="modern"] .field textarea:focus,
 html[data-skin="modern"] .search:focus,
-html[data-skin="modern"] .add-char-form input:focus{border-color:var(--neon-1);box-shadow:var(--m-ring)}
-html[data-skin="modern"] .field .hint{font-size:12.5px}
-html[data-skin="modern"] .dd-face{border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+html[data-skin="modern"] .add-char-form input:focus{
+  border-color:color-mix(in srgb,var(--neon-1) 55%,var(--border));box-shadow:var(--m-ring)
+}
+html[data-skin="modern"] .field .hint{font-size:12.5px;color:var(--text-3)}
+html[data-skin="modern"] .dd-face{
+  border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)
+}
 html[data-skin="modern"] .dd-face input{font-size:14px}
-html[data-skin="modern"] .dd-face .dd-arrow{border-left:1px solid var(--border);background:transparent;color:var(--text-3)}
-html[data-skin="modern"] .dd.open .dd-face{border-color:var(--neon-1);box-shadow:var(--m-ring)}
-html[data-skin="modern"] .dd-list{border:1px solid var(--border);border-radius:12px;box-shadow:var(--m-shadow-lg);background:var(--surface);overflow:hidden}
+html[data-skin="modern"] .dd-face .dd-arrow{
+  border-left:1px solid var(--border);background:transparent;color:var(--text-3)
+}
+html[data-skin="modern"] .dd.open .dd-face{
+  border-color:color-mix(in srgb,var(--neon-1) 55%,var(--border));box-shadow:var(--m-ring)
+}
+html[data-skin="modern"] .dd-list{
+  border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--m-shadow-lg);
+  background:var(--surface);overflow:hidden
+}
 html[data-skin="modern"] .dd-item{font-size:14px}
 html[data-skin="modern"] .dd-item:hover,
 html[data-skin="modern"] .dd-item.sel{background:var(--surface-2);color:var(--text)}
-html[data-skin="modern"] .dd-item .dd-note{font-size:12px}
-html[data-skin="modern"] .loader-bar{border-radius:99px;border:1px solid var(--border);box-shadow:none;overflow:hidden}
+html[data-skin="modern"] .dd-item .dd-note{font-size:12px;color:var(--text-3)}
+html[data-skin="modern"] .loader-bar{
+  border-radius:99px;border:1px solid var(--border);box-shadow:none;overflow:hidden
+}
 html[data-skin="modern"] .loader-bar i{background:var(--neon-1);border-radius:99px}
-html[data-skin="modern"] .gen-status p{font-size:14.5px;animation:none}
+html[data-skin="modern"] .gen-status p{font-size:14.5px;animation:none;color:var(--text-2)}
 
-/* ====================== CHAT ====================== */
+/* ====================== CHAT (hero surface) ====================== */
 html[data-skin="modern"] #chat-header{
-  background:var(--surface);border-bottom:1px solid var(--border)
+  background:var(--surface);border-bottom:1px solid var(--border-soft)
 }
-html[data-skin="modern"] .realm-tag{font-size:11.5px;letter-spacing:.06em}
-html[data-skin="modern"] .session-name{font-size:14px;font-weight:650;color:var(--text)}
-html[data-skin="modern"] #chat{gap:14px}
+html[data-skin="modern"] .realm-tag{
+  font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)
+}
+html[data-skin="modern"] .session-name{font-size:15px;color:var(--text)}
+html[data-skin="modern"] #chat{
+  gap:12px;
+  background:var(--m-stage)
+}
 html[data-skin="modern"] .bubble{
-  border:1px solid var(--border);border-radius:16px;font-size:14.5px;
-  background:var(--surface);box-shadow:var(--m-shadow)
+  border:1px solid transparent;
+  border-radius:16px 16px 16px 6px;
+  font-size:14.75px;
+  line-height:1.55;
+  background:var(--surface);
+  box-shadow:none;
+  padding:10px 13px
 }
-html[data-skin="modern"] .msg:not(.me) .bubble{border-left:1px solid var(--border);border-top-left-radius:6px}
+html[data-skin="modern"] .msg:not(.me) .bubble{
+  border:1px solid var(--border-soft);
+  border-left:1px solid var(--border-soft);
+  border-top-left-radius:6px
+}
 html[data-skin="modern"] .msg.me .bubble{
-  background:var(--m-accent-soft);border:1px solid transparent;border-top-right-radius:6px
+  background:var(--m-me-bubble);
+  border:1px solid color-mix(in srgb,var(--neon-1) 22%,transparent);
+  border-radius:16px 16px 6px 16px;
+  border-right:1px solid color-mix(in srgb,var(--neon-1) 22%,transparent)
 }
-html[data-skin="modern"] .bubble .who{font-size:11.5px;font-weight:650;letter-spacing:.05em}
-html[data-skin="modern"] .msg.ambient .bubble{font-size:13px}
+html[data-skin="modern"] .bubble .who{
+  font-size:12.5px;font-weight:600;letter-spacing:.01em;
+  text-transform:none;color:var(--neon-1);margin-bottom:3px
+}
+html[data-skin="modern"] .msg.me .bubble .who{color:var(--neon-1)}
+html[data-skin="modern"] .msg.ambient .bubble{
+  font-size:13.25px;font-style:italic;color:var(--text-2);
+  background:transparent;border:1px dashed var(--border);border-radius:12px
+}
 html[data-skin="modern"] .narration-line{
-  border:none;background:var(--surface-2);border-radius:99px;font-size:13px;padding:5px 16px
+  border:none;background:var(--surface-2);border-radius:99px;font-size:13px;
+  padding:5px 16px;color:var(--text-2)
 }
-html[data-skin="modern"] .narration-line.system{background:transparent;border:1px solid var(--danger);color:var(--danger)}
+html[data-skin="modern"] .narration-line.system{
+  background:transparent;border:1px solid color-mix(in srgb,var(--danger) 45%,var(--border));
+  color:var(--danger)
+}
 html[data-skin="modern"] .typing{font-size:13.5px;color:var(--text-3)}
-html[data-skin="modern"] .typing .cursor{background:var(--text-3)}
-html[data-skin="modern"] .branch-note{border:1px dashed var(--border);border-radius:12px;font-size:12.5px;color:var(--text-3)}
+html[data-skin="modern"] .typing .cursor{background:var(--neon-1)}
+html[data-skin="modern"] .branch-note{
+  border:1px dashed var(--border);border-radius:12px;font-size:12.5px;color:var(--text-3)
+}
 
+/* composer */
 html[data-skin="modern"] #composer{
-  background:var(--surface);border-top:1px solid var(--border);box-shadow:none
+  background:var(--surface);border-top:1px solid var(--border-soft);box-shadow:none
 }
 html[data-skin="modern"] #chatInput{
-  background:var(--surface-2);border:1px solid var(--border);border-radius:12px;font-size:14.5px
+  background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-lg);
+  font-size:14.5px;line-height:1.45
 }
-html[data-skin="modern"] #chatInput:focus{border-color:var(--neon-1);box-shadow:var(--m-ring)}
-html[data-skin="modern"] .comp-btn{border:1px solid var(--border);border-radius:12px;background:var(--surface)}
-html[data-skin="modern"] .comp-btn:hover{color:var(--neon-1);border-color:var(--neon-1)}
-html[data-skin="modern"] #sendBtnChat{background:var(--neon-1);border-color:var(--neon-1);color:#fff;box-shadow:none}
-html[data-skin="modern"] #sendBtnChat:hover{background:var(--neon-1);border-color:var(--neon-1);filter:brightness(1.08)}
+html[data-skin="modern"] #chatInput:focus{
+  border-color:color-mix(in srgb,var(--neon-1) 50%,var(--border));box-shadow:var(--m-ring)
+}
+html[data-skin="modern"] .comp-btn{
+  border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)
+}
+html[data-skin="modern"] .comp-btn:hover{
+  color:var(--neon-1);border-color:color-mix(in srgb,var(--neon-1) 40%,var(--border));
+  background:var(--m-accent-soft)
+}
+html[data-skin="modern"] .comp-btn:focus-visible{outline:none;box-shadow:var(--m-ring)}
+html[data-skin="modern"] #sendBtnChat{
+  background:var(--neon-1);border-color:var(--neon-1);color:#fff;box-shadow:none
+}
+html[data-skin="modern"] #sendBtnChat:hover{
+  background:var(--neon-1);border-color:var(--neon-1);filter:brightness(1.07)
+}
 html[data-skin="modern"] #sendBtnChat.direct-mode,
 html[data-skin="modern"] #sendBtnChat.whisper-mode{animation:none;box-shadow:none}
-html[data-skin="modern"] #sendBtnChat.whisper-mode{background:var(--neon-2);border-color:var(--neon-2);color:#fff}
-html[data-skin="modern"] .target-pill{border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+html[data-skin="modern"] #sendBtnChat.whisper-mode{
+  background:var(--neon-2);border-color:var(--neon-2);color:#fff
+}
+
+/* target + player chrome */
+html[data-skin="modern"] .target-pill{
+  border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)
+}
+html[data-skin="modern"] .target-pill:hover{
+  border-color:color-mix(in srgb,var(--neon-1) 40%,var(--border));color:var(--text)
+}
 html[data-skin="modern"] .target-pill .tp-icon{font-size:11px;color:var(--text-3)}
-html[data-skin="modern"] .target-pill .tp-name{font-size:13px}
-html[data-skin="modern"] .target-pill.direct{box-shadow:none;background:var(--m-accent-soft);border-color:var(--neon-1)}
-html[data-skin="modern"] .target-pill.whisper-mode{box-shadow:none}
-html[data-skin="modern"] .target-pill.shout{box-shadow:none}
+html[data-skin="modern"] .target-pill .tp-name{font-size:13px;font-weight:550}
+html[data-skin="modern"] .target-pill.direct{
+  box-shadow:none;background:var(--m-accent-soft);
+  border-color:color-mix(in srgb,var(--neon-1) 50%,var(--border))
+}
+html[data-skin="modern"] .target-pill.direct .tp-icon,
+html[data-skin="modern"] .target-pill.direct .tp-name{color:var(--neon-1)}
+html[data-skin="modern"] .target-pill.whisper-mode{
+  box-shadow:none;background:var(--m-hush);
+  border-color:color-mix(in srgb,var(--neon-2) 45%,var(--border))
+}
+html[data-skin="modern"] .target-pill.whisper-mode .tp-icon,
+html[data-skin="modern"] .target-pill.whisper-mode .tp-name{color:var(--neon-2)}
+html[data-skin="modern"] .target-pill.shout{
+  box-shadow:none;border-color:color-mix(in srgb,var(--neon-3) 50%,var(--border));
+  background:color-mix(in srgb,var(--neon-3) 12%,var(--surface))
+}
+html[data-skin="modern"] .target-pill.shout .tp-name{color:var(--neon-3);font-weight:650}
+
 html[data-skin="modern"] .target-popover,
 html[data-skin="modern"] .player-popover,
 html[data-skin="modern"] .dice-popover{
-  border:1px solid var(--border);border-radius:14px;box-shadow:var(--m-shadow-lg);
+  border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--m-shadow-lg);
   background:var(--surface);overflow:hidden
 }
-html[data-skin="modern"] .player-popover-name{color:var(--text);font-size:14px;font-weight:550}
+html[data-skin="modern"] .player-popover-name{color:var(--text);font-size:14.5px}
 html[data-skin="modern"] .target-popover .tp-row{font-size:13.5px}
 html[data-skin="modern"] .tp-lock-badge{border-radius:99px;font-size:9.5px}
-html[data-skin="modern"] .pp-mute-btn{border:1px solid var(--border);border-radius:8px}
-html[data-skin="modern"] .player-badge{border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+html[data-skin="modern"] .pp-mute-btn{border:1px solid var(--border);border-radius:var(--radius-sm)}
+html[data-skin="modern"] .player-badge{
+  border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)
+}
 html[data-skin="modern"] .player-badge:hover{background:var(--surface-2);box-shadow:none}
 html[data-skin="modern"] .player-badge:active{transform:none}
-html[data-skin="modern"] .player-badge .pb-label{font-size:9.5px;font-weight:650;letter-spacing:.07em;color:var(--text-3)}
-html[data-skin="modern"] .player-badge .pb-name{font-size:13.5px;font-weight:550}
+html[data-skin="modern"] .player-badge .pb-label{
+  font-size:9.5px;font-weight:650;letter-spacing:.08em;color:var(--text-3);
+  font-family:var(--font-ui)!important
+}
+html[data-skin="modern"] .player-badge .pb-name{font-size:14px}
 html[data-skin="modern"] .player-badge .pb-arrow{color:var(--text-3)}
-html[data-skin="modern"] .direct-banner,
+html[data-skin="modern"] .player-badge.whisper{
+  border-color:color-mix(in srgb,var(--neon-2) 45%,var(--border));background:var(--m-hush)
+}
+html[data-skin="modern"] .player-badge.whisper .pb-label{color:var(--neon-2)}
+
+/* direct / whisper banners — signature hush treatment */
+html[data-skin="modern"] .direct-banner{
+  border-radius:var(--radius);font-size:11.5px;font-weight:600;letter-spacing:.03em;
+  border:1px solid color-mix(in srgb,var(--neon-1) 40%,var(--border));
+  background:var(--m-accent-soft);color:var(--neon-1);
+  text-transform:none
+}
 html[data-skin="modern"] .whisper-banner{
-  border-radius:10px;font-size:11px;font-weight:600;letter-spacing:.04em;border-width:1px
+  border-radius:var(--radius);font-size:11.5px;font-weight:600;letter-spacing:.03em;
+  border:1px solid color-mix(in srgb,var(--neon-2) 40%,var(--border));
+  background:var(--m-hush);color:var(--neon-2);
+  text-transform:none
 }
 html[data-skin="modern"] .direct-banner #clearDirect,
-html[data-skin="modern"] .whisper-banner #exitWhisper{border-radius:7px;font-size:10.5px;font-weight:600}
+html[data-skin="modern"] .whisper-banner #exitWhisper{
+  border-radius:7px;font-size:10.5px;font-weight:600;
+  border:1px solid currentColor;background:transparent;color:inherit
+}
+html[data-skin="modern"] .direct-banner #clearDirect:hover{
+  background:var(--neon-1);color:#fff;border-color:var(--neon-1)
+}
+html[data-skin="modern"] .whisper-banner #exitWhisper:hover{
+  background:var(--neon-2);color:#fff;border-color:var(--neon-2)
+}
 html[data-skin="modern"] .tag-pill{border-radius:99px;font-size:12px;border-width:1px}
 html[data-skin="modern"] .add-tag-btn{border-radius:99px;font-size:12px;border-width:1px}
 html[data-skin="modern"] #chat-tags{background:var(--surface);border-bottom:1px solid var(--border-soft)}
 html[data-skin="modern"] .dice-popover .dp-row{font-size:13.5px}
-html[data-skin="modern"] .dice-popover .dp-head{font-size:10px;font-weight:650;letter-spacing:.05em}
-html[data-skin="modern"] .dice-popover .dp-custom input{border-radius:8px;border-width:1px}
-html[data-skin="modern"] .dice-popover .dp-custom button{border-radius:8px;border-width:1px}
-html[data-skin="modern"] .roll-card{border:1px solid var(--border);border-radius:14px;background:var(--surface)}
-html[data-skin="modern"] .die{border-radius:10px;font-size:16px;font-weight:700;border-width:1px}
+html[data-skin="modern"] .dice-popover .dp-head{
+  font-size:10px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3)
+}
+html[data-skin="modern"] .dice-popover .dp-custom input{border-radius:var(--radius-sm);border-width:1px}
+html[data-skin="modern"] .dice-popover .dp-custom button{border-radius:var(--radius-sm);border-width:1px}
+html[data-skin="modern"] .roll-card{
+  border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface)
+}
+html[data-skin="modern"] .die{
+  border-radius:var(--radius);font-size:16px;font-weight:700;border-width:1px
+}
 html[data-skin="modern"] .roll-info{font-size:13.5px}
-html[data-skin="modern"] .roll-info .r-outcome{font-size:11px;font-weight:700;letter-spacing:.04em}
+html[data-skin="modern"] .roll-info .r-outcome{
+  font-size:11px;font-weight:700;letter-spacing:.04em
+}
 html[data-skin="modern"] .msg-more{font-size:14px}
 html[data-skin="modern"] .replay svg{width:12px;height:12px}
 
-/* panels above chat */
+/* panels above chat — no heavy side stripe */
 html[data-skin="modern"] #questPanel,
-html[data-skin="modern"] #invPanel{border-bottom:1px solid var(--border-soft);border-left-width:3px}
+html[data-skin="modern"] #invPanel{
+  border-bottom:1px solid var(--border-soft);
+  border-left:1px solid transparent;
+  background:var(--surface)
+}
+html[data-skin="modern"] #questPanel{border-top:2px solid color-mix(in srgb,var(--neon-1) 55%,transparent)}
+html[data-skin="modern"] #invPanel{border-top:2px solid color-mix(in srgb,var(--neon-3) 55%,transparent)}
 html[data-skin="modern"] .quest-title,
-html[data-skin="modern"] .inv-title{font-size:12px;font-weight:650;letter-spacing:.04em}
+html[data-skin="modern"] .inv-title{
+  font-size:12px;font-weight:650;letter-spacing:.04em;color:var(--text-2)
+}
 html[data-skin="modern"] .quest-premise,
 html[data-skin="modern"] .quest-obj{font-size:13.5px}
 html[data-skin="modern"] .quest-bar{border-radius:99px;overflow:hidden;border-width:1px}
-html[data-skin="modern"] .inv-item{border-radius:10px;font-size:13.5px}
-html[data-skin="modern"] .inv-empty{font-size:12.5px}
+html[data-skin="modern"] .quest-obj .q-box{color:var(--neon-1)}
+html[data-skin="modern"] .quest-obj.done .q-box{color:var(--ok)}
+html[data-skin="modern"] .inv-item{border-radius:var(--radius);font-size:13.5px}
+html[data-skin="modern"] .inv-empty{font-size:12.5px;color:var(--text-3)}
 html[data-skin="modern"] #worldHud .world-pill{
   border:1px solid var(--border);border-radius:99px;font-size:12px;background:var(--surface)
 }
 html[data-skin="modern"] #worldHud,
-html[data-skin="modern"] #portraitStrip{background:var(--surface);border-bottom:1px solid var(--border-soft)}
-html[data-skin="modern"] .ps-name{font-size:10.5px}
-html[data-skin="modern"] .ps-item.is-player .char-avatar{box-shadow:0 0 0 2px var(--neon-1)}
+html[data-skin="modern"] #portraitStrip{
+  background:var(--surface);border-bottom:1px solid var(--border-soft)
+}
+html[data-skin="modern"] .ps-name{font-size:10.5px;color:var(--text-3)}
+html[data-skin="modern"] .ps-item:hover .ps-name{color:var(--neon-1)}
+html[data-skin="modern"] .ps-item.is-player .char-avatar{
+  box-shadow:0 0 0 2px var(--neon-1)
+}
 
-/* map chrome (the map art itself stays retro-dark by design) */
+/* map chrome (map art stays dark by design) */
 html[data-skin="modern"] #chatMapWrap{border-bottom:1px solid var(--border-soft)}
-html[data-skin="modern"] #chatMap .bm-expand{border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+html[data-skin="modern"] #chatMap .bm-expand{
+  border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface)
+}
+html[data-skin="modern"] #chatMap .bm-expand:hover{
+  color:var(--neon-1);border-color:color-mix(in srgb,var(--neon-1) 45%,var(--border))
+}
 html[data-skin="modern"] .mt-label{border-radius:6px;font-size:11px}
-html[data-skin="modern"] .map-token.is-player::after{border-radius:5px;font-size:8px;font-weight:700}
-html[data-skin="modern"] .bm-dir{border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text-2);box-shadow:var(--m-shadow)}
+html[data-skin="modern"] .map-token.is-player::after{
+  border-radius:5px;font-size:8px;font-weight:700
+}
+html[data-skin="modern"] .map-token.whisper-only{
+  border-color:var(--neon-2);box-shadow:0 0 0 2px color-mix(in srgb,var(--neon-2) 35%,transparent)
+}
+html[data-skin="modern"] .bm-dir{
+  border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);
+  color:var(--text-2);box-shadow:none
+}
 html[data-skin="modern"] .bm-dir:active,
-html[data-skin="modern"] .bm-dir.pressed{color:var(--neon-1);border-color:var(--neon-1);background:var(--m-accent-soft)}
+html[data-skin="modern"] .bm-dir.pressed{
+  color:var(--neon-1);border-color:color-mix(in srgb,var(--neon-1) 45%,var(--border));
+  background:var(--m-accent-soft)
+}
 html[data-skin="modern"] #bmDock{background:var(--surface);border-top:1px solid var(--border)}
 
 /* ====================== MODAL / TOAST / OVERLAYS ====================== */
-html[data-skin="modern"] #overlay{background:rgba(12,12,18,.5)}
+html[data-skin="modern"] #overlay{background:rgba(12,8,12,.55)}
 html[data-skin="modern"] .modal{
-  border:1px solid var(--border);border-radius:16px;box-shadow:var(--m-shadow-lg)
+  border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--m-shadow-lg);
+  background:var(--surface)
 }
 html[data-skin="modern"] .modal-head{border-bottom:1px solid var(--border-soft)}
-html[data-skin="modern"] .modal-head h3{font-size:14px;font-weight:650;color:var(--text)}
+html[data-skin="modern"] .modal-head h3{font-size:14.5px;font-weight:650;color:var(--text)}
 html[data-skin="modern"] #toast{
-  border:1px solid var(--border);border-radius:99px;background:var(--text);color:var(--bg);
+  border:1px solid transparent;border-radius:99px;
+  background:var(--m-ink-soft);color:var(--bg);
   font-size:13px;font-weight:550;box-shadow:var(--m-shadow-lg)
 }
-html[data-skin="modern"] #searchBox{border:1px solid var(--border);border-radius:16px;box-shadow:var(--m-shadow-lg);overflow:hidden}
-html[data-skin="modern"] #searchBox input{border:1px solid var(--border);border-radius:10px;font-size:15px}
-html[data-skin="modern"] #searchBox input:focus{border-color:var(--neon-1);box-shadow:var(--m-ring)}
-html[data-skin="modern"] #searchBox .sr-close{border:1px solid var(--border);border-radius:8px}
-html[data-skin="modern"] .sr-group{font-size:11px;font-weight:650;letter-spacing:.06em;color:var(--text-3)}
+html[data-skin="modern"] #searchBox{
+  border:1px solid var(--border);border-radius:var(--radius-lg);
+  box-shadow:var(--m-shadow-lg);overflow:hidden;background:var(--surface)
+}
+html[data-skin="modern"] #searchBox input{
+  border:1px solid var(--border);border-radius:var(--radius);font-size:15px
+}
+html[data-skin="modern"] #searchBox input:focus{
+  border-color:color-mix(in srgb,var(--neon-1) 50%,var(--border));box-shadow:var(--m-ring)
+}
+html[data-skin="modern"] #searchBox .sr-close{
+  border:1px solid var(--border);border-radius:var(--radius-sm)
+}
+html[data-skin="modern"] .sr-group{
+  font-size:11px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)
+}
 html[data-skin="modern"] .sr-row .sr-title{font-size:14px;font-weight:550}
-html[data-skin="modern"] .sr-row .sr-snippet{font-size:12.5px}
-html[data-skin="modern"] .sr-row mark{background:var(--m-accent-soft);color:var(--neon-1);border-radius:3px;font-weight:600}
-html[data-skin="modern"] .sr-empty{font-size:13px}
+html[data-skin="modern"] .sr-row .sr-snippet{font-size:12.5px;color:var(--text-3)}
+html[data-skin="modern"] .sr-row mark{
+  background:var(--m-accent-soft);color:var(--neon-1);border-radius:3px;font-weight:600
+}
+html[data-skin="modern"] .sr-empty{font-size:13px;color:var(--text-3)}
 html[data-skin="modern"] .search-flash,
-html[data-skin="modern"] .msg.search-flash .bubble{outline:2px solid var(--neon-1);box-shadow:var(--m-ring)}
+html[data-skin="modern"] .msg.search-flash .bubble{
+  outline:2px solid color-mix(in srgb,var(--neon-1) 70%,transparent);box-shadow:var(--m-ring)
+}
 
 /* map editor */
 html[data-skin="modern"] #meToolbar{background:var(--surface);border-bottom:1px solid var(--border)}
 html[data-skin="modern"] #meToolbar .me-title{font-size:13px;font-weight:650;color:var(--text)}
-html[data-skin="modern"] #meToolbar input{border-radius:8px;border-width:1px;font-size:13.5px}
-html[data-skin="modern"] #meCanvas{border-radius:12px;border:1px solid var(--border);overflow:hidden}
-html[data-skin="modern"] #meHint{font-size:12px;background:var(--surface);border-top:1px solid var(--border-soft)}
+html[data-skin="modern"] #meToolbar input{
+  border-radius:var(--radius-sm);border-width:1px;font-size:13.5px
+}
+html[data-skin="modern"] #meCanvas{
+  border-radius:var(--radius);border:1px solid var(--border);overflow:hidden
+}
+html[data-skin="modern"] #meHint{
+  font-size:12px;background:var(--surface);border-top:1px solid var(--border-soft)
+}
 html[data-skin="modern"] .me-zone .me-label{font-size:10px;font-weight:600}
 
 /* memories / journal / relationships */
 html[data-skin="modern"] .mem-note{border-radius:99px;font-size:12.5px;border-width:1px}
-html[data-skin="modern"] .journal-chapter{border:1px solid var(--border);border-radius:12px;box-shadow:var(--m-shadow)}
+html[data-skin="modern"] .journal-chapter{
+  border:1px solid var(--border-soft);border-radius:var(--radius);box-shadow:none;
+  background:var(--surface)
+}
 html[data-skin="modern"] .jc-num{font-size:10px;font-weight:700;color:var(--neon-1)}
-html[data-skin="modern"] .jc-title{font-size:13px;font-weight:650;color:var(--text)}
-html[data-skin="modern"] .jc-meta{font-size:11.5px}
-html[data-skin="modern"] .jc-summary{font-size:13.5px}
-html[data-skin="modern"] .journal-chapter::before{border-radius:50%;box-shadow:none;background:var(--neon-1)}
+html[data-skin="modern"] .jc-title{font-size:14px;color:var(--text)}
+html[data-skin="modern"] .jc-meta{font-size:11.5px;color:var(--text-3)}
+html[data-skin="modern"] .jc-summary{font-size:13.5px;color:var(--text-2);line-height:1.5}
+html[data-skin="modern"] .journal-chapter::before{
+  border-radius:50%;box-shadow:none;background:var(--neon-1)
+}
 html[data-skin="modern"] .rel-legend .pill{font-size:11px}
 html[data-skin="modern"] .rel-web .rel-node-label{font-size:7px;font-weight:600}
 
 /* detail visual */
-html[data-skin="modern"] .detail-visual{border:1px solid var(--border);border-radius:12px;overflow:hidden}
+html[data-skin="modern"] .detail-visual{
+  border:1px solid var(--border);border-radius:var(--radius);overflow:hidden
+}
 html[data-skin="modern"] .detail-desc,
-html[data-skin="modern"] .detail-section p{font-size:14px}
+html[data-skin="modern"] .detail-section p{font-size:14px;line-height:1.55;color:var(--text-2)}
 html[data-skin="modern"] .char-mini{font-size:12.5px}
-html[data-skin="modern"] .realm-desc{font-size:13.5px}
-html[data-skin="modern"] .realm-meta{font-size:12.5px}
-html[data-skin="modern"] .char-card .per,
-html[data-skin="modern"] .char-card .body{font-size:13px}
-html[data-skin="modern"] .cta-meta{font-size:13px}
-html[data-skin="modern"] .quest-obj .q-box{color:var(--neon-1)}
-html[data-skin="modern"] .quest-obj.done .q-box{color:var(--ok)}
+html[data-skin="modern"] .realm-desc{font-size:13.5px;color:var(--text-2)}
+html[data-skin="modern"] .realm-meta{font-size:12.5px;color:var(--text-3)}
 
-/* reduced motion niceties inherited from retro sheet still apply */
+/* skin toggle label polish */
+html[data-skin="modern"] .skin-toggle{gap:6px}
+html[data-skin="modern"] #dashSkinToggle{
+  border-color:var(--border);color:var(--text-2);background:var(--surface)
+}
+
+/* reduced motion — kill backdrop blur if preferred */
+@media (prefers-reduced-motion:reduce){
+  html[data-skin="modern"] header{
+    backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--surface)
+  }
+  html[data-skin="modern"] .btn,
+  html[data-skin="modern"] .icon-btn,
+  html[data-skin="modern"] .cta-btn,
+  html[data-skin="modern"] .realm-card,
+  html[data-skin="modern"] .activity,
+  html[data-skin="modern"] .session-row,
+  html[data-skin="modern"] .comp-btn{
+    transition:none
+  }
+}

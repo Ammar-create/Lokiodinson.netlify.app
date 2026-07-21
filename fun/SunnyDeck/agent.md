@@ -15,7 +15,7 @@ This file exists to prevent repeated broad codebase reads. Start from this archi
 - **Deployment:** The parent repository is served by GitHub Pages
 - **Architecture:** Ordered classic deferred scripts sharing the global scope
 - **Persistence:** IndexedDB for application data and settings
-- **UI skins:** Modern and retro/synthwave
+- **UI skins:** After Hours (modern) and retro/synthwave
 - **Primary purpose:** Multi-character roleplay/world simulation with AI chat, spatial maps, whispering, voice, memories, quests, inventory, relationships, world state, journals, and director-driven ambient activity
 
 Do not convert individual scripts to ES modules. Script order and shared globals are intentional dependencies.
@@ -70,7 +70,7 @@ A normal focused SunnyDeck fix should usually require reading this guide plus ta
 | `style.css` | Base retro UI, general layout, components, dashboard, realm/detail/chat/settings styling |
 | `features.css` | Additional feature styling introduced after the original core |
 | `phase2.css` | Phase-2 feature UI such as expanded map, inventory, quests, stats, search, and related panels |
-| `modern.css` | Modern skin overrides; must remain compatible with the same HTML structure |
+| `modern.css` | After Hours (modern) skin overrides; must remain compatible with the same HTML structure |
 | `app.js` | Core application state, themes/skins, settings, IndexedDB, realm/session CRUD, screen routing, chat UI, player switching, target/mention UI, modal primitives, and initialization |
 | `app-ai.js` | Chat send pipeline, responder routing, character prompt assembly, API calls, TTS, STT, and auto-renaming |
 | `history-utils.js` | Shared conversation history formatter and whisper privacy filtering |
