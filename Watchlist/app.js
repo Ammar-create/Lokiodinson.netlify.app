@@ -920,7 +920,7 @@ function openEntryModal(mode,data){
   openModal(els.entryModal);
 }
 async function saveEntry(e){
-  e.preventDefault();
+  if (e && e.preventDefault) e.preventDefault();
   const data={
     title:els.entryTitle.value.trim(), type:document.getElementById('entryType').value||'series',
     category:document.getElementById('entryCategoryInput').value||state.currentCategory,
@@ -1613,7 +1613,11 @@ async function initApp(){
       searchMovieBot();
     }
   }
-  els.searchBtn.addEventListener('click', handleSearchAction);
+  els.searchBtn.addEventListener('click', () => {
+    els.searchBtn.classList.add('btn-glow-active');
+    setTimeout(() => els.searchBtn.classList.remove('btn-glow-active'), 600);
+    handleSearchAction();
+  });
   els.searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleSearchAction(); });
   els.closeBot.addEventListener('click', () => els.botResults.classList.remove('visible'));
 
@@ -1625,7 +1629,15 @@ async function initApp(){
   els.addEntryBtn.addEventListener('click',()=>openEntryModal('add'));
   els.closeEntryModal.addEventListener('click',()=>closeModal(els.entryModal));
   els.cancelEntryBtn.addEventListener('click',()=>closeModal(els.entryModal));
-  els.entryForm.addEventListener('submit',saveEntry);
+  els.entryForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const saveBtn = els.entryForm.querySelector('button[type="submit"]');
+    if (saveBtn) {
+      saveBtn.classList.add('btn-glow-active');
+      setTimeout(() => saveBtn.classList.remove('btn-glow-active'), 600);
+    }
+    saveEntry(e);
+  });
 
   els.addCategoryBtn.addEventListener('click',()=>{ els.categoryForm.reset(); openModal(els.categoryModal); });
   els.closeCatModal.addEventListener('click',()=>closeModal(els.categoryModal));
@@ -1657,7 +1669,11 @@ async function initApp(){
   els.openChatBtn.addEventListener('click', openChat);
   els.aiFabBtn.addEventListener('click', openChat);
   els.closeChatModal.addEventListener('click', ()=> closeModal(els.chatModal));
-  els.chatSendBtn.addEventListener('click', sendChat);
+  els.chatSendBtn.addEventListener('click', () => {
+    els.chatSendBtn.classList.add('btn-glow-active');
+    setTimeout(() => els.chatSendBtn.classList.remove('btn-glow-active'), 600);
+    sendChat();
+  });
   els.chatInput.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendChat(); } });
   els.promptGuideBtn.addEventListener('click', ()=>{ els.promptGuide.classList.toggle('open'); });
   document.querySelectorAll('.prompt-chip').forEach(chip=>{
