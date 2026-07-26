@@ -320,9 +320,9 @@ async function searchMovieBot(){
             <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add to Watchlist
           </button>
-          ${imdbLink?`<button class="btn-bot-secondary" onclick="window.copyIMDbLinkBot('${imdbLink}')">
+          ${imdbLink?`<button class="btn-bot-secondary" onclick="window.open('${imdbLink}', '_blank', 'noopener,noreferrer')">
             <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            Copy IMDb Link
+            Open in IMDb
           </button>`:''}
         </div>
       </div>
@@ -605,6 +605,19 @@ INSTRUCTIONS:
       return;
     }
 
+    // Fetch IMDb IDs for each item
+    if (loadSub) loadSub.textContent = 'Fetching IMDb IDs...';
+    await Promise.all(unique.map(async (item) => {
+      try {
+        const extRes = await fetch(`https://api.themoviedb.org/3/${item.media_type}/${item.id}/external_ids?api_key=${TMDB_KEY}`);
+        const extData = await extRes.json();
+        item.imdb_id = extData.imdb_id || null;
+      } catch (e) {
+        console.warn('Failed to fetch external_ids for', item.id, e);
+        item.imdb_id = null;
+      }
+    }));
+
     // Phase 2: Rank with AI
     if (loadSub) loadSub.textContent = 'Ranking recommendations...';
 
@@ -682,6 +695,10 @@ function renderDiscoverResults(candidates, recommendations) {
           <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Add to Watchlist
         </button>
+        ${item.imdb_id ? `<button class="discover-imdb-btn" onclick="window.open('https://www.imdb.com/title/${item.imdb_id}', '_blank', 'noopener,noreferrer')">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          IMDb
+        </button>` : ''}
       </div>`;
 
     card.querySelector('.discover-add-btn').addEventListener('click', async (btn) => {

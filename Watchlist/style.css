@@ -112,8 +112,10 @@ body {
 .discover-add-btn:hover { transform:translateY(-1px); box-shadow:0 4px 16px rgba(0,240,255,.2); }
 .discover-add-btn:active { transform:translateY(0) scale(0.98); }
 .discover-add-btn svg { width:14px; height:14px; stroke:currentColor; stroke-width:2.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
-.discover-imdb-btn { padding:.55rem .9rem; font-size:.8rem; }
-.discover-imdb-btn svg { width:14px; height:14px; }
+.discover-imdb-btn { padding:.55rem .9rem; font-size:.8rem; border:1px solid var(--glass-border); background:rgba(255,255,255,.05); color:var(--text-primary); border-radius:10px; cursor:pointer; display:inline-flex; align-items:center; gap:.35rem; transition:all .2s; font-weight:600; }
+.discover-imdb-btn:hover { background:rgba(255,255,255,.1); border-color:var(--soft-lavender); transform:translateY(-1px); }
+.discover-imdb-btn:active { transform:translateY(0) scale(0.98); }
+.discover-imdb-btn svg { width:14px; height:14px; stroke:currentColor; stroke-width:2; fill:none; stroke-linecap:round; stroke-linejoin:round; }
 .discover-loading { display:flex; align-items:center; gap:.75rem; padding:1.5rem; color:var(--text-secondary); }
 .discover-loading .spinner { flex-shrink:0; }
 .discover-loading-text { font-size:.9rem; }
