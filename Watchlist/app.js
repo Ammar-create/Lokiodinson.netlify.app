@@ -352,9 +352,9 @@ window.downloadPosterFromBot=function(){
     setTimeout(()=>URL.revokeObjectURL(url),1000);
   }).catch(()=>showToast('Could not download','error'));
 };
-window.copyIMDbLinkBot=function(link){
+window.openIMDbLinkBot=function(link){
   if(!link)return;
-  navigator.clipboard.writeText(link).then(()=>showToast('IMDb link copied','success')).catch(()=>showToast('Failed to copy','error'));
+  window.open(link, '_blank', 'noopener,noreferrer');
 };
 window.addBotToWatchlist=function(){
   const d=window._currentBotData;

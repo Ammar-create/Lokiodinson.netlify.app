@@ -89,6 +89,7 @@ body {
 .search-mode-btn:not(.active):hover { color:var(--text-primary); background:rgba(255,255,255,.06); }
 .btn-primary { display:inline-flex; align-items:center; justify-content:center; gap:.5rem; padding:.85rem 1.4rem; border:none; border-radius:14px; background:var(--cyan-glow); color:var(--deep-space); font-family:inherit; font-weight:700; font-size:.9rem; cursor:pointer; transition:all .3s; white-space:nowrap; }
 .btn-primary:hover { transform:translateY(-2px); box-shadow:0 10px 30px rgba(0,240,255,.25); }
+.btn-primary:active { transform:translateY(0) scale(0.98); }
 .btn-primary:disabled { opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
 .btn-primary svg { width:18px; height:18px; stroke:currentColor; stroke-width:2.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
 
@@ -108,8 +109,11 @@ body {
 .discover-reason-text { font-size:.82rem; color:var(--text-secondary); line-height:1.45; }
 .discover-card-actions { padding:0 1rem 1rem; display:flex; gap:.5rem; }
 .discover-add-btn { display:inline-flex; align-items:center; gap:.35rem; padding:.55rem .9rem; border:none; border-radius:10px; background:var(--cyan-glow); color:var(--deep-space); font-family:inherit; font-weight:700; font-size:.8rem; cursor:pointer; transition:all .2s; }
-.discover-add-btn:hover { transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,240,255,.2); }
+.discover-add-btn:hover { transform:translateY(-1px); box-shadow:0 4px 16px rgba(0,240,255,.2); }
+.discover-add-btn:active { transform:translateY(0) scale(0.98); }
 .discover-add-btn svg { width:14px; height:14px; stroke:currentColor; stroke-width:2.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+.discover-imdb-btn { padding:.55rem .9rem; font-size:.8rem; }
+.discover-imdb-btn svg { width:14px; height:14px; }
 .discover-loading { display:flex; align-items:center; gap:.75rem; padding:1.5rem; color:var(--text-secondary); }
 .discover-loading .spinner { flex-shrink:0; }
 .discover-loading-text { font-size:.9rem; }
@@ -149,7 +153,8 @@ body {
 .section-heading { font-size:1.25rem; font-weight:600; display:flex; align-items:center; gap:.5rem; }
 .section-heading svg { width:20px; height:20px; stroke:var(--cyan-glow); stroke-width:2; fill:none; stroke-linecap:round; stroke-linejoin:round; }
 .add-entry-btn { display:inline-flex; align-items:center; gap:.4rem; padding:.6rem 1rem; border:1px solid var(--glass-border); border-radius:12px; background:var(--glass-bg); color:var(--text-secondary); font-family:inherit; font-weight:600; font-size:.85rem; cursor:pointer; transition:all .2s; }
-.add-entry-btn:hover { border-color:var(--cyan-glow); color:var(--cyan-glow); background:rgba(0,240,255,.06); }
+.add-entry-btn:hover { border-color:var(--cyan-glow); color:var(--cyan-glow); background:rgba(0,240,255,.06); transform:translateY(-1px); }
+.add-entry-btn:active { transform:translateY(0) scale(0.98); }
 .add-entry-btn svg { width:16px; height:16px; stroke:currentColor; stroke-width:2; fill:none; stroke-linecap:round; stroke-linejoin:round; }
 .icon-btn { width:34px; height:34px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.04); border:1px solid var(--glass-border); border-radius:10px; color:var(--text-secondary); cursor:pointer; transition:all .2s; border:none; }
 .icon-btn:hover { background:rgba(0,240,255,.1); border-color:rgba(0,240,255,.3); color:var(--cyan-glow); }
