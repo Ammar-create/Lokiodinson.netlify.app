@@ -218,27 +218,55 @@ After unwrapping `data`, the useful arrays are:
 | `streams[]` | `url`, `resolution` / `resolutions`, `vipLocked` | Stream links |
 | `dash[]` | `url`, `vipLocked` | DASH / auto quality |
 
-**Rules from the reference plugin:**
+**Rules from the reference plugin (CloudStream / CineStream `invokeMoviebox`):**
 
-1. Skip entries where **`vipLocked === true`** (unless you deliberately support VIP).  
-2. Prefer unique resolutions (if download already added 1080, don’t duplicate from streams).  
-3. Attach playback headers when requesting the media URL:
+1. **`vipLocked` is only a per-entry flag** — it does **not** mean “MovieBox is VIP-only” or that free users get nothing useful.  
+2. Take every entry where `url` is non-empty **and** `vipLocked` is **not** true. Those free links are what CloudStream plays.  
+3. In practice that free set commonly includes normal qualities **including 720p and 1080p** (plus DASH “Auto” when unlocked). Higher tiers (e.g. some 4K / promo rows) may be marked VIP and simply ignored.  
+4. Deduplicate by resolution (if download already added 1080, don’t add the same res again from streams).  
+5. Attach playback headers when requesting the media URL:
 
 ```http
 Referer: https://fmoviesunblocked.net/
 Origin: https://fmoviesunblocked.net
 ```
 
-**What you end up showing the user:**
+### About `vipLocked` (important)
+
+The official app may upsell VIP, so the JSON can mix free and VIP rows in one list. Example shape:
+
+```json
+{
+  "downloads": [
+    { "url": "https://.../720.mp4",  "resolution": 720,  "vipLocked": false },
+    { "url": "https://.../1080.mp4", "resolution": 1080, "vipLocked": false },
+    { "url": "https://.../2160.mp4", "resolution": 2160, "vipLocked": true }
+  ]
+}
+```
+
+CloudStream does **not** implement VIP login. It just does:
+
+```text
+if (url is not empty AND vipLocked is false) → emit playable ExtractorLink
+```
+
+So in CloudStream you still get **watchable links up through typical free max quality (often 1080p)**.  
+VIP rows are dropped quietly; they are not required for normal playback.
+
+Do **not** treat `vipLocked` as “this whole title is unusable.” Only skip the locked rows.
+
+**What you end up showing the user (free links):**
 
 ```text
 MovieBox [Original]  1080p  →  https://.../....mp4   (or m3u8)
+MovieBox [Original]   720p  →  https://...
 MovieBox [Hindi]      720p  →  https://...
 MovieBox Auto [Original] (DASH) → https://.../.mpd
 + subtitle tracks
 ```
 
-Those `url` values are the **playable links**.
+Those free `url` values are the **playable links**.
 
 ---
 
@@ -358,7 +386,9 @@ function resolveMovieBox(title, season?, episode?):
             getDownload(token, match.subjectId, detailPath, season, episode),
             getPlay(token, match.subjectId, detailPath, season, episode)
         )
-        links += extractNonVipUrls(downloadJson, playJson, match.language)
+        // Keep free rows only: url present && vipLocked != true
+        // (same as CloudStream — free 720/1080 etc. still work)
+        links += extractFreeUrls(downloadJson, playJson, match.language)
 
     return links   // each: { url, quality, label, headers, type }
 ```
@@ -373,7 +403,7 @@ function resolveMovieBox(title, season?, episode?):
 | **Best fit** | Native app, desktop client, or **your own backend proxy** that calls MovieBox and returns links to the frontend. |
 | **Token lifetime** | JWT-like; cache briefly, refresh when expired. Do not hardcode or commit tokens. |
 | **Link lifetime** | Stream URLs may be signed/short-lived; resolve close to playback time. |
-| **VIP** | Many qualities may be `vipLocked`; free clients should skip or label them. |
+| **VIP / `vipLocked`** | Optional flag on **some** quality rows only. CloudStream skips `vipLocked: true` and still plays free links (often up to **1080p**). No VIP account is needed for normal use. |
 | **Legal / ToS** | Using third-party streaming APIs may violate terms or copyright rules where you operate. This doc is for understanding the technical flow only. Implement only what you have rights and permission to use. |
 
 ---
@@ -387,7 +417,8 @@ function resolveMovieBox(title, season?, episode?):
 - [ ] Play with native/HLS/DASH player + Referer/Origin when possible  
 - [ ] Attach subtitles from `captions` when present  
 - [ ] For TV, pass `se` and `ep`  
-- [ ] Handle empty results and VIP-only results gracefully  
+- [ ] Emit free links only (`vipLocked !== true`) — same as CloudStream; expect normal free qualities including up to ~1080p  
+- [ ] If every row is VIP-locked (rare), show empty state — do not invent a VIP paywall in your UI unless you want one  
 - [ ] Prefer server-side proxy if the client is a browser  
 
 ---
