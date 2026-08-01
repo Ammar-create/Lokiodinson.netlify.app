@@ -322,6 +322,23 @@ Key functions:
 - Realm-bound systems are gated with `isRoom` checks (quests, inventory, social tick,
   memory distill, journal, stage tick, rewind branch). See `v3.md` Phase 3 brief.
 
+### System prompting & voice (v3 Phase 4, shipped 2026-08-01)
+
+- `getReply` builds a layered system prompt: IDENTITY (description/personality/traits) →
+  STATE (relationshipStatusNote: mood + bond with player) → SCENE → CONTEXT → VOICE
+  (voice pack) → TONE (activeTags) → hardened RULES (no phrase repetition, react to the
+  exact message, in-character romance/comfort handling).
+- **Traits:** simple per-character tags (`c.traits[]`) editable in the character forms
+  and room-create rows; injected into the identity layer. Optional.
+- **Voice packs** (`voicepacks.js`): `PREBUILT_VOICELINES` for the 22 premade chars;
+  `voiceLinesFor(c)` = `c.voiceLines || PREBUILT_VOICELINES[key]`; `ensureVoicePack()`
+  auto-distills from a character's own log (≥5 lines, one task-model call, busy-flag).
+- **Tone chips:** `TONE_PRESETS` row in session + room composers; toggles
+  `activeTags` (whisper chip toggles whisper mode). getReply reads the same field.
+- **Voice/TTS:** default model `aqua:mimo-v2.5-tts`; voicedesign/voiceclone optional;
+  TTS settings hidden until an Aqua key is entered (`applyTtsVisibility()`).
+- See `v3.md` Phase 4 brief.
+
 ### Current optional feature settings
 
 These live in `DEFAULT_SETTINGS` and are all **disabled by default**:

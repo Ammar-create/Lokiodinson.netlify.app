@@ -74,17 +74,23 @@ Options: ${candidates.join(', ')}`;
 async function getReply(responderKey,userText,alreadyReplied,sess,realm){
   const c=realm.characters.find(x=>x.key===responderKey);
   const player=realm.characters.find(x=>x.key===sess.playerKey);
+  if(typeof ensureVoicePack==='function')await ensureVoicePack(c,realm,sess);
   const recent=typeof buildCharLogLines==='function'
     ?buildCharLogLines(sess,responderKey,CHAR_LOG_PROMPT_WINDOW)
     :buildHistoryFor(sess,responderKey,-60);
   const tags=(sess.activeTags||[]).join(', ');
   const repliedNote=alreadyReplied.length?`\n${alreadyReplied.map(k=>realm.characters.find(x=>x.key===k)?.name).join(' and ')} already replied; react to what they said.`:'';
-  const tagNote=tags?`\nActive tone tags: ${tags}. Apply their natural meaning. Do not mention the tags.`:'';
+  const tagNote=tags?`\nActive tone tags: ${tags}. Let these steer the mood of your reply. Do not mention the tags themselves.`:'';
   const extra=c.system?`\n${c.system}`:'';
+  const traits=(Array.isArray(c.traits)&&c.traits.length)?c.traits.join(', '):'';
+  const traitsNote=traits?`\nTraits that shape you: ${traits}. Let them color how you speak and react.`:'';
+  const voiceLines=typeof voiceLinesFor==='function'?voiceLinesFor(c):null;
+  const voiceNote=voiceLines?`\nVoice — this is HOW you sound. Mirror this register exactly; these are YOUR actual lines:\n${voiceLines.map(l=>`- "${l}"`).join('\n')}`:'';
+  const relNote=typeof relationshipStatusNote==='function'?relationshipStatusNote(responderKey,realm,sess):'';
   const spatial=typeof spatialSummary==='function'?spatialSummary(realm,sess,responderKey):'';
   const act=sess.activities?.[responderKey];
   const mem=typeof memoryNotes==='function'?memoryNotes(responderKey,realm):'';
-  const sceneNote=spatial?`\n${spatial}`:'';
+  const sceneNote=spatial||`You are at the ${realm.name}.`;
   const actNote=act?`\nYou were just ${act.label}.`:'';
   const memNote=mem?`\nYou remember from before: ${mem}`:'';
   const world=typeof worldPromptNote==='function'?worldPromptNote():'';
@@ -97,14 +103,22 @@ async function getReply(responderKey,userText,alreadyReplied,sess,realm){
   const invNote=inv?`\n${inv}`:'';
   const roll=typeof rollPromptNote==='function'?rollPromptNote():'';
   const rollNote=roll?`\n${roll}`:'';
-  const sys=`You are ${c.name} in ${realm.name}. ${c.description}. Personality: ${c.personality}.${extra}
-Talking to ${player?.name||'the user'}.${repliedNote}${tagNote}${sceneNote}${actNote}${memNote}${world}${questNote}${invNote}${rollNote}
+  const sys=`IDENTITY — You are ${c.name} in ${realm.name}. ${c.description}. Personality: ${c.personality}.${extra}${traitsNote}
+STATE — Talking to ${player?.name||'the user'}.${relNote?`\n${relNote}`:''}${memNote}${actNote}
+SCENE — ${sceneNote}${worldNote}${socialNote}
+CONTEXT —${questNote}${invNote}${rollNote}${repliedNote}
+VOICE${voiceNote||' — Speak naturally and consistently with who you are.'}
+TONE${tagNote||''}
 RULES:
 - Output SPOKEN DIALOGUE ONLY. No asterisks, no narration, no actions. These words become audio.
 - Stay fully in character. 1-3 sentences, natural conversational length.
 - Never mention being an AI.
+- NEVER repeat phrases you have already used in this conversation. Vary your wording and sentence structure.
+- React to THIS exact message — address its specific content; never give a generic or template reply.
+- Let the moment breathe: a short reply, a pause, or silence can be stronger than a punchline.
+- Relationship and romance: behave per the relationship state and your traits — a guarded character stays guarded until trust grows, a flirt flirts, a loyal one defends. If your character is uncomfortable, say so IN CHARACTER, never as a system message. Keep it tasteful and in-world.
 
-Conversation so far:
+Conversation so far (what you saw/heard):
 ${recent||'(just started)'}`;
   const{provider,model}=parseModel(settings.chatModel||DEFAULT_SETTINGS.chatModel);
   const p=PROVIDERS[provider];const key=settings[p.keyName];

@@ -33,6 +33,7 @@ function roomAsSession(room){
   }
   if(!room.charLogs)room.charLogs={};
   if(!room.moods)room.moods={};
+  if(!room.activeTags)room.activeTags=[];
   return room;
 }
 
@@ -199,6 +200,31 @@ function roomSetWhisper(on){
   const b=document.getElementById('roomWhisperBanner');
   if(b)b.style.display=roomWhisper?'flex':'none';
   renderRoomTarget();
+  if(typeof renderRoomToneChips==='function')renderRoomToneChips();
+}
+
+/* v3 tone chips for rooms: preset tags on room.activeTags; whisper chip
+   toggles whisper mode. getReply reads sess.activeTags, so rooms share
+   the exact injection path. */
+function renderRoomToneChips(){
+  const bar=document.getElementById('roomToneChips');
+  if(!bar||!currentRoom)return;
+  bar.innerHTML='';
+  (typeof TONE_PRESETS==='object'?TONE_PRESETS:[]).forEach(t=>{
+    const b=document.createElement('button');b.className='tag-pill tone-chip';
+    const on=(t==='whisper')?roomWhisper:((currentRoom.activeTags||[]).includes(t));
+    b.textContent=t;
+    if(on)b.style.cssText='border-color:var(--neon-1);color:var(--neon-1)';
+    b.onclick=()=>{
+      if(t==='whisper'){roomSetWhisper(!roomWhisper);return;}
+      const tags=currentRoom.activeTags||(currentRoom.activeTags=[]);
+      const i=tags.indexOf(t);
+      if(i>=0)tags.splice(i,1);else tags.push(t);
+      dbPut('sessions',currentRoom);
+      renderRoomToneChips();
+    };
+    bar.appendChild(b);
+  });
 }
 
 /* ====================== SEND ====================== */
@@ -291,6 +317,7 @@ async function openRoom(roomId,fromScreen){
   renderRoomHeader(room);
   renderRoomPortraits(room);
   renderRoomTarget();
+  renderRoomToneChips();
   renderRoomChat(room);
   const wb=document.getElementById('roomWhisperBanner');if(wb)wb.style.display='none';
   const db2=document.getElementById('roomDirectBanner');if(db2)db2.style.display='none';
@@ -407,15 +434,17 @@ function renderRcChars(){
   wrap.innerHTML='';
   roomDraftChars.forEach((c,i)=>{
     const row=document.createElement('div');row.className='rc-char';
-    row.style.cssText='display:grid;grid-template-columns:1fr 1fr 44px;gap:6px;margin-bottom:6px';
+    row.style.cssText='display:grid;grid-template-columns:1fr 1fr 1fr 44px;gap:6px;margin-bottom:6px';
     row.innerHTML=`
       <input placeholder="Name" data-f="name" value="${esc(c.name)}" autocomplete="off">
       <input placeholder="Personality" data-f="personality" value="${esc(c.personality)}" autocomplete="off">
+      <input placeholder="Traits (comma)" data-f="traits" value="${esc((c.traits||[]).join(', '))}" autocomplete="off">
       <button class="quest-mini-btn danger" data-del="1">✕</button>`;
     row.querySelector('[data-del]').onclick=()=>{roomDraftChars.splice(i,1);renderRcChars();};
     row.querySelectorAll('input').forEach(inp=>{
       inp.oninput=()=>{
-        c[inp.dataset.f]=inp.value;
+        if(inp.dataset.f==='traits')c.traits=inp.value.split(',').map(x=>x.trim()).filter(Boolean);
+        else c[inp.dataset.f]=inp.value;
         if(inp.dataset.f==='name'&&!c.key)c.key=slugCharName(c.name);
         renderRcPlayer();
       };
@@ -473,6 +502,7 @@ function importRoomCharsFromRealm(realm,keys){
       key,name:c.name,color:c.color||'#00f0ff',
       description:c.description||'',personality:c.personality||'',
       keywords:Array.isArray(c.keywords)?c.keywords.slice():[],
+      traits:Array.isArray(c.traits)?c.traits.slice():[],
       system:c.system||'',voice:c.voice||'',sourceRealmId:realm.id
     });
   });

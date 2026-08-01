@@ -79,6 +79,25 @@ function socialPromptNote(charKey,realm,sess){
   return parts.join(' ');
 }
 
+/* v3 STATE layer: current mood + bond with the player, from existing data
+   until the relationship engine ships (Pillar 7). */
+function relationshipStatusNote(charKey,realm,sess){
+  if(!realm||!sess)return'';
+  const parts=[];
+  const m=moodOf(sess,charKey);
+  if(m&&m!=='neutral')parts.push('mood: '+m);
+  const playerKey=sess.playerKey;
+  if(playerKey&&playerKey!==charKey&&realm.affinities){
+    const k=affinityKey(charKey,playerKey);
+    const rec=realm.affinities[k];
+    if(rec&&typeof rec.score==='number'){
+      const other=realm.characters.find(c=>c.key===playerKey);
+      parts.push(`bond with ${other?.name||'you'}: ${rec.score} (${affinityTier(rec.score)})`);
+    }
+  }
+  return parts.length?('Your current state: '+parts.join('; ')+'.'):'';
+}
+
 /* ====================== BATCHED ANALYSIS TICK ====================== */
 let socialBusy=false;
 async function socialAnalysisTick(sess,realm){

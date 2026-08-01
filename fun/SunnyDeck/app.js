@@ -154,11 +154,13 @@ const FAST_MODEL_OPTS=[
   {value:'aqua:llama-3.1',note:'tiny'},{value:'aqua:mercury',note:'diffusion'}
 ];
 const TTS_MODEL_OPTS=[
-  {value:'aqua:mimo-v2.5-tts-voicedesign',note:'described'},
-  {value:'aqua:mimo-v2.5-tts',note:'voice IDs'},
-  {value:'aqua:mimo-v2.5-tts-voiceclone',note:'clone'}
+  {value:'aqua:mimo-v2.5-tts',note:'default'},
+  {value:'aqua:mimo-v2.5-tts-voicedesign',note:'optional'},
+  {value:'aqua:mimo-v2.5-tts-voiceclone',note:'optional'}
 ];
 const STT_MODEL_OPTS=[{value:'groq:whisper-large-v3',note:'default'},{value:'groq:whisper-large-v3-turbo',note:'faster'}];
+/* v3 tone presets shown as chips in the composer (sessions + rooms). */
+const TONE_PRESETS=['flirty','romantic','serious','playful','tense','angry','whisper'];
 /* Merge fetched models from custom providers into a dropdown option list. */
 function allModelOpts(baseOpts){
   const out=(baseOpts||[]).map(o=>({...o}));
@@ -237,7 +239,7 @@ const DEFAULT_SETTINGS={
   creativeModel:'aqua:deepseek-v4',taskModel:'aqua:gemini-3.1-lite',
   routerModel:'aqua:diffusion-gemma',chatModel:'aqua:deepseek-v4',
   directorModel:'aqua:deepseek-v4',directorInterval:10,
-  ttsModel:'aqua:mimo-v2.5-tts-voicedesign',sttModel:'groq:whisper-large-v3',
+  ttsModel:'aqua:mimo-v2.5-tts',sttModel:'groq:whisper-large-v3',
   ttsEnabled:true,
   soundEnabled:true,soundVolume:0.4,ambientLoopEnabled:false,
   weatherFxEnabled:true,worldClockMode:'hybrid',
@@ -545,12 +547,14 @@ function editDraftChar(idx){
     <div class="field"><label>Description</label><input id="m-desc"></div>
     <div class="field"><label>Personality</label><input id="m-personality"></div>
     <div class="field"><label>Keywords (comma)</label><input id="m-keywords"></div>
+    <div class="field"><label>Traits (comma)</label><input id="m-traits" placeholder="brave, jealous, loyal..."></div>
     <div class="field"><label>System Prompt (optional)</label><textarea id="m-system" placeholder="Extra persona instructions..." style="min-height:80px"></textarea></div>
     <div class="btn-row"><button class="btn btn-primary" id="m-save">SAVE</button></div>
   `,'wide');
   document.getElementById('m-name').value=c.name;document.getElementById('m-key').value=c.key;document.getElementById('m-color').value=c.color;
   document.getElementById('m-desc').value=c.description;document.getElementById('m-personality').value=c.personality;
   document.getElementById('m-keywords').value=(c.keywords||[]).join(', ');document.getElementById('m-system').value=c.system||'';
+  document.getElementById('m-traits').value=(c.traits||[]).join(', ');
   const voiceDD=createDropdown(document.getElementById('m-voice-dd'),VOICE_OPTS,c.voice||'Milo');
   document.getElementById('m-save').onclick=()=>{
     c.name=document.getElementById('m-name').value.trim();
@@ -560,6 +564,7 @@ function editDraftChar(idx){
     c.description=document.getElementById('m-desc').value.trim();
     c.personality=document.getElementById('m-personality').value.trim();
     c.keywords=document.getElementById('m-keywords').value.split(',').map(x=>x.trim()).filter(Boolean);
+    c.traits=document.getElementById('m-traits').value.split(',').map(x=>x.trim()).filter(Boolean);
     c.system=document.getElementById('m-system').value.trim();
     closeModal();renderReviewChars();
   };
@@ -675,12 +680,14 @@ function editRealmCharacter(idx){
     <div class="field"><label>Description</label><input id="m-desc"></div>
     <div class="field"><label>Personality</label><input id="m-personality"></div>
     <div class="field"><label>Keywords (comma)</label><input id="m-keywords"></div>
+    <div class="field"><label>Traits (comma)</label><input id="m-traits" placeholder="brave, jealous, loyal..."></div>
     <div class="field"><label>System Prompt (optional)</label><textarea id="m-system" placeholder="Extra persona instructions" style="min-height:90px"></textarea></div>
     <div class="btn-row"><button class="btn btn-primary" id="m-save">SAVE</button></div>
   `,'wide');
   document.getElementById('m-name').value=c.name;document.getElementById('m-key').value=c.key;document.getElementById('m-color').value=c.color;
   document.getElementById('m-desc').value=c.description||'';document.getElementById('m-personality').value=c.personality||'';
   document.getElementById('m-keywords').value=(c.keywords||[]).join(', ');document.getElementById('m-system').value=c.system||'';
+  document.getElementById('m-traits').value=(c.traits||[]).join(', ');
   const voiceDD=createDropdown(document.getElementById('m-voice-dd'),VOICE_OPTS,c.voice||'Milo');
   document.getElementById('m-save').onclick=async()=>{
     c.name=document.getElementById('m-name').value.trim();
@@ -690,6 +697,7 @@ function editRealmCharacter(idx){
     c.description=document.getElementById('m-desc').value.trim();
     c.personality=document.getElementById('m-personality').value.trim();
     c.keywords=document.getElementById('m-keywords').value.split(',').map(x=>x.trim()).filter(Boolean);
+    c.traits=document.getElementById('m-traits').value.split(',').map(x=>x.trim()).filter(Boolean);
     c.system=document.getElementById('m-system').value.trim();
     currentRealm.updatedAt=Date.now();
     await dbPut('realms',currentRealm);
@@ -772,6 +780,7 @@ async function openSession(sessId){
   renderChatTarget();
   document.getElementById('chat-tags').style.display='flex';
   renderChatTags();
+  if(typeof renderToneChips==='function')renderToneChips();
 
   const chat=document.getElementById('chat');chat.innerHTML='';
   if(typeof renderBranchNote==='function')renderBranchNote(sess);
@@ -1168,7 +1177,9 @@ function fillSettings(){
   if(dd.worldClock)dd.worldClock.value=settings.worldClockMode||'hybrid';
   renderThemePicker();
   renderCpList();
+  applyTtsVisibility();
 }
+document.getElementById('sAquaKey').addEventListener('input',()=>applyTtsVisibility());
 document.getElementById('sSoundVol').addEventListener('input',e=>{
   if(typeof setSfxVolume==='function')setSfxVolume(e.target.value/100);
   if(typeof sfx==='function')sfx('reply');
@@ -1306,8 +1317,47 @@ function bindCpControls(){
 }
 bindCpControls();
 
-function applyFeatureAvailability(){
-  const diceBtn=document.getElementById('diceBtnChat');
+/* Voice (TTS) settings only matter with an Aqua key: hide them until one is
+   entered. Mimo v2.5 TTS is the default; voicedesign/voiceclone are optional. */
+function applyTtsVisibility(){
+  const wrap=document.getElementById('ttsFields');if(!wrap)return;
+  const inp=document.getElementById('sAquaKey');
+  const key=((inp&&inp.value.trim())||settings.aquaKey||'').trim();
+  const on=key.length>0;
+  wrap.style.display=on?'':'none';
+  const vf=document.getElementById('ttsVoiceField');if(vf)vf.style.display=on?'':'none';
+  const hint=document.getElementById('ttsKeyHint');if(hint)hint.style.display=on?'none':'';
+}
+
+/* v3 tone chips: preset tags for the active conversation (whisper toggles
+   whisper mode instead of a tag). */
+function renderToneChips(){
+  const bar=document.getElementById('toneChips');
+  if(!bar||!currentSession||currentSession.isRoom)return;
+  bar.innerHTML='';
+  TONE_PRESETS.forEach(t=>{
+    const b=document.createElement('button');b.className='tag-pill tone-chip';
+    const on=(t==='whisper')?isWhisperActive():((currentSession.activeTags||[]).includes(t));
+    b.textContent=t;
+    if(on)b.style.cssText='border-color:var(--neon-1);color:var(--neon-1)';
+    b.onclick=()=>{
+      if(t==='whisper'){
+        if(typeof toggleWhisper==='function')toggleWhisper();
+        setTimeout(()=>renderToneChips(),0);
+        return;
+      }
+      const tags=currentSession.activeTags||(currentSession.activeTags=[]);
+      const i=tags.indexOf(t);
+      if(i>=0)tags.splice(i,1);else tags.push(t);
+      dbPut('sessions',currentSession);
+      renderToneChips();
+      if(typeof renderChatTags==='function')renderChatTags();
+    };
+    bar.appendChild(b);
+  });
+}
+
+function applyFeatureAvailability(){  const diceBtn=document.getElementById('diceBtnChat');
   if(diceBtn)diceBtn.hidden=!settings.diceEnabled;
   if(!settings.diceEnabled){
     document.querySelectorAll('.dice-popover.open').forEach(p=>p.classList.remove('open'));
