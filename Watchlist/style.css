@@ -93,35 +93,70 @@ body {
 .btn-primary:disabled { opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
 .btn-primary svg { width:18px; height:18px; stroke:currentColor; stroke-width:2.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
 
-/* Button Click Lightning Animation */
-@keyframes lightning-flow {
-  0% { background-position: -200% center; box-shadow: 0 0 0 0 rgba(255,215,0,.7), 0 10px 30px rgba(0,240,255,.25); }
-  50% { box-shadow: 0 0 25px 8px rgba(255,215,0,.5), 0 10px 40px rgba(255,215,0,.4); }
-  100% { background-position: 200% center; box-shadow: 0 0 0 0 rgba(255,215,0,0), 0 10px 30px rgba(0,240,255,.25); }
+/* ── Electric Surge — button click discharge ───────────────
+   Replaces the old gold "lightning flow" shine sweep with a
+   point-source electrical discharge: white-hot core flash,
+   expanding plasma ring, jagged SVG bolt with electric
+   flicker, flying sparks, and a cyan-lavender bloom halo.
+   Bolt + sparks are injected by app.js (triggerSurge). */
+.btn-primary::before,
+.btn-primary::after {
+  content:''; position:absolute; pointer-events:none; border-radius:50%;
+  left:var(--sx,50%); top:var(--sy,50%); transform:translate(-50%,-50%);
+  opacity:0; z-index:1;
 }
-.btn-primary.btn-glow-active { 
-  animation: lightning-flow 0.7s ease-out;
-  background: linear-gradient(
-    110deg,
-    var(--cyan-glow) 0%,
-    var(--cyan-glow) 35%,
-    #FFD700 45%,
-    #FFF4A3 50%,
-    #FFD700 55%,
-    var(--cyan-glow) 65%,
-    var(--cyan-glow) 100%
-  );
-  background-size: 200% 100%;
+.btn-primary::before {
+  content:''; position:absolute; pointer-events:none; border-radius:50%;
+  left:var(--sx,50%); top:var(--sy,50%);
+  width:190px; height:190px;
+  border:2px solid rgba(0,240,255,.85);
+  box-shadow:0 0 12px rgba(0,240,255,.55), inset 0 0 8px rgba(0,240,255,.3);
+  transform:translate(-50%,-50%) scale(0);
+  opacity:0; z-index:1;
+}
+.btn-primary::after { width:12px; height:12px; background:radial-gradient(circle, #ffffff 0%, rgba(0,240,255,.95) 35%, rgba(0,240,255,0) 70%); }
+.btn-primary.btn-glow-active { animation: surge-bloom .65s cubic-bezier(.22,.9,.32,1); }
+.btn-primary.btn-glow-active::before { animation: surge-ring .6s cubic-bezier(.2,.7,.3,1) forwards; }
+.btn-primary.btn-glow-active::after { animation: surge-core .42s ease-out forwards; }
+
+@keyframes surge-bloom {
+  0% { box-shadow: 0 0 0 0 rgba(0,240,255,.85); }
+  30% { box-shadow: 0 0 20px 7px rgba(0,240,255,.45), 0 0 56px 14px rgba(184,184,255,.22); }
+  100% { box-shadow: 0 0 0 0 rgba(0,240,255,0); }
+}
+@keyframes surge-ring {
+  0% { transform:translate(-50%,-50%) scale(0); opacity:.95; }
+  100% { transform:translate(-50%,-50%) scale(1); opacity:0; }
+}
+@keyframes surge-core {
+  0% { transform:translate(-50%,-50%) scale(0); opacity:1; }
+  55% { transform:translate(-50%,-50%) scale(2.4); opacity:.9; }
+  100% { transform:translate(-50%,-50%) scale(4.2); opacity:0; }
 }
 
-/* Button Click Glow Animation */
-@keyframes btn-glow-pulse {
-  0% { box-shadow:0 0 0 0 rgba(0,240,255,.7), 0 10px 30px rgba(0,240,255,.25); }
-  50% { box-shadow:0 0 20px 8px rgba(0,240,255,.4), 0 10px 40px rgba(0,240,255,.4); }
-  100% { box-shadow:0 0 0 0 rgba(0,240,255,0), 0 10px 30px rgba(0,240,255,.25); }
+/* Injected bolt (SVG) + sparks (spans) */
+.surge-bolt { position:absolute; width:30px; height:54px; z-index:3; pointer-events:none; animation:surge-bolt .62s ease-out forwards; filter:drop-shadow(0 0 6px rgba(0,240,255,.85)); }
+.surge-bolt .bolt-glow { fill:rgba(0,240,255,.5); filter:blur(3px); }
+.surge-bolt .bolt-core { fill:#eafcff; stroke:#ffffff; stroke-width:.8; }
+@keyframes surge-bolt {
+  0% { transform:scale(1.5); opacity:0; }
+  10% { transform:scale(1); opacity:1; }
+  26% { opacity:.3; }
+  38% { opacity:1; }
+  52% { opacity:.45; }
+  66% { opacity:.95; }
+  100% { transform:translateY(-10px) scale(1); opacity:0; }
 }
-.btn-primary.btn-glow-active {
-  animation: btn-glow-pulse .6s ease-out;
+.surge-spark { position:absolute; width:3px; height:3px; border-radius:50%; z-index:3; pointer-events:none; animation:surge-spark .55s cubic-bezier(.16,.84,.44,1) forwards; }
+@keyframes surge-spark {
+  0% { transform:translate(0,0) scale(1); opacity:1; }
+  100% { transform:translate(var(--dx,0), var(--dy,0)) scale(.15); opacity:0; }
+}
+@media (prefers-reduced-motion: reduce){
+  .btn-primary.btn-glow-active,
+  .btn-primary.btn-glow-active::before,
+  .btn-primary.btn-glow-active::after { animation:none !important; }
+  .surge-bolt, .surge-spark { display:none !important; }
 }
 
 /* Discover Cards */

@@ -117,6 +117,61 @@ function syncAIVisibility() {
 }
 
 // ============================================================
+// ELECTRIC SURGE - button click discharge animation
+// ============================================================
+function triggerSurge(btn, e){
+  if(!btn) return;
+  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const r = btn.getBoundingClientRect();
+  const x = (e && typeof e.clientX === 'number') ? e.clientX - r.left : r.width/2;
+  const y = (e && typeof e.clientY === 'number') ? e.clientY - r.top : r.height/2;
+  btn.style.setProperty('--sx', x+'px');
+  btn.style.setProperty('--sy', y+'px');
+  btn.classList.remove('btn-glow-active');
+  void btn.offsetWidth;
+  btn.classList.add('btn-glow-active');
+  clearTimeout(btn._surgeTimer);
+  btn._surgeTimer = setTimeout(()=>{
+    btn.classList.remove('btn-glow-active');
+    btn.querySelectorAll('.surge-bolt,.surge-spark').forEach(n=>n.remove());
+  }, 700);
+  spawnBolt(btn, x, y);
+  spawnSparks(btn, x, y);
+}
+function spawnBolt(btn, x, y){
+  const NS='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(NS,'svg');
+  svg.setAttribute('class','surge-bolt');
+  svg.setAttribute('viewBox','0 0 30 54');
+  svg.style.left=(x-15)+'px'; svg.style.top=(y-27)+'px';
+  const d='M18.5 2 L6.5 31 L14 31 L10.5 52 L24.5 19.5 L16 19.5 Z';
+  const glow=document.createElementNS(NS,'path');
+  glow.setAttribute('class','bolt-glow'); glow.setAttribute('d',d);
+  const core=document.createElementNS(NS,'path');
+  core.setAttribute('class','bolt-core'); core.setAttribute('d',d);
+  svg.appendChild(glow); svg.appendChild(core);
+  btn.appendChild(svg);
+}
+function spawnSparks(btn, x, y){
+  const colors=['#eafcff','#00f0ff','#b8b8ff','#ffffff'];
+  const n=7 + Math.floor(Math.random()*3);
+  for(let i=0;i<n;i++){
+    const s=document.createElement('span');
+    s.className='surge-spark';
+    const ang=Math.random()*Math.PI*2;
+    const dist=14+Math.random()*34;
+    s.style.setProperty('--dx', (Math.cos(ang)*dist).toFixed(1)+'px');
+    s.style.setProperty('--dy', (Math.sin(ang)*dist).toFixed(1)+'px');
+    const sz=(2+Math.random()*2.5).toFixed(1);
+    s.style.width=sz+'px'; s.style.height=sz+'px';
+    s.style.background=colors[Math.floor(Math.random()*colors.length)];
+    s.style.left=x+'px'; s.style.top=y+'px';
+    s.style.animationDelay=(Math.random()*60).toFixed(0)+'ms';
+    btn.appendChild(s);
+  }
+}
+
+// ============================================================
 // CUSTOM SELECT
 // ============================================================
 function buildCustomSelect(containerId, options, value, onChange){
@@ -1614,12 +1669,16 @@ async function initApp(){
     }
   }
   els.searchBtn.addEventListener('click', () => {
-    els.searchBtn.classList.add('btn-glow-active');
-    setTimeout(() => els.searchBtn.classList.remove('btn-glow-active'), 600);
     handleSearchAction();
   });
   els.searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleSearchAction(); });
   els.closeBot.addEventListener('click', () => els.botResults.classList.remove('visible'));
+
+  // Electric surge on every primary button click (search, saves, chat send, delete)
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-primary');
+    if (btn) triggerSurge(btn, e);
+  });
 
   // Discover mode toggle
   document.querySelectorAll('.search-mode-btn').forEach(btn => {
@@ -1631,11 +1690,6 @@ async function initApp(){
   els.cancelEntryBtn.addEventListener('click',()=>closeModal(els.entryModal));
   els.entryForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const saveBtn = els.entryForm.querySelector('button[type="submit"]');
-    if (saveBtn) {
-      saveBtn.classList.add('btn-glow-active');
-      setTimeout(() => saveBtn.classList.remove('btn-glow-active'), 600);
-    }
     saveEntry(e);
   });
 
@@ -1670,8 +1724,6 @@ async function initApp(){
   els.aiFabBtn.addEventListener('click', openChat);
   els.closeChatModal.addEventListener('click', ()=> closeModal(els.chatModal));
   els.chatSendBtn.addEventListener('click', () => {
-    els.chatSendBtn.classList.add('btn-glow-active');
-    setTimeout(() => els.chatSendBtn.classList.remove('btn-glow-active'), 600);
     sendChat();
   });
   els.chatInput.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendChat(); } });
