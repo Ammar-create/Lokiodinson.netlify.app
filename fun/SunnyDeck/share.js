@@ -162,7 +162,7 @@ function transcriptScreenplay(sess,realm){
 }
 
 async function novelizeSession(sess,realm){
-  if(!hasApiKeys())throw new Error('ADD YOUR AQUA API KEY IN SETTINGS');
+  if(!providerReady(settings.chatModel||DEFAULT_SETTINGS.chatModel))throw new Error('ADD AN API KEY FOR YOUR CHAT MODEL IN SETTINGS');
   const lines=transcriptEntries(sess).slice(-150)
     .map(h=>`${h.kind==='event'?'Narrator':h.speaker}: ${h.text}`).join('\n');
   const prompt=`Rewrite this roleplay chat transcript from ${realm.name} as a polished short story chapter.

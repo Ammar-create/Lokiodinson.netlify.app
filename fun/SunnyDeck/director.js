@@ -76,7 +76,7 @@ async function runAmbientBeat(){
     if(typeof decayMoods==='function')decayMoods(sess);
     if(typeof weatherDirectorTick==='function')weatherDirectorTick();
     const roll=Math.random();
-    if(roll<0.6||!hasApiKeys())visualBeat(npcs);
+    if(roll<0.6||!providerReady(settings.taskModel||DEFAULT_SETTINGS.taskModel))visualBeat(npcs);
     else if(roll<0.95)await chatterBeat(npcs,realm,sess);
     else await eventBeat(npcs,realm,sess);
   }catch(e){console.warn('Ambient beat failed',e);}
@@ -176,7 +176,7 @@ Output ONLY JSON: {"narration":"...","reaction":{"key":"one_of: ${npcs.map(c=>c.
    imply someone moves or changes what they're doing? */
 let stageBusy=false;
 async function stageDirectionTick(sess,realm){
-  if(stageBusy||!hasApiKeys()||!sess||!realm)return;
+  if(stageBusy||!providerReady(settings.taskModel||DEFAULT_SETTINGS.taskModel)||!sess||!realm)return;
   stageBusy=true;
   try{
     const recent=sess.history.slice(-6).filter(h=>h.kind!=='system').map(h=>`${h.speaker}: ${h.text}`).join('\n');

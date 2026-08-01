@@ -76,7 +76,34 @@ function parseModel(str){
   return{provider:str.slice(0,i).trim().toLowerCase(),model:str.slice(i+1).trim()};
 }
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function hasApiKeys(){return settings.aquaKey.trim().length>0;}
+/* Loose check: is ANY provider configured? Used for model-agnostic UI hints. */
+function hasApiKeys(){
+  if(settings.aquaKey.trim())return true;
+  if(settings.groqKey.trim())return true;
+  return(settings.customProviders||[]).some(p=>p&&String(p.apiKey||'').trim());
+}
+/* Per-model gate: true when the provider named in modelStr has a key. */
+function providerReady(modelStr){
+  const{provider}=parseModel(modelStr||settings.chatModel);
+  if(provider==='aqua')return settings.aquaKey.trim().length>0;
+  if(provider==='groq')return settings.groqKey.trim().length>0;
+  const cp=(settings.customProviders||[]).find(p=>p&&p.id===provider);
+  return !!cp&&String(cp.apiKey||'').trim().length>0;
+}
+/* Merge user-defined OpenAI-compatible providers into the runtime PROVIDERS
+   map. Keys are mirrored into settings['cp_'+id] so the existing
+   settings[p.keyName] access pattern in every fetch site keeps working. */
+function mergeCustomProviders(){
+  Object.keys(PROVIDERS).forEach(id=>{if(id!=='aqua'&&id!=='groq')delete PROVIDERS[id];});
+  Object.keys(settings).forEach(k=>{if(k.startsWith('cp_'))delete settings[k];});
+  (settings.customProviders||[]).forEach(cp=>{
+    if(!cp||!cp.id)return;
+    const id=String(cp.id).trim().toLowerCase();
+    if(!id||id==='aqua'||id==='groq'||PROVIDERS[id])return;
+    PROVIDERS[id]={base:String(cp.base||'').trim().replace(/\/+$/,''),keyName:'cp_'+id};
+    settings['cp_'+id]=String(cp.apiKey||'').trim();
+  });
+}
 
 /* ====================== CUSTOM DROPDOWN ====================== */
 function createDropdown(container,options,value,placeholder){
@@ -132,6 +159,19 @@ const TTS_MODEL_OPTS=[
   {value:'aqua:mimo-v2.5-tts-voiceclone',note:'clone'}
 ];
 const STT_MODEL_OPTS=[{value:'groq:whisper-large-v3',note:'default'},{value:'groq:whisper-large-v3-turbo',note:'faster'}];
+/* Merge fetched models from custom providers into a dropdown option list. */
+function allModelOpts(baseOpts){
+  const out=(baseOpts||[]).map(o=>({...o}));
+  (settings.customProviders||[]).forEach(cp=>{
+    if(!cp||!cp.id)return;
+    (Array.isArray(cp.models)?cp.models:[]).forEach(m=>{
+      const v=String(cp.id)+':'+m;
+      if(!out.some(o=>o.value===v))out.push({value:v,note:'custom'});
+    });
+  });
+  return out;
+}
+function refreshModelDropdowns(){if(typeof initSettingsDropdowns==='function')initSettingsDropdowns();}
 const VOICE_OPTS=[
   {value:'Mia',note:'soft female'},{value:'Chloe',note:'calm female'},
   {value:'Milo',note:'energetic male'},{value:'Dean',note:'deep male'},{value:'mimo_default',note:'neutral'}
@@ -198,6 +238,7 @@ const DEFAULT_SETTINGS={
   soundEnabled:true,soundVolume:0.4,ambientLoopEnabled:false,
   weatherFxEnabled:true,worldClockMode:'hybrid',
   pixelAvatarsEnabled:true,
+  customProviders:[],
   diceEnabled:false,questsEnabled:false,inventoryEnabled:false,
   uiSkin:'modern',modernTheme:'auto'
 };
@@ -214,6 +255,7 @@ async function loadSettings(){
   const s=await dbGet('settings','cfg');
   if(s){
     settings={...DEFAULT_SETTINGS,...s};
+    if(!Array.isArray(settings.customProviders))settings.customProviders=[];
     if(s.uiSkin===undefined){
       /* upgrading users keep the retro look they know; new installs
          default to the modern skin */
@@ -222,16 +264,17 @@ async function loadSettings(){
       setTimeout(()=>toast('NEW MINIMAL UI AVAILABLE IN SETTINGS'),1500);
     }
   }
+  mergeCustomProviders();
   applySkin();
 }
 async function saveSettings(){await dbPut('settings',settings,'cfg');}
 
 let dd={};
 function initSettingsDropdowns(){
-  dd.creative=createDropdown(document.getElementById('ddCreative'),TEXT_MODEL_OPTS,settings.creativeModel);
-  dd.task=createDropdown(document.getElementById('ddTask'),FAST_MODEL_OPTS,settings.taskModel);
-  dd.router=createDropdown(document.getElementById('ddRouter'),FAST_MODEL_OPTS,settings.routerModel);
-  dd.chat=createDropdown(document.getElementById('ddChat'),TEXT_MODEL_OPTS,settings.chatModel);
+  dd.creative=createDropdown(document.getElementById('ddCreative'),allModelOpts(TEXT_MODEL_OPTS),settings.creativeModel);
+  dd.task=createDropdown(document.getElementById('ddTask'),allModelOpts(FAST_MODEL_OPTS),settings.taskModel);
+  dd.router=createDropdown(document.getElementById('ddRouter'),allModelOpts(FAST_MODEL_OPTS),settings.routerModel);
+  dd.chat=createDropdown(document.getElementById('ddChat'),allModelOpts(TEXT_MODEL_OPTS),settings.chatModel);
   dd.tts=createDropdown(document.getElementById('ddTts'),TTS_MODEL_OPTS,settings.ttsModel);
   dd.stt=createDropdown(document.getElementById('ddStt'),STT_MODEL_OPTS,settings.sttModel);
   dd.worldClock=createDropdown(document.getElementById('ddWorldClock'),
@@ -432,7 +475,7 @@ document.getElementById('crGenerate').onclick=async()=>{
   const desc=document.getElementById('crDesc').value.trim();
   const controllerStr=ddCrController.value||settings.creativeModel;
   if(!name||!desc){toast('ENTER NAME AND DESCRIPTION');return;}
-  if(!hasApiKeys()){toast('ADD YOUR AQUA API KEY IN SETTINGS');return;}
+  if(!providerReady(controllerStr)){toast('ADD AN API KEY FOR YOUR CONTROLLER MODEL IN SETTINGS');return;}
   document.getElementById('step-info').classList.remove('active');
   document.getElementById('step-gen').classList.add('active');
   try{
@@ -1087,6 +1130,7 @@ function fillSettings(){
   if(pixEl)pixEl.checked=settings.pixelAvatarsEnabled!==false;
   if(dd.worldClock)dd.worldClock.value=settings.worldClockMode||'hybrid';
   renderThemePicker();
+  renderCpList();
 }
 document.getElementById('sSoundVol').addEventListener('input',e=>{
   if(typeof setSfxVolume==='function')setSfxVolume(e.target.value/100);
@@ -1113,6 +1157,7 @@ document.getElementById('sSave').onclick=async()=>{
   if(pixEl)settings.pixelAvatarsEnabled=pixEl.checked;
   const wc=dd.worldClock?dd.worldClock.value:'';
   settings.worldClockMode=['off','exchanges','hybrid'].includes(wc)?wc:DEFAULT_SETTINGS.worldClockMode;
+  mergeCustomProviders();
   await saveSettings();
   applyFeatureAvailability();
   if(typeof setSfxVolume==='function')setSfxVolume(settings.soundVolume);
@@ -1120,9 +1165,106 @@ document.getElementById('sSave').onclick=async()=>{
 };
 document.getElementById('sReset').onclick=async()=>{
   settings={...DEFAULT_SETTINGS};
-  await saveSettings();applySkin();applyFeatureAvailability();fillSettings();
+  mergeCustomProviders();
+  await saveSettings();applySkin();applyFeatureAvailability();fillSettings();refreshModelDropdowns();
   toast('DEFAULTS RESTORED');
 };
+
+/* ====================== CUSTOM PROVIDERS UI ====================== */
+let cpFetchedModels=null;
+
+function cpListEl(){return document.getElementById('cpList');}
+function cpResultEl(){return document.getElementById('cpFetchResult');}
+
+function renderCpList(){
+  const wrap=cpListEl();if(!wrap)return;
+  wrap.innerHTML='';
+  const list=settings.customProviders||[];
+  if(!list.length){wrap.innerHTML='<div class="hint">No custom providers yet. Add any OpenAI-compatible provider.</div>';return;}
+  list.forEach((cp,i)=>{
+    const row=document.createElement('div');row.className='cp-row';
+    row.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 8px;border:2px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--surface-2)';
+    const idEl=document.createElement('code');idEl.textContent=cp.id+':';
+    const meta=document.createElement('span');meta.style.cssText='flex:1;min-width:120px;font-size:12px;opacity:.85';
+    meta.textContent=` ${cp.name} · ${cp.base} · ${(cp.models||[]).length} models`;
+    const fetchBtn=document.createElement('button');fetchBtn.className='quest-mini-btn';fetchBtn.textContent='FETCH MODELS';
+    fetchBtn.onclick=async()=>{
+      const ids=await cpFetchFor(cp);
+      if(ids){cp.models=ids;renderCpList();refreshModelDropdowns();toast('MODELS UPDATED — SAVE SETTINGS');}
+    };
+    const delBtn=document.createElement('button');delBtn.className='quest-mini-btn danger';delBtn.textContent='REMOVE';
+    delBtn.onclick=()=>{
+      settings.customProviders.splice(i,1);
+      mergeCustomProviders();
+      renderCpList();refreshModelDropdowns();
+      toast('PROVIDER REMOVED');
+    };
+    row.append(idEl,meta,fetchBtn,delBtn);
+    wrap.appendChild(row);
+  });
+}
+
+/* Fetch GET {base}/models with the provider's key. Never throws: returns
+   the model id array on success or null on failure (inline error shown,
+   manual provider:model typing always remains available). */
+async function cpFetchFor(cp){
+  const resEl=cpResultEl();
+  if(resEl){resEl.textContent='FETCHING MODELS...';resEl.style.color='';}
+  try{
+    const res=await fetch(`${String(cp.base||'').replace(/\/+$/,'')}/models`,{headers:{'Authorization':`Bearer ${cp.apiKey}`}});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    const arr=Array.isArray(data.data)?data.data:(Array.isArray(data.models)?data.models:[]);
+    const ids=arr.map(m=>typeof m==='string'?m:(m.id||m.name||'')).filter(Boolean).slice(0,200);
+    if(!ids.length)throw new Error('No models returned');
+    if(resEl){resEl.textContent=`Fetched ${ids.length} models.`;resEl.style.color='var(--ok)';}
+    return ids;
+  }catch(e){
+    console.warn('Fetch models failed',e);
+    if(resEl){resEl.textContent='COULD NOT FETCH MODELS ('+(e.message||'network error')+'). YOU CAN STILL ADD AND TYPE provider:model MANUALLY.';resEl.style.color='var(--danger)';}
+    return null;
+  }
+}
+
+function cpValidate(){
+  const name=document.getElementById('cpName').value.trim();
+  const base=document.getElementById('cpBase').value.trim().replace(/\/+$/,'');
+  const key=document.getElementById('cpKey').value.trim();
+  if(!name){toast('ENTER A PROVIDER NAME');return null;}
+  if(!/^https?:\/\//.test(base)){toast('BASE URL MUST START WITH http(s)://');return null;}
+  if(!key){toast('ENTER AN API KEY');return null;}
+  const id=String(name).trim().toLowerCase().replace(/[^a-z0-9_-]+/g,'');
+  if(!id){toast('NAME MUST CONTAIN LETTERS OR DIGITS');return null;}
+  if(id==='aqua'||id==='groq'){toast('THAT ID IS A BUILT-IN PROVIDER');return null;}
+  if((settings.customProviders||[]).some(p=>p.id===id)){toast('PROVIDER ID ALREADY EXISTS');return null;}
+  return{id,name,base,apiKey:key,models:[]};
+}
+
+function bindCpControls(){
+  const add=document.getElementById('cpAdd');if(!add)return;
+  add.onclick=()=>{
+    const v=cpValidate();if(!v)return;
+    if(Array.isArray(cpFetchedModels)&&cpFetchedModels.length)v.models=cpFetchedModels.slice();
+    if(!settings.customProviders)settings.customProviders=[];
+    settings.customProviders.push(v);
+    cpFetchedModels=null;
+    mergeCustomProviders();
+    document.getElementById('cpName').value='';
+    document.getElementById('cpBase').value='';
+    document.getElementById('cpKey').value='';
+    if(cpResultEl())cpResultEl().textContent='';
+    renderCpList();refreshModelDropdowns();
+    toast('PROVIDER ADDED — SAVE SETTINGS TO KEEP IT');
+  };
+  const fetchBtn=document.getElementById('cpFetch');
+  fetchBtn.onclick=async()=>{
+    const v=cpValidate();if(!v)return;
+    cpFetchedModels=null;
+    const ids=await cpFetchFor(v);
+    if(ids){cpFetchedModels=ids;toast('MODELS FETCHED — PRESS ADD PROVIDER');}
+  };
+}
+bindCpControls();
 
 function applyFeatureAvailability(){
   const diceBtn=document.getElementById('diceBtnChat');

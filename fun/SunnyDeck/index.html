@@ -293,6 +293,17 @@
       <div class="detail-section"><h3>API Keys</h3></div>
       <div class="field"><label>Aqua API Key</label><input type="password" id="sAquaKey" placeholder="aqua_sk_..." autocomplete="new-password"></div>
       <div class="field"><label>Groq API Key</label><input type="password" id="sGroqKey" placeholder="gsk_..." autocomplete="new-password"></div>
+      <div class="detail-section"><h3>Custom Providers</h3></div>
+      <div class="hint" style="margin-top:-8px;margin-bottom:10px">Add any OpenAI-compatible provider. Use <code>provider:model</code> strings (e.g. <code>pollinations:openai</code>) in the model fields below.</div>
+      <div id="cpList"></div>
+      <div class="field"><label>Provider Name</label><input id="cpName" placeholder="pollinations" autocomplete="off"></div>
+      <div class="field"><label>Base URL</label><input id="cpBase" placeholder="https://api.example.com/v1" autocomplete="off"></div>
+      <div class="field"><label>API Key</label><input type="password" id="cpKey" placeholder="sk-..." autocomplete="new-password"></div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-ghost" id="cpFetch">Fetch Models</button>
+        <button type="button" class="btn btn-primary" id="cpAdd">Add Provider</button>
+      </div>
+      <div id="cpFetchResult" class="hint"></div>
       <div class="detail-section"><h3>Models (provider:model)</h3></div>
       <div class="field"><label>Creative Controller</label><div id="ddCreative"></div><div class="hint">Builds realms and characters.</div></div>
       <div class="field"><label>Task Controller</label><div id="ddTask"></div><div class="hint">Names sessions. Fast Aqua model.</div></div>

@@ -192,7 +192,7 @@ async function handleChatSend(){
     if(await handleSlashCommand(text))return;
     document.getElementById('chatInput').value=text;
   }
-  if(!hasApiKeys()){toast('ADD YOUR AQUA API KEY IN SETTINGS');return;}
+  if(!providerReady(settings.chatModel||DEFAULT_SETTINGS.chatModel)){toast('ADD AN API KEY FOR YOUR CHAT MODEL IN SETTINGS');return;}
   chatBusy=true;
   document.getElementById('sendBtnChat').disabled=true;
   document.getElementById('chatInput').value='';

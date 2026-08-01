@@ -14,7 +14,7 @@ function memoryNotes(charKey,realm){
 
 let distillBusy=false;
 async function distillSession(sess,realm){
-  if(!sess||!realm||distillBusy||!hasApiKeys())return;
+  if(!sess||!realm||distillBusy||!providerReady(settings.taskModel||DEFAULT_SETTINGS.taskModel))return;
   const dlg=(sess.history||[]).filter(h=>!h.kind||h.kind==='dialogue');
   if(dlg.length-(sess.lastDistilledCount||0)<6)return;
   distillBusy=true;

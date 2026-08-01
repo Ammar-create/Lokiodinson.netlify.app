@@ -82,7 +82,7 @@ function socialPromptNote(charKey,realm,sess){
 /* ====================== BATCHED ANALYSIS TICK ====================== */
 let socialBusy=false;
 async function socialAnalysisTick(sess,realm){
-  if(socialBusy||!sess||!realm||!hasApiKeys()||typeof aiJson!=='function')return;
+  if(socialBusy||!sess||!realm||!providerReady(settings.taskModel||DEFAULT_SETTINGS.taskModel)||typeof aiJson!=='function')return;
   const dlg=(sess.history||[]).filter(h=>!h.kind||h.kind==='dialogue');
   if(dlg.length-(sess.lastSocialCount||0)<SOCIAL_MIN_NEW_MSGS)return;
   socialBusy=true;

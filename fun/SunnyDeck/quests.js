@@ -50,7 +50,7 @@ Output ONLY JSON:
 
 async function startQuest(theme){
   if(!settings.questsEnabled){toast('ENABLE QUESTS IN SETTINGS');return;}
-  if(!hasApiKeys()){toast('ADD YOUR AQUA API KEY IN SETTINGS');return;}
+  if(!providerReady(realm?.creativeModel||settings.creativeModel)){toast('ADD AN API KEY FOR YOUR CREATIVE MODEL IN SETTINGS');return;}
   const sess=currentSession,realm=currentRealm;if(!sess||!realm)return;
   toast('DESIGNING QUEST...');
   try{
@@ -73,7 +73,7 @@ let questBusy=false;
 async function questCheckTick(sess,realm){
   if(!settings.questsEnabled)return;
   const q=sess?.quest;
-  if(questBusy||!q||q.status!=='active'||!hasApiKeys()||typeof aiJson!=='function')return;
+  if(questBusy||!q||q.status!=='active'||!providerReady(settings.taskModel||DEFAULT_SETTINGS.taskModel)||typeof aiJson!=='function')return;
   const dlg=(sess.history||[]).filter(h=>!h.kind||h.kind==='dialogue');
   if(dlg.length-(q.lastCheckedCount||0)<QUEST_CHECK_MIN_NEW)return;
   questBusy=true;

@@ -69,7 +69,7 @@ function editOwnMessage(h){
 
 async function regenerateReply(h){
   if(chatBusy){toast('WAIT FOR THE CURRENT REPLY');return;}
-  if(!hasApiKeys()){toast('ADD YOUR AQUA API KEY IN SETTINGS');return;}
+  if(!providerReady(settings.chatModel||DEFAULT_SETTINGS.chatModel)){toast('ADD AN API KEY FOR YOUR CHAT MODEL IN SETTINGS');return;}
   const sess=currentSession,realm=currentRealm;if(!sess||!realm)return;
   const i=sess.history.indexOf(h);if(i<0)return;
   const c=realm.characters.find(x=>x.key===h.speakerKey);if(!c)return;

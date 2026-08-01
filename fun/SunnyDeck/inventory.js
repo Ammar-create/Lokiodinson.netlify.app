@@ -183,7 +183,7 @@ function inventoryPromptNote(charKey,sess){
 let invBusy=false;
 async function inventoryTick(sess,realm){
   if(!settings.inventoryEnabled)return;
-  if(invBusy||!sess||!realm||!hasApiKeys()||typeof aiJson!=='function')return;
+  if(invBusy||!sess||!realm||!providerReady(settings.taskModel||DEFAULT_SETTINGS.taskModel)||typeof aiJson!=='function')return;
   const dlg=(sess.history||[]).filter(h=>!h.kind||h.kind==='dialogue');
   if(dlg.length-(sess.lastInvCount||0)<INV_TICK_MIN_NEW)return;
   invBusy=true;

@@ -273,6 +273,13 @@ Key functions:
 - `applyFeatureAvailability()` — applies dice/quests/inventory enablement to live UI after load/save/reset
 - `applyTheme()` and `applySkin()` — apply retro/modern appearance
 
+### Custom providers (v3 Phase 1, shipped 2026-08-01)
+
+- `settings.customProviders[] = {id, name, base, apiKey, models[]}` — any OpenAI-compatible provider. `mergeCustomProviders()` (app.js) rebuilds the runtime `PROVIDERS` map and mirrors each key into `settings['cp_'+id]` so every `settings[p.keyName]` fetch site works unchanged.
+- `providerReady(modelStr)` is the per-model key gate; gating call sites check the model they use (chat→chatModel, ticks→taskModel, creation→creativeModel). `hasApiKeys()` remains as a loose any-provider check.
+- TTS is Aqua-only (`speakChat` hardcodes `PROVIDERS.aqua`); STT is Groq-only; custom providers are chat-capable only. `/models` fetch is non-blocking; manual `provider:model` typing always works.
+- Custom-provider keys are named `apiKey` so `SHARE_DENY_KEYS` stripping covers them. See `v3.md` Phase 1 brief for the full implementation map.
+
 ### Current optional feature settings
 
 These live in `DEFAULT_SETTINGS` and are all **disabled by default**:

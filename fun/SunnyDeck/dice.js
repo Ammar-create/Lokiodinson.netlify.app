@@ -113,7 +113,7 @@ function requireDice(){
 }
 
 async function rateDifficulty(action){
-  if(!hasApiKeys()||typeof aiJson!=='function')return{dc:12,reason:'default'};
+  if(!providerReady(settings.taskModel||DEFAULT_SETTINGS.taskModel)||typeof aiJson!=='function')return{dc:12,reason:'default'};
   const realm=currentRealm,sess=currentSession;
   const player=realm.characters.find(c=>c.key===sess.playerKey);
   const scene=typeof spatialSummary==='function'?spatialSummary(realm,sess,sess.playerKey):'';
