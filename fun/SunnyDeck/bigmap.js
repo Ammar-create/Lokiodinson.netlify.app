@@ -38,12 +38,20 @@ function initBigMap(){
     bar.innerHTML=`
       <button class="bm-btn" id="bmMoveBtn" title="Toggle move mode (D-pad)">🕹 MOVE</button>
       <label class="bm-btn bm-range" title="Listening radius (who can hear/respond)">RANGE <input type="range" id="bmRadius" min="4" max="40" step="1"></label>
+      <button class="bm-btn" id="bmRoomBtn" title="Add a room anchored here">🚪 ROOM</button>
       <button class="bm-btn" id="bmCloseBtn" title="Exit fullscreen (Esc)">✕ CLOSE</button>`;
     bar.onclick=e=>e.stopPropagation();
     bar.ondblclick=e=>e.stopPropagation();
     map.appendChild(bar);
     bar.querySelector('#bmMoveBtn').onclick=()=>bmSetMoveMode(!bmMoveMode);
     bar.querySelector('#bmCloseBtn').onclick=()=>toggleMapFullscreen(false);
+    const rb=bar.querySelector('#bmRoomBtn');
+    if(rb)rb.onclick=()=>{
+      if(typeof openRoomCreate==='function'){
+        const z=(typeof zoneOf==='function'&&currentSession)?zoneOf(currentSession.playerKey):null;
+        openRoomCreate({realmId:currentRealm?.id,sessionId:currentSession?.id,zoneKey:z?.key||null});
+      }
+    };
     const rs=bar.querySelector('#bmRadius');
     if(rs){
       rs.value=(typeof currentSession?.radioRadius==='number')?currentSession.radioRadius:14;

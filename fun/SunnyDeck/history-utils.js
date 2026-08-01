@@ -82,10 +82,10 @@ function radioInRange(sess,keyA,keyB){
 
 /* Tag a message at write time: who participated vs who merely heard it.
    SHOUT reaches every character; whispers reach only speaker + target. */
-function histTagEntry(sess,h){
+function histTagEntry(sess,h,realm){
   if(!h)return;
-  const realm=(typeof currentRealm!=='undefined'&&currentRealm)?currentRealm:null;
-  const chars=(realm&&Array.isArray(realm.characters))?realm.characters:[];
+  const r=realm||((typeof currentRealm!=='undefined'&&currentRealm)?currentRealm:null);
+  const chars=(r&&Array.isArray(r.characters))?r.characters:[];
   const parts=[h.speakerKey];
   if(h.whisperTo)parts.push(h.whisperTo);
   if(h.targetKey)parts.push(h.targetKey);
@@ -101,11 +101,11 @@ function histTagEntry(sess,h){
 }
 
 /* THE write path for session history: seq + participant tagging + push. */
-function histPush(sess,h){
+function histPush(sess,h,realm){
   if(!sess||!h)return h;
   if(!Array.isArray(sess.history))sess.history=[];
   h.seq=histLastSeq(sess)+1;
-  if(!Array.isArray(h.participants))histTagEntry(sess,h);
+  if(!Array.isArray(h.participants))histTagEntry(sess,h,realm);
   sess.history.push(h);
   return h;
 }

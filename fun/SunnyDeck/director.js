@@ -177,7 +177,7 @@ Output ONLY JSON: {"narration":"...","reaction":{"key":"one_of: ${npcs.map(c=>c.
    imply someone moves or changes what they're doing? */
 let stageBusy=false;
 async function stageDirectionTick(sess,realm){
-  if(stageBusy||!providerReady(settings.routerModel||DEFAULT_SETTINGS.routerModel)||!sess||!realm)return;
+  if(stageBusy||sess?.isRoom||!providerReady(settings.routerModel||DEFAULT_SETTINGS.routerModel)||!sess||!realm)return;
   stageBusy=true;
   try{
     const recent=sess.history.slice(-6).filter(h=>h.kind!=='system').map(h=>`${h.speaker}: ${h.text}`).join('\n');

@@ -49,6 +49,7 @@ Output ONLY JSON:
 }
 
 async function startQuest(theme){
+  if(currentSession?.isRoom){toast('QUESTS ARE FOR SESSIONS');return;}
   if(!settings.questsEnabled){toast('ENABLE QUESTS IN SETTINGS');return;}
   if(!providerReady(realm?.creativeModel||settings.creativeModel)){toast('ADD AN API KEY FOR YOUR CREATIVE MODEL IN SETTINGS');return;}
   const sess=currentSession,realm=currentRealm;if(!sess||!realm)return;
@@ -71,7 +72,7 @@ async function startQuest(theme){
 /* ====================== PROGRESS TICK ====================== */
 let questBusy=false;
 async function questCheckTick(sess,realm){
-  if(!settings.questsEnabled)return;
+  if(!settings.questsEnabled||sess?.isRoom)return;
   const q=sess?.quest;
   if(questBusy||!q||q.status!=='active'||!providerReady(settings.taskModel||DEFAULT_SETTINGS.taskModel)||typeof aiJson!=='function')return;
   const dlg=(sess.history||[]).filter(h=>!h.kind||h.kind==='dialogue');
@@ -107,7 +108,7 @@ Output ONLY JSON: {"completed":[2],"questComplete":false}`;
 }
 
 async function finishQuest(sess,realm){
-  const q=sess?.quest;if(!q||q.status!=='active')return;
+  const q=sess?.quest;if(!q||q.status!=='active'||sess?.isRoom)return;
   q.status='completed';q.completedAt=Date.now();
   q.objectives.forEach(o=>{if(!o.done){o.done=true;o.doneAt=Date.now();}});
   let finale='The quest is complete.';

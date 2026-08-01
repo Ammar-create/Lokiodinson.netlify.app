@@ -11,10 +11,11 @@ function setMapSpeaking(key,on){
 }
 
 function showTyping(name){
-  const chat=document.getElementById('chat');
-  const div=document.createElement('div');div.className='typing';div.id='typingInd';
-  div.innerHTML=`${esc(name.toUpperCase())} IS TYPING <span class="cursor"></span>`;
-  chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
+  const chat=document.getElementById(currentSession?.isRoom?'roomChat':'chat');
+  if(!chat)return;
+  const el=document.createElement('div');el.id='typingInd';el.className='typing-ind';
+  el.textContent=name+' is typing…';
+  chat.appendChild(el);chat.scrollTop=chat.scrollHeight;
 }
 function hideTyping(){document.getElementById('typingInd')?.remove();}
 
@@ -187,6 +188,7 @@ document.getElementById('micBtnChat').onclick=async()=>{
 /* ===== Send flow ===== */
 let chatBusy=false;
 async function handleChatSend(){
+  if(currentSession?.isRoom)return;   // rooms use roomSend()
   const text=document.getElementById('chatInput').value.trim();
   if(!text||chatBusy)return;
   if(text.startsWith('/')&&typeof handleSlashCommand==='function'){

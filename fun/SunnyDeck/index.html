@@ -125,6 +125,8 @@
     </div>
     <div class="section-head"><h2>Recent Activity</h2></div>
     <div class="activity-list" id="recentList"></div>
+    <div class="section-head" style="margin-top:22px"><h2>Rooms</h2></div>
+    <div id="roomsSection"></div>
     <div class="section-head" style="margin-top:22px"><h2>Player Stats</h2></div>
     <div id="statsSection"></div>
   </div>
@@ -268,6 +270,37 @@
   </div>
 </section>
 
+<section class="screen" id="screen-room">
+  <div id="roomHeader" style="display:flex;align-items:center;gap:8px;padding:8px 12px;flex-wrap:wrap">
+    <button class="back" id="roomBack" style="margin:0">&lt;&lt;</button>
+    <div style="flex:1;min-width:0">
+      <div class="realm-tag" id="roomRealmTag"></div>
+      <div class="session-name" id="roomName"></div>
+    </div>
+    <button class="comp-btn" id="roomDoorBtn" title="Door" style="display:none">🚪</button>
+    <button class="comp-btn" id="roomPlayerBtn" title="Play as">🎭</button>
+  </div>
+  <div id="roomPortraitStrip"></div>
+  <div id="roomBanners">
+    <div class="direct-banner" id="roomDirectBanner" style="display:none">DIRECT MODE &mdash; <span id="roomDirectToName"></span><button id="roomClearDirect" type="button">clear</button></div>
+    <div class="whisper-banner" id="roomWhisperBanner" style="display:none"><span>PRIVATE WHISPER</span><button id="roomExitWhisper" type="button">exit whisper</button></div>
+  </div>
+  <div id="roomChat"></div>
+  <div id="roomComposer">
+    <div class="input-row">
+      <button class="comp-btn" id="roomMicBtn" title="Record">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </button>
+      <textarea id="roomInput" rows="1" placeholder="TALK IN THE ROOM..."></textarea>
+      <button class="comp-btn" id="roomWhisperBtn" title="Whisper">🤫</button>
+      <div id="roomTargetWrap"></div>
+      <button class="comp-btn" id="roomSendBtn" title="Send">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+</section>
+
 <section class="screen" id="screen-settings">
   <div id="settings-screen">
     <div class="settings-card">
@@ -378,6 +411,7 @@
 <script src="mapedit.js" defer></script>
 <script src="journal.js" defer></script>
 <script src="rewind.js" defer></script>
+<script src="rooms.js" defer></script>
 <script src="director.js" defer></script>
 <script src="app-ai.js" defer></script>
 </body>

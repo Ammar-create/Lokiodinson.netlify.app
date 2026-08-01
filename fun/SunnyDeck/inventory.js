@@ -182,7 +182,7 @@ function inventoryPromptNote(charKey,sess){
    return {} — mirrors stageDirectionTick exactly. */
 let invBusy=false;
 async function inventoryTick(sess,realm){
-  if(!settings.inventoryEnabled)return;
+  if(!settings.inventoryEnabled||sess?.isRoom)return;
   if(invBusy||!sess||!realm||!providerReady(settings.taskModel||DEFAULT_SETTINGS.taskModel)||typeof aiJson!=='function')return;
   const dlg=(sess.history||[]).filter(h=>!h.kind||h.kind==='dialogue');
   if(dlg.length-(sess.lastInvCount||0)<INV_TICK_MIN_NEW)return;

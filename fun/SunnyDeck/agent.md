@@ -300,6 +300,28 @@ Key functions:
   activities, moments}` with validation; busy-flag + graceful failure.
 - Ambient beat gates on `chatModel`; `stageDirectionTick` gates on `routerModel`.
 
+### Rooms (v3 Phase 3, shipped 2026-08-01)
+
+- New IndexedDB store `rooms` (DB v2, additive). Room = `{id, isRoom, name,
+  description, characters[], playerKey, messages[], charLogs{}, moods{}, rels{},
+  memories{}, anchor:{realmId,sessionId,zoneKey}|null, door:'open'|'closed'|'locked',
+  settings{}, createdAt, lastActiveAt}`. One continuous conversation per room.
+- Rooms masquerade as sessions: `roomAsSession()` installs a non-enumerable `history`
+  getter aliasing `messages`; `dbPut('sessions', isRoomObj)` routes to the rooms store.
+  This is how `addChatBubble`, `getReply`, char logs, whisper/shout and rewind work in
+  rooms with zero engine forks.
+- Write path: `roomPush(room, h)` (tags against room characters) and
+  `queueRoomMirror(room, h)` — door-open rooms leak dialogue (player + replies) into the
+  anchored session timeline as `mirrored:true` ambient entries; **whispers never leak**;
+  mirrors are serialized.
+- Doors: open (leak both ways) / closed (no leak, free movement) / locked (no in/out).
+  Door popover on the room header; door-state markers on the session map; entering a
+  locked room is blocked.
+- Import from realms = snapshot copy with fresh keys + `sourceRealmId`. Rooms are
+  searchable + exportable/importable (`sunnydeck-room` JSON).
+- Realm-bound systems are gated with `isRoom` checks (quests, inventory, social tick,
+  memory distill, journal, stage tick, rewind branch). See `v3.md` Phase 3 brief.
+
 ### Current optional feature settings
 
 These live in `DEFAULT_SETTINGS` and are all **disabled by default**:

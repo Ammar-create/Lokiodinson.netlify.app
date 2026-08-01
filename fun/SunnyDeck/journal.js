@@ -12,7 +12,7 @@ const JOURNAL_MAX_CHAPTERS=50;
 
 let journalBusy=false;
 async function journalChapterTick(sess,realm){
-  if(journalBusy||!sess||!realm||!providerReady(settings.taskModel||DEFAULT_SETTINGS.taskModel)||typeof aiJson!=='function')return;
+  if(journalBusy||!sess||!realm||sess?.isRoom||!providerReady(settings.taskModel||DEFAULT_SETTINGS.taskModel)||typeof aiJson!=='function')return;
   const dlg=(sess.history||[]).filter(h=>!h.kind||h.kind==='dialogue');
   if(dlg.length-(sess.lastJournaledCount||0)<JOURNAL_MIN_NEW_MSGS)return;
   journalBusy=true;

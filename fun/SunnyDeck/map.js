@@ -102,6 +102,7 @@ function initSessionMap(realm,sess){
   };
   refreshActivityChips();
   updateEarshotUI();
+  if(typeof renderRoomMarkers==='function')renderRoomMarkers(sess,realm);
 }
 
 function toggleMapExpand(){

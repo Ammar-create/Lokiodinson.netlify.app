@@ -178,13 +178,13 @@ const VOICE_OPTS=[
 ];
 
 /* ====================== INDEXEDDB ====================== */
-const DB_NAME='sunny-deck-retro',DB_VERSION=1;
+const DB_NAME='sunny-deck-retro',DB_VERSION=2;
 function dbOpen(){
   return new Promise((res,rej)=>{
     const r=indexedDB.open(DB_NAME,DB_VERSION);
     r.onupgradeneeded=()=>{
       const db=r.result;
-      ['realms','sessions','settings'].forEach(s=>{
+      ['realms','sessions','rooms','settings'].forEach(s=>{
         if(!db.objectStoreNames.contains(s))db.createObjectStore(s,s==='settings'?undefined:{keyPath:'id'});
       });
     };
@@ -199,6 +199,9 @@ function dbSanitize(data){
 }
 async function dbPut(store,data,key){
   const db=await dbOpen();
+  /* v3 rooms masquerade as sessions so the shared chat engine persists
+     them with one code path; route them to the rooms store instead. */
+  if(store==='sessions'&&data&&data.isRoom)store='rooms';
   data=dbSanitize(data);
   return new Promise((res,rej)=>{
     const tx=db.transaction(store,'readwrite');
@@ -426,6 +429,7 @@ async function renderDashboard(){
   document.getElementById('statSessions').textContent=sessions.length;
   document.getElementById('statChars').textContent=chars;
   if(typeof renderStatsSection==='function')renderStatsSection();
+  if(typeof renderRoomsSection==='function')renderRoomsSection();
   const regular=sessions.filter(s=>!s.isWhisper).sort((a,b)=>(b.lastActiveAt||0)-(a.lastActiveAt||0)).slice(0,5);
   const list=document.getElementById('recentList');list.innerHTML='';
   if(regular.length===0){list.innerHTML='<div class="activity-empty">NO SESSIONS YET. CREATE A REALM AND START CHATTING.</div>';return;}
@@ -1063,7 +1067,8 @@ function renderChatTags(){
 }
 
 function addChatBubble(h){
-  const chat=document.getElementById('chat');
+  const chat=document.getElementById(currentSession?.isRoom?'roomChat':'chat');
+  if(!chat)return;
   const key=h.speakerKey||'',name=h.speaker||'?',text=h.text||'';
   if(h.kind==='roll'){
     // dice.js renders live rolls itself (with animation); this path replays saved history

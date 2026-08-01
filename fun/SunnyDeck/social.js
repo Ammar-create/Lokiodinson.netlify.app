@@ -82,6 +82,7 @@ function socialPromptNote(charKey,realm,sess){
 /* ====================== BATCHED ANALYSIS TICK ====================== */
 let socialBusy=false;
 async function socialAnalysisTick(sess,realm){
+  if(sess?.isRoom)return;   // room relationships arrive with the v3 engine
   if(socialBusy||!sess||!realm||!providerReady(settings.taskModel||DEFAULT_SETTINGS.taskModel)||typeof aiJson!=='function')return;
   const dlg=(sess.history||[]).filter(h=>!h.kind||h.kind==='dialogue');
   if(dlg.length-(sess.lastSocialCount||0)<SOCIAL_MIN_NEW_MSGS)return;

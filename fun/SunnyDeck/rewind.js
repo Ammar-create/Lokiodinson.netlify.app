@@ -8,7 +8,8 @@
 'use strict';
 
 function rerenderChat(){
-  const chat=document.getElementById('chat');if(!chat||!currentSession)return;
+  const chat=document.getElementById(currentSession?.isRoom?'roomChat':'chat');
+  if(!chat||!currentSession)return;
   chat.innerHTML='';
   renderBranchNote(currentSession);
   (currentSession.history||[]).forEach(h=>addChatBubble(h));
@@ -95,6 +96,7 @@ async function regenerateReply(h){
 
 async function branchFromMessage(h){
   const src=currentSession;if(!src)return;
+  if(src?.isRoom){toast('BRANCHING IS FOR SESSIONS');return;}
   const i=src.history.indexOf(h);if(i<0)return;
   const branch=structuredClone({...src});
   branch.id='sess-'+Date.now();

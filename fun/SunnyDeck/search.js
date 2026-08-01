@@ -37,8 +37,8 @@ function srEnsureOverlay(){
 
 async function srOpen(){
   srEnsureOverlay();
-  const[realms,sessions]=await Promise.all([dbGetAll('realms'),dbGetAll('sessions')]);
-  srData={realms,sessions};
+  const[realms,sessions,rooms]=await Promise.all([dbGetAll('realms'),dbGetAll('sessions'),dbGetAll('rooms')]);
+  srData={realms,sessions,rooms};
   document.getElementById('searchOverlay').classList.add('open');
   const input=document.getElementById('srInput');
   input.value='';
@@ -72,7 +72,7 @@ function srRun(){
   if(!out)return;
   if(q.length<2){out.innerHTML='<div class="sr-empty">TYPE AT LEAST 2 CHARACTERS.</div>';return;}
   if(!srData){out.innerHTML='<div class="sr-empty">LOADING…</div>';return;}
-  const{realms,sessions}=srData;
+  const{realms,sessions,rooms}=srData||{};
   const realmName=id=>realms.find(r=>r.id===id)?.name||'Realm';
   const groups=[];
   const add=(group,row)=>{
@@ -119,6 +119,15 @@ function srRun(){
         title:`${h.speaker||'Narrator'} — ${s.name} · ${realmName(s.realmId)}`,
         snippet:srSnippet(h.text,q),
         go:()=>{srClose();srJumpToMessage(s.id,h.timestamp);}});
+    });
+  });
+
+  (rooms||[]).forEach(r=>{
+    if(srMatch(q,r.name,r.description))
+      add('Rooms',{title:r.name,snippet:srSnippet(r.description||r.name,q),go:()=>{srClose();openRoom(r.id);}});
+    (r.messages||[]).forEach(h=>{
+      if(h.kind==='system'||!srMatch(q,h.text))return;
+      add('Room Messages',{title:`${h.speaker||'Narrator'} — ${r.name}`,snippet:srSnippet(h.text,q),go:()=>{srClose();openRoom(r.id);}});
     });
   });
 
