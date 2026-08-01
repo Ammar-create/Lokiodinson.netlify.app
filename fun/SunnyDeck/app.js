@@ -732,6 +732,9 @@ function editRealmCharacter(idx){
 }
 
 document.getElementById('detailBack').onclick=()=>{showScreen('screen-browse');renderBrowse();};
+document.getElementById('btnRelPanel').onclick=()=>{
+  if(currentRealm&&typeof openRelPanel==='function')openRelPanel(currentRealm,currentRealm.name);
+};
 document.getElementById('btnDeleteRealm').onclick=async()=>{
   if(!currentRealmId)return;
   if(!confirm('Delete this realm and all its sessions?'))return;

@@ -262,7 +262,7 @@ async function roomSend(){
     if(typeof showTyping==='function')showTyping(c.name);
     let reply='';
     try{
-      reply=await getReply(rKey,text,[],room,{id:room.id,name:room.name,overview:room.description,characters:room.characters});
+      reply=await getReply(rKey,text,[],room,room);
     }catch(e){console.error(e);toast(e.message||'CHAT FAILED');break;}
     finally{if(typeof hideTyping==='function')hideTyping();}
     if(!reply||!reply.trim())continue;
@@ -276,6 +276,7 @@ async function roomSend(){
     if(typeof speakChat==='function')await speakChat(reply,rKey);
   }
   roomBusy=false;
+  if(typeof relationshipTick==='function')relationshipTick(room,room);
   input.focus();
 }
 

@@ -86,7 +86,8 @@ async function getReply(responderKey,userText,alreadyReplied,sess,realm){
   const traitsNote=traits?`\nTraits that shape you: ${traits}. Let them color how you speak and react.`:'';
   const voiceLines=typeof voiceLinesFor==='function'?voiceLinesFor(c):null;
   const voiceNote=voiceLines?`\nVoice — this is HOW you sound. Mirror this register exactly; these are YOUR actual lines:\n${voiceLines.map(l=>`- "${l}"`).join('\n')}`:'';
-  const relNote=typeof relationshipStatusNote==='function'?relationshipStatusNote(responderKey,realm,sess):'';
+  const relNote=(typeof relationshipNoteFor==='function'?relationshipNoteFor(responderKey,realm,sess):'')
+    ||(typeof relationshipStatusNote==='function'?relationshipStatusNote(responderKey,realm,sess):'');
   const spatial=typeof spatialSummary==='function'?spatialSummary(realm,sess,responderKey):'';
   const act=sess.activities?.[responderKey];
   const mem=typeof memoryNotes==='function'?memoryNotes(responderKey,realm):'';
@@ -272,6 +273,7 @@ async function handleChatSend(){
       if(responders.length&&typeof stageDirectionTick==='function')stageDirectionTick(sess,realm);
       if(responders.length&&typeof questCheckTick==='function')questCheckTick(sess,realm);
       if(responders.length&&typeof socialAnalysisTick==='function')socialAnalysisTick(sess,realm);
+      if(responders.length&&typeof relationshipTick==='function')relationshipTick(realm,sess);
       if(responders.length&&typeof inventoryTick==='function')inventoryTick(sess,realm);
     }catch(e){console.error(e);toast(e.message||'CHAT FAILED');}
   }

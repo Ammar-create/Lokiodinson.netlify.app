@@ -339,6 +339,23 @@ Key functions:
   TTS settings hidden until an Aqua key is entered (`applyTtsVisibility()`).
 - See `v3.md` Phase 4 brief.
 
+### Relationship engine (v3 Phase 5, shipped 2026-08-01)
+
+- `rels.js`: per-pair DIRECTIONAL vectors over `EMOTION_KEYS = [hatred, love,
+  jealousy, loyalty, friendship, happiness, comfort]` (−100..+100) + **reasons
+  ledger** (cap 40). Per-container: `realm.rels` / `room.rels`.
+- `relGetPair` lazily creates pairs and **seeds once from legacy affinity**.
+  `relApplyEvent` (clamped) writes ledger entries; `relObserve` does triadic shifts
+  (witnessed interactions only); `relDecay` drifts old emotions toward zero.
+- `relationshipTick(container, context)` — container = realm/room (rels), context =
+  session/room (history); fires after ≥6 new dialogue messages; task-model extraction
+  with validation + hallucination-presence guard; wired from `handleChatSend` and
+  `roomSend`.
+- Prompt: `relationshipNoteFor(charKey, realm, sess)` in getReply's STATE layer (mood +
+  own-direction top emotions + summary — character-knowledge only).
+- UI: "Relationships" button on realm detail → `openRelPanel`.
+- See `v3.md` Phase 5 brief.
+
 ### Current optional feature settings
 
 These live in `DEFAULT_SETTINGS` and are all **disabled by default**:
