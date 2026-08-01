@@ -233,6 +233,7 @@ const DEFAULT_SETTINGS={
   aquaKey:'',groqKey:'',theme:'synthwave',
   creativeModel:'aqua:deepseek-v4',taskModel:'aqua:gemini-3.1-lite',
   routerModel:'aqua:diffusion-gemma',chatModel:'aqua:deepseek-v4',
+  directorModel:'aqua:deepseek-v4',directorInterval:10,
   ttsModel:'aqua:mimo-v2.5-tts-voicedesign',sttModel:'groq:whisper-large-v3',
   ttsEnabled:true,
   soundEnabled:true,soundVolume:0.4,ambientLoopEnabled:false,
@@ -277,6 +278,7 @@ function initSettingsDropdowns(){
   dd.chat=createDropdown(document.getElementById('ddChat'),allModelOpts(TEXT_MODEL_OPTS),settings.chatModel);
   dd.tts=createDropdown(document.getElementById('ddTts'),TTS_MODEL_OPTS,settings.ttsModel);
   dd.stt=createDropdown(document.getElementById('ddStt'),STT_MODEL_OPTS,settings.sttModel);
+  dd.director=createDropdown(document.getElementById('ddDirector'),allModelOpts(TEXT_MODEL_OPTS),settings.directorModel);
   dd.worldClock=createDropdown(document.getElementById('ddWorldClock'),
     [{value:'off'},{value:'exchanges',note:'per message'},{value:'hybrid',note:'default'}],settings.worldClockMode);
 }
@@ -1105,6 +1107,33 @@ function openModal(title,html,sizeCls){
   document.getElementById('overlay').classList.add('open');
 }
 function closeModal(){document.getElementById('overlay').classList.remove('open');}
+
+/* ====================== CHARACTER HISTORY LOG (v3) ====================== */
+/* First-person viewer for any character: what they said, what was said to
+   them, and what they overheard. The player is the god-view reader; the AI
+   only ever sees buildCharLogLines(). */
+function openCharLogModal(charKey){
+  const sess=currentSession,realm=currentRealm;
+  if(!sess||!realm)return;
+  const c=realm.characters.find(x=>x.key===charKey);
+  if(!c)return;
+  const log=(typeof syncCharLog==='function')?syncCharLog(sess,charKey):null;
+  const entries=(log&&Array.isArray(log.entries))?log.entries:[];
+  const shown=entries.slice(-120);
+  const rows=shown.length
+    ?shown.map(e=>{
+      const who=e.role==='spoke'?'YOU':esc(e.speaker||'?');
+      const tag=e.role==='spoke'?'':(e.role==='addressed'?' → you':(e.shout?' 📢 heard':' 🎧 overheard'));
+      return`<div class="cl-row"><span class="cl-who" style="color:${esc(c.color)};font-weight:bold">${who}</span><span class="cl-tag">${tag}</span><span class="cl-text" style="margin-left:6px">${esc(e.text)}</span></div>`;
+    }).join('')
+    :'<div class="activity-empty">NO HISTORY YET FOR THIS CHARACTER.</div>';
+  const trunc=entries.length>shown.length?`<div class="hint">Showing the last ${shown.length} of ${entries.length} entries.</div>`:'';
+  const approach=c.key!==sess.playerKey?'<div class="btn-row"><button class="btn btn-ghost" id="clApproach">WALK OVER</button></div>':'';
+  openModal(`${esc(c.name).toUpperCase()}'S HISTORY`,
+    `<div style="max-height:55vh;overflow:auto">${rows}</div>${trunc}${approach}`);
+  const ap=document.getElementById('clApproach');
+  if(ap)ap.onclick=()=>{closeModal();if(typeof approachCharacter==='function')approachCharacter(c.key);};
+}
 document.getElementById('modalClose').onclick=closeModal;
 document.getElementById('overlay').onclick=e=>{if(e.target===document.getElementById('overlay'))closeModal();};
 
@@ -1118,6 +1147,9 @@ function fillSettings(){
   dd.chat.value=settings.chatModel;
   dd.tts.value=settings.ttsModel;
   dd.stt.value=settings.sttModel;
+  if(dd.director)dd.director.value=settings.directorModel;
+  const diEl=document.getElementById('sDirectorInterval');
+  if(diEl)diEl.value=settings.directorInterval;
   document.getElementById('sTtsOn').checked=settings.ttsEnabled;
   document.getElementById('sSoundOn').checked=settings.soundEnabled!==false;
   document.getElementById('sSoundVol').value=Math.round((settings.soundVolume??0.4)*100);
@@ -1145,6 +1177,9 @@ document.getElementById('sSave').onclick=async()=>{
   settings.chatModel=dd.chat.value||DEFAULT_SETTINGS.chatModel;
   settings.ttsModel=dd.tts.value||DEFAULT_SETTINGS.ttsModel;
   settings.sttModel=dd.stt.value||DEFAULT_SETTINGS.sttModel;
+  settings.directorModel=(dd.director&&dd.director.value)||DEFAULT_SETTINGS.directorModel;
+  const diRaw=Math.floor(+document.getElementById('sDirectorInterval').value||10);
+  settings.directorInterval=Math.min(100,Math.max(1,diRaw));
   settings.ttsEnabled=document.getElementById('sTtsOn').checked;
   settings.soundEnabled=document.getElementById('sSoundOn').checked;
   settings.soundVolume=Math.min(1,Math.max(0,(+document.getElementById('sSoundVol').value||0)/100));

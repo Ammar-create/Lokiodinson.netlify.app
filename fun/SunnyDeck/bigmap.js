@@ -37,12 +37,25 @@ function initBigMap(){
     const bar=document.createElement('div');bar.id='bmTopBar';
     bar.innerHTML=`
       <button class="bm-btn" id="bmMoveBtn" title="Toggle move mode (D-pad)">🕹 MOVE</button>
+      <label class="bm-btn bm-range" title="Listening radius (who can hear/respond)">RANGE <input type="range" id="bmRadius" min="4" max="40" step="1"></label>
       <button class="bm-btn" id="bmCloseBtn" title="Exit fullscreen (Esc)">✕ CLOSE</button>`;
     bar.onclick=e=>e.stopPropagation();
     bar.ondblclick=e=>e.stopPropagation();
     map.appendChild(bar);
     bar.querySelector('#bmMoveBtn').onclick=()=>bmSetMoveMode(!bmMoveMode);
     bar.querySelector('#bmCloseBtn').onclick=()=>toggleMapFullscreen(false);
+    const rs=bar.querySelector('#bmRadius');
+    if(rs){
+      rs.value=(typeof currentSession?.radioRadius==='number')?currentSession.radioRadius:14;
+      rs.oninput=()=>{
+        const v=+rs.value||14;
+        if(currentSession){
+          currentSession.radioRadius=v;
+          if(typeof updateEarshotUI==='function')updateEarshotUI();
+          if(typeof schedulePosSave==='function')schedulePosSave();
+        }
+      };
+    }
   }
   /* double-click empty map space = fullscreen (single click keeps walking) */
   map.ondblclick=e=>{

@@ -311,7 +311,9 @@
       <div class="field"><label>Chat Model</label><div id="ddChat"></div><div class="hint">Generates in-character replies.</div></div>
       <div class="field"><label>TTS Model</label><div id="ddTts"></div><div class="hint">MiMo TTS with built-in voice IDs.</div></div>
       <div class="field"><label>STT Model</label><div id="ddStt"></div><div class="hint">Groq Whisper only.</div></div>
+      <div class="field"><label>Director Model</label><div id="ddDirector"></div><div class="hint">Plans the living world between exchanges.</div></div>
       <div class="detail-section"><h3>Defaults</h3></div>
+      <div class="field"><label>Director Interval (messages)</label><input type="number" id="sDirectorInterval" min="1" max="100" value="10"><div class="hint">World-plan update runs after this many messages (per-session override supported).</div></div>
       <div class="field" style="display:flex;align-items:center;gap:10px">
         <input type="checkbox" id="sTtsOn" style="width:auto;accent-color:var(--neon-1)" checked>
         <label style="margin:0">Voice replies enabled by default</label>

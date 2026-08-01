@@ -138,8 +138,8 @@ function initPortraitStrip(){
     b.innerHTML=`<div class="char-avatar" style="background:${esc(c.color)}">${av||esc(c.name.slice(0,2).toUpperCase())}</div>
       <span class="ps-name">${esc(c.name)}</span><span class="ps-mood"></span>`;
     b.onclick=()=>{
-      if(c.key===currentSession.playerKey)return;
-      if(typeof approachCharacter==='function')approachCharacter(c.key);
+      if(typeof openCharLogModal==='function')openCharLogModal(c.key);
+      else if(c.key!==currentSession.playerKey&&typeof approachCharacter==='function')approachCharacter(c.key);
     };
     strip.appendChild(b);
   });

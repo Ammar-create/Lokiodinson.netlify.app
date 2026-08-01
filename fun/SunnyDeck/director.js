@@ -76,7 +76,7 @@ async function runAmbientBeat(){
     if(typeof decayMoods==='function')decayMoods(sess);
     if(typeof weatherDirectorTick==='function')weatherDirectorTick();
     const roll=Math.random();
-    if(roll<0.6||!providerReady(settings.taskModel||DEFAULT_SETTINGS.taskModel))visualBeat(npcs);
+    if(roll<0.6||!providerReady(settings.chatModel||DEFAULT_SETTINGS.chatModel))visualBeat(npcs);
     else if(roll<0.95)await chatterBeat(npcs,realm,sess);
     else await eventBeat(npcs,realm,sess);
   }catch(e){console.warn('Ambient beat failed',e);}
@@ -120,9 +120,10 @@ Output ONLY JSON: [{"key":"${a.key}","text":"..."},{"key":"${b.key}","text":"...
   for(const line of lines.slice(0,2)){
     const c=realm.characters.find(x=>x.key===line.key);
     if(!c||typeof line.text!=='string'||!line.text.trim())continue;
+    const otherKey=(c.key===a.key)?b.key:a.key;
     if(inEarshot(c.key)){
-      const h={kind:'ambient',speakerKey:c.key,speaker:c.name,text:line.text.trim(),timestamp:Date.now(),isPlayer:false};
-      addChatBubble(h);sess.history.push(h);
+      const h={kind:'ambient',speakerKey:c.key,speaker:c.name,text:line.text.trim(),timestamp:Date.now(),isPlayer:false,targetKey:otherKey};
+      addChatBubble(h);histPush(sess,h);
     }else{
       flashDistantChatter(c.key);
     }
@@ -158,13 +159,13 @@ Output ONLY JSON: {"narration":"...","reaction":{"key":"one_of: ${npcs.map(c=>c.
   const parsed=await aiJson(prompt,settings.chatModel,200);
   if(typeof parsed?.narration==='string'&&parsed.narration.trim()){
     const h={kind:'event',speakerKey:'',speaker:'Narrator',text:parsed.narration.trim(),timestamp:Date.now()};
-    addChatBubble(h);sess.history.push(h);
+    addChatBubble(h);histPush(sess,h);
   }
   const rc=realm.characters.find(x=>x.key===parsed?.reaction?.key);
   if(rc&&typeof parsed.reaction.text==='string'&&parsed.reaction.text.trim()){
     const h={kind:'ambient',speakerKey:rc.key,speaker:rc.name,text:parsed.reaction.text.trim(),timestamp:Date.now(),isPlayer:false};
     if(inEarshot(rc.key))addChatBubble(h);else flashDistantChatter(rc.key);
-    sess.history.push(h);
+    histPush(sess,h);
     setMapSpeaking(rc.key,true);setTimeout(()=>setMapSpeaking(rc.key,false),1600);
   }
   sess.lastActiveAt=Date.now();
@@ -176,7 +177,7 @@ Output ONLY JSON: {"narration":"...","reaction":{"key":"one_of: ${npcs.map(c=>c.
    imply someone moves or changes what they're doing? */
 let stageBusy=false;
 async function stageDirectionTick(sess,realm){
-  if(stageBusy||!providerReady(settings.taskModel||DEFAULT_SETTINGS.taskModel)||!sess||!realm)return;
+  if(stageBusy||!providerReady(settings.routerModel||DEFAULT_SETTINGS.routerModel)||!sess||!realm)return;
   stageBusy=true;
   try{
     const recent=sess.history.slice(-6).filter(h=>h.kind!=='system').map(h=>`${h.speaker}: ${h.text}`).join('\n');
@@ -200,6 +201,63 @@ Output ONLY JSON: {"moves":[{"key":"zoro","zone":"mast"}],"activities":{"sanji":
     });
   }catch(e){console.warn('Stage tick failed',e);}
   finally{stageBusy=false;}
+}
+
+/* ====================== DIRECTOR PASS (v3 living-world engine) ====================== */
+/* After every exchange, if enough NEW dialogue messages have passed since the
+   last pass (sess.directorInterval || settings.directorInterval, default 10),
+   the director model produces a small plan update: NPC movements, chores, and
+   0-1 narrated moment. Executed through existing client primitives. */
+let directorBusy=false;
+async function directorPass(sess,realm){
+  if(directorBusy||!sess||!realm)return;
+  const modelStr=sess.directorModel||settings.directorModel;
+  if(!providerReady(modelStr)||typeof aiJson!=='function')return;
+  const interval=Math.max(1,Math.min(100,Math.floor(sess.directorInterval||settings.directorInterval||10)));
+  if(typeof histDialogueSince==='function'&&histDialogueSince(sess,sess.lastDirectorSeq||0)<interval)return;
+  directorBusy=true;
+  try{
+    const chars=realm.characters.filter(c=>!isCharDisabled(sess,c.key))
+      .map(c=>`${c.key} (${c.name})${c.key===sess.playerKey?' [player]':''}${zoneOf(c.key)?` at ${zoneOf(c.key).name}`:''}${sess.activities?.[c.key]?`, ${sess.activities[c.key].label}`:''}`).join('; ');
+    const recent=sess.history.slice(-10).filter(h=>h.kind!=='system').map(h=>`${h.speaker}: ${h.text}`).join('\n');
+    const zones=realmZones(realm).map(z=>z.key).join(', ');
+    const worldCtx=typeof worldPromptNote==='function'?worldPromptNote():'';
+    const prompt=`You are the living-world director of ${realm.name}. ${realm.overview||''}
+World state: ${worldCtx||'day'}. Zones: ${zones}
+Who is where: ${chars}
+Recent conversation: ${recent||'(quiet)'}
+Produce a small believable world update. Rules:
+- "movements": non-player characters moving to a zone they'd plausibly go to (0-2).
+- "activities": non-player characters starting a chore ({emoji},{label}) (0-2).
+- "moments": 0-1 short narrated ambient beat (1 sentence, present tense).
+Never move or occupy the player. Most characters keep doing what they do — only change what plausibly changes.
+Output ONLY JSON: {"movements":[{"key":"zoro","zone":"mast"}],"activities":{"sanji":{"emoji":"🍳","label":"cooking"}},"moments":["A gull lands on the rail and squawks."]} or {}`;
+    const parsed=await aiJson(prompt,modelStr,350);
+    if(!parsed||typeof parsed!=='object')return;
+    let changed=false;
+    (Array.isArray(parsed.movements)?parsed.movements:[]).slice(0,4).forEach(mv=>{
+      if(!mv||mv.key===sess.playerKey||!realm.characters.some(c=>c.key===mv.key))return;
+      if(typeof moveToZone==='function'){moveToZone(mv.key,mv.zone);changed=true;}
+    });
+    Object.entries(parsed.activities||{}).slice(0,4).forEach(([k,a])=>{
+      if(k===sess.playerKey||!realm.characters.some(c=>c.key===k))return;
+      if(a&&typeof a.label==='string'&&a.label.trim()){
+        if(typeof setActivity==='function'){setActivity(k,{emoji:String(a.emoji||'✦').slice(0,4),label:a.label.trim().slice(0,40)});changed=true;}
+      }
+    });
+    (Array.isArray(parsed.moments)?parsed.moments:[]).slice(0,1).forEach(txt=>{
+      if(typeof txt==='string'&&txt.trim()){
+        const h={kind:'event',speakerKey:'',speaker:'Narrator',text:txt.trim().slice(0,240),timestamp:Date.now()};
+        if(typeof addChatBubble==='function')addChatBubble(h);
+        histPush(sess,h);
+        changed=true;
+      }
+    });
+    sess.lastDirectorSeq=histLastSeq(sess)||0;
+    sess.lastActiveAt=Date.now();
+    await dbPut('sessions',sess);
+  }catch(e){console.warn('Director pass failed',e);}
+  finally{directorBusy=false;}
 }
 
 /* Best-effort memory distill when the tab goes to background. */

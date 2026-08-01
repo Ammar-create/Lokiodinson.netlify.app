@@ -73,7 +73,9 @@ Options: ${candidates.join(', ')}`;
 async function getReply(responderKey,userText,alreadyReplied,sess,realm){
   const c=realm.characters.find(x=>x.key===responderKey);
   const player=realm.characters.find(x=>x.key===sess.playerKey);
-  const recent=buildHistoryFor(sess,responderKey,null);
+  const recent=typeof buildCharLogLines==='function'
+    ?buildCharLogLines(sess,responderKey,CHAR_LOG_PROMPT_WINDOW)
+    :buildHistoryFor(sess,responderKey,-60);
   const tags=(sess.activeTags||[]).join(', ');
   const repliedNote=alreadyReplied.length?`\n${alreadyReplied.map(k=>realm.characters.find(x=>x.key===k)?.name).join(' and ')} already replied; react to what they said.`:'';
   const tagNote=tags?`\nActive tone tags: ${tags}. Apply their natural meaning. Do not mention the tags.`:'';
@@ -205,9 +207,9 @@ async function handleChatSend(){
   const shout=!!shoutNext;
   shoutNext=false;
 
-  const h={kind:'dialogue',speakerKey:playerKey,speaker:playerName,text,timestamp:Date.now(),isPlayer:true,shout,whisperTo:(sess.isWhisper&&chatTargetKey)?chatTargetKey:null};
+  const h={kind:'dialogue',speakerKey:playerKey,speaker:playerName,text,timestamp:Date.now(),isPlayer:true,shout,whisperTo:(sess.isWhisper&&chatTargetKey)?chatTargetKey:null,targetKey:(!sess.isWhisper&&chatTargetKey)?chatTargetKey:null};
   addChatBubble(h);
-  sess.history.push(h);
+  histPush(sess,h);
   sess.lastActiveAt=Date.now();
   await dbPut('sessions',sess);
   if(shout)renderChatTarget();
@@ -221,7 +223,7 @@ async function handleChatSend(){
   if(picked&&picked.outOfRange){
     const sysH={kind:'system',speakerKey:'',speaker:'',text:'No one is close enough to hear you. Walk closer on the map, or use SHOUT.',timestamp:Date.now()};
     addChatBubble(sysH);
-    sess.history.push(sysH);
+    histPush(sess,sysH);
     await dbPut('sessions',sess);
   }else{
     const responders=Array.isArray(picked)?picked:[];
@@ -242,22 +244,22 @@ async function handleChatSend(){
         let reply;
         try{reply=await getReply(rKey,text,already,sess,realm);}
         finally{hideTyping();setMapSpeaking(rKey,false);}
-        const replyH={kind:'dialogue',speakerKey:rKey,speaker:c.name,text:reply,timestamp:Date.now(),isPlayer:false,whisperTo:(sess.isWhisper&&chatTargetKey)?chatTargetKey:null};
+        const replyH={kind:'dialogue',speakerKey:rKey,speaker:c.name,text:reply,timestamp:Date.now(),isPlayer:false,whisperTo:(sess.isWhisper&&chatTargetKey)?chatTargetKey:null,targetKey:sess.playerKey};
         addChatBubble(replyH);
         if(typeof bumpStat==='function')bumpStat('repliesReceived',1,realm.id);
         if(typeof sfx==='function')sfx('reply');
-        sess.history.push(replyH);
+        histPush(sess,replyH);
         sess.lastActiveAt=Date.now();
         await dbPut('sessions',sess);
         already.push(rKey);
-        await speakChat(reply,rKey);
-      }
+        await speakChat(reply,rKey);      }
       if(responders.length&&typeof stageDirectionTick==='function')stageDirectionTick(sess,realm);
       if(responders.length&&typeof questCheckTick==='function')questCheckTick(sess,realm);
       if(responders.length&&typeof socialAnalysisTick==='function')socialAnalysisTick(sess,realm);
       if(responders.length&&typeof inventoryTick==='function')inventoryTick(sess,realm);
     }catch(e){console.error(e);toast(e.message||'CHAT FAILED');}
   }
+  if(typeof directorPass==='function')directorPass(sess,realm);
   if(typeof clearRollNote==='function')clearRollNote();
 
   chatBusy=false;

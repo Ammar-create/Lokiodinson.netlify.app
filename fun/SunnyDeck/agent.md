@@ -280,6 +280,26 @@ Key functions:
 - TTS is Aqua-only (`speakChat` hardcodes `PROVIDERS.aqua`); STT is Groq-only; custom providers are chat-capable only. `/models` fetch is non-blocking; manual `provider:model` typing always works.
 - Custom-provider keys are named `apiKey` so `SHARE_DENY_KEYS` stripping covers them. See `v3.md` Phase 1 brief for the full implementation map.
 
+### v3 per-character history & radio (Phase 2, shipped 2026-08-01)
+
+- `histPush(sess, h)` is the single write path for session history (assigns `seq`,
+  tags `participants[]`/`heardBy[]`). Never push to `sess.history` directly.
+- Per-character logs materialize lazily via `syncCharLog(sess, key)` into
+  `sess.charLogs[key]`; `buildCharLogLines(sess, key, limit)` produces first-person
+  prompt context (`You: …` / `X said to you: …` / `You overheard …`).
+- **`getReply()` context = the character's OWN log (last 60), never the omniscient
+  timeline.** New AI features consuming history must decide omniscient vs
+  character-specific the same way.
+- Whisper privacy is enforced in `charLogEntry()` — whispers appear only in speaker +
+  target logs; `heardBy` is always empty for whispers. SHOUT reaches every character's log.
+- Unified adjustable radius: `sess.radioRadius` (default 14), slider on the fullscreen
+  map; `radioRange()` in history-utils.js; governs both responding and overhearing.
+- Director engine: `directorPass()` cadence pass — settings `directorModel` +
+  `directorInterval` (default 10), per-session overrides (`sess.directorModel`,
+  `sess.directorInterval`); fires from `handleChatSend`; executes `{movements,
+  activities, moments}` with validation; busy-flag + graceful failure.
+- Ambient beat gates on `chatModel`; `stageDirectionTick` gates on `routerModel`.
+
 ### Current optional feature settings
 
 These live in `DEFAULT_SETTINGS` and are all **disabled by default**:

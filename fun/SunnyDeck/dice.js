@@ -88,12 +88,11 @@ async function pushRollEntry(roll,action){
   if(typeof sfx==='function')sfx('roll');
   chat.appendChild(renderRollBubble(h,false));
   chat.scrollTop=chat.scrollHeight;
-  sess.history.push(h);
+  histPush(sess,h);
   sess.lastActiveAt=Date.now();
   await dbPut('sessions',sess);
   if(typeof bumpStat==='function'){
-    bumpStat('rollsMade',1,realm.id);
-    if(roll.sides===20&&roll.n===1){
+    bumpStat('rollsMade',1,realm.id);    if(roll.sides===20&&roll.n===1){
       if(roll.rolls[0]===20)bumpStat('crits',1,realm.id);
       if(roll.rolls[0]===1)bumpStat('fumbles',1,realm.id);
     }

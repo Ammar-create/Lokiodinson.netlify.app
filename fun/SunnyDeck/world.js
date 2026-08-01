@@ -70,7 +70,7 @@ function advanceWorldMinutes(n,quiet){
   const after=worldPhase(sess.world.minutes);
   if(after!==before&&!quiet){
     const h={kind:'event',speakerKey:'',speaker:'Narrator',text:PHASE_LINES[after],timestamp:Date.now()};
-    addChatBubble(h);sess.history.push(h);
+    addChatBubble(h);histPush(sess,h);
   }
   applyWorldVisuals();
   renderWorldHud();
@@ -114,7 +114,7 @@ function weatherDirectorTick(){
   sess.world.weather=next;
   sess.world.weatherSince=(sess.history||[]).length;
   const h={kind:'event',speakerKey:'',speaker:'Narrator',text:WEATHER_LINES[next],timestamp:Date.now()};
-  addChatBubble(h);sess.history.push(h);
+  addChatBubble(h);histPush(sess,h);
   applyWorldVisuals();
   renderWorldHud();
   if(typeof soundWeatherChanged==='function')soundWeatherChanged(next);

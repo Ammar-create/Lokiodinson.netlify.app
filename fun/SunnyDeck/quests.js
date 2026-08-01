@@ -60,7 +60,7 @@ async function startQuest(theme){
     sess.quest=quest;
     const h={kind:'event',speakerKey:'',speaker:'Narrator',
       text:`QUEST STARTED: ${quest.title} — ${quest.premise}`,timestamp:Date.now()};
-    addChatBubble(h);sess.history.push(h);
+    addChatBubble(h);histPush(sess,h);
     await dbPut('sessions',sess);
     renderQuestPanel();
     if(typeof sfx==='function')sfx('questStart');
@@ -122,7 +122,7 @@ Write a 2-4 sentence finale narration, present tense, no dialogue, no quotes.`,s
   }catch(e){console.warn('Quest finale failed',e);}
   const h={kind:'event',speakerKey:'',speaker:'Narrator',
     text:`QUEST COMPLETE: ${q.title} — ${finale}`,timestamp:Date.now()};
-  addChatBubble(h);sess.history.push(h);
+  addChatBubble(h);histPush(sess,h);
   await dbPut('sessions',sess);
   renderQuestPanel();
   if(typeof bumpStat==='function')bumpStat('questsCompleted',1,realm.id);

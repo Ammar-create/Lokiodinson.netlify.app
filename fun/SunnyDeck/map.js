@@ -174,12 +174,15 @@ function inEarshot(key){
   const sess=currentSession;if(!sess?.positions)return true;
   const pp=sess.positions[sess.playerKey],cp=sess.positions[key];
   if(!pp||!cp)return true;
-  return mapDist(pp,cp)<=EARSHOT_RANGE;
+  return mapDist(pp,cp)<=radioRange(sess);
 }
+/* v3: the unified adjustable radius (per-session slider on the fullscreen
+   map). radioRange() lives in history-utils.js and defaults to EARSHOT_RANGE
+   so old behavior is unchanged. */
 function isNear(keyA,keyB){
   const pos=currentSession?.positions;if(!pos)return false;
   const a=pos[keyA],b=pos[keyB];
-  return!!(a&&b)&&mapDist(a,b)<=EARSHOT_RANGE;
+  return!!(a&&b)&&mapDist(a,b)<=radioRange(currentSession);
 }
 function earshotKeys(realm,sess){
   return(realm.characters||[])
@@ -190,9 +193,10 @@ function earshotKeys(realm,sess){
 function positionEarshotRing(x,y,dur){
   const ring=document.getElementById('earshotRing');if(!ring)return;
   if(dur!==undefined)ring.style.transitionDuration=dur+'s';
+  const r=radioRange(currentSession);
   ring.style.left=x+'%';ring.style.top=y+'%';
-  ring.style.width=(EARSHOT_RANGE*2)+'%';
-  ring.style.height=Math.min(96,EARSHOT_RANGE/MAP_ASPECT*2)+'%';
+  ring.style.width=(r*2)+'%';
+  ring.style.height=Math.min(96,r/MAP_ASPECT*2)+'%';
 }
 
 function updateEarshotUI(){
@@ -236,7 +240,7 @@ function spatialSummary(realm,sess,forKey){
     if(c.key===forKey||isCharDisabled(sess,c.key))return;
     const p=sess.positions[c.key];if(!p)return;
     const act=sess.activities?.[c.key];
-    if(mapDist(me,p)<=EARSHOT_RANGE)near.push(c.name+(act?` (${act.label})`:''));
+    if(mapDist(me,p)<=radioRange(sess))near.push(c.name+(act?` (${act.label})`:''));
     else{const z=zoneAt(realm,p.x,p.y);far.push(c.name+(z?` at the ${z.name}`:''));}
   });
   let s=`Scene: you are at the ${myZone?myZone.name:'open area'}.`;

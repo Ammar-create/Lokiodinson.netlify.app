@@ -53,7 +53,7 @@ function invPushEvent(text){
   const sess=currentSession;if(!sess)return;
   const h={kind:'event',speakerKey:'',speaker:'Narrator',text,timestamp:Date.now()};
   if(typeof addChatBubble==='function')addChatBubble(h);
-  sess.history.push(h);
+  histPush(sess,h);
   sess.lastActiveAt=Date.now();
 }
 
