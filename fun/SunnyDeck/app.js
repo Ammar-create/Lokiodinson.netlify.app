@@ -234,8 +234,33 @@ async function dbDelete(store,key){
 }
 
 /* ====================== SETTINGS ====================== */
+/* ====================== EDITABLE PROMPT TEMPLATES (v3) ====================== */
+/* Default chat system-prompt template. Users can override it in Settings;
+   {{placeholders}} are replaced per reply. Keep the critical ones: identity,
+   rules, history. */
+const DEFAULT_CHAT_TEMPLATE=`IDENTITY — {{identity}}
+STATE — {{state}}
+SCENE — {{scene}}
+CONTEXT — {{context}}
+VOICE{{voice}}
+TONE{{tone}}
+RULES:
+{{rules}}
+
+Conversation so far (what you saw/heard):
+{{history}}`;
+
+const DEFAULT_RULES=`- Output SPOKEN DIALOGUE ONLY. No asterisks, no narration, no actions. These words become audio.
+- Stay fully in character. 1-3 sentences, natural conversational length.
+- Never mention being an AI.
+- NEVER repeat phrases you have already used in this conversation. Vary your wording and sentence structure.
+- React to THIS exact message — address its specific content; never give a generic or template reply.
+- Let the moment breathe: a short reply, a pause, or silence can be stronger than a punchline.
+- Relationship and romance: behave per the relationship state and your traits — a guarded character stays guarded until trust grows, a flirt flirts, a loyal one defends. If your character is uncomfortable, say so IN CHARACTER, never as a system message. Keep it tasteful and in-world.`;
+
 const DEFAULT_SETTINGS={
-  aquaKey:'',groqKey:'',theme:'synthwave',
+  aquaKey:'',groqKey:'',
+  promptChat:DEFAULT_CHAT_TEMPLATE,promptRules:DEFAULT_RULES,theme:'synthwave',
   creativeModel:'aqua:deepseek-v4',taskModel:'aqua:gemini-3.1-lite',
   routerModel:'aqua:diffusion-gemma',chatModel:'aqua:deepseek-v4',
   directorModel:'aqua:deepseek-v4',directorInterval:10,
@@ -1178,8 +1203,20 @@ function fillSettings(){
   renderThemePicker();
   renderCpList();
   applyTtsVisibility();
+  const pc=document.getElementById('sPromptChat');
+  if(pc)pc.value=settings.promptChat||DEFAULT_CHAT_TEMPLATE;
+  const pr=document.getElementById('sPromptRules');
+  if(pr)pr.value=settings.promptRules||DEFAULT_RULES;
 }
 document.getElementById('sAquaKey').addEventListener('input',()=>applyTtsVisibility());
+document.getElementById('promptChatReset')?.addEventListener('click',()=>{
+  const el=document.getElementById('sPromptChat');
+  if(el){el.value=DEFAULT_CHAT_TEMPLATE;toast('TEMPLATE RESET — PRESS SAVE');}
+});
+document.getElementById('promptRulesReset')?.addEventListener('click',()=>{
+  const el=document.getElementById('sPromptRules');
+  if(el){el.value=DEFAULT_RULES;toast('RULES RESET — PRESS SAVE');}
+});
 document.getElementById('sSoundVol').addEventListener('input',e=>{
   if(typeof setSfxVolume==='function')setSfxVolume(e.target.value/100);
   if(typeof sfx==='function')sfx('reply');
@@ -1208,6 +1245,13 @@ document.getElementById('sSave').onclick=async()=>{
   if(pixEl)settings.pixelAvatarsEnabled=pixEl.checked;
   const wc=dd.worldClock?dd.worldClock.value:'';
   settings.worldClockMode=['off','exchanges','hybrid'].includes(wc)?wc:DEFAULT_SETTINGS.worldClockMode;
+  const pcEl=document.getElementById('sPromptChat');
+  const prEl=document.getElementById('sPromptRules');
+  settings.promptChat=(pcEl&&pcEl.value.trim())?pcEl.value.trim():DEFAULT_CHAT_TEMPLATE;
+  settings.promptRules=(prEl&&prEl.value.trim())?prEl.value.trim():DEFAULT_RULES;
+  if(!settings.promptChat.includes('{{identity}}')||!settings.promptChat.includes('{{rules}}')||!settings.promptChat.includes('{{history}}')){
+    toast('PROMPT TEMPLATE MISSING KEY VARIABLES — SAVED ANYWAY');
+  }
   mergeCustomProviders();
   await saveSettings();
   applyFeatureAvailability();

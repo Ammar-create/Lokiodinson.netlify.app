@@ -388,6 +388,16 @@
         <label style="margin:0">Pixel avatars for characters</label>
       </div>
       <div class="field"><label>World Clock</label><div id="ddWorldClock"></div><div class="hint">Off / advance per message / hybrid (also real time).</div></div>
+      <div class="detail-section"><h3>Prompts &amp; Rules</h3></div>
+      <div class="hint" style="margin-top:-8px;margin-bottom:10px">Editable chat system prompt. Variables: <code>{{identity}}</code> <code>{{state}}</code> <code>{{scene}}</code> <code>{{context}}</code> <code>{{voice}}</code> <code>{{tone}}</code> <code>{{rules}}</code> <code>{{history}}</code>. Keep <code>{{identity}}</code>, <code>{{rules}}</code> and <code>{{history}}</code> or replies break.</div>
+      <div class="field"><label>Chat system prompt template</label>
+        <textarea id="sPromptChat" style="min-height:130px;font-family:monospace;font-size:11px" spellcheck="false"></textarea>
+        <button type="button" class="quest-mini-btn" id="promptChatReset" style="margin-top:4px">RESET TEMPLATE</button>
+      </div>
+      <div class="field"><label>Behavior rules (injected at <code>{{rules}}</code>)</label>
+        <textarea id="sPromptRules" style="min-height:100px;font-family:monospace;font-size:11px" spellcheck="false"></textarea>
+        <button type="button" class="quest-mini-btn" id="promptRulesReset" style="margin-top:4px">RESET RULES</button>
+      </div>
       <div class="btn-row">
         <button class="btn btn-ghost" id="sReset">Reset</button>
         <button class="btn btn-primary" id="sSave">Save</button>

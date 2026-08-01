@@ -103,23 +103,23 @@ async function getReply(responderKey,userText,alreadyReplied,sess,realm){
   const invNote=inv?`\n${inv}`:'';
   const roll=typeof rollPromptNote==='function'?rollPromptNote():'';
   const rollNote=roll?`\n${roll}`:'';
-  const sys=`IDENTITY — You are ${c.name} in ${realm.name}. ${c.description}. Personality: ${c.personality}.${extra}${traitsNote}
-STATE — Talking to ${player?.name||'the user'}.${relNote?`\n${relNote}`:''}${memNote}${actNote}
-SCENE — ${sceneNote}${worldNote}${socialNote}
-CONTEXT —${questNote}${invNote}${rollNote}${repliedNote}
-VOICE${voiceNote||' — Speak naturally and consistently with who you are.'}
-TONE${tagNote||''}
-RULES:
-- Output SPOKEN DIALOGUE ONLY. No asterisks, no narration, no actions. These words become audio.
-- Stay fully in character. 1-3 sentences, natural conversational length.
-- Never mention being an AI.
-- NEVER repeat phrases you have already used in this conversation. Vary your wording and sentence structure.
-- React to THIS exact message — address its specific content; never give a generic or template reply.
-- Let the moment breathe: a short reply, a pause, or silence can be stronger than a punchline.
-- Relationship and romance: behave per the relationship state and your traits — a guarded character stays guarded until trust grows, a flirt flirts, a loyal one defends. If your character is uncomfortable, say so IN CHARACTER, never as a system message. Keep it tasteful and in-world.
-
-Conversation so far (what you saw/heard):
-${recent||'(just started)'}`;
+  const identityBlock=`You are ${c.name} in ${realm.name}. ${c.description}. Personality: ${c.personality}.${extra}${traitsNote}`;
+  const stateBlock=`Talking to ${player?.name||'the user'}.${relNote?`\n${relNote}`:''}${memNote}${actNote}`;
+  const sceneBlock=`${sceneNote}${worldNote}${socialNote}`;
+  const contextBlock=`${questNote}${invNote}${rollNote}${repliedNote}`;
+  const voiceBlock=`${voiceNote||' — Speak naturally and consistently with who you are.'}`;
+  const toneBlock=`${tagNote||''}`;
+  const rules=(settings.promptRules&&settings.promptRules.trim())?settings.promptRules.trim():DEFAULT_RULES;
+  const tpl=settings.promptChat||DEFAULT_CHAT_TEMPLATE;
+  const sys=tpl
+    .replaceAll('{{identity}}',identityBlock)
+    .replaceAll('{{state}}',stateBlock)
+    .replaceAll('{{scene}}',sceneBlock)
+    .replaceAll('{{context}}',contextBlock)
+    .replaceAll('{{voice}}',voiceBlock)
+    .replaceAll('{{tone}}',toneBlock)
+    .replaceAll('{{rules}}',rules)
+    .replaceAll('{{history}}',recent||'(just started)');
   const{provider,model}=parseModel(settings.chatModel||DEFAULT_SETTINGS.chatModel);
   const p=PROVIDERS[provider];const key=settings[p.keyName];
   const res=await fetch(`${p.base}/chat/completions`,{
