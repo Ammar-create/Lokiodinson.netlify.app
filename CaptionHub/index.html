@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CaptionHub — Subtitles for your movies &amp; shows</title>
+  <meta name="description" content="Search the OpenSubtitles catalog by title or by file hash. Filter by language, find the right subtitle file, and download it — all in your browser.">
+  <meta name="theme-color" content="#0b0c14">
+  <meta property="og:title" content="CaptionHub — Subtitles for your movies & shows">
+  <meta property="og:description" content="Search subtitles by title or drop a video file for an exact hash match. Static, private, client-side.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='4' width='20' height='16' rx='4' fill='%2300f0ff'/%3E%3Cpath d='M7 4v16M17 4v16M2 9.5h5M2 14.5h5M17 9.5h5M17 14.5h5' stroke='%230b0c14' stroke-width='1.6'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="3.5"></rect>
+          <path d="M7 4v16M17 4v16M2 9.5h5M2 14.5h5M17 9.5h5M17 14.5h5"></path>
+        </svg>
+      </span>
+      <span class="brand-name">CaptionHub</span>
+      <span class="brand-tag">subtitles</span>
+    </div>
+    <div class="header-actions">
+      <button id="statusChip" class="status-chip" type="button" title="API status — click to open settings">
+        <span class="status-dot" id="statusDot" aria-hidden="true"></span>
+        <span id="statusText">API key not set</span>
+      </button>
+      <button id="settingsBtn" class="icon-btn" type="button" aria-label="Open settings" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="main" class="stage">
+    <section class="hero" aria-labelledby="heroTitle">
+      <div class="hero-glow" aria-hidden="true"></div>
+
+      <h1 id="heroTitle">Find subtitles for <span class="accent-word">anything you watch</span></h1>
+      <p class="hero-sub">Search by title, or drop a video file for an exact hash match.</p>
+
+      <form id="searchForm" class="search-bar" role="search">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        <input id="queryInput" type="search" placeholder="Movie or show title… e.g. Inception" autocomplete="off" spellcheck="false" aria-label="Movie or show title">
+        <button id="searchBtn" class="btn btn-primary" type="submit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          <span>Search</span>
+        </button>
+      </form>
+
+      <div class="lang-row">
+        <span class="lang-label">Language</span>
+        <div class="lang-chips" id="langChips" role="group" aria-label="Filter by language"></div>
+        <button id="moreLangsBtn" class="chip chip-more" type="button">+ More</button>
+      </div>
+
+      <dialog id="langPanel" class="lang-panel">
+        <div class="lang-panel-head">
+          <strong>All languages</strong>
+          <button id="langPanelClose" class="icon-btn" type="button" aria-label="Close language list">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        <div class="lang-list" id="langList"></div>
+      </dialog>
+
+      <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Drop a video file to find subtitles by hash">
+        <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <path d="M14 2v6h6"></path>
+          <path d="M12 18v-6"></path>
+          <path d="m9 15 3 3 3-3"></path>
+        </svg>
+        <div class="dropzone-text">
+          <strong id="dropTitle">Drop a video file</strong>
+          <span id="dropHint">or click to browse — exact subtitle match by file hash</span>
+        </div>
+        <input type="file" id="fileInput" accept="video/*,.mkv,.mp4,.avi,.mov,.wmv,.flv,.webm,.ts,.m4v" hidden>
+      </div>
+
+      <details class="filters" id="filters">
+        <summary>
+          <span>Filters</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+        </summary>
+        <div class="filters-grid">
+          <label class="field">
+            <span class="field-label">Type</span>
+            <select id="fType">
+              <option value="all">All</option>
+              <option value="movie">Movie</option>
+              <option value="series">Series</option>
+              <option value="episode">Episode</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Year</span>
+            <input id="fYear" type="number" min="1900" max="2100" placeholder="Any" inputmode="numeric">
+          </label>
+          <label class="field" id="fSeasonField" hidden>
+            <span class="field-label">Season</span>
+            <input id="fSeason" type="number" min="1" max="99" placeholder="—" inputmode="numeric">
+          </label>
+          <label class="field" id="fEpisodeField" hidden>
+            <span class="field-label">Episode</span>
+            <input id="fEpisode" type="number" min="1" max="999" placeholder="—" inputmode="numeric">
+          </label>
+          <label class="field">
+            <span class="field-label">Sort by</span>
+            <select id="fOrder"></select>
+          </label>
+          <label class="field">
+            <span class="field-label">Order</span>
+            <select id="fDir">
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
+            </select>
+          </label>
+          <label class="check-field">
+            <input id="fHI" type="checkbox">
+            <span>Hearing impaired only</span>
+          </label>
+        </div>
+      </details>
+    </section>
+
+    <section class="results" aria-label="Search results">
+      <div class="results-meta" id="resultsMeta" aria-live="polite"></div>
+      <div class="results-list" id="resultsList"></div>
+      <nav class="pagination" id="pagination" aria-label="Result pages"></nav>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>CaptionHub</span>
+    <span class="footer-sep" aria-hidden="true">·</span>
+    <span>Powered by the <a href="https://opensubtitles.com" target="_blank" rel="noopener noreferrer">OpenSubtitles</a> API</span>
+    <span class="footer-sep" aria-hidden="true">·</span>
+    <span>Part of <a href="../index.html">LokiOdinson's universe</a></span>
+  </footer>
+
+  <dialog id="settingsDialog" class="settings-dialog">
+    <form method="dialog" id="settingsForm">
+      <div class="dialog-head">
+        <h2>Settings</h2>
+        <button id="settingsClose" class="icon-btn" type="button" aria-label="Close settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <p class="dialog-note">
+        CaptionHub talks to the OpenSubtitles API directly from your browser. A free API key is required to search.
+        Get one at
+        <a href="https://opensubtitles.com/consumers/new" target="_blank" rel="noopener noreferrer">opensubtitles.com/consumers/new</a>.
+      </p>
+
+      <label class="field">
+        <span class="field-label">API key <em class="req">*</em></span>
+        <input id="sKey" type="text" autocomplete="off" spellcheck="false" placeholder="Paste your API key">
+      </label>
+
+      <div class="dialog-subhead">
+        <span>Download credentials <em class="opt">optional</em></span>
+        <p>Downloads need an OpenSubtitles account. Add your login to enable them — stored only in this browser.</p>
+      </div>
+
+      <label class="field">
+        <span class="field-label">Username</span>
+        <input id="sUser" type="text" autocomplete="username" spellcheck="false" placeholder="opensubtitles.com username">
+      </label>
+      <label class="field">
+        <span class="field-label">Password</span>
+        <input id="sPass" type="password" autocomplete="current-password" placeholder="••••••••">
+      </label>
+
+      <div class="dialog-actions">
+        <button id="sClear" class="btn btn-ghost-danger" type="button">Clear saved data</button>
+        <span class="spacer" aria-hidden="true"></span>
+        <button id="sCancel" class="btn btn-secondary" type="button">Cancel</button>
+        <button id="sSave" class="btn btn-primary" type="submit">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast-stack" id="toastStack" aria-live="assertive"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/md5.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
