@@ -319,6 +319,7 @@ async function openRoom(roomId,fromScreen){
   renderRoomPortraits(room);
   renderRoomTarget();
   renderRoomToneChips();
+  renderActionMenuButtons();
   renderRoomChat(room);
   const wb=document.getElementById('roomWhisperBanner');if(wb)wb.style.display='none';
   const db2=document.getElementById('roomDirectBanner');if(db2)db2.style.display='none';
@@ -598,7 +599,6 @@ document.getElementById('roomInput').addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();roomSend();}
 });
 document.getElementById('roomMicBtn').onclick=roomMicToggle;
-document.getElementById('roomWhisperBtn').onclick=()=>roomSetWhisper(!roomWhisper);
 document.getElementById('roomDoorBtn').onclick=e=>{e.stopPropagation();openDoorPopover(e.currentTarget);};
 document.getElementById('roomPlayerBtn').onclick=e=>{e.stopPropagation();openRoomPlayerPopover(e.currentTarget);};
 document.getElementById('roomExitWhisper').onclick=()=>roomSetWhisper(false);

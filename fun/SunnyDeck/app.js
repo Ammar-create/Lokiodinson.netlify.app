@@ -161,6 +161,76 @@ const TTS_MODEL_OPTS=[
 const STT_MODEL_OPTS=[{value:'groq:whisper-large-v3',note:'default'},{value:'groq:whisper-large-v3-turbo',note:'faster'}];
 /* v3 tone presets shown as chips in the composer (sessions + rooms). */
 const TONE_PRESETS=['flirty','romantic','serious','playful','tense','angry','whisper'];
+
+/* ====================== UNIFIED ACTION MENU (v3 Phase 6) ====================== */
+/* One registry drives the composer-row menu button (⋯) for sessions AND rooms.
+   scope: 'both' | 'session' | 'room'. enabled() gates availability, active()
+   lights the row, run(btn) executes. */
+const ACTION_ITEMS=[
+  {id:'whisper',icon:'🔒',label:'Whisper',scope:'both',
+    enabled(){return true;},
+    active(){return currentSession?.isRoom?roomWhisper:isWhisperActive();},
+    run(){if(currentSession?.isRoom){roomSetWhisper(!roomWhisper);}else if(typeof toggleWhisper==='function')toggleWhisper();}},
+  {id:'player',icon:'🎭',label:'Play as',scope:'both',
+    enabled(){return true;},active(){return false;},
+    run(btn){if(currentSession?.isRoom){if(typeof openRoomPlayerPopover==='function')openRoomPlayerPopover(btn);}else if(typeof openPlayerSwitcher==='function')openPlayerSwitcher(btn);}},
+  {id:'dice',icon:'🎲',label:'Dice & checks',scope:'session',
+    enabled(){return settings.diceEnabled;},active(){return false;},
+    run(){document.getElementById('diceBtnChat')?.click();}},
+  {id:'inventory',icon:'🎒',label:'Inventory',scope:'session',
+    enabled(){return settings.inventoryEnabled;},active(){return !!window.invOpen||false;},
+    run(){if(typeof invOpen!=='undefined'){invOpen=!invOpen;if(typeof renderInvPanel==='function')renderInvPanel();}}},
+  {id:'quests',icon:'📜',label:'Quests',scope:'session',
+    enabled(){return settings.questsEnabled;},active(){return !!currentSession?.quest;},
+    run(){if(typeof openQuestUI==='function')openQuestUI();}},
+  {id:'sound',icon:'🔊',label:'Voice sound',scope:'both',
+    enabled(){return true;},active(){return !!settings.ttsEnabled;},
+    run(){if(typeof setSoundEnabled==='function')setSoundEnabled(!settings.ttsEnabled);}},
+  {id:'ambient',icon:'✨',label:'Ambient life',scope:'session',
+    enabled(){return true;},active(){return currentSession?.ambientEnabled!==false;},
+    run(){if(typeof toggleAmbientLife==='function')toggleAmbientLife();}},
+  {id:'map',icon:'🗺️',label:'Fullscreen map / radio',scope:'session',
+    enabled(){return true;},active(){return false;},
+    run(){if(typeof toggleMapFullscreen==='function')toggleMapFullscreen(true);setTimeout(()=>document.getElementById('bmRadius')?.focus(),60);}},
+  {id:'doors',icon:'🚪',label:'Door',scope:'room',
+    enabled(){return !!(currentRoom&&currentRoom.anchor);},active(){return false;},
+    run(btn){if(typeof openDoorPopover==='function')openDoorPopover(btn);}},
+  {id:'tags',icon:'🏷️',label:'Add tag',scope:'session',
+    enabled(){return true;},active(){return false;},
+    run(){document.querySelector('#chat-tags .add-tag-btn')?.click();}}
+];
+
+function renderActionMenuButtons(){
+  [['actionMenuWrap','actionMenuBtn'],['roomActionMenuWrap','roomActionMenuBtn']].forEach(([wrapId,btnId])=>{
+    const wrap=document.getElementById(wrapId);if(!wrap)return;
+    wrap.innerHTML=`<button class="comp-btn action-menu-btn" id="${btnId}" title="More actions">⋯</button>`;
+    document.getElementById(btnId).onclick=e=>{e.stopPropagation();openActionMenu(e.currentTarget);};
+  });
+}
+function openActionMenu(btn){
+  if(!btn)return;
+  document.querySelectorAll('.target-popover.open').forEach(p=>p.remove());
+  const isRoom=!!currentSession?.isRoom;
+  const box=document.createElement('div');box.className='target-popover open';
+  box.style.cssText='position:absolute;z-index:60;min-width:180px;max-height:280px;overflow:auto;background:var(--surface-2);border:2px solid var(--border);border-radius:8px;padding:4px';
+  ACTION_ITEMS.forEach(it=>{
+    if(it.scope==='session'&&isRoom)return;
+    if(it.scope==='room'&&!isRoom)return;
+    if(typeof it.enabled==='function'&&!it.enabled())return;
+    const b=document.createElement('button');b.className='pp-item'+(it.active&&it.active()?' active':'');
+    b.innerHTML=`<span style="margin-right:6px">${it.icon}</span>${esc(it.label)}`;
+    b.onclick=()=>{box.remove();try{it.run(btn);}catch(err){console.warn('Action failed',err);}};
+    box.appendChild(b);
+  });
+  if(!box.children.length){
+    const e=document.createElement('div');e.className='pp-item';e.style.cssText='opacity:.6;cursor:default';
+    e.textContent='(nothing available here)';box.appendChild(e);
+  }
+  const r=btn.getBoundingClientRect();
+  box.style.left=Math.min(window.innerWidth-200,Math.max(8,r.left))+'px';
+  box.style.top=(r.bottom+6)+'px';
+  document.body.appendChild(box);
+}
 /* Merge fetched models from custom providers into a dropdown option list. */
 function allModelOpts(baseOpts){
   const out=(baseOpts||[]).map(o=>({...o}));
@@ -809,6 +879,7 @@ async function openSession(sessId){
   document.getElementById('chat-tags').style.display='flex';
   renderChatTags();
   if(typeof renderToneChips==='function')renderToneChips();
+  renderActionMenuButtons();
 
   const chat=document.getElementById('chat');chat.innerHTML='';
   if(typeof renderBranchNote==='function')renderBranchNote(sess);
@@ -832,28 +903,16 @@ function renderSessionTitle(){
 
 function renderChatToolbarHTML(){
   const p=currentPlayer();
-  const soundOn=!!settings.ttsEnabled;
-  const whisperOn=!!currentSession?.isWhisper;
-  const ambientOn=currentSession?.ambientEnabled!==false;
   return `
-    <button class="player-badge ${whisperOn?'whisper':''}" id="playerBadgeBtn" title="Switch character & toggle mute" aria-haspopup="listbox">
+    <button class="player-badge" id="playerBadgeBtn" title="Switch character & toggle mute" aria-haspopup="listbox">
       <div class="char-avatar pb-avatar" style="background:${esc(p?p.color:'#888')}">${p?avatarInnerHTML(p):'??'}</div>
       <div class="pb-meta">
-        <div class="pb-label">${whisperOn?'WHISPER AS':'YOU ARE'}</div>
+        <div class="pb-label">YOU ARE</div>
         <div class="pb-name">${esc(p?p.name:'—')}</div>
       </div>
       <span class="pb-arrow">&#9660;</span>
     </button>
     <div class="header-right">
-      ${settings.inventoryEnabled&&typeof inventoryBtnHTML==='function'?inventoryBtnHTML():''}
-      ${settings.questsEnabled?`<button class="icon-btn ${currentSession?.quest?'is-on':''}" id="questBtn" title="${currentSession?.quest?'Quest active — toggle panel':'Start a quest'}">${SCROLL_SVG}</button>`:''}
-      <button class="icon-btn ${soundOn?'is-on':'is-off'}" id="soundToggle" title="${soundOn?'Voice auto-play ON':'Voice auto-play OFF'}">
-        ${soundOn?SOUND_ON_SVG:SOUND_OFF_SVG}
-      </button>
-      <button class="icon-btn ${whisperOn?'is-lock':''}" id="whisperToggle" title="${whisperOn?'Whisper mode ON':'Start a private whisper session'}">
-        ${whisperOn?LOCK_SVG:LOCK_OPEN_SVG}
-      </button>
-      <button class="icon-btn ${ambientOn?'is-on':'is-off'}" id="ambientToggle" title="${ambientOn?'Ambient life ON — characters act on their own':'Ambient life OFF'}">${SPARKLE_SVG}</button>
       <button class="icon-btn" id="chatMapExpand" title="Expand map">${EXPAND_SVG}</button>
       <button class="icon-btn" id="chatMapToggle" title="Toggle map">${MAP_SVG}</button>
     </div>
@@ -863,16 +922,8 @@ function renderChatToolbarHTML(){
 function bindChatToolbar(){
   const pb=document.getElementById('playerBadgeBtn');
   if(pb)pb.onclick=(e)=>{e.stopPropagation();openPlayerSwitcher(pb);};
-  const qb=document.getElementById('questBtn');
-  if(qb)qb.onclick=()=>{if(typeof openQuestUI==='function')openQuestUI();};
   const mt=document.getElementById('chatMapToggle');
   if(mt)mt.onclick=()=>document.getElementById('chatMapWrap').classList.toggle('collapsed');
-  const sb=document.getElementById('soundToggle');
-  if(sb)sb.onclick=()=>setSoundEnabled(!settings.ttsEnabled);
-  const wt=document.getElementById('whisperToggle');
-  if(wt)wt.onclick=()=>toggleWhisper();
-  const at=document.getElementById('ambientToggle');
-  if(at)at.onclick=()=>toggleAmbientLife();
   const me=document.getElementById('chatMapExpand');
   if(me)me.onclick=()=>toggleMapExpand();
   if(typeof bindInventoryBtn==='function')bindInventoryBtn();
@@ -1405,7 +1456,7 @@ function renderToneChips(){
 }
 
 function applyFeatureAvailability(){  const diceBtn=document.getElementById('diceBtnChat');
-  if(diceBtn)diceBtn.hidden=!settings.diceEnabled;
+  if(diceBtn)diceBtn.hidden=true;   // dice moved into the unified action menu (Phase 6)
   if(!settings.diceEnabled){
     document.querySelectorAll('.dice-popover.open').forEach(p=>p.classList.remove('open'));
     if(typeof clearRollNote==='function')clearRollNote();

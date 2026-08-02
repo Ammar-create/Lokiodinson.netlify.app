@@ -178,7 +178,7 @@ registerSlashCommand('check',async(arg)=>{
 /* ====================== POPOVER UI ====================== */
 (function bindDiceUI(){
   const btn=document.getElementById('diceBtnChat');if(!btn)return;
-  btn.hidden=!settings.diceEnabled;
+  btn.hidden=true;   // dice moved into the unified action menu (Phase 6)
   const pop=document.createElement('div');
   pop.className='dice-popover';
   pop.innerHTML=`
