@@ -356,6 +356,19 @@ Key functions:
 - UI: "Relationships" button on realm detail → `openRelPanel`.
 - See `v3.md` Phase 5 brief.
 
+### Unified action menu (v3 Phase 6, shipped 2026-08-02)
+
+- Composer-row **⋯** button right of the target selector, sessions + rooms
+  (`#actionMenuBtn` / `#roomActionMenuBtn`). `ACTION_ITEMS` registry:
+  `{id, icon, label, scope:'both'|'session'|'room', enabled(), active(), run(btn)}`.
+- Items: Whisper, Play as, Dice, Inventory, Quests, Voice sound, Ambient life,
+  Fullscreen map/radio, Door (anchored rooms), Add tag — feature-gated, popover
+  reuses `.target-popover` (auto-close).
+- Chat-header toolbar now = player badge + map toggle/expand only. `#diceBtnChat`
+  permanently hidden (menu-only). Room composer whisper button removed.
+- The **minimal-skin redesign** (Pillar 8) is still pending the user's direction
+  brief; this phase shipped its logic half (the menu). See `v3.md` Phase 6 brief.
+
 ### Current optional feature settings
 
 These live in `DEFAULT_SETTINGS` and are all **disabled by default**:
