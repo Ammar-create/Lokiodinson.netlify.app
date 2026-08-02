@@ -366,7 +366,7 @@ html[data-skin="modern"] .dd.open .dd-face{
 }
 html[data-skin="modern"] .dd-list{
   border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--m-shadow-lg);
-  background:var(--surface);overflow:hidden
+  background:var(--surface);overflow-y:auto
 }
 html[data-skin="modern"] .dd-item{font-size:14px}
 html[data-skin="modern"] .dd-item:hover,
@@ -495,8 +495,14 @@ html[data-skin="modern"] .target-popover,
 html[data-skin="modern"] .player-popover,
 html[data-skin="modern"] .dice-popover{
   border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--m-shadow-lg);
-  background:var(--surface);overflow:hidden
+  background:var(--surface);overflow-y:auto
 }
+html[data-skin="modern"] .pp-item{
+  font-size:13.5px;color:var(--text);border-radius:var(--radius-sm);margin:2px 6px;
+  border-bottom:none;padding:9px 12px;white-space:nowrap
+}
+html[data-skin="modern"] .pp-item:hover,
+html[data-skin="modern"] .pp-item.active{background:var(--surface-2);color:var(--text);border-left:none}
 html[data-skin="modern"] .player-popover-name{color:var(--text);font-size:14.5px}
 html[data-skin="modern"] .target-popover .tp-row{font-size:13.5px}
 html[data-skin="modern"] .tp-lock-badge{border-radius:99px;font-size:9.5px}

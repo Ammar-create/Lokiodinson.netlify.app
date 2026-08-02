@@ -37,6 +37,24 @@ function applySkin(){
   root.dataset.mtheme=['light','dark'].includes(settings.modernTheme)?settings.modernTheme:'auto';
   applyTheme(settings.theme);
   updateSkinUI();
+  cacheSkinPrePaint();
+}
+/* Mirror the current skin into localStorage so the inline <head> script in
+   index.html can apply it BEFORE first paint. IndexedDB settings load is async,
+   so without this every load flashes the retro base styles first. */
+function cacheSkinPrePaint(){
+  try{
+    const modern=settings.uiSkin!=='retro';
+    const t=THEMES[settings.theme]||THEMES.synthwave;
+    const vars=modern?{}:{...t,
+      '--glow-1':`0 0 6px ${t['--neon-1']}b0,0 0 18px ${t['--neon-1']}50`,
+      '--glow-2':`0 0 6px ${t['--neon-2']}b0,0 0 18px ${t['--neon-2']}50`};
+    localStorage.setItem('sdPreSkin',JSON.stringify({
+      skin:modern?'modern':'retro',
+      mtheme:['light','dark'].includes(settings.modernTheme)?settings.modernTheme:'auto',
+      vars
+    }));
+  }catch(e){/* private mode / storage blocked — fall back to async apply */}
 }
 function updateSkinUI(){
   const modern=settings.uiSkin!=='retro';
@@ -207,12 +225,21 @@ function renderActionMenuButtons(){
     document.getElementById(btnId).onclick=e=>{e.stopPropagation();openActionMenu(e.currentTarget);};
   });
 }
+/* Shared placement for popovers anchored to buttons near the viewport edge.
+   Opens below the button, flips above when there is no room below. */
+function placePopover(btn,box,estH){
+  const r=btn.getBoundingClientRect();
+  const h=estH||Math.min(320,box.children.length*44+12);
+  const top=(r.bottom+h+12>window.innerHeight)?Math.max(8,r.top-h-6):r.bottom+6;
+  box.style.left=Math.min(window.innerWidth-200,Math.max(8,r.left))+'px';
+  box.style.top=top+'px';
+}
 function openActionMenu(btn){
   if(!btn)return;
   document.querySelectorAll('.target-popover.open').forEach(p=>p.remove());
   const isRoom=!!currentSession?.isRoom;
   const box=document.createElement('div');box.className='target-popover open';
-  box.style.cssText='position:absolute;z-index:60;min-width:180px;max-height:280px;overflow:auto;background:var(--surface-2);border:2px solid var(--border);border-radius:8px;padding:4px';
+  box.style.cssText='position:absolute;z-index:60;min-width:180px;max-height:280px;overflow-y:auto;bottom:auto;right:auto';
   ACTION_ITEMS.forEach(it=>{
     if(it.scope==='session'&&isRoom)return;
     if(it.scope==='room'&&!isRoom)return;
@@ -226,9 +253,9 @@ function openActionMenu(btn){
     const e=document.createElement('div');e.className='pp-item';e.style.cssText='opacity:.6;cursor:default';
     e.textContent='(nothing available here)';box.appendChild(e);
   }
-  const r=btn.getBoundingClientRect();
-  box.style.left=Math.min(window.innerWidth-200,Math.max(8,r.left))+'px';
-  box.style.top=(r.bottom+6)+'px';
+  /* placePopover flips above the button when it sits near the bottom of the
+     viewport (composer row) — otherwise the menu opens off-screen. */
+  placePopover(btn,box,Math.min(280,box.children.length*44+12));
   document.body.appendChild(box);
 }
 /* Merge fetched models from custom providers into a dropdown option list. */

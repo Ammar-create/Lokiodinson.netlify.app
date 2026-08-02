@@ -468,6 +468,15 @@ header{
 }
 .target-popover .tp-empty{padding:14px;font-size:15px;color:var(--text-3);text-align:center}
 
+/* Popover menu rows (action menu, door popover, room target/player) */
+.pp-item{
+  display:block;width:100%;text-align:left;padding:9px 12px;font-size:16px;color:var(--text-2);
+  cursor:pointer;background:none;border:none;border-bottom:1px solid var(--border-soft);white-space:nowrap
+}
+.pp-item:last-child{border-bottom:none}
+.pp-item:hover{background:var(--surface-2);color:var(--neon-2)}
+.pp-item.active{background:rgba(0,240,255,.1);color:var(--neon-2);border-left:3px solid var(--neon-2)}
+
 /* Minimap */
 #chatMapWrap{
   max-height:160px;overflow:hidden;transition:max-height .3s ease;

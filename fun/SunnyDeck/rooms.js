@@ -100,7 +100,7 @@ function openDoorPopover(anchorEl){
   document.querySelectorAll('.target-popover.open').forEach(p=>p.remove());
   const box=document.createElement('div');
   box.className='target-popover open';
-  box.style.cssText='position:absolute;z-index:60;min-width:170px;background:var(--surface-2);border:2px solid var(--border);border-radius:8px;padding:4px';
+  box.style.cssText='position:absolute;z-index:60;min-width:170px;bottom:auto;right:auto';
   ['open','closed','locked'].forEach(st=>{
     const b=document.createElement('button');
     b.className='pp-item'+(room.door===st?' active':'');
@@ -109,9 +109,7 @@ function openDoorPopover(anchorEl){
     b.onclick=async()=>{box.remove();await roomSetDoor(room,st);};
     box.appendChild(b);
   });
-  const r=anchorEl.getBoundingClientRect();
-  box.style.left=Math.min(window.innerWidth-190,Math.max(8,r.left))+'px';
-  box.style.top=(r.bottom+6)+'px';
+  placePopover(anchorEl,box);
   document.body.appendChild(box);
 }
 
@@ -181,9 +179,7 @@ function roomTargetPopover(){
     if(c.key===room.playerKey||isCharDisabled(room,c.key))return;
     mk(c.name,()=>{roomTargetKey=c.key;roomShoutNext=false;},roomTargetKey===c.key);
   });
-  const r=btn.getBoundingClientRect();
-  box.style.left=Math.min(window.innerWidth-170,Math.max(8,r.left))+'px';
-  box.style.top=(r.bottom+6)+'px';
+  placePopover(btn,box);
   document.body.appendChild(box);
 }
 function roomSetWhisper(on){
@@ -585,9 +581,7 @@ function openRoomPlayerPopover(anchorEl){
     };
     box.appendChild(b);
   });
-  const r=anchorEl.getBoundingClientRect();
-  box.style.left=Math.min(window.innerWidth-170,Math.max(8,r.left))+'px';
-  box.style.top=(r.bottom+6)+'px';
+  placePopover(anchorEl,box);
   document.body.appendChild(box);
 }
 

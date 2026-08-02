@@ -15,6 +15,26 @@
 <link rel="stylesheet" href="features.css">
 <link rel="stylesheet" href="phase2.css">
 <link rel="stylesheet" href="modern.css">
+<script>
+  /* Pre-paint skin: apply the saved After Hours / retro skin synchronously so
+     the retro base styles never flash before IndexedDB settings load. The
+     cache is written by app.js applySkin(); without it we default to modern
+     (matches DEFAULT_SETTINGS) and the async load reconciles afterwards. */
+  (function(){
+    try{
+      var c=JSON.parse(localStorage.getItem('sdPreSkin')||'null');
+      var r=document.documentElement;
+      if(!c){
+        r.dataset.skin='modern';
+        return;
+      }
+      r.dataset.skin=c.skin==='retro'?'retro':'modern';
+      if(c.mtheme)r.dataset.mtheme=c.mtheme;
+      if(c.vars)for(var k in c.vars)r.style.setProperty(k,c.vars[k]);
+      r.dataset.preSkind='1';
+    }catch(e){}
+  })();
+</script>
 </head>
 <body>
 
